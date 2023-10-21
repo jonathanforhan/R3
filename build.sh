@@ -2,9 +2,6 @@
 
 build_dir="debug-build"
 build_type="-DCMAKE_BUILD_TYPE=Debug"
-output_fmt="Ninja"
-cmk="/usr/bin/cmake"
-cwd=`pwd`
 
 while test $# != 0
 do
@@ -18,15 +15,15 @@ do
             build_type="-DCMAKE_BUILD_TYPE=Debug"
             ;;
         --wsl)
-            cmk="/mnt/c/Program Files/CMake/bin/cmake.exe"
-            cwd=`wslpath -w "$PWD"`
-            # output_fmt="MinGW Makefiles"
+            sh="powershell.exe"
+            ext=".exe"
             ;;
         --run)
             run=true
             ;;
         *)
             echo "unknown option $1"
+            exit -1
             ;;
     esac
     shift
@@ -34,7 +31,7 @@ done
 
 mkdir -p "$build_dir"
 
-"$cmk" -G "$output_fmt" -S "$cwd" -B "$cwd/$build_dir" "$build_type"
-"$cmk" --build "$build_dir"
-[ -n $run ] && "$(pwd)/$build_dir/R3.exe"
+$sh cmake -G Ninja -S . -B "$build_dir" "$build_type"
+$sh cmake --build "$build_dir"
+[ -n $run ] && "$build_dir/R3$ext"
 
