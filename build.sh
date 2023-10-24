@@ -33,5 +33,5 @@ mkdir -p "$build_dir"
 
 $sh cmake -G Ninja -S . -B "$build_dir" "$build_type"
 $sh cmake --build "$build_dir"
-[ -n $run ] && "$build_dir/R3$ext"
+[[ -n $run ]] && "$build_dir/R3$ext"
 
