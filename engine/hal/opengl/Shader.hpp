@@ -14,6 +14,7 @@ public:
   static Shader from_spriv(const char*, const char*) { throw; /* TODO */ }
 
   void use();
+  uint32_t id() { return _program; };
 
 private:
   uint32_t _program;

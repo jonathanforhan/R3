@@ -1,6 +1,6 @@
 #pragma once
 #include "Shader.hpp"
-#include "hal/IRenderer.hpp"
+#include "../IRenderer.hpp"
 
 namespace R3::opengl {
 
@@ -12,7 +12,8 @@ public:
   void draw() override;
 
 private:
-  Shader _shader; // TODO
+  Shader _shader; // TODO(jon): make it the Actors responsibility
+  unsigned _texture;
   unsigned _vao, _vbo, _ebo;
 };
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "hal/opengl/Window.hpp"
+#include "../hal/opengl/Window.hpp"
 
 namespace R3 {
 

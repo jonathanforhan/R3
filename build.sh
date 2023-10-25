@@ -37,6 +37,6 @@ mkdir -p "$build_dir"
 $sh cmake -G Ninja -S . -B "$build_dir" "$build_type"
 $sh cmake --build "$build_dir"
 
-[[ -n $tidy ]] && clang-tidy src/*.[ch]pp --header-filter=src/.* --checks=clang-analyzer-*,cppcoreguidelines-*,misc-*
-[[ -n $run ]] && "$build_dir/R3$ext"
+[[ -n $tidy ]] && clang-tidy engine/*.[ch]pp --header-filter=engine/.* --checks=clang-analyzer-*,cppcoreguidelines-*,misc-*
+[[ -n $run ]] && "$build_dir/test_cube$ext"
 

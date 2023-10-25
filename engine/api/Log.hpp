@@ -19,12 +19,12 @@ inline void _log() {
   std::cout << std::endl;
 }
 template <typename T, typename... Args>
-inline void _log(T x, Args... args) {
-  std::cout << x;
+inline void _log(T x, Args&&... args) {
+  std::cout << x << ' ';
   _log(args...);
 }
 template <typename... Args>
-inline void _logf(const char* fmt, Args... args) {
+inline void _logf(const char* fmt, Args&&... args) {
   printf(fmt, args...);
   printf("\n");
 }
