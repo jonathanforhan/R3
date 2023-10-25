@@ -1,5 +1,4 @@
 #pragma once
-#include <mutex>
 #include "Renderer.hpp"
 #include "Window.hpp"
 

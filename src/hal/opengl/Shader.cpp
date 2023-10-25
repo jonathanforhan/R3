@@ -1,4 +1,5 @@
 #include "Shader.hpp"
+#include <glad/glad.h>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -27,7 +28,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
     vertex_string = vss.str();
     fragment_string = fss.str();
   } catch (std::ifstream::failure& e) {
-    LOG(Error, "shader file read failed: " << e.what());
+    LOG(Error, "shader file read failed: ", e.what());
   }
 
   const char* vstr = vertex_string.c_str();
@@ -42,7 +43,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(vertex, 512, nullptr, info_log);
-    LOG(Error, "vertex shader compilation failed: " << info_log);
+    LOG(Error, "vertex shader compilation failed: ", info_log);
   }
 
   unsigned fragment = glCreateShader(GL_FRAGMENT_SHADER);
@@ -51,7 +52,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
   if (!success) {
     glGetShaderInfoLog(fragment, 512, nullptr, info_log);
-    LOG(Error, "fragment shader compilation failed: " << info_log);
+    LOG(Error, "fragment shader compilation failed: ", info_log);
   }
 
   unsigned program = glCreateProgram();
@@ -61,7 +62,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   glGetProgramiv(program, GL_LINK_STATUS, &success);
   if (!success) {
     glGetProgramInfoLog(program, 512, nullptr, info_log);
-    LOG(Error, "shader program linking failed: " << info_log);
+    LOG(Error, "shader program linking failed: ", info_log);
   }
   glDeleteShader(vertex);
   glDeleteShader(fragment);
@@ -73,6 +74,10 @@ Shader Shader::from_source(const char* vert, const char* frag) {
 
 Shader::~Shader() {
   glDeleteShader(_program);
+}
+
+void Shader::use() {
+  glUseProgram(_program);
 }
 
 } // namespace R3::opengl

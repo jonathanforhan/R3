@@ -21,6 +21,9 @@ do
         --run)
             run=true
             ;;
+        --tidy)
+            tidy=true
+            ;;
         *)
             echo "unknown option $1"
             exit -1
@@ -33,5 +36,7 @@ mkdir -p "$build_dir"
 
 $sh cmake -G Ninja -S . -B "$build_dir" "$build_type"
 $sh cmake --build "$build_dir"
+
+[[ -n $tidy ]] && clang-tidy src/*.[ch]pp --header-filter=src/.* --checks=clang-analyzer-*,cppcoreguidelines-*,misc-*
 [[ -n $run ]] && "$build_dir/R3$ext"
 

@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 #include "hal/opengl/Window.hpp"
 
 namespace R3 {

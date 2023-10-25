@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 #include "hal/opengl/Renderer.hpp"
 
 namespace R3 {

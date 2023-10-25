@@ -7,10 +7,11 @@ Engine::Engine()
       _renderer() {}
 
 int Engine::run() {
+  _window.show();
+
   while (!_window.should_close()) {
     _renderer.draw();
     _window.update();
-    glfwPollEvents();
   }
   return 0;
 }

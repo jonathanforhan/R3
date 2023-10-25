@@ -26,6 +26,7 @@ set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_TEST OFF)
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/glad)
+add_subdirectory(extern/stb)
 find_package(OpenGL REQUIRED)
 
 set(BUILD_SHARED_LIBS OFF)
@@ -33,6 +34,7 @@ set(CMAKE_EXE_LINKER_FLAGS "-static")
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     glfw
     glad
+    stb_image
     -static
     -static-libgcc
     -static-libstdc++
@@ -55,4 +57,5 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
     )
 
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
+file(COPY textures DESTINATION ${CMAKE_BINARY_DIR})
 
