@@ -11,14 +11,12 @@ file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/engine/*.c")
 file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp")
 
 add_library("${CMAKE_PROJECT_NAME}" STATIC ${C_SOURCES} ${CXX_SOURCES})
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/engine")
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/core")
-target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/api")
+target_include_directories(${CMAKE_PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine")
 
 if (MSVC)
     set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 else ()
-    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 endif ()
 
 set(GLFW_BUILD_EXAMPLES OFF)
@@ -55,6 +53,7 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PUBLIC
     -DR3_LOG_ERROR=1
 
     # -DGLM_FORCE_DEPTH_ZERO_TO_ONE=1
+    -DGLFW_INCLUDE_NONE=1
     )
 
 file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})

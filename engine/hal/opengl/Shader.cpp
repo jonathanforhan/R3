@@ -37,7 +37,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   int success;
   char info_log[512];
 
-  unsigned vertex = glCreateShader(GL_VERTEX_SHADER);
+  uint32_t vertex = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex, 1, &vstr, nullptr);
   glCompileShader(vertex);
   glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
@@ -46,7 +46,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
     LOG(Error, "vertex shader compilation failed: ", info_log);
   }
 
-  unsigned fragment = glCreateShader(GL_FRAGMENT_SHADER);
+  uint32_t fragment = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment, 1, &fstr, nullptr);
   glCompileShader(fragment);
   glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
@@ -55,7 +55,7 @@ Shader Shader::from_source(const char* vert, const char* frag) {
     LOG(Error, "fragment shader compilation failed: ", info_log);
   }
 
-  unsigned program = glCreateProgram();
+  uint32_t program = glCreateProgram();
   glAttachShader(program, vertex);
   glAttachShader(program, fragment);
   glLinkProgram(program);
@@ -68,16 +68,20 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   glDeleteShader(fragment);
 
   Shader shader;
-  shader._program = program;
+  shader._id = program;
   return shader;
 }
 
 Shader::~Shader() {
-  glDeleteShader(_program);
+  glDeleteShader(_id);
 }
 
 void Shader::use() {
-  glUseProgram(_program);
+  glUseProgram(_id);
+}
+
+uint32_t Shader::location(const char* uniform) const {
+  return glGetUniformLocation(_id, uniform);
 }
 
 } // namespace R3::opengl

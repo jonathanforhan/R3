@@ -1,5 +1,5 @@
-#include "Engine.hpp"
-#include "Log.hpp"
+#include "core/Engine.hpp"
+#include "api/Log.hpp"
 
 int main(void) {
   LOG(Info, "Running Cube Test...");

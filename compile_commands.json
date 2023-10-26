@@ -1,27 +1,32 @@
 [
 {
   "directory": "/mnt/c/Users/jon/Code/R3/release-build",
-  "command": "/usr/bin/c++ -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/engine/core -I/mnt/c/Users/jon/Code/R3/engine/api -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/core/Engine.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/core/Engine.cpp",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/core/Engine.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/core/Engine.cpp",
   "file": "/mnt/c/Users/jon/Code/R3/engine/core/Engine.cpp"
 },
 {
   "directory": "/mnt/c/Users/jon/Code/R3/release-build",
-  "command": "/usr/bin/c++ -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/engine/core -I/mnt/c/Users/jon/Code/R3/engine/api -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Renderer.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Renderer.cpp",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Renderer.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Renderer.cpp",
   "file": "/mnt/c/Users/jon/Code/R3/engine/hal/opengl/Renderer.cpp"
 },
 {
   "directory": "/mnt/c/Users/jon/Code/R3/release-build",
-  "command": "/usr/bin/c++ -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/engine/core -I/mnt/c/Users/jon/Code/R3/engine/api -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Shader.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Shader.cpp",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Shader.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Shader.cpp",
   "file": "/mnt/c/Users/jon/Code/R3/engine/hal/opengl/Shader.cpp"
 },
 {
   "directory": "/mnt/c/Users/jon/Code/R3/release-build",
-  "command": "/usr/bin/c++ -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/engine/core -I/mnt/c/Users/jon/Code/R3/engine/api -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Window.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Window.cpp",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Texture.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Texture.cpp",
+  "file": "/mnt/c/Users/jon/Code/R3/engine/hal/opengl/Texture.cpp"
+},
+{
+  "directory": "/mnt/c/Users/jon/Code/R3/release-build",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG  -Wall -Wextra -Wpedantic -std=gnu++20 -o CMakeFiles/R3.dir/engine/hal/opengl/Window.cpp.o -c /mnt/c/Users/jon/Code/R3/engine/hal/opengl/Window.cpp",
   "file": "/mnt/c/Users/jon/Code/R3/engine/hal/opengl/Window.cpp"
 },
 {
   "directory": "/mnt/c/Users/jon/Code/R3/release-build",
-  "command": "/usr/bin/c++ -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine/core -I/mnt/c/Users/jon/Code/R3/engine/api -I/mnt/c/Users/jon/Code/R3/extern/glfw/include -I/mnt/c/Users/jon/Code/R3/extern/glad/include -I/mnt/c/Users/jon/Code/R3/extern/stb -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/test_cube.dir/tests/test_cube.cpp.o -c /mnt/c/Users/jon/Code/R3/tests/test_cube.cpp",
+  "command": "/usr/bin/c++ -DGLFW_INCLUDE_NONE=1 -DR3_BUILD_DEBUG=1 -DR3_BUILD_DIST=0 -DR3_BUILD_RELEASE=0 -DR3_LOGGING_ENABLED=1 -DR3_LOG_ERROR=1 -DR3_LOG_INFO=1 -DR3_LOG_VERBOSE=1 -DR3_LOG_WARNING=1 -DR3_OPENGL -I/mnt/c/Users/jon/Code/R3/engine -I/mnt/c/Users/jon/Code/R3/extern/glm -O3 -DNDEBUG -std=gnu++20 -o CMakeFiles/test_cube.dir/tests/test_cube.cpp.o -c /mnt/c/Users/jon/Code/R3/tests/test_cube.cpp",
   "file": "/mnt/c/Users/jon/Code/R3/tests/test_cube.cpp"
 },
 {

@@ -3,12 +3,11 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 // clang-format on
-#include <iostream>
+#include "api/Log.hpp"
 
 namespace R3::opengl {
 
-Window::Window(int32_t width, int32_t height, const char* title)
-    : IWindow(width, height, title) {
+Window::Window(const char* title) {
   glfwInit();
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -16,21 +15,32 @@ Window::Window(int32_t width, int32_t height, const char* title)
 #ifdef __APPLE__
   glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
+
+  GLFWmonitor* monitor = glfwGetPrimaryMonitor();
+  const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
+
+  glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
+  glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
+  glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
+  glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
+  glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-  _window = glfwCreateWindow(width, height, title, nullptr, nullptr);
+  int w = vidmode->width * 0.75, h = vidmode->height * 0.75;
+
+  _window = glfwCreateWindow(w, h, title, nullptr, nullptr);
   if (!_window) {
-    fputs("Failed to create GLFW window", stderr);
+    LOG(Error, "Failed to create GLFW window");
     glfwTerminate();
   }
-
+  glfwSetWindowPos(_window, vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
   glfwMakeContextCurrent(_window);
 
   auto resize_callback = [](GLFWwindow*, int width, int height) { glViewport(0, 0, width, height); };
   glfwSetFramebufferSizeCallback(_window, resize_callback);
 
   if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    fputs("Failed to initialize GLAD", stderr);
+    LOG(Error, "Failed to initialize GLAD");
   }
 }
 
@@ -48,13 +58,17 @@ void Window::hide() {
 }
 
 bool Window::is_visible() const {
-  return true;
+  return glfwGetWindowAttrib(_window, GLFW_VISIBLE);
 }
 
 void Window::resize(int32_t width, int32_t height) {
-  (void)width;
-  (void)height;
-  return;
+  glfwSetWindowSize(_window, width, height);
+}
+
+float Window::aspect_ratio() const {
+  int width, height;
+  glfwGetWindowSize(_window, &width, &height);
+  return static_cast<float>(width) / static_cast<float>(height);
 }
 
 bool Window::should_close() const {

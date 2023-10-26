@@ -1,10 +1,11 @@
 #include "Engine.hpp"
+#include "api/Log.hpp"
 
 namespace R3 {
 
 Engine::Engine()
-    : _window(Window(800, 600, "R3")),
-      _renderer() {}
+    : _window(Window("R3")),
+      _renderer(&_window) {}
 
 int Engine::run() {
   _window.show();
