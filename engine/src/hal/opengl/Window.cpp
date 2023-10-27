@@ -83,10 +83,14 @@ void Window::update() {
 
 void* Window::native_id() const {
 #ifdef WIN32
-  glfwGetWin32Window(_window);
+  return glfwGetWin32Window(_window);
 #else
-  glfwGetWinX11Window(_window);
+  return glfwGetWinX11Window(_window);
 #endif // WIN32
+}
+
+void Window::kill() {
+  glfwSetWindowShouldClose(_window, true);
 }
 
 } // namespace R3::opengl

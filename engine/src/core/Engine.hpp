@@ -1,6 +1,7 @@
 #pragma once
 #include "Renderer.hpp"
 #include "Window.hpp"
+#include <functional>
 
 namespace R3 {
 
@@ -12,17 +13,14 @@ public:
   Engine(const Engine&) = delete;
   void operator=(const Engine&) = delete;
 
-  static Engine& instance();
+  static Engine* instance();
   int run();
 
+public:
+  Window window;
+
 private:
-  Window _window;
   Renderer _renderer;
 };
-
-inline Engine& Engine::instance() {
-  static Engine _instance;
-  return _instance;
-}
 
 } // namespace R3

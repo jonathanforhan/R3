@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QWidget>
 #include <QWindow>
+#include <QThread>
 #include "Editor.hpp"
 #include <core/Engine.hpp>
 
@@ -10,20 +11,16 @@ int main(int argc, char* argv[]) {
   QApplication::setApplicationVersion("1.0.0");
   QApplication::setOrganizationName("R3");
   QApplication::setApplicationDisplayName("R3");
-  QApplication::setFont(QFont{ "Consolas", 12 });
 
-  R3::Engine& engine = R3::Engine::instance();
-  engine.run();
+  QThread* th = new QThread;
+  Editor* editor = new Editor;
+  editor->moveToThread(th);
 
-  // Editor editor;
-  /*
-  auto* w = QWindow::fromWinId(winId);
-  w->show();
-  w->hide();
-  QWidget* container = QWidget::createWindowContainer(w);
-  container->show();
-  */
-  // editor.show();
+  th->connect(th, &QThread::started, editor, &Editor::runEngine);
+  th->connect(editor, &Editor::finished, th, &QThread::quit);
+  th->connect(editor, &Editor::finished, editor, &Editor::deleteLater);
+  th->connect(th, &QThread::finished, th, &QThread::deleteLater);
+  th->start();
 
   return app.exec();
 }

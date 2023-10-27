@@ -18,6 +18,7 @@ public:
   bool should_close() const override;
   void update() override;
   void* native_id() const override;
+  void kill() override;
 
 private:
   GLFWwindow* _window;
