@@ -3,11 +3,7 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 // clang-format on
-#include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "api/Check.hpp"
-#include "api/Log.hpp"
 #include "core/Window.hpp"
 
 namespace R3::opengl {

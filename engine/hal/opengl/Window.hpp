@@ -17,6 +17,7 @@ public:
   float aspect_ratio() const override;
   bool should_close() const override;
   void update() override;
+  void* native_id() const override;
 
 private:
   GLFWwindow* _window;

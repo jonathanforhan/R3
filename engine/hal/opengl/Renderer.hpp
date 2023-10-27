@@ -9,7 +9,7 @@ class Window;
 
 class Renderer : protected IRenderer {
 public:
-  explicit Renderer(Window *window);
+  explicit Renderer(Window* window);
   ~Renderer();
 
   void draw() override;
@@ -18,7 +18,7 @@ private:
   Window* _window;
   Shader _shader;   // TODO
   Texture _texture; // TODO
-  uint32_t _vao, _vbo, _ebo;
+  uint32_t _vao{}, _vbo{}, _ebo{};
 };
 
 } // namespace R3::opengl

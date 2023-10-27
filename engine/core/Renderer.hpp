@@ -1,5 +1,5 @@
 #pragma once
-#include "../hal/opengl/Renderer.hpp"
+#include "hal/opengl/Renderer.hpp"
 
 namespace R3 {
 

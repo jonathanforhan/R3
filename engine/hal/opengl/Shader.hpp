@@ -1,5 +1,4 @@
 #pragma once
-#include <glad/glad.h>
 #include <cstdint>
 
 namespace R3::opengl {

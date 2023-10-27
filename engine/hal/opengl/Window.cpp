@@ -2,6 +2,7 @@
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <GLFW/glfw3native.h>
 // clang-format on
 #include "api/Log.hpp"
 
@@ -78,6 +79,14 @@ bool Window::should_close() const {
 void Window::update() {
   glfwSwapBuffers(_window);
   glfwPollEvents();
+}
+
+void* Window::native_id() const {
+#ifdef WIN32
+  glfwGetWin32Window(_window);
+#else
+  glfwGetWinX11Window(_window);
+#endif // WIN32
 }
 
 } // namespace R3::opengl

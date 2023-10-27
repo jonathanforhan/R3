@@ -1,5 +1,4 @@
 #include "Engine.hpp"
-#include "api/Log.hpp"
 
 namespace R3 {
 

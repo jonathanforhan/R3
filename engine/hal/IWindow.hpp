@@ -11,7 +11,8 @@ protected:
   virtual void resize(int32_t width, int32_t height) = 0;
   virtual float aspect_ratio() const = 0;
   virtual bool should_close() const = 0;
-  virtual void update() {}
+  virtual void update() = 0;
+  virtual void* native_id() const = 0;
 };
 
 } // namespace R3
