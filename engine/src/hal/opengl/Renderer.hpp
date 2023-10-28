@@ -1,24 +1,31 @@
 #pragma once
+#include "core/Actor.hpp"
 #include "hal/IRenderer.hpp"
-#include "hal/opengl/Shader.hpp"
-#include "hal/opengl/Texture.hpp"
+#include "core/Actor.hpp"
+
+namespace R3 {
+class Engine;
+}
 
 namespace R3::opengl {
 
 class Window;
 
 class Renderer : protected IRenderer {
-public:
+private:
   explicit Renderer(Window* window);
+  Renderer(const Renderer&) = delete;
+  void operator=(const Renderer&) = delete;
+  friend class R3::Engine;
+
+public:
   ~Renderer();
 
-  void draw() override;
+  void predraw() override;
+  void draw(RendererPrimitive primitive, uint32_t n_indices) override;
 
 private:
   Window* _window;
-  Shader _shader;   // TODO
-  Texture _texture; // TODO
-  uint32_t _vao{}, _vbo{}, _ebo{};
 };
 
 } // namespace R3::opengl

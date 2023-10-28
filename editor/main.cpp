@@ -1,9 +1,9 @@
 #include <QApplication>
+#include <QThread>
 #include <QWidget>
 #include <QWindow>
-#include <QThread>
-#include "Editor.hpp"
 #include <core/Engine.hpp>
+#include "Editor.hpp"
 
 int main(int argc, char* argv[]) {
   QApplication app(argc, argv);

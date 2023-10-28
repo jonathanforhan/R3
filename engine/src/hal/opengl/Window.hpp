@@ -1,13 +1,24 @@
 #pragma once
+#if R3_OPENGL
+
 #include "hal/IWindow.hpp"
 
 struct GLFWwindow;
 
+namespace R3 {
+class Engine;
+}
+
 namespace R3::opengl {
 
-class Window : IWindow {
-public:
+class Window : protected IWindow {
+private:
   explicit Window(const char* title);
+  Window(const Window&) = delete;
+  void operator=(const Window&) = delete;
+  friend class R3::Engine;
+
+public:
   ~Window();
 
   void show() override;
@@ -25,3 +36,5 @@ private:
 };
 
 } // namespace R3::opengl
+
+#endif // R3_OPENGL

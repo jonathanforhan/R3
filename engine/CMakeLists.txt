@@ -8,8 +8,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE H_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+file(GLOB_RECURSE HXX_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
 
-add_library(R3_ENGINE STATIC ${C_SOURCES} ${CXX_SOURCES})
+list(APPEND R3_ENGINE_SOURCES ${C_SOURCES} ${CXX_SOURCES})
+list(APPEND R3_ENGINE_HEADERS ${H_HEADERS} ${HXX_HEADERS})
+set(R3_ENGINE_INCLUDES ${R3_ENGINE_HEADERS} PARENT_SCOPE)
+
+add_library(R3_ENGINE STATIC ${R3_ENGINE_SOURCES})
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if (MSVC)
@@ -21,12 +27,17 @@ endif ()
 set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_TEST OFF)
 add_subdirectory(extern/glad)
+target_compile_options(glad PUBLIC "-w")
 add_subdirectory(extern/glfw)
+target_compile_options(glfw PUBLIC "-w")
 add_subdirectory(extern/glm)
+target_compile_options(glm INTERFACE "-w")
 add_subdirectory(extern/stb)
+target_compile_options(stb_image INTERFACE "-w")
 find_package(OpenGL REQUIRED)
 
-set(BUILD_SHARED_LIBS OFF)
+include(GNUInstallDirs)
+
 target_link_libraries(R3_ENGINE PUBLIC
     glad
     glfw

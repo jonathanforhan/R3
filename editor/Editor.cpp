@@ -1,28 +1,36 @@
 #include "Editor.hpp"
-#include <core/Engine.cpp>
 #include <QApplication>
+#include <QCloseEvent>
+#include <QMessageBox>
 #include <QScreen>
 #include <QWindow>
-#include <QMessageBox>
-#include <QCloseEvent>
+#include <core/Engine.cpp>
 
 Editor::Editor(QWidget* parent)
-    : QMainWindow(parent) {}
+    : QMainWindow(parent) {
+  QRect rect{QGuiApplication::primaryScreen()->geometry()};
+  qint32 w = rect.width() * 0.75;
+  qint32 h = rect.height() * 0.75;
+  qint32 x = (rect.width() - w) / 2;
+  qint32 y = (rect.height() - h) / 2;
+  setGeometry(x, y, w, h);
+}
 
 Editor::~Editor() {}
 
 void Editor::closeEvent(QCloseEvent* event) {
-  QMessageBox::StandardButton bQuit =
+  QMessageBox::StandardButton e_quit =
       QMessageBox::question(this, "R3", tr("Are you sure you want to quit?\n"),
                             QMessageBox::Cancel | QMessageBox::No | QMessageBox::Yes, QMessageBox::Yes);
 
-  if (bQuit != QMessageBox::Yes) {
+  if (e_quit != QMessageBox::Yes) {
     event->ignore();
-  } else {
-    event->accept();
-    R3::Engine::instance()->window.kill();
-    emit finished();
+    return;
   }
+
+  event->accept();
+  R3::Engine::instance()->window.kill();
+  emit finished();
 }
 
 int Editor::runEngine() {
@@ -36,9 +44,4 @@ int Editor::runEngine() {
   show();
 
   return engine->run();
-}
-
-QSize Editor::sizeHint() const {
-  QRect rect{window()->windowHandle()->screen()->geometry()};
-  return QSize{rect.width(), rect.height()} * 0.75;
 }

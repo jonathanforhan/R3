@@ -1,15 +1,31 @@
-#include "Texture.hpp"
+#if R3_OPENGL
+
+#include "core/Texture.hpp"
 #include <glad/glad.h>
-#include "api/Log.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "api/Check.hpp"
 
-namespace R3::opengl {
+namespace R3 {
 
-Texture::Texture(const char* path)
-    : _id{} {
-  glGenTextures(1, &_id);
+void Texture::assign(Texture texture) {
+  if (_id == texture._id) {
+    return;
+  }
+  destroy();
+  *this = texture;
+}
+
+void Texture::destroy() {
+  if (_id >= 0) {
+    glDeleteTextures(1, reinterpret_cast<GLuint*>(&_id));
+  }
+  _id = -1;
+}
+
+void Texture::import2D(const char* path, const char *name) {
+  _name = name;
+  glCreateTextures(GL_TEXTURE_2D, 1, reinterpret_cast<GLuint*>(&_id));
   glBindTexture(GL_TEXTURE_2D, _id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -19,7 +35,7 @@ Texture::Texture(const char* path)
   stbi_set_flip_vertically_on_load(true);
 
   int32_t w, h, channels;
-  unsigned char* data = stbi_load(path, &w, &h, &channels, 0);
+  uint8_t* data = stbi_load(path, &w, &h, &channels, 0);
   CHECK(data != nullptr);
 
   GLint format = channels == 3 ? GL_RGB : GL_RGBA;
@@ -34,4 +50,6 @@ void Texture::bind(uint8_t index) const {
   glBindTexture(GL_TEXTURE_2D, _id);
 }
 
-} // namespace R3::opengl
+} // namespace R3
+
+#endif // R3_OPENGL

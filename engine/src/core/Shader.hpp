@@ -1,22 +1,21 @@
 #pragma once
 #include <cstdint>
 
-namespace R3::opengl {
+namespace R3 {
 
 class Shader {
-private:
+public:
   Shader() = default;
 
-public:
-  ~Shader();
-
-  static Shader from_source(const char* vert, const char* frag);
-  // static Shader from_spriv(const char*, const char*); TODO
-
+  void assign(Shader shader);
+  void destroy();
   void use();
+  bool valid() const { return _id >= 0; }
+
+  void import_source(const char* vert, const char* frag);
+  // static Shader from_spriv(const char*, const char*) override; TODO
 
   uint32_t location(const char* uniform) const;
-
   void write_uniform(uint32_t location, float v0);
   void write_uniform(uint32_t location, int v0);
   void write_uniform(uint32_t location, unsigned v0);
@@ -30,9 +29,11 @@ public:
   void write_uniform(uint32_t location, const T& v0);
 
 private:
-  uint32_t _id;
+  int64_t _id = -1;
 };
 
-} // namespace R3::opengl
+} // namespace R3
 
-#include "Shader.ipp"
+#ifdef R3_OPENGL
+#include "hal/opengl/Shader.ipp"
+#endif

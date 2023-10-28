@@ -1,3 +1,5 @@
+#if R3_OPENGL
+
 #include "Window.hpp"
 // clang-format off
 #include <glad/glad.h>
@@ -27,7 +29,8 @@ Window::Window(const char* title) {
   glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-  int w = vidmode->width * 0.75, h = vidmode->height * 0.75;
+  int w = static_cast<int>(vidmode->width * 0.75);
+  int h = static_cast<int>(vidmode->height * 0.75);
 
   _window = glfwCreateWindow(w, h, title, nullptr, nullptr);
   if (!_window) {
@@ -94,3 +97,5 @@ void Window::kill() {
 }
 
 } // namespace R3::opengl
+
+#endif // R3_OPENGL

@@ -1,13 +1,36 @@
-#include "Shader.hpp"
+#if R3_OPENGL
+
+#include "core/Shader.hpp"
 #include <glad/glad.h>
 #include <fstream>
 #include <sstream>
 #include <string>
+#include "api/Check.hpp"
 #include "api/Log.hpp"
 
-namespace R3::opengl {
+namespace R3 {
 
-Shader Shader::from_source(const char* vert, const char* frag) {
+void Shader::assign(Shader shader) {
+  if (_id == shader._id) {
+    return;
+  }
+  destroy();
+  *this = shader;
+}
+
+void R3::Shader::destroy() {
+  if (_id >= 0)
+    glDeleteShader(_id);
+  _id = -1;
+}
+
+void Shader::use() {
+  CHECK(_id >= 0);
+  glUseProgram(_id);
+}
+
+void Shader::import_source(const char* vert, const char* frag) {
+  destroy();
   std::string vertex_string, fragment_string;
   std::ifstream vertex_file, fragment_file;
 
@@ -67,21 +90,13 @@ Shader Shader::from_source(const char* vert, const char* frag) {
   glDeleteShader(vertex);
   glDeleteShader(fragment);
 
-  Shader shader;
-  shader._id = program;
-  return shader;
-}
-
-Shader::~Shader() {
-  glDeleteShader(_id);
-}
-
-void Shader::use() {
-  glUseProgram(_id);
+  this->_id = program;
 }
 
 uint32_t Shader::location(const char* uniform) const {
   return glGetUniformLocation(_id, uniform);
 }
 
-} // namespace R3::opengl
+} // namespace R3
+
+#endif // R3_OPENGL

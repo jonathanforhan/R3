@@ -1,10 +1,11 @@
-#pragma once
-#include <glad/glad.h>
-#include <glm/fwd.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "hal/opengl/Shader.hpp"
+#if R3_OPENGL
 
-namespace R3::opengl {
+#pragma once
+#include "core/Shader.hpp"
+#include <glad/glad.h>
+#include "api/Math.hpp"
+
+namespace R3 {
 
 inline void Shader::write_uniform(uint32_t location, GLfloat v0) {
   glUniform1f(location, v0);
@@ -168,4 +169,6 @@ inline void Shader::write_uniform(uint32_t location, const glm::mat4x3& v0) {
   glUniformMatrix4x3fv(location, 1, GL_FALSE, glm::value_ptr(v0));
 }
 
-} // namespace R3::opengl
+} // namespace R3
+
+#endif // R3_OPENGL
