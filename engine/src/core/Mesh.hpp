@@ -16,13 +16,13 @@ public:
   void write_buffer(std::span<float> vertices, std::span<uint32_t> stride, std::span<uint32_t> indices);
   void bind() const;
   void bind_null() const;
-  size_t number_of_indices() const { return _number_of_indices; }
+  uint32_t number_of_indices() const { return _number_of_indices; }
 
 private:
   int64_t _vao = -1;
   int64_t _vbo = -1;
   int64_t _ebo = -1;
-  size_t _number_of_indices = -1;
+  uint32_t _number_of_indices = 0;
 };
 
 } // namespace R3

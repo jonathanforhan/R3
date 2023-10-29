@@ -1,7 +1,7 @@
 #include "Engine.hpp"
+#include <api/Clock.hpp>
 #include <api/Log.hpp>
 #include <api/Math.hpp>
-#include <api/Clock.hpp>
 
 constexpr uint32_t MODEL_LOCATION = 0;
 constexpr uint32_t VIEW_LOCATION = 1;
@@ -10,9 +10,14 @@ constexpr uint32_t PROJECTION_LOCATION = 2;
 namespace R3 {
 
 Engine::Engine()
-    : window(Window("R3")),
-      _renderer(&window) {
-  window.show();
+    : _window(Window("R3")),
+      _renderer(&_window),
+      _input(&_window) {
+  _window.show();
+
+  _input.set_key_binding(KeyInput::Key_W, [this](KeyAction action) {
+    LOG(Info, "KeyAction:", this->window().aspect_ratio());
+  });
 }
 
 Engine* const Engine::instance() {
@@ -22,7 +27,7 @@ Engine* const Engine::instance() {
 
 void Engine::update() {
   mat4 view = {{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, -3, 1}};
-  mat4 projection = glm::perspective(glm::radians(45.0f), window.aspect_ratio(), 0.1f, 100.0f);
+  mat4 projection = glm::perspective(glm::radians(45.0f), _window.aspect_ratio(), 0.1f, 100.0f);
 
   static double then = Clock::current_time();
   double now = Clock::current_time();
@@ -31,7 +36,7 @@ void Engine::update() {
 
   _renderer.predraw();
 
-  for (auto* actor : _actors) {
+  for (auto actor : _actors) {
     actor->tick(delta_time);
 
     actor->_texture.bind(0);
@@ -45,7 +50,8 @@ void Engine::update() {
 
     _renderer.draw(RendererPrimitive::Triangles, actor->_mesh.number_of_indices());
   }
-  window.update();
+  _window.update();
+  _input.poll_keys();
 }
 
 void Engine::add_actor(Actor* actor) {

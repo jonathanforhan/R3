@@ -15,7 +15,7 @@ public:
   void set_shader(Shader shader) { _shader.assign(shader); }
   void set_texture(Texture texture) { _texture.assign(texture); }
 
-  virtual void tick(double delta_time) {};
+  virtual void tick(double delta_time) { (void)delta_time; };
 
 private:
   template <typename T>

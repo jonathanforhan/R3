@@ -14,6 +14,7 @@ protected:
   virtual bool should_close() const = 0;
   virtual void update() = 0;
   virtual void* native_id() const = 0;
+  virtual void* native_ptr() const = 0;
   virtual void kill() = 0;
 };
 

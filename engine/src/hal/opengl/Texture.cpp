@@ -18,19 +18,22 @@ void Texture::assign(Texture texture) {
 
 void Texture::destroy() {
   if (_id >= 0) {
-    glDeleteTextures(1, reinterpret_cast<GLuint*>(&_id));
+    GLuint id = _id;
+    glDeleteTextures(1, &id);
   }
   _id = -1;
 }
 
-void Texture::import2D(const char* path, const char *name) {
+void Texture::import2D(const char* path, const char* name) {
   _name = name;
-  glCreateTextures(GL_TEXTURE_2D, 1, reinterpret_cast<GLuint*>(&_id));
-  glBindTexture(GL_TEXTURE_2D, _id);
+  GLuint id;
+  glCreateTextures(GL_TEXTURE_2D, 1, &id);
+  glBindTexture(GL_TEXTURE_2D, id);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  _id = id;
 
   stbi_set_flip_vertically_on_load(true);
 

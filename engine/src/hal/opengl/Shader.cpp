@@ -10,6 +10,21 @@
 
 namespace R3 {
 
+Shader::Shader(ShaderType type, const char* vert, const char* frag) {
+  switch (type) {
+    case ShaderType::GLSL:
+      import_glsl(vert, frag);
+      break;
+    case ShaderType::HLSL:
+      CHECKF(type != ShaderType::HLSL, "OpenGL Renderer is incompatible with HLSL");
+      break;
+    case ShaderType::SPIRV:
+      CHECKF(type != ShaderType::SPIRV, "OpenGL Renderer has not yet implented SPIRV");
+      break;
+  }
+  use();
+}
+
 void Shader::assign(Shader shader) {
   if (_id == shader._id) {
     return;
@@ -29,7 +44,7 @@ void Shader::use() {
   glUseProgram(_id);
 }
 
-void Shader::import_source(const char* vert, const char* frag) {
+void Shader::import_glsl(const char* vert, const char* frag) {
   destroy();
   std::string vertex_string, fragment_string;
   std::ifstream vertex_file, fragment_file;
@@ -90,11 +105,13 @@ void Shader::import_source(const char* vert, const char* frag) {
   glDeleteShader(vertex);
   glDeleteShader(fragment);
 
-  this->_id = program;
+  _id = program;
 }
 
 uint32_t Shader::location(const char* uniform) const {
-  return glGetUniformLocation(_id, uniform);
+  uint32_t loc = glGetUniformLocation(_id, uniform);
+  CHECK(loc >= 0);
+  return loc;
 }
 
 } // namespace R3

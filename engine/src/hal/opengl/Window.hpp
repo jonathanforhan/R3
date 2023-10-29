@@ -29,6 +29,7 @@ public:
   bool should_close() const override;
   void update() override;
   void* native_id() const override;
+  void* native_ptr() const override;
   void kill() override;
 
 private:

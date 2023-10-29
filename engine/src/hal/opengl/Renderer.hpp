@@ -1,7 +1,6 @@
 #pragma once
 #include "core/Actor.hpp"
 #include "hal/IRenderer.hpp"
-#include "core/Actor.hpp"
 
 namespace R3 {
 class Engine;

@@ -6,8 +6,10 @@
 #error "Multiple Renderers"
 #endif
 
+#include <memory>
 #include <vector>
 #include "core/Actor.hpp"
+#include "core/Input.hpp"
 #include "core/Renderer.hpp"
 #include "core/Window.hpp"
 
@@ -23,16 +25,17 @@ public:
 
   static void initialize() { (void)instance(); }
   static Engine* const instance();
-  bool running() const { return !window.should_close(); }
+  bool running() const { return !_window.should_close(); }
   void update();
+
+  Window& window() { return _window; }
 
   void add_actor(Actor* actor);
 
-public:
-  Window window;
-
 private:
+  Window _window;
   Renderer _renderer;
+  Input _input;
   std::vector<Actor*> _actors;
 };
 

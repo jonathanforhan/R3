@@ -1,8 +1,8 @@
 #if R3_OPENGL
 
 #include "core/Mesh.hpp"
-#include <numeric>
 #include <glad/glad.h>
+#include <numeric>
 #include "api/Log.hpp"
 
 namespace R3 {
@@ -23,31 +23,35 @@ void Mesh::assign(Mesh mesh) {
 }
 
 void Mesh::destroy() {
-  if (_vao >= 0)
-    glDeleteVertexArrays(1, reinterpret_cast<GLuint*>(&_vao));
-  if (_vbo >= 0)
-    glDeleteBuffers(1, reinterpret_cast<GLuint*>(&_vbo));
-  if (_ebo >= 0)
-    glDeleteBuffers(1, reinterpret_cast<GLuint*>(&_ebo));
+  if (_vao >= 0) {
+    GLuint vao = static_cast<GLuint>(_vao);
+    glDeleteVertexArrays(1, &vao);
+  }
+  if (_vbo >= 0) {
+    GLuint vbo = static_cast<GLuint>(_vbo);
+    glDeleteBuffers(1, &vbo);
+  }
+  if (_ebo >= 0) {
+    GLuint ebo = static_cast<GLuint>(_ebo);
+    glDeleteBuffers(1, &ebo);
+  }
 
   _vao = _vbo = _ebo = -1;
 }
 
 void Mesh::write_buffer(std::span<float> vertices, std::span<uint32_t> stride, std::span<uint32_t> indices) {
   destroy();
-  _number_of_indices = indices.size();
+  _number_of_indices = static_cast<uint32_t>(indices.size());
 
   GLuint vao, buffers[2];
   glGenVertexArrays(1, &vao);
   glGenBuffers(2, buffers);
-  _vao = vao, _vbo = buffers[0], _ebo = buffers[1];
+  glBindVertexArray(vao);
 
-  glBindVertexArray(_vao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+  glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
   glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), GL_STATIC_DRAW);
 
   uint32_t byte_span = std::reduce(stride.begin(), stride.end()) * sizeof(float);
@@ -61,10 +65,12 @@ void Mesh::write_buffer(std::span<float> vertices, std::span<uint32_t> stride, s
 
   glBindBuffer(GL_ARRAY_BUFFER, NULL);
   glBindVertexArray(NULL);
+
+  _vao = vao, _vbo = buffers[0], _ebo = buffers[1];
 }
 
 void Mesh::bind() const {
-  glBindVertexArray(_vao);
+  glBindVertexArray(static_cast<uint32_t>(_vao));
 }
 
 void Mesh::bind_null() const {

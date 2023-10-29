@@ -92,6 +92,10 @@ void* Window::native_id() const {
 #endif // WIN32
 }
 
+void* Window::native_ptr() const {
+  return _window;
+}
+
 void Window::kill() {
   glfwSetWindowShouldClose(_window, true);
 }

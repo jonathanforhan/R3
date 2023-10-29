@@ -1,3 +1,4 @@
+#include "api/Check.hpp"
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Clock.hpp"
@@ -47,9 +48,7 @@ public:
         12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 21, 23, 21, 22, 23,
     };
     set_mesh({vertices, stride, indices});
-    Shader shader;
-    shader.import_source("shaders/default.vert", "shaders/default.frag");
-    set_shader(shader);
+    set_shader({ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"});
     set_texture({"textures/container.jpg", "uni_texture"});
 
     model = glm::translate(model, vec3(0.5f, -0.5f, 0.0f));
