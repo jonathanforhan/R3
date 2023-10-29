@@ -69,6 +69,10 @@ void Window::resize(int32_t width, int32_t height) {
   glfwSetWindowSize(_window, width, height);
 }
 
+void Window::size(int* width, int* height) const {
+  glfwGetFramebufferSize(_window, width, height);
+}
+
 float Window::aspect_ratio() const {
   int width, height;
   glfwGetFramebufferSize(_window, &width, &height);

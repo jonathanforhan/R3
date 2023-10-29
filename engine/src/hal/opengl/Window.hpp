@@ -25,6 +25,7 @@ public:
   void hide() override;
   bool is_visible() const override;
   void resize(int32_t width, int32_t height) override;
+  void size(int* width, int* height) const override;
   float aspect_ratio() const override;
   bool should_close() const override;
   void update() override;

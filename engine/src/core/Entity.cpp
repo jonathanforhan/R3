@@ -1,15 +1,15 @@
-#include "Actor.hpp"
+#include "Entity.hpp"
 #include "core/Engine.hpp"
 
 namespace R3 {
 
-R3::Actor::Actor()
+Entity::Entity()
     : model(mat4(1.0f)),
       _shader(),
       _texture(),
       _mesh() {}
 
-Actor::~Actor() {
+Entity::~Entity() {
   _shader.destroy();
   _texture.destroy();
   _mesh.destroy();

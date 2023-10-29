@@ -8,7 +8,7 @@
 
 #include <memory>
 #include <vector>
-#include "core/Actor.hpp"
+#include "core/Entity.hpp"
 #include "core/Camera.hpp"
 #include "core/Input.hpp"
 #include "core/Renderer.hpp"
@@ -31,14 +31,20 @@ public:
 
   Window* const window() { return &_window; }
 
-  void add_actor(Actor* actor);
+  void add_entity(Entity* entity);
+
+  bool mouse_down = false;
+  struct cursor {
+    float x, y;
+  };
+  cursor curr, prev;
 
 private:
   Window _window;
   Renderer _renderer;
   Input _input;
   Camera _camera;
-  std::vector<Actor*> _actors;
+  std::vector<Entity*> _entities;
 };
 
 } // namespace R3

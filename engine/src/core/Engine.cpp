@@ -24,7 +24,11 @@ Engine::Engine()
   _input.set_key_binding(Key::Key_E, [this](InputAction action) { _camera.translate_down(0.1); });
 
   _input.set_mouse_binding(MouseButton::Left, [this](InputAction action) {
-    LOG(Info, _input.cursor_position().x, _input.cursor_position().y);
+    if (action == InputAction::Press) {
+      mouse_down = true;
+    } else if (action == InputAction::Release) {
+      mouse_down = false;
+    }
   });
 }
 
@@ -39,35 +43,44 @@ void Engine::update() {
   double delta_time = now - then;
   then = now;
 
+  curr.x = _input.cursor_position().x;
+  curr.y = _input.cursor_position().y;
+  if (mouse_down) {
+    float dx = curr.x - prev.x;
+    float dy = prev.y - curr.y;
+    float s = 500;
+    _camera.look_around(dx * s, dy * s);
+  }
+  prev = curr;
   static mat4 view = mat4(1.0f), projection = mat4(1.0f);
   _camera.apply(&view, &projection, _window.aspect_ratio());
 
   _renderer.predraw();
 
-  for (auto actor : _actors) {
-    actor->tick(delta_time);
+  for (auto entity : _entities) {
+    entity->tick(delta_time);
 
-    actor->_texture.bind(0);
-    actor->_shader.use();
+    entity->_texture.bind(0);
+    entity->_shader.use();
 
-    actor->write_to_shader(MODEL_LOCATION, actor->model);
-    actor->write_to_shader(VIEW_LOCATION, view);
-    actor->write_to_shader(PROJECTION_LOCATION, projection);
+    entity->write_to_shader(MODEL_LOCATION, entity->model);
+    entity->write_to_shader(VIEW_LOCATION, view);
+    entity->write_to_shader(PROJECTION_LOCATION, projection);
 
-    actor->_mesh.bind();
+    entity->_mesh.bind();
 
-    _renderer.draw(RendererPrimitive::Triangles, actor->_mesh.number_of_indices());
+    _renderer.draw(RendererPrimitive::Triangles, entity->_mesh.number_of_indices());
   }
   _window.update();
   _input.poll_keys();
   _input.poll_mouse();
 }
 
-void Engine::add_actor(Actor* actor) {
-  actor->_texture.bind(0);
-  actor->_shader.use();
-  actor->write_to_shader(actor->_texture.name(), 0);
-  _actors.push_back(actor);
+void Engine::add_entity(Entity* entity) {
+  entity->_texture.bind(0);
+  entity->_shader.use();
+  entity->write_to_shader(entity->_texture.name(), 0);
+  _entities.push_back(entity);
 }
 
 } // namespace R3

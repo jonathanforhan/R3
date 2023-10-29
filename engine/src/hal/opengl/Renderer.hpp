@@ -1,5 +1,4 @@
 #pragma once
-#include "core/Actor.hpp"
 #include "hal/IRenderer.hpp"
 
 namespace R3 {

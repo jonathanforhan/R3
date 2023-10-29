@@ -9,14 +9,14 @@ namespace R3 {
 static bool input_initialized = false;
 static std::vector<int> active_keys;
 
-struct mouse_state {
+struct mouse_button_state {
   bool active;
   int action;
   int mods;
 };
-mouse_state left_button;
-mouse_state right_button;
-mouse_state middle_button;
+static mouse_button_state left_button;
+static mouse_button_state right_button;
+static mouse_button_state middle_button;
 
 static dvec2 cursor_pos;
 
@@ -44,7 +44,11 @@ Input::Input(Window* window) {
     };
     glfwSetMouseButtonCallback(native_window, mouse_callback);
 
-    auto cursor_callback = [](GLFWwindow*, double x, double y) { cursor_pos = {x, y}; };
+    auto cursor_callback = [](GLFWwindow* window, double x, double y) {
+      int w, h;
+      glfwGetFramebufferSize(window, &w, &h);
+      cursor_pos = {x / w, y / w};
+    };
     glfwSetCursorPosCallback(native_window, cursor_callback);
 
     input_initialized = true;
@@ -59,24 +63,15 @@ void Input::poll_keys() {
 }
 
 void Input::poll_mouse() {
-  if (left_button.active && _mouse_bindings[GLFW_MOUSE_BUTTON_LEFT]) {
-    _mouse_bindings[GLFW_MOUSE_BUTTON_LEFT](InputAction(left_button.action));
-    if (left_button.action == GLFW_RELEASE) {
-      left_button.active = false;
+  auto poll_helper = [this](mouse_button_state& button, int glfw_button) {
+    if (button.active && _mouse_bindings[glfw_button]) {
+      _mouse_bindings[glfw_button](InputAction(button.action));
+      button.active = button.action != GLFW_RELEASE;
     }
-  }
-  if (right_button.active && _mouse_bindings[GLFW_MOUSE_BUTTON_RIGHT]) {
-    _mouse_bindings[GLFW_MOUSE_BUTTON_RIGHT](InputAction(right_button.action));
-    if (right_button.action == GLFW_RELEASE) {
-      right_button.active = false;
-    }
-  }
-  if (middle_button.active && _mouse_bindings[GLFW_MOUSE_BUTTON_MIDDLE]) {
-    _mouse_bindings[GLFW_MOUSE_BUTTON_MIDDLE](InputAction(middle_button.action));
-    if (middle_button.action == GLFW_RELEASE) {
-      middle_button.active = false;
-    }
-  }
+  };
+  poll_helper(left_button, GLFW_MOUSE_BUTTON_LEFT);
+  poll_helper(right_button, GLFW_MOUSE_BUTTON_RIGHT);
+  poll_helper(middle_button, GLFW_MOUSE_BUTTON_MIDDLE);
 }
 
 dvec2 Input::cursor_position() const {

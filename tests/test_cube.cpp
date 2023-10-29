@@ -2,12 +2,12 @@
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Clock.hpp"
-#include "core/Actor.hpp"
+#include "core/Entity.hpp"
 #include "core/Engine.hpp"
 
 using namespace R3;
 
-class Cube : public Actor {
+class Cube : public Entity {
 public:
   Cube() {
     float vertices[] = {
@@ -66,7 +66,7 @@ int main(void) {
   Cube cube;
 
   Engine* engine = Engine::instance();
-  engine->add_actor(&cube);
+  engine->add_entity(&cube);
 
   while (engine->running()) {
     engine->update();

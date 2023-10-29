@@ -18,6 +18,9 @@ public:
 
   const vec3& position() const { return _position; }
 
+public:
+  bool attached = false;
+
 private:
   vec3 _position{0.0f, 0.0f, -3.0f};
   vec3 _front{0.0f, 0.0f, 1.0f};
@@ -26,8 +29,6 @@ private:
   float _yaw{90};
   float _pitch{0};
   float _fov{45};
-
-
 };
 
 } // namespace R3

@@ -6,10 +6,10 @@
 
 namespace R3 {
 
-class Actor {
+class Entity {
 public:
-  Actor();
-  virtual ~Actor();
+  Entity();
+  virtual ~Entity();
 
   void set_mesh(Mesh mesh) { _mesh.assign(mesh); }
   void set_shader(Shader shader) { _shader.assign(shader); }
