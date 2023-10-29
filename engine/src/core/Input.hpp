@@ -1,33 +1,43 @@
 #pragma once
 #include <array>
 #include <functional>
+#include "api/Math.hpp"
 #include "core/Window.hpp"
 
 namespace R3 {
 
-enum class KeyAction : int8_t;
-enum class KeyInput : int16_t;
-using key_binding_t = std::function<void(KeyAction action)>;
+enum class InputAction : int8_t;
+enum class Key : int16_t;
+enum class MouseButton : int8_t;
+using key_binding_t = std::function<void(InputAction action)>;
+using mouse_binding_t = std::function<void(InputAction action)>;
 
 class Input {
 public:
   Input(Window* window);
-  void set_key_binding(KeyInput key, key_binding_t key_binding) { _key_bindings[(size_t)key] = key_binding; }
+  void set_key_binding(Key key, key_binding_t key_binding) { _key_bindings[(size_t)key] = key_binding; }
+  void set_mouse_binding(MouseButton button, mouse_binding_t mouse_binding) {
+    _mouse_bindings[(size_t)button] = mouse_binding;
+  }
 
   void poll_keys();
+  void poll_mouse();
+  dvec2 cursor_position() const;
 
 private:
   std::array<key_binding_t, 348> _key_bindings;
+  std::array<mouse_binding_t, 3> _mouse_bindings;
+  Window *_window;
 };
 
 
-enum class KeyAction : int8_t {
+enum class InputAction : int8_t {
   Release = 0,
   Press = 1,
   Repeat = 2
 };
 
-enum class KeyInput : int16_t {
+enum class Key : int16_t {
   Unknown = -1,
   Space = 32,
   Apostrophe = 39,
@@ -149,6 +159,12 @@ enum class KeyInput : int16_t {
   RightAlt = 346,
   RightSuper = 347,
   Menu = 348,
+};
+
+enum class MouseButton : int8_t {
+  Left = 0,
+  Right = 1,
+  Middle = 2,
 };
 
 } // namespace R3

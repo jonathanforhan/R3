@@ -71,7 +71,7 @@ void Window::resize(int32_t width, int32_t height) {
 
 float Window::aspect_ratio() const {
   int width, height;
-  glfwGetWindowSize(_window, &width, &height);
+  glfwGetFramebufferSize(_window, &width, &height);
   return static_cast<float>(width) / static_cast<float>(height);
 }
 
