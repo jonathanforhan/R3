@@ -1,18 +1,24 @@
 #include "Entity.hpp"
 #include "core/Engine.hpp"
+#include "core/Component.hpp"
 
 namespace R3 {
 
-Entity::Entity()
-    : model(mat4(1.0f)),
-      _shader(),
-      _texture(),
-      _mesh() {}
+void Entity::add_component(Component* component) {
+  component->parent = this;
+  component->initialize();
+  component->parent = nullptr;
+  _components.push_back(component);
+}
 
-Entity::~Entity() {
-  _shader.destroy();
-  _texture.destroy();
-  _mesh.destroy();
+void Entity::remove_component(Component* component) {
+  auto it = std::ranges::find(_components, component);
+  if (it != _components.end()) {
+    (*it)->parent = this;
+    (*it)->deinitialize();
+    (*it)->parent = nullptr;
+    _components.erase(it);
+  }
 }
 
 } // namespace R3

@@ -1,15 +1,15 @@
 #include "core/Camera.hpp"
 #include <algorithm>
-#include <cmath>
+#include "api/Math.hpp"
 
 namespace R3 {
 
 void Camera::translate_forward(float magnitude) {
-  _position += magnitude * vec3(_front.x, 0, _front.z);
+  _position += magnitude * glm::normalize(vec3(_front.x, 0, _front.z));
 }
 
 void Camera::translate_backward(float magnitude) {
-  _position -= magnitude * vec3(_front.x, 0, _front.z);
+  _position -= magnitude * glm::normalize(vec3(_front.x, 0, _front.z));
 }
 
 void Camera::translate_left(float magnitude) {

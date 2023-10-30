@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -20,7 +20,7 @@ protected:
 
 public:
   virtual void predraw() = 0;
-  virtual void draw(RendererPrimitive primitive, uint32_t n_indices) = 0;
+  virtual void draw(RendererPrimitive primitive, uint32 n_indices) = 0;
 };
 
 } // namespace R3

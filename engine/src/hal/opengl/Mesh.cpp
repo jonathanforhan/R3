@@ -2,81 +2,43 @@
 
 #include "core/Mesh.hpp"
 #include <glad/glad.h>
-#include <numeric>
-#include "api/Log.hpp"
 
 namespace R3 {
 
-Mesh::Mesh(std::span<float> vertices, std::span<uint32_t> stride, std::span<uint32_t> indices) {
-  write_buffer(vertices, stride, indices);
-}
+Mesh::Mesh(std::span<Vertex> vertices, std::span<uint32> indices) {
+  glGenVertexArrays(1, &_vao);
+  glGenBuffers(1, &_vbo);
+  glGenBuffers(1, &_ebo);
 
-void Mesh::assign(Mesh mesh) {
-  if (mesh._vao == _vao) {
-    return;
-  }
-  destroy();
-  _vao = mesh._vao;
-  _vbo = mesh._vbo;
-  _ebo = mesh._ebo;
-  _number_of_indices = mesh._number_of_indices;
-}
+  glBindVertexArray(_vao);
 
-void Mesh::destroy() {
-  if (_vao >= 0) {
-    GLuint vao = static_cast<GLuint>(_vao);
-    glDeleteVertexArrays(1, &vao);
-  }
-  if (_vbo >= 0) {
-    GLuint vbo = static_cast<GLuint>(_vbo);
-    glDeleteBuffers(1, &vbo);
-  }
-  if (_ebo >= 0) {
-    GLuint ebo = static_cast<GLuint>(_ebo);
-    glDeleteBuffers(1, &ebo);
-  }
-
-  _vao = _vbo = _ebo = -1;
-}
-
-void Mesh::write_buffer(std::span<float> vertices, std::span<uint32_t> stride, std::span<uint32_t> indices) {
-  destroy();
-  _number_of_indices = static_cast<uint32_t>(indices.size());
-
-  GLuint vao, buffers[2];
-  glGenVertexArrays(1, &vao);
-  glGenBuffers(2, buffers);
-  glBindVertexArray(vao);
-
-  glBindBuffer(GL_ARRAY_BUFFER, buffers[0]);
+  glBindBuffer(GL_ARRAY_BUFFER, _vbo);
   glBufferData(GL_ARRAY_BUFFER, vertices.size_bytes(), vertices.data(), GL_STATIC_DRAW);
 
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffers[1]);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, _ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size_bytes(), indices.data(), GL_STATIC_DRAW);
 
-  uint32_t byte_span = std::reduce(stride.begin(), stride.end()) * sizeof(float);
-  uint8_t* byte_index = 0;
-
-  for (uint32_t i = 0; i < stride.size(); i++) {
-    glVertexAttribPointer(i, stride[i], GL_FLOAT, GL_FALSE, byte_span, byte_index);
-    glEnableVertexAttribArray(i);
-    byte_index += stride[i] * sizeof(float);
-  }
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+  glEnableVertexAttribArray(0);
+  glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+  glEnableVertexAttribArray(1);
+  glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texture_coords));
+  glEnableVertexAttribArray(2);
 
   glBindBuffer(GL_ARRAY_BUFFER, NULL);
   glBindVertexArray(NULL);
+}
 
-  _vao = vao, _vbo = buffers[0], _ebo = buffers[1];
+void Mesh::destroy() {
+  glDeleteVertexArrays(1, &_vao);
+  glDeleteBuffers(1, &_vbo);
+  glDeleteBuffers(1, &_ebo);
 }
 
 void Mesh::bind() const {
-  glBindVertexArray(static_cast<uint32_t>(_vao));
+  glBindVertexArray(_vao);
 }
 
-void Mesh::bind_null() const {
-  glBindVertexArray(NULL);
-}
-
-} // namespace R3
+}// namespace R3
 
 #endif // R3_OPENGL

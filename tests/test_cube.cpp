@@ -2,71 +2,81 @@
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Clock.hpp"
-#include "core/Entity.hpp"
+#include "core/Actor.hpp"
 #include "core/Engine.hpp"
+#include "components/Draw.hpp"
 
 using namespace R3;
 
-class Cube : public Entity {
+Vertex vertices[] = {
+    // positions         colors              texture coords
+    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+
+    {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+
+    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+
+    {{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+
+    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+
+    {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
+    {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+};
+uint32 indices[] = {
+    0,  1,  3,  1,  2,  3,  4,  5,  7,  5,  6,  7,  8,  9,  11, 9,  10, 11,
+    12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 21, 23, 21, 22, 23,
+};
+
+class Cube : public Actor {
 public:
-  Cube() {
-    float vertices[] = {
-        // positions         colors            texture coords
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f,  -0.5f, 0.5f,  0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, 0.5f,  0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, 0.5f,  0.5f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-
-        0.5f,  0.5f,  -0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, 0.5f,  -0.5f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f,  0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        0.5f,  -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        0.5f,  -0.5f, 0.5f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-
-        -0.5f, 0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        -0.5f, 0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-
-        0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f,  0.5f,  -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, 0.5f,  -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, 0.5f,  0.5f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-
-        0.5f,  -0.5f, 0.5f,  1.0f, 0.0f, 0.0f, 1.0f, 1.0f, // top right
-        0.5f,  -0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f, // bottom right
-        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, // bottom left
-        -0.5f, -0.5f, 0.5f,  1.0f, 1.0f, 0.0f, 0.0f, 1.0f, // top left
-    };
-    uint32_t stride[] = {3, 3, 2};
-    uint32_t indices[] = {
-        0,  1,  3,  1,  2,  3,  4,  5,  7,  5,  6,  7,  8,  9,  11, 9,  10, 11,
-        12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 21, 23, 21, 22, 23,
-    };
-    set_mesh({vertices, stride, indices});
-    set_shader({ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"});
-    set_texture({"textures/container.jpg", "uni_texture"});
-
-    model = glm::translate(model, vec3(0.5f, -0.5f, 0.0f));
+  Cube(vec3 starting_pos) {
+    set_mesh("M_Cube");
+    set_shader("S_Default");
+    set_texture("T_Grass");
+    transform = glm::translate(transform, starting_pos);
   }
 
   void tick(double delta_time) override {
-    model = glm::rotate(model, static_cast<float>(delta_time), vec3(0.0f, 0.0f, 1.0f));
+    //transform = glm::rotate(transform, static_cast<float>(delta_time), vec3(0, 1, 0));
   }
 };
 
 int main(void) {
   LOG(Info, "Running Cube Test...");
-  Engine::initialize();
-
-  Cube cube;
 
   Engine* engine = Engine::instance();
-  engine->add_entity(&cube);
+
+  engine->register_component("EC_Draw", new ec::Draw);
+  engine->register_mesh("M_Cube", {vertices, indices});
+  engine->register_shader("S_Default", {ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"});
+  // engine->register_texture2D("T_Container", {"textures/container.jpg", "u_texture"});
+  engine->register_texture2D("T_Grass", {"textures/grass.jpg", "u_texture"});
+
+  for (int32 i = -50; i < 50; i++) {
+    for (int32 j = -50; j < 50; j++) {
+      Cube* cube = new Cube({i, 0, j});
+      cube->add_component(engine->component_ptr("EC_Draw"));
+      engine->add_entity(cube);
+    }
+  }
 
   while (engine->running()) {
     engine->update();

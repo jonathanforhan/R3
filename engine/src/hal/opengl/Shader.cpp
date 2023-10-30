@@ -10,7 +10,7 @@
 
 namespace R3 {
 
-Shader::Shader(ShaderType type, const char* vert, const char* frag) {
+Shader::Shader(ShaderType type, std::string_view vert, std::string_view frag) {
   switch (type) {
     case ShaderType::GLSL:
       import_glsl(vert, frag);
@@ -22,30 +22,14 @@ Shader::Shader(ShaderType type, const char* vert, const char* frag) {
       CHECKF(type != ShaderType::SPIRV, "OpenGL Renderer has not yet implented SPIRV");
       break;
   }
-  use();
-}
-
-void Shader::assign(Shader shader) {
-  if (_id == shader._id) {
-    return;
-  }
-  destroy();
-  *this = shader;
-}
-
-void R3::Shader::destroy() {
-  if (_id >= 0)
-    glDeleteShader(_id);
-  _id = -1;
-}
-
-void Shader::use() {
-  CHECK(_id >= 0);
   glUseProgram(_id);
 }
 
-void Shader::import_glsl(const char* vert, const char* frag) {
-  destroy();
+void Shader::destroy() {
+  glDeleteShader(_id);
+}
+
+void Shader::import_glsl(std::string_view vert, std::string_view frag) {
   std::string vertex_string, fragment_string;
   std::ifstream vertex_file, fragment_file;
 
@@ -53,8 +37,8 @@ void Shader::import_glsl(const char* vert, const char* frag) {
   fragment_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
 
   try {
-    vertex_file.open(vert);
-    fragment_file.open(frag);
+    vertex_file.open(vert.data());
+    fragment_file.open(frag.data());
 
     std::stringstream vss, fss;
     vss << vertex_file.rdbuf();
@@ -108,8 +92,8 @@ void Shader::import_glsl(const char* vert, const char* frag) {
   _id = program;
 }
 
-uint32_t Shader::location(const char* uniform) const {
-  uint32_t loc = glGetUniformLocation(_id, uniform);
+uint32 Shader::location(std::string_view uniform) const {
+  uint32_t loc = glGetUniformLocation(_id, uniform.data());
   CHECK(loc >= 0);
   return loc;
 }

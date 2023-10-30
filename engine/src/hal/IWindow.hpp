@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -9,8 +9,8 @@ protected:
   virtual void show() = 0;
   virtual void hide() = 0;
   virtual bool is_visible() const = 0;
-  virtual void resize(int32_t width, int32_t height) = 0;
-  virtual void size(int* width, int* height) const = 0;
+  virtual void resize(int32 width, int32 height) = 0;
+  virtual void size(int32* width, int32* height) const = 0;
   virtual float aspect_ratio() const = 0;
   virtual bool should_close() const = 0;
   virtual void update() = 0;

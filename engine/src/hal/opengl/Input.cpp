@@ -25,6 +25,8 @@ Input::Input(Window* window) {
     GLFWwindow* native_window = reinterpret_cast<GLFWwindow*>(window->native_ptr());
 
     auto key_callback = [](GLFWwindow*, int key, int scancode, int action, int mods) {
+      (void)scancode;
+      (void)mods;
       if (action == GLFW_PRESS) {
         active_keys.push_back(key);
       } else if (action == GLFW_RELEASE) {
@@ -58,7 +60,9 @@ Input::Input(Window* window) {
 
 void Input::poll_keys() {
   for (int key : active_keys) {
-    _key_bindings[key](static_cast<InputAction>(glfwGetKey(reinterpret_cast<GLFWwindow*>(_window->native_ptr()), key)));
+    if (_key_bindings[key]) {
+      _key_bindings[key](static_cast<InputAction>(glfwGetKey(reinterpret_cast<GLFWwindow*>(_window->native_ptr()), key)));
+    }
   }
 }
 

@@ -5,7 +5,6 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 // clang-format on
-#include "api/Math.hpp"
 #include "core/Window.hpp"
 
 namespace R3::opengl {
@@ -18,12 +17,12 @@ Renderer::Renderer(Window* window)
 Renderer::~Renderer() {}
 
 void Renderer::predraw() {
-  glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+  glClearColor(0.1f, 0.4f, 0.6f, 1.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void Renderer::draw(RendererPrimitive primitive, uint32_t n_indices) {
-  uint32_t uprim{};
+void Renderer::draw(RendererPrimitive primitive, uint32 n_indices) {
+  uint32 uprim{};
   switch (primitive) {
     case RendererPrimitive::Triangles:
       uprim = GL_TRIANGLES;

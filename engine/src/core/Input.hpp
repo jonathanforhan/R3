@@ -1,14 +1,14 @@
 #pragma once
 #include <array>
 #include <functional>
-#include "api/Math.hpp"
+#include "api/Types.hpp"
 #include "core/Window.hpp"
 
 namespace R3 {
 
-enum class InputAction : int8_t;
-enum class Key : int16_t;
-enum class MouseButton : int8_t;
+enum class InputAction : int8;
+enum class Key : int16;
+enum class MouseButton : int8;
 using key_binding_t = std::function<void(InputAction action)>;
 using mouse_binding_t = std::function<void(InputAction action)>;
 
@@ -31,13 +31,13 @@ private:
 };
 
 
-enum class InputAction : int8_t {
+enum class InputAction : int8 {
   Release = 0,
   Press = 1,
   Repeat = 2
 };
 
-enum class Key : int16_t {
+enum class Key : int16 {
   Unknown = -1,
   Space = 32,
   Apostrophe = 39,
@@ -161,7 +161,7 @@ enum class Key : int16_t {
   Menu = 348,
 };
 
-enum class MouseButton : int8_t {
+enum class MouseButton : int8 {
   Left = 0,
   Right = 1,
   Middle = 2,

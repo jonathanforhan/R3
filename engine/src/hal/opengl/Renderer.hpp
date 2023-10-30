@@ -20,7 +20,7 @@ public:
   ~Renderer();
 
   void predraw() override;
-  void draw(RendererPrimitive primitive, uint32_t n_indices) override;
+  void draw(RendererPrimitive primitive, uint32 n_indices) override;
 
 private:
   Window* _window;

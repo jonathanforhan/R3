@@ -1,5 +1,6 @@
 #pragma once
-#include <cstdint>
+#include <string_view>
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -8,31 +9,29 @@ enum class ShaderType { GLSL, HLSL, SPIRV };
 class Shader {
 public:
   Shader() = default;
-  Shader(ShaderType type, const char* vert, const char* frag);
-
-  void assign(Shader shader);
+  Shader(ShaderType type, std::string_view vert, std::string_view frag);
   void destroy();
-  void use();
-  bool valid() const { return _id >= 0; }
 
-  uint32_t location(const char* uniform) const;
-  void write_uniform(uint32_t location, float v0);
-  void write_uniform(uint32_t location, int v0);
-  void write_uniform(uint32_t location, unsigned v0);
-  template <typename T>
-  void write_uniform(uint32_t location, T v0, T v1);
-  template <typename T>
-  void write_uniform(uint32_t location, T v0, T v1, T v2);
-  template <typename T>
-  void write_uniform(uint32_t location, T v0, T v1, T v2, T v3);
-  template <typename T>
-  void write_uniform(uint32_t location, const T& v0);
+  uint32 id() const { return _id; }
 
-private:
-  void import_glsl(const char* vert, const char* frag);
+  uint32 location(std::string_view uniform) const;
+  void write_uniform(uint32 location, float v0);
+  void write_uniform(uint32 location, int v0);
+  void write_uniform(uint32 location, unsigned v0);
+  template <typename T>
+  void write_uniform(uint32 location, T v0, T v1);
+  template <typename T>
+  void write_uniform(uint32 location, T v0, T v1, T v2);
+  template <typename T>
+  void write_uniform(uint32 location, T v0, T v1, T v2, T v3);
+  template <typename T>
+  void write_uniform(uint32 location, const T& v0);
 
 private:
-  int64_t _id = -1;
+  void import_glsl(std::string_view vert, std::string_view frag);
+
+private:
+  uint32 _id{0};
 };
 
 } // namespace R3
