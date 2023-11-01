@@ -7,9 +7,8 @@ namespace R3::ec {
 
 class Draw : public Component {
 public:
-  ~Draw() { LOG(Info, "KILLED"); }
-  void initialize() override;
-  void tick(double) override;
+    void initialize() override;
+    void tick(double) override;
 };
 
 } // namespace R3::ec

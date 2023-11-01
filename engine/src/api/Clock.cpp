@@ -9,7 +9,7 @@
 namespace R3 {
 
 double Clock::current_time() {
-  return glfwGetTime();
+    return glfwGetTime();
 }
 
 } // namespace R3

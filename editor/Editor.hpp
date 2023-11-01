@@ -2,16 +2,16 @@
 #include <QMainWindow>
 
 class Editor : public QMainWindow {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  Editor(QWidget* parent = nullptr);
-  ~Editor();
+    Editor(QWidget* parent = nullptr);
+    ~Editor();
 
-  void closeEvent(QCloseEvent* event) override;
+    void closeEvent(QCloseEvent* event) override;
 
-  int runEngine();
+    int runEngine();
 
 signals:
-  void finished();
+    void finished();
 };

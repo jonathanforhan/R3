@@ -4,17 +4,17 @@
 #if R3_LOGGING_ENABLED
 namespace R3::detail::logging {
 inline void _log() {
-  std::cout << std::endl;
+    std::cout << std::endl;
 }
 template <typename T, typename... Args>
 inline void _log(T x, Args&&... args) {
-  std::cout << x << ' ';
-  _log(args...);
+    std::cout << x << ' ';
+    _log(args...);
 }
 template <typename... Args>
 inline void _logf(const char* fmt, Args&&... args) {
-  printf(fmt, args...);
-  printf("\n");
+    printf(fmt, args...);
+    printf("\n");
 }
 } // namespace R3::detail::logging
 
@@ -47,14 +47,14 @@ inline void _logf(const char* fmt, Args&&... args) {
 #define R3_logf_Error void(0)
 #endif
 
-#define LOG(_Level, ...)                             \
-  do {                                               \
-    R3_log_##_Level("R3 " #_Level ":", __VA_ARGS__); \
-  } while (0)
-#define LOGF(_Level, ...)                             \
-  do {                                                \
-    R3_logf_##_Level("R3 " #_Level ": " __VA_ARGS__); \
-  } while (0)
+#define LOG(_Level, ...)                                 \
+    do {                                                 \
+        R3_log_##_Level("R3 " #_Level ":", __VA_ARGS__); \
+    } while (0)
+#define LOGF(_Level, ...)                                 \
+    do {                                                  \
+        R3_logf_##_Level("R3 " #_Level ": " __VA_ARGS__); \
+    } while (0)
 #else
 #define LOG(_Level, ...) void(0)
 #define LOGF(_Level, ...) void(0)

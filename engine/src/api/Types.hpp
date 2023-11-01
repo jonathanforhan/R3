@@ -1,8 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <glm/glm.hpp>
 #include <string_view>
 #include <unordered_map>
-#include <glm/glm.hpp>
 
 namespace R3 {
 

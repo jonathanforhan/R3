@@ -54,31 +54,37 @@ public:
     transform = glm::translate(transform, starting_pos);
   }
 
+  void translate(vec3 pos) {
+    transform = glm::translate(transform, pos);
+  }
+
   void tick(double delta_time) override {
-    //transform = glm::rotate(transform, static_cast<float>(delta_time), vec3(0, 1, 0));
+    transform = glm::rotate(transform, static_cast<float>(delta_time), vec3(0, 1, 0));
   }
 };
 
 int main(void) {
-  LOG(Info, "Running Cube Test...");
+#if defined _DEBUG || !defined NDEBUG
+  LOG(Info, "Running Debug Cube Test...");
+#elif
+  LOG(Info, "Running Release Cube Test...");
+#endif
 
   Engine* engine = Engine::instance();
 
   engine->register_component("EC_Draw", new ec::Draw);
   engine->register_mesh("M_Cube", {vertices, indices});
   engine->register_shader("S_Default", {ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"});
-  // engine->register_texture2D("T_Container", {"textures/container.jpg", "u_texture"});
   engine->register_texture2D("T_Grass", {"textures/grass.jpg", "u_texture"});
 
-  for (int32 i = -50; i < 50; i++) {
-    for (int32 j = -50; j < 50; j++) {
-      Cube* cube = new Cube({i, 0, j});
-      cube->add_component(engine->component_ptr("EC_Draw"));
-      engine->add_entity(cube);
+  for (int32 i = -20; i < 20; i++) {
+    for (int32 j = -20; j < 20; j++) {
+      for (int32 k = -20; k < 20; k++) {
+        Cube* cube = new Cube({i, j, k});
+        cube->add_component(engine->component_ptr("EC_Draw"));
+        engine->add_entity(cube);
+      }
     }
   }
-
-  while (engine->running()) {
-    engine->update();
-  }
+  engine->loop();
 }

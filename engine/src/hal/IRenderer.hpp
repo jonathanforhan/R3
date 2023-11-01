@@ -4,23 +4,23 @@
 namespace R3 {
 
 enum class RendererPrimitive {
-  Triangles,
-  Lines,
+    Triangles,
+    Lines,
 };
 
 enum class CullMode {
-  Back,
-  Front,
-  None,
+    Back,
+    Front,
+    None,
 };
 
 class IRenderer {
 protected:
-  IRenderer() = default;
+    IRenderer() = default;
 
 public:
-  virtual void predraw() = 0;
-  virtual void draw(RendererPrimitive primitive, uint32 n_indices) = 0;
+    virtual void predraw() = 0;
+    virtual void draw(RendererPrimitive primitive, uint32 n_indices) = 0;
 };
 
 } // namespace R3
