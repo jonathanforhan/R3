@@ -3,6 +3,7 @@
 #include "api/Math.hpp"
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
+#include "core/ECS.hpp"
 
 using namespace R3;
 
@@ -47,8 +48,7 @@ uint32 indices[] = {
 
 class MyEnt : public Entity {
 public:
-    MyEnt(int x) : x(x) { LOG(Info, "CON", x); }
-    ~MyEnt() { LOG(Info, "DES"); }
+    MyEnt(int x) : x(x) {}
     int x;
 };
 
@@ -59,14 +59,40 @@ int main(void) {
     LOG(Info, "Running Release Cube Test...");
 #endif
 
+    std::cout << std::boolalpha;
+
     struct Point {
-        int x = 1, y = 2;
+        Point(int x, int y)
+            : x(x),
+              y(y),
+              m(1.0f) {}
+        int x, y;
+        mat4 m;
+        const char* s = "Hello, World";
     };
 
-    MyEnt& ent = Entity::create<MyEnt>(4);
-    ent.add_component<Point>();
+    struct Id {
+        Id(MyEnt* ent) {
+            LOG(Info, ent->x);
+            this->ent = ent;
+        }
+        MyEnt* ent;
+    };
 
-    auto& point = ent.get_component<Point>();
+    {
+        MyEnt e0(69);
+        MyEnt e1(1);
+        MyEnt e2(2);
+        e0.add_component<Point>(0, 0);
+        e0.add_component<Id>(&e0);
+        e1.add_component<Point>(1, 1);
+        e2.add_component<Point>(2, 2);
+    }
+    MyEnt e3(3);
+    MyEnt e4(4);
 
-    LOG(Info, point.x, point.y);
+    e3.add_component<Point>(0, 0);
+    e3.add_component<Id>(&e3);
+
+    LOG(Info, e4.has_component<Point>());
 }

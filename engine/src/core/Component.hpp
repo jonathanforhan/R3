@@ -9,6 +9,10 @@ struct ComponentBase {
 
 template <typename T>
 struct Component final : public ComponentBase {
+    Component() {
+        components.reserve(5000);
+    }
+
     std::vector<T> components;
 
     static Component<T>* cast(ComponentBase* ptr) {

@@ -11,6 +11,13 @@ namespace R3 {
 
 class Scene {
 public:
+    Scene() = default;
+    Scene(const Scene&) = delete;
+    void operator=(const Scene&) = delete;
+    static Scene& instance();
+
+private:
+    std::deque<std::unique_ptr<Entity>> _entities;
 };
 
 } // namespace R3
