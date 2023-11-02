@@ -2,18 +2,18 @@
 
 namespace R3 {
 
-class Entity;
+struct ComponentBase {
+    ComponentBase() = default;
+    virtual ~ComponentBase() {}
+};
 
-class Component {
-public:
-    Component() = default;
-    virtual ~Component() {}
+template <typename T>
+struct Component final : public ComponentBase {
+    std::vector<T> components;
 
-    virtual void initialize() {}
-    virtual void deinitialize() {}
-    virtual void tick(double) {}
-
-    Entity* parent{nullptr};
+    static Component<T>* cast(ComponentBase* ptr) {
+        return reinterpret_cast<Component<T>*>(ptr);
+    }
 };
 
 } // namespace R3

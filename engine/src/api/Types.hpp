@@ -63,7 +63,4 @@ using uint32 = uint32_t;
 using uint64 = uint64_t;
 using usize = size_t;
 
-template <typename T>
-using Record = std::unordered_map<std::string, T>;
-
 } // namespace R3

@@ -5,15 +5,13 @@ namespace R3 {
 
 class Entity {
 public:
-    Entity()
-        : _id(0) {}
+    Entity() = default;
     virtual ~Entity() {}
+
     virtual void tick(double){};
 
-    uint64 id() const { return _id; };
-
 private:
-    uint64 _id;
+    uint32 _id = 0;
 };
 
 } // namespace R3
