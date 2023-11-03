@@ -30,6 +30,7 @@ add_subdirectory(extern/glad SYSTEM)
 add_subdirectory(extern/glfw SYSTEM)
 add_subdirectory(extern/glm SYSTEM)
 add_subdirectory(extern/stb SYSTEM)
+add_subdirectory(extern/entt SYSTEM)
 find_package(OpenGL REQUIRED)
 
 include(GNUInstallDirs)
@@ -39,6 +40,7 @@ target_link_libraries(R3_ENGINE PUBLIC
     glfw
     glm
     stb_image
+    EnTT::EnTT
     )
 
 target_compile_definitions(R3_ENGINE PUBLIC
@@ -58,4 +60,6 @@ target_compile_definitions(R3_ENGINE PUBLIC
     -DGLFW_INCLUDE_NONE=1
     -DGLFW_EXPOSE_NATIVE_WIN32=1
     # -DGLFW_EXPOSE_NATIVE_X11=1
+
+    -DENTT_NOEXCEPTION=0
     )

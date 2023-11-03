@@ -3,7 +3,6 @@
 #include "api/Math.hpp"
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
-#include "core/ECS.hpp"
 
 using namespace R3;
 
@@ -79,20 +78,9 @@ int main(void) {
         MyEnt* ent;
     };
 
-    {
-        MyEnt e0(69);
-        MyEnt e1(1);
-        MyEnt e2(2);
-        e0.add_component<Point>(0, 0);
-        e0.add_component<Id>(&e0);
-        e1.add_component<Point>(1, 1);
-        e2.add_component<Point>(2, 2);
-    }
-    MyEnt e3(3);
-    MyEnt e4(4);
+    MyEnt& e0 = Entity::create<MyEnt>(0);
+    MyEnt& e1 = Entity::create<MyEnt>(1);
 
-    e3.add_component<Point>(0, 0);
-    e3.add_component<Id>(&e3);
-
-    LOG(Info, e4.has_component<Point>());
+    e0.emplace<Point>(1, 2);
+    e0.emplace<Id>(&e0);
 }
