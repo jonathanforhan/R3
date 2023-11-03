@@ -8,7 +8,7 @@ namespace R3 {
 // Every Entity Derives from Entity
 // The Entity class is a universal component on every entt::entity that gets created
 // it provides basic management methods and a tick() method that will get called every gametick
-class Entity : EntityBase {
+class Entity : public EntityBase {
 protected:
     Entity() = default;
 
@@ -18,6 +18,8 @@ public:
     void operator=(const Entity&) = delete;
     Entity& operator=(Entity&&) = default;
     virtual ~Entity() {}
+
+    virtual void tick(double) = 0;
 
     // returns whether the Entity is in a valid state
     [[nodiscard]] bool valid() const {
@@ -79,22 +81,22 @@ public:
     // get entity's component
     template<typename... T>
     [[nodiscard]] decltype(auto) get() {
-        return Scene::instance()._registery.get<T>(_id);
+        return Scene::instance()._registery.get<T...>(_id);
     }
 
     template<typename... T>
     [[nodiscard]] decltype(auto) get() const {
-        return Scene::instance()._registery.get<T>(_id);
+        return Scene::instance()._registery.get<T...>(_id);
     }
 
     template<typename... T>
     [[nodiscard]] auto try_get() {
-        return Scene::instance()._registery.try_get<T>(_id);
+        return Scene::instance()._registery.try_get<T...>(_id);
     }
 
     template<typename... T>
     [[nodiscard]] auto try_get() const {
-        return Scene::instance()._registery.try_get<T>(_id);
+        return Scene::instance()._registery.try_get<T...>(_id);
     }
 };
 

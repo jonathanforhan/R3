@@ -14,6 +14,7 @@ public:
     void operator=(const Scene&) = delete;
 
     static Scene& instance();
+    static entt::registry& registery() { return Scene::instance()._registery; }
 
 private:
     entt::registry _registery;

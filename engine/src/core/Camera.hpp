@@ -22,7 +22,7 @@ public:
     bool attached = false;
 
 private:
-    vec3 _position{0.0f, 1.0f, -60.0f};
+    vec3 _position{0.0f, 0.0f, -3.0f};
     vec3 _front{0.0f, 0.0f, 1.0f};
     vec3 _up{0.0f, 1.0f, 0.0f};
 

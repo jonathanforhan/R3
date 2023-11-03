@@ -34,6 +34,11 @@ void Texture2D::destroy() {
     glDeleteTextures(1, &_id);
 }
 
+void Texture2D::bind(uint8_t index) const {
+    glActiveTexture(GL_TEXTURE0 + index);
+    glBindTexture(GL_TEXTURE_2D, _id);
+}
+
 } // namespace R3
 
 #endif // R3_OPENGL

@@ -27,6 +27,8 @@ public:
     template <typename T>
     void write_uniform(uint32 location, const T& v0);
 
+    void use() const;
+
 private:
     void import_glsl(std::string_view vert, std::string_view frag);
 

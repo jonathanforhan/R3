@@ -29,6 +29,10 @@ void Shader::destroy() {
     glDeleteShader(_id);
 }
 
+void Shader::use() const {
+    glUseProgram(_id);
+}
+
 void Shader::import_glsl(std::string_view vert, std::string_view frag) {
     std::string vertex_string, fragment_string;
     std::ifstream vertex_file, fragment_file;

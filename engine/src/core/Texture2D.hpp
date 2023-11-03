@@ -13,6 +13,8 @@ public:
     std::string_view name() const { return _name; }
     void rename(std::string_view name) { _name = name; }
 
+    void bind(uint8_t index) const;
+
 private:
     uint32 _id{0};
     std::string _name;
