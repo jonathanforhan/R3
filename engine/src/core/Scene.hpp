@@ -1,28 +1,41 @@
-#pragma once 
+#pragma once
 #include <entt/entt.hpp>
 #include "api/Types.hpp"
-#include "core/EntityBase.hpp"
 
 namespace R3 {
 
 class Scene {
-private:
+public:
     Scene() = default;
 
-public:
-    Scene(const Scene&) = delete;
-    void operator=(const Scene&) = delete;
+    template <typename... T>
+    [[nodiscard]] decltype(auto) componentView();
 
-    static Scene& instance();
-    static entt::registry& registery() { return Scene::instance()._registery; }
+    template <typename... T>
+    [[nodiscard]] decltype(auto) componentView() const;
+
+public:
+    mat4 view{1.0f};
+    mat4 projection{1.0f};
 
 private:
-    entt::registry _registery;
+    entt::registry m_registry;
 
-    // Entity is a friend class to access _entities
-    // all _entities management is done through Entity
+    // Entity is a friend class to access the registry
+    // a lot of entity management is done through Entity
     // this provides cleaner api at cost of being non-local
     friend class Entity;
+    friend class Engine;
 };
+
+template <typename... T>
+inline decltype(auto) Scene::componentView() {
+    return m_registry.view<T...>();
+}
+
+template <typename... T>
+inline decltype(auto) Scene::componentView() const {
+    return m_registry.view<T...>();
+}
 
 } // namespace R3

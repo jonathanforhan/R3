@@ -20,11 +20,3 @@ inline std::string _fmt(Args&&... args) {
             throw std::runtime_error(s);                                                                               \
         }                                                                                                              \
     } while (0)
-#define ENSUREF(_Expr, ...)                                                                          \
-    do {                                                                                             \
-        if (!(_Expr)) {                                                                              \
-            auto s = R3::detail::ensure::_fmt("R3 ensure failure: '", #_Expr, "', File: ", __FILE__, \
-                                              ", Line: ", __LINE__, ", Message: ", __VA_ARGS__);     \
-            throw std::runtime_error(s);                                                             \
-        }                                                                                            \
-    } while (0)

@@ -1,20 +1,12 @@
 #pragma once
-#if R3_OPENGL && (R3_VULKAN || R3_DX11 || R3_DX12)
-#elif R3_VULKAN && (R3_DX11 || R3_DX12 || R3_OPENGL)
-#elif R3_DX11 && (R3_DX12 || R3_OPENGL || R3_VULKAN)
-#elif R3_DX12 && (R3_OPENGL || R3_VULKAN || R3_DX11)
-#error "Multiple Renderers"
-#endif
-
-#include <functional>
-#include <vector>
-#include "api/Types.hpp"
+#include <unordered_map>
 #include "core/Renderer.hpp"
+#include "core/Scene.hpp"
 #include "core/Window.hpp"
 
 namespace R3 {
 
-class Engine {
+class Engine final {
 private:
     Engine();
 
@@ -22,29 +14,34 @@ public:
     Engine(const Engine&) = delete;
     void operator=(const Engine&) = delete;
 
-    static void initialize() { (void)instance(); }
-    static Engine& instance();
-    void loop();
-    template <typename Fn>
-    void add_system(Fn&& fn) {
-        _systems.emplace_back(fn);
-    }
-    void draw_indexed(RendererPrimitive primitive, uint32 n_indices);
+    static auto instance() -> Engine&;
 
-    Window& window() { return _window; }
+    // Scene Management
+    auto addScene(const std::string& name, bool setActive = false) -> Scene&;
+    void removeScene(const std::string& name);
+    auto activeScene() -> Scene& { return *m_activeScene; }
+    auto getScene(const std::string& name) -> Scene& { return m_scenes.at(name); }
+    auto isActiveScene(const std::string& name) -> bool const { return &m_scenes.at(name) == m_activeScene; }
+    void setActiveScene(const std::string& name) { m_activeScene = &m_scenes.at(name); }
 
-private:
-    double delta_time() const;
-
-public:
-    mat4 view{mat4(1.0f)};
-    mat4 projection{mat4(1.0f)};
-
-    std::vector<std::function<void(double)>> _systems;
+    template <typename F>
+    void gameLoop(F&& func);
 
 private:
-    Window _window;
-    Renderer _renderer;
+    Window m_window;
+    Renderer m_renderer;
+    std::unordered_map<std::string, Scene> m_scenes;
+    Scene* m_activeScene;
 };
+
+template <typename F>
+inline void Engine::gameLoop(F&& func) {
+    m_window.show();
+    while (!m_window.shouldClose()) {
+        func();
+        m_renderer.render();
+        m_window.update();
+    }
+}
 
 } // namespace R3

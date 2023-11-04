@@ -1,103 +1,147 @@
 #pragma once
-#include "api/Types.hpp"
+#include <entt/entt.hpp>
 #include "core/Scene.hpp"
-#include "core/EntityBase.hpp"
 
 namespace R3 {
 
-// Every Entity Derives from Entity
-// The Entity class is a universal component on every entt::entity that gets created
-// it provides basic management methods and a tick() method that will get called every gametick
-class Entity : public EntityBase {
+class Entity {
 protected:
     Entity() = default;
 
 public:
     Entity(const Entity&) = delete;
-    Entity(Entity&&) = default;
+    Entity(Entity&& src) noexcept
+        : m_id(src.m_id),
+          m_parentScene(src.m_parentScene) {
+        src.m_id = entt::null;
+    }
     void operator=(const Entity&) = delete;
-    Entity& operator=(Entity&&) = default;
+    Entity& operator=(Entity&& src) noexcept {
+        m_id = src.m_id;
+        m_parentScene = src.m_parentScene;
+        src.m_id = entt::null;
+        return *this;
+    }
     virtual ~Entity() {}
 
     virtual void tick(double) = 0;
 
-    // returns whether the Entity is in a valid state
-    [[nodiscard]] bool valid() const {
-        return Scene::instance()._registery.valid(_id);
-    }
+    [[nodiscard]] auto valid() -> bool const;
 
-    // creates a registered entt::entity with a T component on it, T must extend Entity
     template <typename T, typename... Args>
-    [[nodiscard]] static T& create(Args&&... args) {
-        static_assert(std::is_base_of_v<Entity, T>);
-        entt::entity id = (Scene::instance()._registery.create());
-        T& entity = Scene::instance()._registery.emplace<T>(id, std::forward<Args>(args)...);
-        entity._id = id;
-        return entity;
-    }
+    [[nodiscard]] static auto create(Scene* parentScene, Args&&... args) -> T&;
 
-    // destroys the entt registery of the Entity and destoys it's components
-    void destroy() {
-        Scene::instance()._registery.destroy(_id);
-    }
+    void destroy();
 
-    // emplace a component in entity, if component is already attached it's UB
     template <typename T, typename... Args>
-    T& emplace(Args&&... args) {
-        return Scene::instance()._registery.emplace<T>(_id, std::forward<Args>(args)...);
-    }
+    auto emplace(Args&&... args) -> T&;
 
-    // emplace or replace an existing component
     template <typename T, typename... Args>
-    T& emplace_or_replace(Args&&... args) {
-        return Scene::instance()._registery.emplace_or_replace<T>(_id, std::forward<Args>(args)...);
-    }
+    auto emplaceOrReplace(Args&&... args) -> T&;
 
-    // replace component
     template <typename T, typename... Args>
-    T& replace(Args&&... args) {
-        return Scene::instance()._registery.replace<T>(_id, std::forward<Args>(args)...);
-    }
+    auto replace(Args&&... args) -> usize;
 
-    template<typename T, typename... Other>
-    usize remove() {
-        return Scene::instance()._registery.remove<T>(_id);
-    }
+    template <typename T, typename... Other>
+    auto remove() -> usize;
 
-    template<typename T, typename... Other>
-    void erase() {
-        return Scene::instance()._registery.remove<T, Other>(_id);
-    }
+    template <typename T, typename... Other>
+    void erase();
 
-    template<typename Func>
-    void erase_if(Func func) {
-        return Scene::instance()._registery.erase_if<Func>(_id);
-    }
-    template<typename... T>
-    void compact() {
-        return Scene::instance()._registery.compact<T>(_id);
-    }
+    template <typename F>
+    void eraseIf(F func);
 
-    // get entity's component
-    template<typename... T>
-    [[nodiscard]] decltype(auto) get() {
-        return Scene::instance()._registery.get<T...>(_id);
-    }
+    template <typename... T>
+    void compact();
 
-    template<typename... T>
-    [[nodiscard]] decltype(auto) get() const {
-        return Scene::instance()._registery.get<T...>(_id);
-    }
+    template <typename... T>
+    [[nodiscard]] decltype(auto) get();
 
-    template<typename... T>
-    [[nodiscard]] auto try_get() {
-        return Scene::instance()._registery.try_get<T...>(_id);
-    }
+    template <typename... T>
+    [[nodiscard]] decltype(auto) get() const;
 
-    template<typename... T>
-    [[nodiscard]] auto try_get() const {
-        return Scene::instance()._registery.try_get<T...>(_id);
-    }
+    template <typename... T>
+    [[nodiscard]] auto tryGet();
+
+    template <typename... T>
+    [[nodiscard]] auto tryGet() const;
+
+private:
+    entt::entity m_id{entt::null};
+    Scene* m_parentScene{nullptr};
 };
+
+template <typename T, typename... Args>
+inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
+    static_assert(std::is_base_of_v<Entity, T>);
+    entt::entity id = parentScene->m_registry.create();
+    T& entity = parentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
+    entity.m_id = id;
+    entity.m_parentScene = parentScene;
+    return entity;
+}
+
+inline auto Entity::valid() -> bool const {
+    return m_parentScene->m_registry.valid(m_id);
+}
+
+inline void Entity::destroy() {
+    m_parentScene->m_registry.destroy(m_id);
+}
+
+template <typename T, typename... Args>
+inline auto Entity::emplace(Args&&... args) -> T& {
+    return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Args>
+inline auto Entity::emplaceOrReplace(Args&&... args) -> T& {
+    return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Args>
+inline auto Entity::replace(Args&&... args) -> usize {
+    return m_parentScene->m_registry.replace<T>(m_id, std::forward<Args>(args)...);
+}
+
+template <typename T, typename... Other>
+inline auto Entity::remove() -> usize {
+    return m_parentScene->m_registry.replace<T, Other...>(m_id);
+}
+
+template <typename T, typename... Other>
+inline void Entity::erase() {
+    m_parentScene->m_registry.erase<T, Other...>(m_id);
+}
+
+template <typename F>
+inline void Entity::eraseIf(F func) {
+    m_parentScene->m_registry.erase_if<F>(m_id);
+}
+
+template <typename... T>
+inline void Entity::compact() {
+    m_parentScene->m_registry.compact<T...>(m_id);
+}
+
+template <typename... T>
+inline decltype(auto) Entity::get() {
+    return m_parentScene->m_registry.get<T...>(m_id);
+}
+
+template <typename... T>
+inline decltype(auto) Entity::get() const {
+    return m_parentScene->m_registry.get<T...>(m_id);
+}
+
+template <typename... T>
+inline auto Entity::tryGet() {
+    return m_parentScene->m_registry.try_get<T...>(m_id);
+}
+
+template <typename... T>
+inline auto Entity::tryGet() const {
+    return m_parentScene->m_registry.try_get<T...>(m_id);
+}
 
 } // namespace R3

@@ -1,106 +1,128 @@
 #if R3_OPENGL
 
 #include "core/Shader.hpp"
-#include <glad/glad.h>
 #include <fstream>
 #include <sstream>
-#include <string>
+#include <glad/glad.h>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
+#include "api/Todo.hpp"
+
+static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
+    std::string s;
+    std::ifstream ifs;
+    ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+
+    try {
+        ifs.open(shaderFile.data());
+        std::stringstream ss;
+        ss << ifs.rdbuf();
+        ifs.close();
+        s = ss.str();
+    } catch (std::ifstream::failure& e) {
+        LOG(Error, "shader file read failure", shaderFile.data(), e.what());
+    }
+
+    const char* pStr = s.c_str();
+    int success;
+
+    GLuint shader = glCreateShader(shaderType);
+    glShaderSource(shader, 1, &pStr, nullptr);
+    glCompileShader(shader);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success) {
+        char infoLog[512];
+        glGetShaderInfoLog(shader, 512, nullptr, infoLog);
+        LOG(Error, "shader compilation failure:", shaderFile.data(), infoLog);
+    }
+
+    return shader;
+}
 
 namespace R3 {
 
-Shader::Shader(ShaderType type, std::string_view vert, std::string_view frag) {
+Shader::Shader(ShaderType type, std::string_view vs, std::string_view fs) {
     switch (type) {
         case ShaderType::GLSL:
-            import_glsl(vert, frag);
+            importGLSL(vs, fs);
             break;
         case ShaderType::HLSL:
-            CHECKF(type != ShaderType::HLSL, "OpenGL Renderer is incompatible with HLSL");
+            importHLSL(vs, fs);
             break;
         case ShaderType::SPIRV:
-            CHECKF(type != ShaderType::SPIRV, "OpenGL Renderer has not yet implented SPIRV");
+            importSPIRV(vs, fs);
             break;
     }
-    glUseProgram(_id);
 }
 
-void Shader::destroy() {
-    glDeleteShader(_id);
+Shader::~Shader() {
+    glDeleteShader(m_id);
 }
 
-void Shader::use() const {
-    glUseProgram(_id);
+void Shader::bind() {
+    glUseProgram(m_id);
 }
 
-void Shader::import_glsl(std::string_view vert, std::string_view frag) {
-    std::string vertex_string, fragment_string;
-    std::ifstream vertex_file, fragment_file;
+auto Shader::location(std::string_view uniform) -> uint32 const {
+    uint32 location = glGetUniformLocation(m_id, uniform.data());
+    CHECK(location >= 0);
+    return location;
+}
 
-    vertex_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    fragment_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-
-    try {
-        vertex_file.open(vert.data());
-        fragment_file.open(frag.data());
-
-        std::stringstream vss, fss;
-        vss << vertex_file.rdbuf();
-        fss << fragment_file.rdbuf();
-
-        vertex_file.close();
-        fragment_file.close();
-
-        vertex_string = vss.str();
-        fragment_string = fss.str();
-    } catch (std::ifstream::failure& e) {
-        LOG(Error, "shader file read failed: ", e.what());
-    }
-
-    const char* vstr = vertex_string.c_str();
-    const char* fstr = fragment_string.c_str();
-
+void Shader::importGLSL(std::string_view vs, std::string_view fs) {
+    uint32 vertexShader = importGLSLHelper(vs, GL_VERTEX_SHADER);
+    uint32 fragmentShader = importGLSLHelper(fs, GL_FRAGMENT_SHADER);
     int success;
-    char info_log[512];
 
-    uint32_t vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vstr, nullptr);
-    glCompileShader(vertex);
-    glGetShaderiv(vertex, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(vertex, 512, nullptr, info_log);
-        LOG(Error, "vertex shader compilation failed: ", info_log);
-    }
-
-    uint32_t fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fstr, nullptr);
-    glCompileShader(fragment);
-    glGetShaderiv(fragment, GL_COMPILE_STATUS, &success);
-    if (!success) {
-        glGetShaderInfoLog(fragment, 512, nullptr, info_log);
-        LOG(Error, "fragment shader compilation failed: ", info_log);
-    }
-
-    uint32_t program = glCreateProgram();
-    glAttachShader(program, vertex);
-    glAttachShader(program, fragment);
+    uint32 program = glCreateProgram();
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
     glLinkProgram(program);
     glGetProgramiv(program, GL_LINK_STATUS, &success);
     if (!success) {
-        glGetProgramInfoLog(program, 512, nullptr, info_log);
-        LOG(Error, "shader program linking failed: ", info_log);
+        char infoLog[512];
+        glGetProgramInfoLog(program, 512, nullptr, infoLog);
+        LOG(Error, "shader program linking failure", infoLog);
     }
-    glDeleteShader(vertex);
-    glDeleteShader(fragment);
+    glDeleteShader(vertexShader);
+    glDeleteShader(fragmentShader);
 
-    _id = program;
+    m_id = program;
 }
 
-uint32 Shader::location(std::string_view uniform) const {
-    uint32_t loc = glGetUniformLocation(_id, uniform.data());
-    CHECK(loc >= 0);
-    return loc;
+void Shader::importHLSL(std::string_view vs, std::string_view fs) {
+    (void)vs;
+    (void)fs;
+    TODO("import HLSL");
 }
+
+void Shader::importSPIRV(std::string_view vs, std::string_view fs) {
+    (void)vs;
+    (void)fs;
+    TODO("import SPIRV");
+}
+
+#if 0
+template <typename T>
+void Shader::writeUniform(uint32 location, T v0) {
+}
+
+template <typename T>
+void Shader::writeUniform(uint32 location, T v0, T v1) {
+}
+
+template <typename T>
+void Shader::writeUniform(uint32 location, T v0, T v1, T v2) {
+}
+
+template <typename T>
+void Shader::writeUniform(uint32 location, T v0, T v1, T v2, T v3) {
+}
+
+template <typename T>
+void Shader::writeUniform(uint32 location, const T& v0) {
+}
+#endif
 
 } // namespace R3
 

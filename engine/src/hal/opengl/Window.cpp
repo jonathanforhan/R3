@@ -1,6 +1,6 @@
 #if R3_OPENGL
 
-#include "Window.hpp"
+#include "core/Window.hpp"
 // clang-format off
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -8,9 +8,11 @@
 // clang-format on
 #include "api/Log.hpp"
 
-namespace R3::opengl {
+#define GLWIN(_Win) (reinterpret_cast<GLFWwindow*>(_Win))
 
-Window::Window(const char* title) {
+namespace R3 {
+
+Window::Window(std::string_view title) {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
@@ -32,16 +34,16 @@ Window::Window(const char* title) {
     int w = static_cast<int>(vidmode->width * 0.75);
     int h = static_cast<int>(vidmode->height * 0.75);
 
-    _window = glfwCreateWindow(w, h, title, nullptr, nullptr);
-    if (!_window) {
+    m_pNativeWindow = glfwCreateWindow(w, h, title.data(), nullptr, nullptr);
+    if (!m_pNativeWindow) {
         LOG(Error, "Failed to create GLFW window");
         glfwTerminate();
     }
-    glfwSetWindowPos(_window, vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
-    glfwMakeContextCurrent(_window);
+    glfwSetWindowPos(GLWIN(m_pNativeWindow), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
+    glfwMakeContextCurrent(GLWIN(m_pNativeWindow));
 
-    auto resize_callback = [](GLFWwindow*, int width, int height) { glViewport(0, 0, width, height); };
-    glfwSetFramebufferSizeCallback(_window, resize_callback);
+    auto resizeCallback = [](GLFWwindow*, int width, int height) { glViewport(0, 0, width, height); };
+    glfwSetFramebufferSizeCallback(GLWIN(m_pNativeWindow), resizeCallback);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         LOG(Error, "Failed to initialize GLAD");
@@ -49,61 +51,66 @@ Window::Window(const char* title) {
 }
 
 Window::~Window() {
-    glfwDestroyWindow(_window);
+    glfwDestroyWindow(GLWIN(m_pNativeWindow));
     glfwTerminate();
 }
 
 void Window::show() {
-    glfwShowWindow(_window);
+    glfwShowWindow(GLWIN(m_pNativeWindow));
 }
 
 void Window::hide() {
-    glfwHideWindow(_window);
+    glfwHideWindow(GLWIN(m_pNativeWindow));
 }
 
-bool Window::is_visible() const {
-    return glfwGetWindowAttrib(_window, GLFW_VISIBLE);
+auto Window::isVisible() -> bool const {
+    return glfwGetWindowAttrib(GLWIN(m_pNativeWindow), GLFW_VISIBLE);
 }
 
-void Window::resize(int32_t width, int32_t height) {
-    glfwSetWindowSize(_window, width, height);
+void Window::resize(int32 width, int32 height) {
+    glfwSetWindowSize(GLWIN(m_pNativeWindow), width, height);
 }
 
-void Window::size(int* width, int* height) const {
-    glfwGetFramebufferSize(_window, width, height);
+auto Window::size() -> std::tuple<int32, int32> const {
+    int32 w, h;
+    glfwGetFramebufferSize(GLWIN(m_pNativeWindow), &w, &h);
+    return {w, h};
 }
 
-float Window::aspect_ratio() const {
-    int width, height;
-    glfwGetFramebufferSize(_window, &width, &height);
+void Window::size(int32& width, int32& height) const {
+    glfwGetFramebufferSize(GLWIN(m_pNativeWindow), &width, &height);
+}
+
+auto Window::aspectRatio() -> float const {
+    auto [width, height] = size();
     return static_cast<float>(width) / static_cast<float>(height);
 }
 
-bool Window::should_close() const {
-    return glfwWindowShouldClose(_window);
+auto Window::shouldClose() -> bool const {
+    return glfwWindowShouldClose(GLWIN(m_pNativeWindow));
 }
 
 void Window::update() {
-    glfwSwapBuffers(_window);
+    glfwSwapBuffers(GLWIN(m_pNativeWindow));
     glfwPollEvents();
 }
 
-void* Window::native_id() const {
+auto Window::nativeId() -> void* const {
 #ifdef WIN32
-    return glfwGetWin32Window(_window);
+    return glfwGetWin32Window(GLWIN(m_pNativeWindow));
 #else
-    return glfwGetWinX11Window(_window);
+    return glfwGetWinX11Window(GLWIN(m_pNativeWindow));
 #endif // WIN32
 }
 
-void* Window::native_ptr() const {
-    return _window;
+auto Window::nativeWindow() -> void* const {
+    return m_pNativeWindow;
 }
 
 void Window::kill() {
-    glfwSetWindowShouldClose(_window, true);
+    glfwSetWindowShouldClose(GLWIN(m_pNativeWindow), GLFW_TRUE);
 }
 
-} // namespace R3::opengl
+} // namespace R3
 
 #endif // R3_OPENGL

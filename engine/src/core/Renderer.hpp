@@ -1,10 +1,19 @@
 #pragma once
-#include "hal/opengl/Renderer.hpp"
+#include "api/Types.hpp"
 
 namespace R3 {
 
-#if R3_OPENGL
-using Renderer = R3::opengl::Renderer;
-#endif
+class Renderer {
+private:
+    Renderer();
+
+public:
+    ~Renderer();
+
+    void render();
+
+private:
+    friend class Engine;
+};
 
 } // namespace R3
