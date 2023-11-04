@@ -1,6 +1,8 @@
 #pragma once
+#include <set>
 #include <entt/entt.hpp>
 #include "core/Scene.hpp"
+#include "core/SubSystem.hpp"
 
 namespace R3 {
 
@@ -24,7 +26,7 @@ public:
     }
     virtual ~Entity() {}
 
-    virtual void tick(double) = 0;
+    virtual void tick(double){};
 
     [[nodiscard]] auto valid() -> bool const;
 
@@ -74,8 +76,16 @@ private:
 template <typename T, typename... Args>
 inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
     static_assert(std::is_base_of_v<Entity, T>);
+    // add to registry
     entt::entity id = parentScene->m_registry.create();
+    // add Entity derived component, what the api thinks of as 'an entity'
     T& entity = parentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
+    // add subsystem
+    if (!parentScene->m_system_set.contains(typeid(T).name())) {
+        Engine::activeScene().addSystem<EntitySubSystem<T>>();
+        parentScene->m_system_set.emplace(typeid(T).name());
+    }
+    // setup fields
     entity.m_id = id;
     entity.m_parentScene = parentScene;
     return entity;

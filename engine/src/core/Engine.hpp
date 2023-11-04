@@ -14,18 +14,24 @@ public:
     Engine(const Engine&) = delete;
     void operator=(const Engine&) = delete;
 
-    static auto instance() -> Engine&;
+    static void initialize() { (void)inst(); }
 
     // Scene Management
-    auto addScene(const std::string& name, bool setActive = false) -> Scene&;
-    void removeScene(const std::string& name);
-    auto activeScene() -> Scene& { return *m_activeScene; }
-    auto getScene(const std::string& name) -> Scene& { return m_scenes.at(name); }
-    auto isActiveScene(const std::string& name) -> bool const { return &m_scenes.at(name) == m_activeScene; }
-    void setActiveScene(const std::string& name) { m_activeScene = &m_scenes.at(name); }
+    static auto addScene(const std::string& name, bool setActive = false) -> Scene&;
+    static void removeScene(const std::string& name);
+    static auto activeScene() -> Scene&;
+    static auto getScene(const std::string& name) -> Scene&;
+    static auto isActiveScene(const std::string& name);
+    static void setActiveScene(const std::string& name);
 
-    template <typename F>
-    void gameLoop(F&& func);
+    static void loop();
+
+    static auto window() -> Window& { return Engine::inst().m_window; }
+    static auto renderer() -> Renderer& { return Engine::inst().m_renderer; }
+
+private:
+    static auto inst() -> Engine&;
+    auto deltaTime() -> double const;
 
 private:
     Window m_window;
@@ -33,15 +39,5 @@ private:
     std::unordered_map<std::string, Scene> m_scenes;
     Scene* m_activeScene;
 };
-
-template <typename F>
-inline void Engine::gameLoop(F&& func) {
-    m_window.show();
-    while (!m_window.shouldClose()) {
-        func();
-        m_renderer.render();
-        m_window.update();
-    }
-}
 
 } // namespace R3

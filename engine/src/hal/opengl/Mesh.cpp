@@ -4,11 +4,11 @@
 #include <glad/glad.h>
 #include "core/Vertex.hpp"
 
-#include "api/Log.hpp"
-
 namespace R3 {
 
 Mesh::Mesh(std::span<float> vertices, std::span<uint32> indices) {
+    m_indexCount = indices.size();
+
     glCreateVertexArrays(1, &m_vao);
     glCreateBuffers(1, &m_vbo);
     glCreateBuffers(1, &m_ebo);

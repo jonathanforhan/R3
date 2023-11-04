@@ -50,13 +50,42 @@ uint32 indices[] = {
 };
 #endif
 
-class MyEnt : public Entity {
-public:
-    MyEnt() = default;
+float verts[] = {
+    -0.5, -0.5, 0, //
+    0.5,  -0.5, 0, //
+    0,    0.5,  0, //
+};
+unsigned indices[] = {0, 1, 2};
+
+struct MyEnt : public Entity {
+    MyEnt()
+        : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
+          mesh(verts, indices) {}
 
     void tick(double dt) override {
-        LOG(Info, "TICK");
+        shader.bind();
+        mesh.bind();
+        Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
     }
+
+    Shader shader;
+    Mesh mesh;
+};
+
+struct MyEnt2 : public Entity {
+    MyEnt2()
+        : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
+          mesh(verts, indices) {}
+
+    void tick(double dt) override {
+        LOG(Info, "MY ENT 2");
+        shader.bind();
+        mesh.bind();
+        Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+    }
+
+    Shader shader;
+    Mesh mesh;
 };
 
 int main(void) {
@@ -66,24 +95,9 @@ int main(void) {
     LOG(Info, "Running Release Cube Test...");
 #endif
 
-    float verts[] = {
-        -0.5, -0.5, 0, //
-        0.5,  -0.5, 0, //
-        0,    0.5,  0, //
-    };
-    unsigned indices[] = {0, 1, 2};
+    Scene& defaultScene = Engine::addScene("default", true);
+    (void)Entity::create<MyEnt>(&defaultScene);
+    (void)Entity::create<MyEnt2>(&defaultScene);
 
-    Engine& engine = Engine::instance();
-    Scene& defaultScene = engine.addScene("default", true);
-    MyEnt& ent = Entity::create<MyEnt>(&defaultScene);
-
-    engine.activeScene().componentView<MyEnt>().each([](MyEnt& ent) { ent.tick(0); });
-
-    Shader shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag");
-    Mesh mesh(verts, indices);
-
-    engine.gameLoop([&]() {
-        shader.bind();
-        mesh.bind();
-    });
+    Engine::loop();
 }

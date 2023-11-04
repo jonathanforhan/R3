@@ -1,6 +1,7 @@
 #pragma once
 #include <entt/entt.hpp>
 #include "api/Types.hpp"
+#include "core/System.hpp"
 
 namespace R3 {
 
@@ -14,12 +15,20 @@ public:
     template <typename... T>
     [[nodiscard]] decltype(auto) componentView() const;
 
+    template <typename T, typename... Args>
+    void addSystem(Args&&... args);
+
+private:
+    void runSystems(double dt);
+
 public:
     mat4 view{1.0f};
     mat4 projection{1.0f};
 
 private:
     entt::registry m_registry;
+    std::vector<std::unique_ptr<System>> m_systems;
+    std::set<std::string> m_system_set;
 
     // Entity is a friend class to access the registry
     // a lot of entity management is done through Entity
@@ -36,6 +45,19 @@ inline decltype(auto) Scene::componentView() {
 template <typename... T>
 inline decltype(auto) Scene::componentView() const {
     return m_registry.view<T...>();
+}
+
+template <typename T, typename... Args>
+inline void Scene::addSystem(Args&&... args) {
+    static_assert(std::is_base_of_v<System, T>);
+    m_systems.emplace_back(new T(std::forward<Args>(args)...));
+}
+
+inline void Scene::runSystems(double dt) {
+    // tick our systems
+    for (const auto& system : m_systems) {
+        system->tick(dt);
+    }
 }
 
 } // namespace R3

@@ -25,11 +25,13 @@ public:
     ~Mesh();
 
     void bind();
+    auto indexCount() -> uint32 const { return m_indexCount; }
 
 private:
     uint32 m_vao{0};
     uint32 m_vbo{0};
     uint32 m_ebo{0};
+    uint32 m_indexCount{0};
 };
 
 } // namespace R3
