@@ -36,10 +36,10 @@ set(R3_BUILD_TESTS ON)
 
 add_subdirectory(engine)
 
-#add_subdirectory(editor)
-#target_sources(R3_EDITOR PRIVATE ${R3_ENGINE_INCLUDES})
-#target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
-#COPY_RESOURCES("editor")
+add_subdirectory(editor)
+target_sources(R3_EDITOR PRIVATE ${R3_ENGINE_INCLUDES})
+target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
+COPY_RESOURCES("editor")
 
 if(R3_BUILD_TESTS)
 	add_subdirectory(tests)

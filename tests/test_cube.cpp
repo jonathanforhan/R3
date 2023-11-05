@@ -169,6 +169,7 @@ struct Player : Entity {
         emplace<CameraComponent>().setActive();
         Engine::activeScene().addSystem<CameraSystem>();
     }
+    void tick(double) {}
 };
 
 int main(void) {

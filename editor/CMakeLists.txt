@@ -19,6 +19,10 @@ set(PROJECT_SOURCES
     main.cpp
     Editor.hpp
     Editor.cpp
+    Cube.cpp
+    Cube.hpp
+    LightCube.hpp
+    Vertices.hpp
 )
 
 qt_add_executable(R3_EDITOR ${PROJECT_SOURCES})

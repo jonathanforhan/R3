@@ -8,10 +8,15 @@ public:
     Editor(QWidget* parent = nullptr);
     ~Editor();
 
+    void createDockUI();
+
     void closeEvent(QCloseEvent* event) override;
 
-    int runEngine();
+    void runEngine();
 
 signals:
     void finished();
+
+public:
+    QWidget* dockWidget;
 };
