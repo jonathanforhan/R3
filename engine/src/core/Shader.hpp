@@ -59,6 +59,10 @@ public:
     void writeUniform(uint32 location, const glm::mat4x2& v0);
     void writeUniform(uint32 location, const glm::mat3x4& v0);
     void writeUniform(uint32 location, const glm::mat4x3& v0);
+    template <typename... Args>
+    void writeUniform(std::string_view uniform, Args&&... args) {
+        writeUniform(location(uniform), std::forward<Args>(args)...);
+    }
 
 private:
     void importGLSL(std::string_view vs, std::string_view fs);

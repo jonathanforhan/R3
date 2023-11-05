@@ -7,6 +7,7 @@ namespace R3 {
 
 Mesh::Mesh(std::span<Vertex> vertices, std::span<uint32> indices) {
     m_indexCount = static_cast<uint32>(indices.size());
+    m_vertexCount = static_cast<uint32>(vertices.size());
 
     glCreateVertexArrays(1, &m_vao);
     glCreateBuffers(1, &m_vbo);

@@ -18,6 +18,7 @@ public:
 
     void predraw() const;
     void drawElements(RenderPrimitive primitive, uint32 indiceCount) const;
+    void drawArrays(RenderPrimitive primitive, uint32 vertexCount) const;
 
 private:
     friend class Engine;

@@ -1,9 +1,10 @@
 /**
  * Entity is the base class for all entities
  * when an entity is created with Entity::create<Derived> IF it is Tickable
- * (implements tick(double) function [checked through a C++20 concept]) then
+ * (implements tick(double) method [checked through a C++20 concept]) then
  * we add a TickSystem for the entity and it's tick function gets called every frame
  * there is not virtual function overhead with the tick system just a normal c++ method call
+ * if the class is `Initializable` (implements init() method) that will be called as well
  */
 
 #pragma once
@@ -13,6 +14,9 @@
 #include "systems/TickSystem.hpp"
 
 namespace R3 {
+
+template <typename T>
+concept Initializable = requires(T t) { t.init(); };
 
 class Entity {
 protected:
@@ -91,13 +95,17 @@ inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
     entt::entity id = parentScene->m_registry.create();
     // add Entity derived component, what the api thinks of as 'an entity'
     T& entity = parentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
-    // if actor add subsystem (if duplicate system it skips)
-    if constexpr (Tickable<T>) {
-        Engine::activeScene().addSystem<TickSystem<T>>();
-    }
     // setup fields
     entity.m_id = id;
     entity.m_pParentScene = parentScene;
+    // if entity is has init() method call it
+    if constexpr (Initializable<T>) {
+        entity.init();
+    }
+    // if entity has tick(double) add TickSystem (Scene ensures no duplicate systems)
+    if constexpr (Tickable<T>) {
+        Engine::activeScene().addSystem<TickSystem<T>>();
+    }
     return entity;
 }
 

@@ -8,8 +8,21 @@
 
 namespace R3 {
 
+static auto renderPrimitiveToGlEnum(RenderPrimitive primitive) -> GLenum {
+    switch (primitive) {
+        case RenderPrimitive::Triangles:
+            return GL_TRIANGLES;
+        case RenderPrimitive::Lines:
+            return GL_LINES;
+        case RenderPrimitive::Points:
+            return GL_POINTS;
+        default:
+            return NULL;
+    }
+}
+
 Renderer::Renderer() {
-    // glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 }
 
@@ -21,20 +34,13 @@ void Renderer::predraw() const {
 }
 
 void Renderer::drawElements(RenderPrimitive primitive, uint32 indiceCount) const {
-
-    GLenum glPrimitive{};
-    switch (primitive) {
-        case RenderPrimitive::Triangles:
-            glPrimitive = GL_TRIANGLES;
-            break;
-        case RenderPrimitive::Lines:
-            glPrimitive = GL_LINES;
-            break;
-        case RenderPrimitive::Points:
-            glPrimitive = GL_POINTS;
-            break;
-    }
+    GLenum glPrimitive = renderPrimitiveToGlEnum(primitive);
     glDrawElements(glPrimitive, indiceCount, GL_UNSIGNED_INT, 0);
+}
+
+void Renderer::drawArrays(RenderPrimitive primitive, uint32 vertexCount) const {
+    GLenum glPrimitive = renderPrimitiveToGlEnum(primitive);
+    glDrawArrays(glPrimitive, 0, vertexCount);
 }
 
 } // namespace R3

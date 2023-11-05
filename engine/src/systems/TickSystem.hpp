@@ -8,9 +8,6 @@
 
 namespace R3 {
 
-template <bool Tick>
-class ECSBase;
-
 template <typename T>
 concept Tickable = requires(T t) { t.tick(double{}); };
 
