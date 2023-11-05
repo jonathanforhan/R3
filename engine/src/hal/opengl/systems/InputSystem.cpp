@@ -66,9 +66,6 @@ InputSystem::InputSystem() {
     }
 }
 
-InputSystem::~InputSystem() {
-}
-
 auto InputSystem::cursorPosition() -> std::tuple<double, double> const {
     return {g_cursorPos.x, g_cursorPos.y};
 }

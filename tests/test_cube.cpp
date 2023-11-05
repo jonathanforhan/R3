@@ -1,14 +1,13 @@
 #include "api/Check.hpp"
 #include "api/Log.hpp"
 #include "api/Math.hpp"
-
-// BAD INCLUDES
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
-#include "core/Shader.hpp"
-#include "core/Mesh.hpp"
-#include "core/Texture2D.hpp"
+
 #include "components/CameraComponent.hpp"
+#include "core/Mesh.hpp"
+#include "core/Shader.hpp"
+#include "core/Texture2D.hpp"
 #include "systems/CameraSystem.hpp"
 
 using namespace R3;
@@ -65,13 +64,12 @@ uint32 indices[] = {
     18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
 };
 
-struct Cube : public Entity {
+struct Cube : Entity {
     Cube(const vec3& position, const vec3& scale)
         : shader(ShaderType::GLSL, "shaders/light_map.vert", "shaders/light_map.frag"),
           mesh(vertices, indices),
           texture("textures/crate.png"),
-          textureSpecular("textures/crate_specular.png")
-    {
+          textureSpecular("textures/crate_specular.png") {
         texture.bind(0);
         textureSpecular.bind(1);
         shader.bind();
@@ -83,7 +81,7 @@ struct Cube : public Entity {
         transform = glm::scale(transform, scale);
     }
 
-    void tick(double dt) override {
+    void tick(double) {
         shader.bind();
         mesh.bind();
 
@@ -111,18 +109,17 @@ struct Cube : public Entity {
     Texture2D textureSpecular;
 };
 
-struct Floor : public Entity {
+struct Floor : Entity {
     Floor(const vec3& position, const vec3& scale)
         : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
-          mesh(vertices, indices)
-    {
+          mesh(vertices, indices) {
         transform = glm::translate(mat4(1.0f), position);
         transform = glm::scale(transform, scale);
         shader.bind();
         shader.writeUniform(shader.location("u_Color"), vec3(1, 0.4, 1));
     }
 
-    void tick(double dt) override {
+    void tick(double) {
         shader.bind();
         mesh.bind();
 
@@ -145,14 +142,13 @@ struct Floor : public Entity {
     Mesh mesh;
 };
 
-
-struct LightCube : public Entity {
+struct LightCube : Entity {
     LightCube(const vec3& position)
         : transform(mat4(1.0f)),
           shader(ShaderType::GLSL, "shaders/light.vert", "shaders/light.frag"),
           mesh(vertices, indices) {}
 
-    void tick(double dt) override {
+    void tick(double dt) {
         shader.bind();
         mesh.bind();
 
@@ -175,7 +171,7 @@ struct LightCube : public Entity {
     Mesh mesh;
 };
 
-struct Player : public Entity {};
+struct Player : Entity {};
 
 int main(void) {
 #if defined _DEBUG || !defined NDEBUG
@@ -185,9 +181,9 @@ int main(void) {
 #endif
 
     Scene& defaultScene = Engine::addScene("default", true);
-    (void)Entity::create<Floor>(&defaultScene, vec3(0.0f), vec3(50, 0.1, 50));
-    (void)Entity::create<Cube>(&defaultScene, vec3(0, 0.55, 0), vec3(1));
-    (void)Entity::create<LightCube>(&defaultScene, g_lightPosition);
+    Entity::create<Floor>(&defaultScene, vec3(0.0f), vec3(50, 0.1, 50));
+    Entity::create<Cube>(&defaultScene, vec3(0, 0.55, 0), vec3(1));
+    Entity::create<LightCube>(&defaultScene, g_lightPosition);
 
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();

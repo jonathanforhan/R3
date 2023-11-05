@@ -10,7 +10,6 @@ namespace R3 {
 class InputSystem : public System {
 public:
     explicit InputSystem();
-    ~InputSystem();
 
     void setKeyBinding(Key key, std::function<void(InputAction)> keyBinding);
     void setMouseBinding(MouseButton button, std::function<void(InputAction)> mouseBinding);

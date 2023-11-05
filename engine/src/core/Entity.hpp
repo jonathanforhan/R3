@@ -1,8 +1,16 @@
+/**
+ * Entity is the base class for all entities
+ * when an entity is created with Entity::create<Derived> IF it is Tickable
+ * (implements tick(double) function [checked through a C++20 concept]) then
+ * we add a TickSystem for the entity and it's tick function gets called every frame
+ * there is not virtual function overhead with the tick system just a normal c++ method call
+ */
+
 #pragma once
-#include <set>
 #include <entt/entt.hpp>
+#include <set>
 #include "core/Scene.hpp"
-#include "systems/EntitySystem.hpp"
+#include "systems/TickSystem.hpp"
 
 namespace R3 {
 
@@ -24,14 +32,13 @@ public:
         src.m_id = entt::null;
         return *this;
     }
-    virtual ~Entity() {}
 
-    virtual void tick(double){};
+    auto parentScene() -> Scene* { return m_pParentScene; }
 
     [[nodiscard]] auto valid() -> bool const;
 
     template <typename T, typename... Args>
-    [[nodiscard]] static auto create(Scene* parentScene, Args&&... args) -> T&;
+    static auto create(Scene* parentScene, Args&&... args) -> T&;
 
     void destroy();
 
@@ -73,6 +80,10 @@ private:
     Scene* m_pParentScene{nullptr};
 };
 
+inline auto Entity::valid() -> bool const {
+    return m_pParentScene->m_registry.valid(m_id);
+}
+
 template <typename T, typename... Args>
 inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
     static_assert(std::is_base_of_v<Entity, T>);
@@ -80,16 +91,14 @@ inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
     entt::entity id = parentScene->m_registry.create();
     // add Entity derived component, what the api thinks of as 'an entity'
     T& entity = parentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
-    // add subsystem (if duplicate it skips)
-    Engine::activeScene().addSystem<EntitySubSystem<T>>();
+    // if actor add subsystem (if duplicate system it skips)
+    if constexpr (Tickable<T>) {
+        Engine::activeScene().addSystem<TickSystem<T>>();
+    }
     // setup fields
     entity.m_id = id;
     entity.m_pParentScene = parentScene;
     return entity;
-}
-
-inline auto Entity::valid() -> bool const {
-    return m_pParentScene->m_registry.valid(m_id);
 }
 
 inline void Entity::destroy() {
