@@ -3,7 +3,7 @@
 #include <functional>
 #include "api/Types.hpp"
 #include "core/Window.hpp"
-#include "core/System.hpp"
+#include "System.hpp"
 
 namespace R3 {
 

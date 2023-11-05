@@ -7,6 +7,7 @@
 #include "core/Entity.hpp"
 #include "core/Shader.hpp"
 #include "core/Mesh.hpp"
+#include "core/Texture2D.hpp"
 #include "components/CameraComponent.hpp"
 #include "systems/InputSystem.hpp"
 
@@ -53,23 +54,32 @@ struct Cube : public Entity {
     Cube(const vec3& position)
         : transform(1.0f),
           shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
-          mesh(vertices, indices) {
+          mesh(vertices, indices),
+          texture("textures/container.jpg") {
+
+        texture.bind(0);
+        shader.writeUniform(shader.location("u_Texture"), 0);
         transform = glm::translate(transform, position);
     }
 
     void tick(double dt) override {
+        transform = glm::rotate(transform, glm::radians((float)dt * 10.0f), vec3(0.0f, 1.0f, 0.0f));
+
+        texture.bind(0);
         shader.bind();
         mesh.bind();
-        transform = glm::rotate(transform, glm::radians((float)dt * 10.0f), vec3(0.0f, 1.0f, 0.0f));
+
         shader.writeUniform(shader.location("u_Model"), transform);
         shader.writeUniform(shader.location("u_View"), Engine::activeScene().view);
         shader.writeUniform(shader.location("u_Projection"), Engine::activeScene().projection);
+
         Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
     }
 
     mat4 transform;
     Shader shader;
     Mesh mesh;
+    Texture2D texture;
 };
 
 struct Player : public Entity {};
@@ -77,28 +87,41 @@ struct Player : public Entity {};
 class CameraSystem : public InputSystem {
 public:
     CameraSystem() {
+        constexpr float s = 4.0f;
         setKeyBinding(Key::Key_W, [this](InputAction) {
             Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
                 if (camera.active())
-                    camera.translateForward(deltaTime);
+                    camera.translateForward(deltaTime * s);
             });
         });
         setKeyBinding(Key::Key_A, [this](InputAction) {
             Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
                 if (camera.active())
-                    camera.translateLeft(deltaTime);
+                    camera.translateLeft(deltaTime * s);
             });
         });
         setKeyBinding(Key::Key_S, [this](InputAction) {
             Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
                 if (camera.active())
-                    camera.translateBackward(deltaTime);
+                    camera.translateBackward(deltaTime * s);
             });
         });
         setKeyBinding(Key::Key_D, [this](InputAction) {
             Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
                 if (camera.active())
-                    camera.translateRight(deltaTime);
+                    camera.translateRight(deltaTime * s);
+            });
+        });
+        setKeyBinding(Key::Key_Q, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateUp(deltaTime * s);
+            });
+        });
+        setKeyBinding(Key::Key_E, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateDown(deltaTime * s);
             });
         });
 

@@ -1,8 +1,8 @@
 #pragma once
 #include <entt/entt.hpp>
-#include "api/Types.hpp"
-#include "core/System.hpp"
 #include "api/Log.hpp"
+#include "api/Types.hpp"
+#include "systems/System.hpp"
 
 namespace R3 {
 
