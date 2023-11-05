@@ -9,63 +9,81 @@
 #include "core/Mesh.hpp"
 #include "core/Texture2D.hpp"
 #include "components/CameraComponent.hpp"
-#include "systems/InputSystem.hpp"
+#include "systems/CameraSystem.hpp"
 
 using namespace R3;
 
+vec3 g_lightPosition = vec3(1.2f, 1.0f, 2.0f);
+vec3 g_lightColor = vec3(1, 1, 1);
+
 Vertex vertices[] = {
-    // positions         colors              texture coords
-    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{0.5f, -0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, -1.0f}, {0.0f, 0.0f}},
 
-    {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, -0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
 
-    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.5f, -0.5f, -0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{-0.5f, -0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.5f, 0.5f, 0.5f}, {-1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 
-    {{-0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},
+    {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f}},
+    {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
 
-    {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{-0.5f, 0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
+    {{0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 1.0f}},
+    {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.5f, -0.5f, 0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, -1.0f, 0.0f}, {0.0f, 1.0f}},
 
-    {{0.5f, -0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},  // bottom right
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}}, // bottom left
-    {{-0.5f, -0.5f, 0.5f}, {1.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},  // top left
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 1.0f}},
+    {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{-0.5f, 0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 1.0f}},
 };
+
 uint32 indices[] = {
-    0,  1,  3,  1,  2,  3,  4,  5,  7,  5,  6,  7,  8,  9,  11, 9,  10, 11,
-    12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 21, 23, 21, 22, 23,
+    0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17,
+    18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35,
 };
 
 struct Cube : public Entity {
-    Cube(const vec3& position)
-        : transform(1.0f),
-          shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
+    Cube(const vec3& position, const vec3& scale)
+        : shader(ShaderType::GLSL, "shaders/light_map.vert", "shaders/light_map.frag"),
           mesh(vertices, indices),
-          texture("textures/container.jpg") {
-
+          texture("textures/crate.png"),
+          textureSpecular("textures/crate_specular.png")
+    {
         texture.bind(0);
-        shader.writeUniform(shader.location("u_Texture"), 0);
-        transform = glm::translate(transform, position);
+        textureSpecular.bind(1);
+        shader.bind();
+        shader.writeUniform(shader.location("u_Material.diffuse"), 0);
+        shader.writeUniform(shader.location("u_Material.specular"), 1);
+        shader.writeUniform(shader.location("u_Material.shininess"), 64.0f);
+
+        transform = glm::translate(mat4(1.0f), position);
+        transform = glm::scale(transform, scale);
     }
 
     void tick(double dt) override {
-        transform = glm::rotate(transform, glm::radians((float)dt * 10.0f), vec3(0.0f, 1.0f, 0.0f));
-
-        texture.bind(0);
         shader.bind();
         mesh.bind();
 
@@ -73,94 +91,91 @@ struct Cube : public Entity {
         shader.writeUniform(shader.location("u_View"), Engine::activeScene().view);
         shader.writeUniform(shader.location("u_Projection"), Engine::activeScene().projection);
 
+        shader.writeUniform(shader.location("u_Light.position"), g_lightPosition);
+        Engine::activeScene().componentView<CameraComponent>().each([&](CameraComponent& camera) {
+            shader.writeUniform(shader.location("u_ViewPosition"), camera.position());
+        });
+        shader.writeUniform(shader.location("u_Light.ambient"), vec3(0.2f, 0.2f, 0.2f));
+        shader.writeUniform(shader.location("u_Light.diffuse"), vec3(0.5f, 0.5f, 0.5f));
+        shader.writeUniform(shader.location("u_Light.specular"), vec3(1.0f, 1.0f, 1.0f));
+
+        texture.bind(0);
+        textureSpecular.bind(1);
+
+        Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+    }
+    mat4 transform{1.0f};
+    Shader shader;
+    Mesh mesh;
+    Texture2D texture;
+    Texture2D textureSpecular;
+};
+
+struct Floor : public Entity {
+    Floor(const vec3& position, const vec3& scale)
+        : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
+          mesh(vertices, indices)
+    {
+        transform = glm::translate(mat4(1.0f), position);
+        transform = glm::scale(transform, scale);
+        shader.bind();
+        shader.writeUniform(shader.location("u_Color"), vec3(1, 0.4, 1));
+    }
+
+    void tick(double dt) override {
+        shader.bind();
+        mesh.bind();
+
+        shader.writeUniform(shader.location("u_Model"), transform);
+        shader.writeUniform(shader.location("u_View"), Engine::activeScene().view);
+        shader.writeUniform(shader.location("u_Projection"), Engine::activeScene().projection);
+
+        shader.writeUniform(shader.location("u_Light.position"), g_lightPosition);
+        Engine::activeScene().componentView<CameraComponent>().each([&](CameraComponent& camera) {
+            shader.writeUniform(shader.location("u_ViewPosition"), camera.position());
+        });
+        shader.writeUniform(shader.location("u_Light.ambient"), vec3(0.2f, 0.2f, 0.2f));
+        shader.writeUniform(shader.location("u_Light.diffuse"), vec3(0.5f, 0.5f, 0.5f));
+        shader.writeUniform(shader.location("u_Light.specular"), vec3(1.0f, 1.0f, 1.0f));
+
+        Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+    }
+    mat4 transform{1.0f};
+    Shader shader;
+    Mesh mesh;
+};
+
+
+struct LightCube : public Entity {
+    LightCube(const vec3& position)
+        : transform(mat4(1.0f)),
+          shader(ShaderType::GLSL, "shaders/light.vert", "shaders/light.frag"),
+          mesh(vertices, indices) {}
+
+    void tick(double dt) override {
+        shader.bind();
+        mesh.bind();
+
+        static double tt = 0;
+        tt += dt;
+        g_lightPosition = vec3(5 * cos(tt), 1, 5 * sin(tt));
+        transform = glm::translate(mat4(1.0f), g_lightPosition);
+
+        shader.writeUniform(shader.location("u_Model"), transform);
+        shader.writeUniform(shader.location("u_View"), Engine::activeScene().view);
+        shader.writeUniform(shader.location("u_Projection"), Engine::activeScene().projection);
+
+        shader.writeUniform(shader.location("u_Color"), g_lightColor);
+
         Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
     }
 
     mat4 transform;
     Shader shader;
     Mesh mesh;
-    Texture2D texture;
 };
 
 struct Player : public Entity {};
-
-class CameraSystem : public InputSystem {
-public:
-    CameraSystem() {
-        constexpr float s = 4.0f;
-        setKeyBinding(Key::Key_W, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateForward(deltaTime * s);
-            });
-        });
-        setKeyBinding(Key::Key_A, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateLeft(deltaTime * s);
-            });
-        });
-        setKeyBinding(Key::Key_S, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateBackward(deltaTime * s);
-            });
-        });
-        setKeyBinding(Key::Key_D, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateRight(deltaTime * s);
-            });
-        });
-        setKeyBinding(Key::Key_Q, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateUp(deltaTime * s);
-            });
-        });
-        setKeyBinding(Key::Key_E, [this](InputAction) {
-            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
-                if (camera.active())
-                    camera.translateDown(deltaTime * s);
-            });
-        });
-
-        setMouseBinding(MouseButton::Left, [this](InputAction action) {
-            if (action == InputAction::Press) {
-                mouseDown = true;
-            } else if (action == InputAction::Release) {
-                mouseDown = false;
-            }
-        });
-    }
-
-    void tick(double dt) {
-        deltaTime = static_cast<float>(dt);
-        InputSystem::tick(dt);
-
-        auto [xPos, yPos] = cursorPosition();
-        double dx{}, dy{}, sensitivity = 500;
-        if (mouseDown) {
-            dx = xPos - prevCursorPosition.x;
-            dy = -yPos + prevCursorPosition.y;
-        }
-        prevCursorPosition = dvec2(xPos, yPos);
-
-        Engine::activeScene().componentView<CameraComponent>().each([this, dx, dy, sensitivity](CameraComponent& camera) {
-            if (camera.active()) {
-                Scene& scene = Engine::activeScene();
-                if (mouseDown) {
-                    camera.lookAround(static_cast<float>(dx * sensitivity), static_cast<float>(dy * sensitivity));
-                }
-                camera.apply(&scene.view, &scene.projection, Engine::window().aspectRatio());
-            }
-        });
-    }
-
-    float deltaTime = 0.0f;
-    bool mouseDown = false;
-    dvec2 prevCursorPosition = dvec2(0.0, 0.0);
-};
 
 int main(void) {
 #if defined _DEBUG || !defined NDEBUG
@@ -170,17 +185,12 @@ int main(void) {
 #endif
 
     Scene& defaultScene = Engine::addScene("default", true);
-    for (int i = 0; i < 5; i++) {
-        for (int j = 0; j < 5; j++) {
-            for (int k = 0; k < 5; k++) {
-                (void)Entity::create<Cube>(&defaultScene, vec3(i * 10, j * 10, k * 10));
-            }
-        }
-    }
+    (void)Entity::create<Floor>(&defaultScene, vec3(0.0f), vec3(50, 0.1, 50));
+    (void)Entity::create<Cube>(&defaultScene, vec3(0, 0.55, 0), vec3(1));
+    (void)Entity::create<LightCube>(&defaultScene, g_lightPosition);
 
     Player& player = Entity::create<Player>(&defaultScene);
-    CameraComponent& camera = player.emplace<CameraComponent>();
-    camera.setActive();
+    player.emplace<CameraComponent>().setActive();
     Engine::activeScene().addSystem<CameraSystem>();
 
     Engine::loop();

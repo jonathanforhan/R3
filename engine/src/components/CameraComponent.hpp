@@ -21,7 +21,7 @@ public:
     void setActive(bool active = true) { m_active = active; }
 
 private:
-    vec3 m_position{0.0f, 0.0f, -3.0f};
+    vec3 m_position{0.0f, 1.0f, -3.0f};
     vec3 m_front{0.0f, 0.0f, 1.0f};
     vec3 m_up{0.0f, 1.0f, 0.0f};
 
