@@ -2,12 +2,11 @@
 
 #include "core/Mesh.hpp"
 #include <glad/glad.h>
-#include "core/Vertex.hpp"
 
 namespace R3 {
 
-Mesh::Mesh(std::span<float> vertices, std::span<uint32> indices) {
-    m_indexCount = indices.size();
+Mesh::Mesh(std::span<Vertex> vertices, std::span<uint32> indices) {
+    m_indexCount = static_cast<uint32>(indices.size());
 
     glCreateVertexArrays(1, &m_vao);
     glCreateBuffers(1, &m_vbo);
@@ -23,6 +22,10 @@ Mesh::Mesh(std::span<float> vertices, std::span<uint32> indices) {
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, color));
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, textureCoords));
+    glEnableVertexAttribArray(2);
 
     glBindBuffer(GL_ARRAY_BUFFER, NULL);
     glBindVertexArray(NULL);

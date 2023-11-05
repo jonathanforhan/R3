@@ -35,11 +35,14 @@ find_package(OpenGL REQUIRED)
 
 include(GNUInstallDirs)
 
-target_link_libraries(R3_ENGINE PUBLIC
+target_link_libraries(R3_ENGINE PRIVATE
     glad
     glfw
-    glm
     stb_image
+    )
+
+target_link_libraries(R3_ENGINE PUBLIC
+    glm
     EnTT::EnTT
     )
 

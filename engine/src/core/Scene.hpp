@@ -2,6 +2,7 @@
 #include <entt/entt.hpp>
 #include "api/Types.hpp"
 #include "core/System.hpp"
+#include "api/Log.hpp"
 
 namespace R3 {
 
@@ -50,7 +51,10 @@ inline decltype(auto) Scene::componentView() const {
 template <typename T, typename... Args>
 inline void Scene::addSystem(Args&&... args) {
     static_assert(std::is_base_of_v<System, T>);
-    m_systems.emplace_back(new T(std::forward<Args>(args)...));
+    if (!m_system_set.contains(typeid(T).name())) {
+        m_systems.emplace_back(new T(std::forward<Args>(args)...));
+        m_system_set.emplace(typeid(T).name());
+    }
 }
 
 inline void Scene::runSystems(double dt) {

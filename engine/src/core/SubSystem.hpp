@@ -1,6 +1,5 @@
 #pragma once
 #include "System.hpp"
-#include "api/Log.hpp"
 #include "core/Engine.hpp"
 
 namespace R3 {

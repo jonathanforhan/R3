@@ -7,11 +7,11 @@
 #include "core/Entity.hpp"
 #include "core/Shader.hpp"
 #include "core/Mesh.hpp"
-#include <vector>
+#include "components/CameraComponent.hpp"
+#include "systems/InputSystem.hpp"
 
 using namespace R3;
 
-#if 0
 Vertex vertices[] = {
     // positions         colors              texture coords
     {{0.5f, 0.5f, 0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 1.0f}},   // top right
@@ -48,44 +48,95 @@ uint32 indices[] = {
     0,  1,  3,  1,  2,  3,  4,  5,  7,  5,  6,  7,  8,  9,  11, 9,  10, 11,
     12, 13, 15, 13, 14, 15, 16, 17, 19, 17, 18, 19, 20, 21, 23, 21, 22, 23,
 };
-#endif
 
-float verts[] = {
-    -0.5, -0.5, 0, //
-    0.5,  -0.5, 0, //
-    0,    0.5,  0, //
-};
-unsigned indices[] = {0, 1, 2};
-
-struct MyEnt : public Entity {
-    MyEnt()
-        : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
-          mesh(verts, indices) {}
+struct Cube : public Entity {
+    Cube(const vec3& position)
+        : transform(1.0f),
+          shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
+          mesh(vertices, indices) {
+        transform = glm::translate(transform, position);
+    }
 
     void tick(double dt) override {
         shader.bind();
         mesh.bind();
+        transform = glm::rotate(transform, glm::radians((float)dt * 10.0f), vec3(0.0f, 1.0f, 0.0f));
+        shader.writeUniform(shader.location("u_Model"), transform);
+        shader.writeUniform(shader.location("u_View"), Engine::activeScene().view);
+        shader.writeUniform(shader.location("u_Projection"), Engine::activeScene().projection);
         Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
     }
 
+    mat4 transform;
     Shader shader;
     Mesh mesh;
 };
 
-struct MyEnt2 : public Entity {
-    MyEnt2()
-        : shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag"),
-          mesh(verts, indices) {}
+struct Player : public Entity {};
 
-    void tick(double dt) override {
-        LOG(Info, "MY ENT 2");
-        shader.bind();
-        mesh.bind();
-        Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+class CameraSystem : public InputSystem {
+public:
+    CameraSystem() {
+        setKeyBinding(Key::Key_W, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateForward(deltaTime);
+            });
+        });
+        setKeyBinding(Key::Key_A, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateLeft(deltaTime);
+            });
+        });
+        setKeyBinding(Key::Key_S, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateBackward(deltaTime);
+            });
+        });
+        setKeyBinding(Key::Key_D, [this](InputAction) {
+            Engine::activeScene().componentView<CameraComponent>().each([this](CameraComponent& camera) {
+                if (camera.active())
+                    camera.translateRight(deltaTime);
+            });
+        });
+
+        setMouseBinding(MouseButton::Left, [this](InputAction action) {
+            if (action == InputAction::Press) {
+                mouseDown = true;
+            } else if (action == InputAction::Release) {
+                mouseDown = false;
+            }
+        });
     }
 
-    Shader shader;
-    Mesh mesh;
+    void tick(double dt) {
+        deltaTime = static_cast<float>(dt);
+        InputSystem::tick(dt);
+
+        auto [xPos, yPos] = cursorPosition();
+        double dx{}, dy{}, sensitivity = 500;
+        if (mouseDown) {
+            dx = xPos - prevCursorPosition.x;
+            dy = -yPos + prevCursorPosition.y;
+        }
+        prevCursorPosition = dvec2(xPos, yPos);
+
+        Engine::activeScene().componentView<CameraComponent>().each([this, dx, dy, sensitivity](CameraComponent& camera) {
+            if (camera.active()) {
+                Scene& scene = Engine::activeScene();
+                if (mouseDown) {
+                    camera.lookAround(static_cast<float>(dx * sensitivity), static_cast<float>(dy * sensitivity));
+                }
+                camera.apply(&scene.view, &scene.projection, Engine::window().aspectRatio());
+            }
+        });
+    }
+
+    float deltaTime = 0.0f;
+    bool mouseDown = false;
+    dvec2 prevCursorPosition = dvec2(0.0, 0.0);
 };
 
 int main(void) {
@@ -96,8 +147,18 @@ int main(void) {
 #endif
 
     Scene& defaultScene = Engine::addScene("default", true);
-    (void)Entity::create<MyEnt>(&defaultScene);
-    (void)Entity::create<MyEnt2>(&defaultScene);
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            for (int k = 0; k < 5; k++) {
+                (void)Entity::create<Cube>(&defaultScene, vec3(i * 10, j * 10, k * 10));
+            }
+        }
+    }
+
+    Player& player = Entity::create<Player>(&defaultScene);
+    CameraComponent& camera = player.emplace<CameraComponent>();
+    camera.setActive();
+    Engine::activeScene().addSystem<CameraSystem>();
 
     Engine::loop();
 }

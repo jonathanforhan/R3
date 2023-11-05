@@ -47,6 +47,7 @@ void Engine::loop() {
     auto& engine = Engine::inst();
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
+        engine.m_renderer.predraw();
         engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_window.update();
     }
@@ -63,6 +64,7 @@ auto Engine::deltaTime() -> double const {
     static auto s_prev = system_clock::now();
     auto now = system_clock::now();
     double dt = duration<double>(now - s_prev).count();
+    LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp line", __LINE__);
     s_prev = now;
     return dt;
 }

@@ -1,12 +1,13 @@
 #pragma once
 #include <span>
 #include "api/Types.hpp"
+#include "core/Vertex.hpp"
 
 namespace R3 {
 
 class Mesh {
 public:
-    Mesh(std::span<float> vertices, std::span<uint32> indices);
+    Mesh(std::span<Vertex> vertices, std::span<uint32> indices);
     Mesh(const Mesh&) = delete;
     Mesh(Mesh&& src) noexcept
         : m_vao(src.m_vao),

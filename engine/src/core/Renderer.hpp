@@ -16,7 +16,8 @@ private:
 public:
     ~Renderer();
 
-    void drawElements(RenderPrimitive primitive, uint32 indiceCount);
+    void predraw() const;
+    void drawElements(RenderPrimitive primitive, uint32 indiceCount) const;
 
 private:
     friend class Engine;

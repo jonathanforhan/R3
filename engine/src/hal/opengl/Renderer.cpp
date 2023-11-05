@@ -9,16 +9,18 @@
 namespace R3 {
 
 Renderer::Renderer() {
-    glEnable(GL_CULL_FACE);
+    // glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
 }
 
 Renderer::~Renderer() {}
 
-void Renderer::drawElements(RenderPrimitive primitive, uint32 indiceCount) {
-    static const GLfloat s_bg[] = {0.2f, 0.4f, 0.3f, 1.0f};
-    glClearBufferfv(GL_COLOR, 0, s_bg);
-    glClear(GL_DEPTH_BUFFER_BIT);
+void Renderer::predraw() const {
+    glClearColor(0.1f, 0.4f, 0.6f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+}
+
+void Renderer::drawElements(RenderPrimitive primitive, uint32 indiceCount) const {
 
     GLenum glPrimitive{};
     switch (primitive) {

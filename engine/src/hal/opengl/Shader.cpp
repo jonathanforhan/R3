@@ -1,11 +1,12 @@
 #if R3_OPENGL
 
 #include "core/Shader.hpp"
+#include <glad/glad.h>
 #include <fstream>
 #include <sstream>
-#include <glad/glad.h>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
+#include "api/Math.hpp"
 #include "api/Todo.hpp"
 
 static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
@@ -102,27 +103,125 @@ void Shader::importSPIRV(std::string_view vs, std::string_view fs) {
     TODO("import SPIRV");
 }
 
-#if 0
-template <typename T>
-void Shader::writeUniform(uint32 location, T v0) {
+void Shader::writeUniform(uint32 location, float v0) {
+    glUniform1f(location, v0);
 }
 
-template <typename T>
-void Shader::writeUniform(uint32 location, T v0, T v1) {
+void Shader::writeUniform(uint32 location, float v0, float v1) {
+    glUniform2f(location, v0, v1);
 }
 
-template <typename T>
-void Shader::writeUniform(uint32 location, T v0, T v1, T v2) {
+void Shader::writeUniform(uint32 location, float v0, float v1, float v2) {
+    glUniform3f(location, v0, v1, v2);
 }
 
-template <typename T>
-void Shader::writeUniform(uint32 location, T v0, T v1, T v2, T v3) {
+void Shader::writeUniform(uint32 location, float v0, float v1, float v2, float v3) {
+    glUniform4f(location, v0, v1, v2, v3);
 }
 
-template <typename T>
-void Shader::writeUniform(uint32 location, const T& v0) {
+void Shader::writeUniform(uint32 location, int v0) {
+    glUniform1i(location, v0);
 }
-#endif
+
+void Shader::writeUniform(uint32 location, int v0, int v1) {
+    glUniform2i(location, v0, v1);
+}
+
+void Shader::writeUniform(uint32 location, int v0, int v1, int v2) {
+    glUniform3i(location, v0, v1, v2);
+}
+
+void Shader::writeUniform(uint32 location, int v0, int v1, int v2, int v3) {
+    glUniform4i(location, v0, v1, v2, v3);
+}
+
+void Shader::writeUniform(uint32 location, unsigned v0) {
+    glUniform1ui(location, v0);
+}
+
+void Shader::writeUniform(uint32 location, unsigned v0, unsigned v1) {
+    glUniform2ui(location, v0, v1);
+}
+
+void Shader::writeUniform(uint32 location, unsigned v0, unsigned v1, unsigned v2) {
+    glUniform3ui(location, v0, v1, v2);
+}
+
+void Shader::writeUniform(uint32 location, unsigned v0, unsigned v1, unsigned v2, unsigned v3) {
+    glUniform4ui(location, v0, v1, v2, v3);
+}
+
+void Shader::writeUniform(uint32 location, const glm::vec2& v0) {
+    glUniform2fv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::vec3& v0) {
+    glUniform3fv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::vec4& v0) {
+    glUniform4fv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::ivec2& v0) {
+    glUniform2iv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::ivec3& v0) {
+    glUniform3iv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::ivec4& v0) {
+    glUniform4iv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::uvec2& v0) {
+    glUniform2uiv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::uvec3& v0) {
+    glUniform3uiv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::uvec4& v0) {
+    glUniform4uiv(location, 1, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat2& v0) {
+    glUniformMatrix2fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat3& v0) {
+    glUniformMatrix3fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat4& v0) {
+    glUniformMatrix4fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat2x3& v0) {
+    glUniformMatrix2x3fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat3x2& v0) {
+    glUniformMatrix3x2fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat2x4& v0) {
+    glUniformMatrix2x4fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat4x2& v0) {
+    glUniformMatrix4x2fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat3x4& v0) {
+    glUniformMatrix3x4fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
+
+void Shader::writeUniform(uint32 location, const glm::mat4x3& v0) {
+    glUniformMatrix4x3fv(location, 1, GL_FALSE, glm::value_ptr(v0));
+}
 
 } // namespace R3
 

@@ -1,8 +1,8 @@
 #version 460
 
-in vec4 vColor;
-out vec4 fColor;
+in vec4 v_Color;
+out vec4 f_Color;
 
 void main() {
-    fColor = vColor;
+    f_Color = v_Color;
 }
