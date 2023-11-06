@@ -5,3 +5,6 @@ out/*
 *-build*/
 .cache/*
 compile_commands.json
+CMakePresets.json
+CMakeUserPresets.json
+R3.proj.DotSettings
