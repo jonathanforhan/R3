@@ -33,7 +33,7 @@ auto Engine::getScene(const std::string& name) -> Scene& {
     return Engine::inst().m_scenes.at(name);
 }
 
-auto Engine::isActiveScene(const std::string& name) {
+auto Engine::isActiveScene(const std::string& name) -> bool {
     auto& engine = Engine::inst();
     return &engine.m_scenes.at(name) == engine.m_activeScene;
 }
@@ -58,13 +58,13 @@ auto Engine::inst() -> Engine& {
     return s_instance;
 }
 
-auto Engine::deltaTime() -> double const {
+auto Engine::deltaTime() const -> double const {
     using namespace std::chrono;
 
     static auto s_prev = system_clock::now();
     auto now = system_clock::now();
     double dt = duration<double>(now - s_prev).count();
-    LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp line", __LINE__);
+    // LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp line", __LINE__);
     s_prev = now;
     return dt;
 }

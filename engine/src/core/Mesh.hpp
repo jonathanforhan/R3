@@ -27,8 +27,8 @@ public:
 
     void bind();
 
-    auto indexCount() -> uint32 const { return m_indexCount; }
-    auto vertexCount() -> uint32 const { return m_vertexCount; }
+    auto indexCount() const -> uint32 const { return m_indexCount; }
+    auto vertexCount() const -> uint32 const { return m_vertexCount; }
 
 private:
     uint32 m_vao{0};

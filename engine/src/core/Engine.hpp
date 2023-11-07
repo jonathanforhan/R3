@@ -21,7 +21,7 @@ public:
     static void removeScene(const std::string& name);
     static auto activeScene() -> Scene&;
     static auto getScene(const std::string& name) -> Scene&;
-    static auto isActiveScene(const std::string& name);
+    static auto isActiveScene(const std::string& name) -> bool;
     static void setActiveScene(const std::string& name);
 
     static void loop();
@@ -31,7 +31,7 @@ public:
 
 private:
     static auto inst() -> Engine&;
-    auto deltaTime() -> double const;
+    auto deltaTime() const -> double const;
 
 private:
     Window m_window;

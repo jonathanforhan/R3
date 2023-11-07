@@ -15,15 +15,15 @@ public:
 
     void show();
     void hide();
-    auto isVisible() -> bool const;
+    auto isVisible() const -> bool const;
     void resize(int32 width, int32 height);
-    auto size() -> std::tuple<int32, int32> const;
+    auto size() const -> std::tuple<int32, int32> const;
     void size(int32& width, int32& height) const;
-    auto aspectRatio() -> float const;
-    auto shouldClose() -> bool const;
+    auto aspectRatio() const -> float const;
+    auto shouldClose() const -> bool const;
     void update();
-    auto nativeId() -> void* const;
-    auto nativeWindow() -> void* const;
+    auto nativeId() const -> void* const;
+    auto nativeWindow() const -> void* const;
     void kill();
 
 private:

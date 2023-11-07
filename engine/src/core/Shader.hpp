@@ -27,7 +27,7 @@ public:
     ~Shader();
 
     void bind();
-    auto location(std::string_view uniform) -> uint32 const;
+    auto location(std::string_view uniform) const -> uint32 const;
 
     void writeUniform(uint32 location, float v0);
     void writeUniform(uint32 location, float v0, float v1);

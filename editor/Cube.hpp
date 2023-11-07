@@ -21,18 +21,13 @@ struct Cube : Entity {
          Texture2D& texture,
          Texture2D& textureSpecular,
          float shine)
-        : transform(1.0f),
+        : shine(shine),
+          scale(scale),
+          transform(1.0f),
           shader(shader),
           mesh(mesh),
           texture(texture),
           textureSpecular(textureSpecular) {
-
-        texture.bind(0);
-        textureSpecular.bind(1);
-        shader.bind();
-        shader.writeUniform("u_Material.diffuse", 0);
-        shader.writeUniform("u_Material.specular", 1);
-        shader.writeUniform("u_Material.shininess", shine);
 
         transform = glm::translate(mat4(1.0f), position);
         transform = glm::scale(transform, scale);
@@ -40,6 +35,8 @@ struct Cube : Entity {
 
     void tick(double);
 
+    float shine;
+    vec3 scale;
     mat4 transform;
     Shader& shader;
     Mesh& mesh;

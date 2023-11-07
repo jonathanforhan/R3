@@ -12,6 +12,12 @@ void Cube::tick(double) {
     shader.writeUniform("u_View", Engine::activeScene().view);
     shader.writeUniform("u_Projection", Engine::activeScene().projection);
 
+    shader.writeUniform("u_Material.diffuse", 0);
+    shader.writeUniform("u_Material.specular", 1);
+    shader.writeUniform("u_Material.shininess", shine);
+    shader.writeUniform("u_TilingFactor", vec2(scale.x, scale.z));
+
+
     // Fragment Shader
     usize i = 0;
     Engine::activeScene().componentView<LightCube>().each([this, &i](LightCube& lightCube) {

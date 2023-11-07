@@ -81,15 +81,13 @@ void Editor::runEngine() {
     Mesh cube(vertices);
 
     // crates
-    Entity::create<Cube>(&defaultScene, vec3(3, 1, 3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 64.0f);
-    Entity::create<Cube>(&defaultScene, vec3(3, 1, -3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 64.0f);
-    Entity::create<Cube>(&defaultScene, vec3(-3, 1, 3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 64.0f);
-    Entity::create<Cube>(&defaultScene, vec3(-3, 1, -3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 64.0f);
+    Entity::create<Cube>(&defaultScene, vec3(3, 1, 3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 128.0f);
+    Entity::create<Cube>(&defaultScene, vec3(3, 1, -3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 128.0f);
+    Entity::create<Cube>(&defaultScene, vec3(-3, 1, 3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 128.0f);
+    Entity::create<Cube>(&defaultScene, vec3(-3, 1, -3), vec3(1), defaultShader, cube, crateTexture, crateTextureSpecular, 128.0f);
 
     // floor
-    for (int i = -10; i < 10; i++)
-        for (int j = -10; j < 10; j++)
-            Entity::create<Cube>(&defaultScene, vec3(i, 0, j), vec3(1), defaultShader, cube, containerTexture, containerTexture, 1.0f);
+    Entity::create<Cube>(&defaultScene, vec3(0), vec3(10, 1, 10), defaultShader, cube, containerTexture, containerTexture, 1.0f);
 
     QString labels[] = {
         tr("Blue Light"),
@@ -118,7 +116,7 @@ void Editor::runEngine() {
             QSlider* curr = sliders[i];
             curr->setOrientation(Qt::Horizontal);
             curr->setMinimumWidth(300);
-            curr->setRange(-10, 9);
+            curr->setRange(-11, 10);
             connect(curr, &QSlider::valueChanged, [&light, curr, i]() { light.position[i] = curr->value(); });
             curr->setValue(light.position[i]);
             sliderWidget->layout()->addWidget(curr);

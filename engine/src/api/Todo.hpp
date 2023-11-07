@@ -16,8 +16,8 @@ inline std::string _fmt(Args&&... args) {
 }
 } // namespace R3::detail::todo
 
-#define TODO(_Msg)                                                                                     \
-    do {                                                                                               \
+#define TODO(_Msg)                                                                                    \
+    do {                                                                                              \
         auto s = R3::detail::todo::_fmt("R3 todo: " _Msg ", File: ", __FILE__, ", Line: ", __LINE__); \
-        throw std::runtime_error(s);                                                                   \
+        throw std::runtime_error(s);                                                                  \
     } while (0)

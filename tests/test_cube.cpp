@@ -173,12 +173,6 @@ struct Player : Entity {
 };
 
 int main(void) {
-#if defined _DEBUG || !defined NDEBUG
-    LOG(Info, "Running Debug Cube Test...");
-#else
-    LOG(Info, "Running Release Cube Test...");
-#endif
-
     Scene& defaultScene = Engine::addScene("default", true);
 
     Shader lightShader(ShaderType::GLSL, "shaders/light.vert", "shaders/light.frag");
@@ -212,4 +206,6 @@ int main(void) {
     Entity::create<Player>(&defaultScene);
 
     Engine::loop();
+
+    return 0;
 }

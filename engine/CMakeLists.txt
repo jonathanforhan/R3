@@ -19,18 +19,24 @@ add_library(R3_ENGINE STATIC ${R3_ENGINE_SOURCES})
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if (MSVC)
-    set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4 /EHsc")
+    set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 else ()
     set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 endif ()
 
+set(BUILD_SHARED_LIBS OFF)
 set(GLFW_BUILD_EXAMPLES OFF)
 set(GLFW_BUILD_TEST OFF)
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
+set(ASSIMP_INSTALL OFF)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF)
 add_subdirectory(extern/glad SYSTEM)
 add_subdirectory(extern/glfw SYSTEM)
 add_subdirectory(extern/glm SYSTEM)
 add_subdirectory(extern/stb SYSTEM)
 add_subdirectory(extern/entt SYSTEM)
+add_subdirectory(extern/assimp SYSTEM)
 find_package(OpenGL REQUIRED)
 
 include(GNUInstallDirs)
@@ -39,6 +45,7 @@ target_link_libraries(R3_ENGINE PRIVATE
     glad
     glfw
     stb_image
+    assimp::assimp
     )
 
 target_link_libraries(R3_ENGINE PUBLIC
