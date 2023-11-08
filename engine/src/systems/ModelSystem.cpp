@@ -32,12 +32,13 @@ void ModelSystem::tick(double) {
         Engine::activeScene().componentView<LightComponent>().each([&i, &model](LightComponent& light) {
             std::string name = (std::stringstream() << "u_Lights[" << char('0' + i) << ']').str();
             model.shader().writeUniform(name + ".position", light.position);
-            model.shader().writeUniform(name + ".ambient", vec3(0.05f));
-            model.shader().writeUniform(name + ".diffuse", vec3(0.8f) * 3.0f);
-            model.shader().writeUniform(name + ".specular", vec3(1.0f));
-            model.shader().writeUniform(name + ".constant", 1.0f / light.intensity);
-            model.shader().writeUniform(name + ".linear", 0.09f / light.intensity);
-            model.shader().writeUniform(name + ".quadratic", 0.032f / float(pow(light.intensity, 3)));
+            model.shader().writeUniform(name + ".ambient", vec3(0.05f) * light.intensity);
+            model.shader().writeUniform(name + ".diffuse", vec3(0.8f) * 2.0f * light.intensity);
+            model.shader().writeUniform(name + ".specular", vec3(1.0f) * light.intensity);
+            model.shader().writeUniform(name + ".emissive", vec3(light.intensity) * 1.2f);
+            model.shader().writeUniform(name + ".constant", 1.0f);
+            model.shader().writeUniform(name + ".linear", 0.09f);
+            model.shader().writeUniform(name + ".quadratic", 0.032f);
             model.shader().writeUniform(name + ".color", light.color);
             i++;
         });
