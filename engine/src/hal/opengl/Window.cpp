@@ -45,11 +45,7 @@ Window::Window(std::string_view title) {
     auto resizeCallback = [](GLFWwindow*, int width, int height) { glViewport(0, 0, width, height); };
     glfwSetFramebufferSizeCallback(GLWIN(m_pNativeWindow), resizeCallback);
 
-#if not R3_BUILD_DIST
     glfwSwapInterval(GL_FALSE);
-#else
-    glfwSwapInterval(GL_TRUE);
-#endif
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         LOG(Error, "Failed to initialize GLAD");

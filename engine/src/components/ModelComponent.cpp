@@ -25,7 +25,7 @@ constexpr auto ASSIMP_LOAD_FLAGS = (
 
 namespace R3 {
 
-Model::Model(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs)
+ModelComponent::ModelComponent(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs)
     : m_shader(shader),
       m_directory(directory + "/") {
     Assimp::Importer importer;
@@ -45,7 +45,7 @@ Model::Model(const std::string& directory, std::string_view file, Shader& shader
     processNode(scene->mRootNode, scene);
 }
 
-void Model::processNode(aiNode* node, const aiScene* scene) {
+void ModelComponent::processNode(aiNode* node, const aiScene* scene) {
     for (uint32 i = 0; i < node->mNumMeshes; i++) {
         aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         processMesh(mesh, scene);
@@ -56,7 +56,7 @@ void Model::processNode(aiNode* node, const aiScene* scene) {
     }
 }
 
-void Model::processMesh(aiMesh* mesh, const aiScene* scene) {
+void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<Vertex> vertices;
     std::vector<uint32> indices;
 
@@ -111,7 +111,7 @@ void Model::processMesh(aiMesh* mesh, const aiScene* scene) {
     }
 }
 
-void Model::loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type) {
+void ModelComponent::loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type) {
     aiTextureType aiType = aiTextureType(typeFlag);
 
     for (uint32 i = 0; i < material->GetTextureCount(aiType); i++) {

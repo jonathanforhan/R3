@@ -1,10 +1,11 @@
-#pragma once 
+#pragma once
+#include <set>
 #include <string_view>
 #include <vector>
-#include <set>
+#include "api/Types.hpp"
 #include "core/Mesh.hpp"
-#include "core/Texture2D.hpp"
 #include "core/Shader.hpp"
+#include "core/Texture2D.hpp"
 
 class aiScene;
 class aiNode;
@@ -13,9 +14,10 @@ class aiMaterial;
 
 namespace R3 {
 
-class Model {
+class ModelComponent {
 public:
-    Model(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs = false);
+    ModelComponent(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs = false);
+    ModelComponent(ModelComponent&&) = default;
 
     auto meshes() -> std::vector<Mesh>& { return m_meshes; }
     auto textures() -> std::vector<Texture2D>& { return m_textures; }
@@ -25,6 +27,10 @@ private:
     void processNode(aiNode* node, const aiScene* scene);
     void processMesh(aiMesh* mesh, const aiScene* scene);
     void loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type);
+
+public:
+    mat4 transform{1.0f};
+    vec2 tiling{1.0f};
 
 private:
     std::vector<Mesh> m_meshes;
