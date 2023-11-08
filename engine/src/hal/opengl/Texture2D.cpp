@@ -8,7 +8,8 @@
 
 namespace R3 {
 
-Texture2D::Texture2D(std::string_view path) {
+Texture2D::Texture2D(std::string_view path, TextureType type)
+    : m_type(type) {
     glCreateTextures(GL_TEXTURE_2D, 1, &m_id);
     glBindTexture(GL_TEXTURE_2D, m_id);
 
@@ -37,7 +38,6 @@ Texture2D::~Texture2D() {
 void Texture2D::bind(uint8 index) {
     glActiveTexture(GL_TEXTURE0 + index);
     glBindTexture(GL_TEXTURE_2D, m_id);
-    // glBindTextureUnit(index, m_id);
 }
 
 } // namespace R3

@@ -1,6 +1,5 @@
 #pragma once
 #include <entt/entt.hpp>
-#include "api/Log.hpp"
 #include "api/Types.hpp"
 #include "systems/System.hpp"
 
@@ -52,7 +51,6 @@ template <typename T, typename... Args>
 inline void Scene::addSystem(Args&&... args) {
     static_assert(std::is_base_of_v<System, T>);
     if (!m_system_set.contains(typeid(T).name())) {
-        LOG(Info, "Adding", typeid(T).name());
         m_systems.emplace_back(new T(std::forward<Args>(args)...));
         m_system_set.emplace(typeid(T).name());
     }

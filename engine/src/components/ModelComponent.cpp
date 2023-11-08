@@ -15,7 +15,6 @@ constexpr auto ASSIMP_LOAD_FLAGS = (
     aiProcess_SortByPType |
     aiProcess_RemoveRedundantMaterials |
     aiProcess_FindInvalidData |
-    aiProcess_FlipUVs |
     aiProcess_CalcTangentSpace |
     aiProcess_GenSmoothNormals |
     aiProcess_ImproveCacheLocality |
@@ -26,13 +25,18 @@ constexpr auto ASSIMP_LOAD_FLAGS = (
 
 namespace R3 {
 
-Model::Model(std::string_view path, Shader& shader)
-    : m_shader(shader) {
+Model::Model(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs)
+    : m_shader(shader),
+      m_directory(directory + "/") {
     Assimp::Importer importer;
-    const aiScene* scene = importer.ReadFile(path.data(), ASSIMP_LOAD_FLAGS);
-    if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode || scene->mNumMeshes == 0) {
+
+    std::string path = "assets/" + m_directory + file.data();
+    const aiScene* scene = importer.ReadFile(path.c_str(), ASSIMP_LOAD_FLAGS | (aiProcess_FlipUVs * flipUVs));
+
+    bool isValidScene = scene && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && scene->mRootNode;
+    if (!isValidScene) {
         LOG(Error, "Assimp import error", importer.GetErrorString());
-        ENSURE(NULL);
+        ENSURE(isValidScene);
     }
 
     m_meshes.reserve(scene->mNumMeshes);
@@ -42,27 +46,14 @@ Model::Model(std::string_view path, Shader& shader)
 }
 
 void Model::processNode(aiNode* node, const aiScene* scene) {
-    for (uint32 i = 0; i < scene->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[i];
+    for (uint32 i = 0; i < node->mNumMeshes; i++) {
+        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
         processMesh(mesh, scene);
     }
 
-#if 0
     for (uint32 i = 0; i < node->mNumChildren; i++) {
         processNode(node->mChildren[i], scene);
     }
-#else
-    for (uint32 i = 0; i < scene->mNumMaterials; i++) {
-        try {
-            aiMaterial* material = scene->mMaterials[i];
-            if (material->GetTextureCount(aiTextureType_DIFFUSE) > 0) {
-                loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-            }
-        } catch (std::exception& e) {
-            LOG(Error, e.what());
-        }
-    }
-#endif
 }
 
 void Model::processMesh(aiMesh* mesh, const aiScene* scene) {
@@ -110,41 +101,28 @@ void Model::processMesh(aiMesh* mesh, const aiScene* scene) {
 
     m_meshes.emplace_back(std::span<Vertex>(vertices.data(), vertices.size()), std::span<uint32>(indices.data(), indices.size()));
 
-#if 0
-    if (mesh->mMaterialIndex < 0)
-        return;
-
-    aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-
-    try {
-        loadMaterialTextures(material, aiTextureType_DIFFUSE, "texture_diffuse");
-        // loadMaterialTextures(material, aiTextureType_SPECULAR, "texture_specular");
-        // loadMaterialTextures(material, aiTextureType_NORMALS, "texture_normal");
-        // loadMaterialTextures(material, aiTextureType_HEIGHT, "texture_height");
-    } catch (std::exception& e) {
-        LOG(Error, e.what());
+    if (mesh->mMaterialIndex >= 0 && m_loadedTextures.size() < scene->mNumMaterials) {
+        aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
+        loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular);
+        loadMaterialTextures(material, aiTextureType_NORMALS, TextureType::Normals);
+        loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Diffuse);
+        loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::Emissive);
+        loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse);
     }
-#endif
 }
 
-void Model::loadMaterialTextures(aiMaterial* material, uint32 typeFlag, std::string_view typeName) {
-    static std::set<std::string> loadedTextures;
-    aiTextureType type = aiTextureType(typeFlag);
+void Model::loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type) {
+    aiTextureType aiType = aiTextureType(typeFlag);
 
-    LOG(Info, "Material Count", material->GetTextureCount(type));
+    for (uint32 i = 0; i < material->GetTextureCount(aiType); i++) {
+        aiString str;
+        ENSURE(material->GetTexture(aiType, 0, &str) == AI_SUCCESS);
 
-    for (uint32 i = 0; i < material->GetTextureCount(type); i++) {
-        aiString s;
-        ENSURE(material->GetTexture(type, 0, &s, 0, 0, 0, 0, 0) == AI_SUCCESS);
-
-        if (!loadedTextures.contains(s.C_Str())) {
-            loadedTextures.emplace(s.C_Str());
-            LOG(Info, s.C_Str());
-            m_textures.emplace_back(std::string("assets/backpack/") + s.C_Str());
+        if (!m_loadedTextures.contains(str.C_Str())) {
+            m_loadedTextures.emplace(str.C_Str());
+            m_textures.emplace_back("assets/" + m_directory + str.C_Str(), type);
         }
     }
-
-    loadedTextures = {};
 }
 
 } // namespace R3

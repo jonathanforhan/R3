@@ -17,6 +17,7 @@ public:
     void apply(mat4* view, mat4* projection, float aspectRatio) const;
 
     auto position() -> const vec3& { return m_position; }
+    auto front() -> const vec3& { return m_front; }
     auto active() -> bool const { return m_active; }
     void setActive(bool active = true) { m_active = active; }
 
