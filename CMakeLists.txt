@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(R3 VERSION 1.0.0 LANGUAGES CXX C)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
@@ -13,23 +14,40 @@ endif ()
 
 set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-function(COPY_RESOUCES TRGT)
-	add_custom_target("COPY_SHADERS_${TRGT}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			"${R3_SOURCE_DIR}/shaders"
-			"${CMAKE_CURRENT_BINARY_DIR}/shaders")
-	add_custom_target("COPY_TEXTURES_${TRGT}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			"${R3_SOURCE_DIR}/textures"
-			"${CMAKE_CURRENT_BINARY_DIR}/textures")
-	add_custom_target("COPY_ASSETS_${TRGT}"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory
-			"${R3_SOURCE_DIR}/assets"
-			"${CMAKE_CURRENT_BINARY_DIR}/assets")
-	add_dependencies(${TRGT} "COPY_SHADERS_${TRGT}")
-	add_dependencies(${TRGT} "COPY_TEXTURES_${TRGT}")
-	add_dependencies(${TRGT} "COPY_ASSETS_${TRGT}")
-endfunction ()
+add_custom_target(COPY_ASSETS
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+add_custom_target(COPY_SHADERS
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
+add_custom_target(COPY_TEXTURES
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
+
+function(TEST_PROJECT)
+	file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
+	file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+
+	get_filename_component(DIRNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+	add_executable(${DIRNAME})
+
+	if (MSVC)
+		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
+	else ()
+		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+	endif ()
+
+	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
+	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
+	add_dependencies(${DIRNAME} COPY_ASSETS)
+	add_dependencies(${DIRNAME} COPY_SHADERS)
+	add_dependencies(${DIRNAME} COPY_TEXTURES)
+endfunction()
+
 
 option(R3_BUILD_TESTS ON)
 set(R3_BUILD_TESTS ON)
