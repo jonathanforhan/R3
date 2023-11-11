@@ -39,10 +39,17 @@ ModelComponent::ModelComponent(const std::string& directory, std::string_view fi
         ENSURE(isValidScene);
     }
 
-    m_meshes.reserve(scene->mNumMeshes);
     m_textures.reserve(scene->mNumMaterials);
 
     processNode(scene->mRootNode, scene);
+
+    m_mesh = {std::span<Vertex>{m_vertices.data(), m_vertices.size()},
+              std::span<uint32>{m_indices.data(), m_indices.size()}};
+
+    m_vertices.clear();
+    m_vertices.shrink_to_fit();
+    m_indices.clear();
+    m_indices.shrink_to_fit();
 }
 
 void ModelComponent::processNode(aiNode* node, const aiScene* scene) {
@@ -58,7 +65,10 @@ void ModelComponent::processNode(aiNode* node, const aiScene* scene) {
 
 void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
     std::vector<Vertex> vertices;
+    vertices.reserve(mesh->mNumVertices);
+
     std::vector<uint32> indices;
+    indices.reserve((size_t)mesh->mNumFaces * 3);
 
     for (uint32 i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex{};
@@ -99,7 +109,10 @@ void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
         indices.push_back(face.mIndices[2]);
     }
 
-    m_meshes.emplace_back(std::span<Vertex>(vertices.data(), vertices.size()), std::span<uint32>(indices.data(), indices.size()));
+    for (uint32 index : indices) {
+        m_indices.push_back(index + m_vertices.size());
+    }
+    m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
 
     if (mesh->mMaterialIndex >= 0 && m_loadedTextures.size() < scene->mNumMaterials) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];

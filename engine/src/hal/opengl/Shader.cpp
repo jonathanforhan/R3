@@ -57,7 +57,7 @@ Shader::Shader(ShaderType type, std::string_view vs, std::string_view fs) {
 }
 
 Shader::~Shader() {
-    glDeleteShader(m_id);
+    glDeleteProgram(m_id);
 }
 
 void Shader::bind() {

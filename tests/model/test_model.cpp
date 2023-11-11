@@ -1,5 +1,4 @@
 #include <chrono>
-#include <sstream>
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "components/CameraComponent.hpp"

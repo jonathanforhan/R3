@@ -7,4 +7,5 @@ class ModelSystem : public System {
 public:
     void tick(double);
 };
+
 } // namespace R3

@@ -4,56 +4,69 @@
 #include "components/ModelComponent.hpp"
 #include "components/CameraComponent.hpp"
 #include "components/LightComponent.hpp"
+#include "api/Math.hpp"
+#include "api/Log.hpp"
 
 namespace R3 {
 
 void ModelSystem::tick(double) {
-    Engine::activeScene().componentView<ModelComponent>().each([](ModelComponent& model) {
+    static int draws = 0;
+
+    CameraComponent camera;
+    Engine::activeScene().componentView<CameraComponent>().each([&camera](CameraComponent& cam) {
+        if (cam.active()) {
+            camera = cam;
+        }
+    });
+
+    Engine::activeScene().componentView<ModelComponent>().each([&camera](ModelComponent& model) {
         uint32_t flags = 0;
         for (auto& texture : model.textures()) {
-            uint32 t = uint32(texture.type());
+            uint8 t = uint8(texture.type());
             texture.bind(t);
             flags |= (1 << t);
         }
 
-        model.shader().bind();
+        Shader& shader = model.shader();
 
-        model.shader().writeUniform("u_Model", model.transform);
-        model.shader().writeUniform("u_View", Engine::activeScene().view);
-        model.shader().writeUniform("u_Projection", Engine::activeScene().projection);
-        model.shader().writeUniform("u_Tiling", model.tiling);
-        model.shader().writeUniform("u_Flags", flags);
+        shader.bind();
 
-        model.shader().writeUniform("u_Material.diffuse", 0);
-        model.shader().writeUniform("u_Material.specular", 1);
-        model.shader().writeUniform("u_Material.shininess", 1.0f);
+        shader.writeUniform("u_Model", model.transform);
+        shader.writeUniform("u_View", Engine::activeScene().view);
+        shader.writeUniform("u_Projection", Engine::activeScene().projection);
+        shader.writeUniform("u_Tiling", model.tiling);
+        shader.writeUniform("u_Flags", flags);
+
+        shader.writeUniform("u_ViewPosition", camera.position());
+        shader.writeUniform("u_Material.diffuse", 0);
+        shader.writeUniform("u_Material.specular", 1);
+        shader.writeUniform("u_Material.shininess", 1.0f);
 
         usize i = 0;
-        Engine::activeScene().componentView<LightComponent>().each([&i, &model](LightComponent& light) {
+        Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {
             std::string name = (std::stringstream() << "u_Lights[" << char('0' + i) << ']').str();
-            model.shader().writeUniform(name + ".position", light.position);
-            model.shader().writeUniform(name + ".ambient", vec3(0.05f) * light.intensity);
-            model.shader().writeUniform(name + ".diffuse", vec3(0.8f) * 2.0f * light.intensity);
-            model.shader().writeUniform(name + ".specular", vec3(1.0f) * light.intensity);
-            model.shader().writeUniform(name + ".emissive", vec3(light.intensity) * 1.2f);
-            model.shader().writeUniform(name + ".constant", 1.0f);
-            model.shader().writeUniform(name + ".linear", 0.09f);
-            model.shader().writeUniform(name + ".quadratic", 0.032f);
-            model.shader().writeUniform(name + ".color", light.color);
+            shader.writeUniform(name + ".position", light.position);
+            shader.writeUniform(name + ".ambient", vec3(0.05f) * light.intensity);
+            shader.writeUniform(name + ".diffuse", vec3(0.8f) * 2.0f * light.intensity);
+            shader.writeUniform(name + ".specular", vec3(1.0f) * light.intensity);
+            shader.writeUniform(name + ".emissive", vec3(light.intensity) * 1.2f);
+            shader.writeUniform(name + ".constant", 1.0f);
+            shader.writeUniform(name + ".linear", 0.09f);
+            shader.writeUniform(name + ".quadratic", 0.032f);
+            shader.writeUniform(name + ".color", light.color);
             i++;
         });
 
-        Engine::activeScene().componentView<CameraComponent>().each([&model](CameraComponent& camera) {
-            if (camera.active()) {
-                model.shader().writeUniform("u_ViewPosition", camera.position());
-            }
-        });
+        auto& renderer = Engine::renderer();
 
-        for (auto& mesh : model.meshes()) {
-            mesh.bind();
-            Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
-        }
+        model.mesh().bind();
+        shader.bind();
+        renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
+        draws++;
     });
+
+    LOG(Info, draws, "drawcalls");
+    draws = 0;
 }
 
 } // namespace R3
