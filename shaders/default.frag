@@ -1,6 +1,6 @@
 #version 460
 
-#define NUM_LIGHTS 1
+#define MAX_LIGHTS 10
 
 // flag bits
 // bit is set if that shader is present
@@ -43,7 +43,8 @@ struct Light {
 
 uniform vec3 u_ViewPosition;
 uniform Material u_Material;
-uniform Light u_Lights[NUM_LIGHTS];
+uniform Light u_Lights[MAX_LIGHTS];
+uniform lowp uint u_NumLights;
 
 vec3 calcLight(uint index, vec3 normal, vec3 position, vec3 viewDirection, highp uint flags);
 
@@ -53,12 +54,13 @@ void main() {
 
 	vec3 result = vec3(0.0);
 
-	for (int i = 0; i < NUM_LIGHTS; i++) {
+	for (int i = 0; i < u_NumLights; i++) {
 		result += calcLight(i, norm, v_Position, viewDirection, v_Flags);
 	}
 
 	//--- TODO BAD
 	vec4 ambientLight = 0.3 * vec4(vec3(texture(u_Material.diffuse, v_TexCoords)), 1.0);
+	ambientLight = vec4(0);
 	//--- TODO BAD
 
 	f_Color = vec4(result, 1.0) + ambientLight;

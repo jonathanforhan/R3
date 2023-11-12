@@ -42,7 +42,7 @@ void ModelSystem::tick(double) {
         shader.writeUniform("u_Material.specular", 1);
         shader.writeUniform("u_Material.shininess", 1.0f);
 
-        usize i = 0;
+        uint32 i = 0;
         Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {
             std::string name = (std::stringstream() << "u_Lights[" << char('0' + i) << ']').str();
             shader.writeUniform(name + ".position", light.position);
@@ -56,6 +56,7 @@ void ModelSystem::tick(double) {
             shader.writeUniform(name + ".color", light.color);
             i++;
         });
+        shader.writeUniform("u_NumLights", i);
 
         auto& renderer = Engine::renderer();
 
@@ -64,7 +65,7 @@ void ModelSystem::tick(double) {
         renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
         draws++;
     });
-    LOG(Info, draws, "draws");
+    // LOG(Verbose, draws, "draws");
     draws = 0;
 }
 

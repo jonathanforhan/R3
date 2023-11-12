@@ -27,7 +27,7 @@ enum class StencilOperation {
 };
 
 class Renderer {
-private:
+protected:
     Renderer();
     friend class Engine; // friend so engine can construct
 
