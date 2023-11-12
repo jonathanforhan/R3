@@ -5,7 +5,7 @@ namespace R3 {
 
 class ModelSystem : public System {
 public:
-    void tick(double);
+    void tick(double) override;
 };
 
 } // namespace R3

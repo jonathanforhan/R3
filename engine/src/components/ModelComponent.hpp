@@ -26,7 +26,7 @@ public:
 private:
     void processNode(aiNode* node, const aiScene* scene);
     void processMesh(aiMesh* mesh, const aiScene* scene);
-    void loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type);
+    void loadMaterialTextures(const aiScene* scene, aiMaterial* material, uint32 typeFlag, TextureType type);
 
 public:
     mat4 transform{1.0f};

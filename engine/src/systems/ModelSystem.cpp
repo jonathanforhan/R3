@@ -9,9 +9,9 @@
 
 namespace R3 {
 
-void ModelSystem::tick(double) {
-    static int draws = 0;
+int draws = 0;
 
+void ModelSystem::tick(double) {
     CameraComponent camera;
     Engine::activeScene().componentView<CameraComponent>().each([&camera](CameraComponent& cam) {
         if (cam.active()) {
@@ -64,8 +64,7 @@ void ModelSystem::tick(double) {
         renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
         draws++;
     });
-
-    LOG(Info, draws, "drawcalls");
+    LOG(Info, draws, "draws");
     draws = 0;
 }
 

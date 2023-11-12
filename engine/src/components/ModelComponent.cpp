@@ -43,13 +43,9 @@ ModelComponent::ModelComponent(const std::string& directory, std::string_view fi
 
     processNode(scene->mRootNode, scene);
 
-    m_mesh = {std::span<Vertex>{m_vertices.data(), m_vertices.size()},
-              std::span<uint32>{m_indices.data(), m_indices.size()}};
-
-    m_vertices.clear();
-    m_vertices.shrink_to_fit();
-    m_indices.clear();
-    m_indices.shrink_to_fit();
+    m_mesh = {{m_vertices.data(), m_vertices.size()}, {m_indices.data(), m_indices.size()}};
+    m_vertices = {};
+    m_indices = {};
 }
 
 void ModelComponent::processNode(aiNode* node, const aiScene* scene) {
@@ -94,8 +90,6 @@ void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
             vertex.bitangent.x = mesh->mBitangents[i].x;
             vertex.bitangent.y = mesh->mBitangents[i].y;
             vertex.bitangent.z = mesh->mBitangents[i].z;
-        } else {
-            vertex.textureCoords = vec2(0.0f, 0.0f);
         }
 
         vertices.push_back(vertex);
@@ -110,30 +104,43 @@ void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
     }
 
     for (uint32 index : indices) {
-        m_indices.push_back(index + m_vertices.size());
+        m_indices.push_back(index + static_cast<uint32>(m_vertices.size()));
     }
-    m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
+    for (Vertex& vertex : vertices) {
+        m_vertices.push_back(vertex);
+    }
+    // m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
 
     if (mesh->mMaterialIndex >= 0 && m_loadedTextures.size() < scene->mNumMaterials) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
-        loadMaterialTextures(material, aiTextureType_SPECULAR, TextureType::Specular);
-        loadMaterialTextures(material, aiTextureType_NORMALS, TextureType::Normals);
-        loadMaterialTextures(material, aiTextureType_HEIGHT, TextureType::Diffuse);
-        loadMaterialTextures(material, aiTextureType_EMISSIVE, TextureType::Emissive);
-        loadMaterialTextures(material, aiTextureType_DIFFUSE, TextureType::Diffuse);
+        loadMaterialTextures(scene, material, aiTextureType_EMISSIVE, TextureType::Emissive);
+        loadMaterialTextures(scene, material, aiTextureType_HEIGHT, TextureType::Height);
+        loadMaterialTextures(scene, material, aiTextureType_NORMALS, TextureType::Normals);
+        loadMaterialTextures(scene, material, aiTextureType_SPECULAR, TextureType::Specular);
+        loadMaterialTextures(scene, material, aiTextureType_DIFFUSE, TextureType::Diffuse);
     }
 }
 
-void ModelComponent::loadMaterialTextures(aiMaterial* material, uint32 typeFlag, TextureType type) {
+void ModelComponent::loadMaterialTextures(const aiScene* scene, aiMaterial* material, uint32 typeFlag, TextureType type) {
     aiTextureType aiType = aiTextureType(typeFlag);
+    aiString path;
 
     for (uint32 i = 0; i < material->GetTextureCount(aiType); i++) {
-        aiString str;
-        ENSURE(material->GetTexture(aiType, 0, &str) == AI_SUCCESS);
+        ENSURE(material->GetTexture(aiType, 0, &path) == AI_SUCCESS);
 
-        if (!m_loadedTextures.contains(str.C_Str())) {
-            m_loadedTextures.emplace(str.C_Str());
-            m_textures.emplace_back("assets/" + m_directory + str.C_Str(), type);
+        if (m_loadedTextures.contains(path.C_Str())) {
+            continue;
+        } else {
+            m_loadedTextures.emplace(path.C_Str());
+        }
+
+        const aiTexture* texture = scene->GetEmbeddedTexture(path.C_Str());
+        LOG(Info, path.C_Str(), texture);
+
+        if (texture) {
+            m_textures.emplace_back(texture->mWidth, texture->mHeight, (void*)texture->pcData, type);
+        } else {
+            m_textures.emplace_back("assets/" + m_directory + path.C_Str(), type);
         }
     }
 }

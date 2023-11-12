@@ -57,7 +57,11 @@ void main() {
 		result += calcLight(i, norm, v_Position, viewDirection, v_Flags);
 	}
 
-	f_Color = vec4(result, 1.0);
+	//--- TODO BAD
+	vec4 ambientLight = 0.3 * vec4(vec3(texture(u_Material.diffuse, v_TexCoords)), 1.0);
+	//--- TODO BAD
+
+	f_Color = vec4(result, 1.0) + ambientLight;
 }
 
 vec3 calcLight(uint index, vec3 normal, vec3 position, vec3 viewDirection, highp uint flags) {
