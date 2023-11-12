@@ -77,42 +77,6 @@ struct LanternSystem : InputSystem {
 
 struct AnyAsset : Entity {};
 
-struct LightTester : InputSystem {
-    LightTester(LightComponent& light)
-        : light(light) {
-        light.position = vec3(0, 1, 0);
-        setKeyBinding(Key::Key_H, [&](InputAction) {
-            light.position += vec3(0.01, 0, 0);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-        setKeyBinding(Key::Key_L, [&](InputAction) {
-            light.position -= vec3(0.01, 0, 0);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-        setKeyBinding(Key::Key_K, [&](InputAction) {
-            light.position += vec3(0, 0.01, 0);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-        setKeyBinding(Key::Key_J, [&](InputAction) {
-            light.position -= vec3(0, 0.01, 0);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-        setKeyBinding(Key::Key_N, [&](InputAction) {
-            light.position += vec3(0, 0, 0.01);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-        setKeyBinding(Key::Key_M, [&](InputAction) {
-            light.position -= vec3(0, 0, 0.01);
-            LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z);
-        });
-    }
-
-    // void tick(double) override { LOG(Info, "x", light.position.x, "y", light.position.y, "z", light.position.z); }
-
-    LightComponent& light;
-};
-
-
 void runScene() {
     Scene& defaultScene = Engine::addScene("default", true);
 
@@ -138,8 +102,8 @@ void runScene() {
 
     AnyAsset& floor = Entity::create<AnyAsset>(&defaultScene);
     ModelComponent& floorComponent = floor.emplace<ModelComponent>(std::move(floorModel));
-    floorComponent.transform = glm::scale(floorComponent.transform, vec3(0.1f));
-    floorComponent.tiling = vec2(15.0f);
+    floorComponent.transform = glm::scale(floorComponent.transform, vec3(1));
+    floorComponent.tiling = vec2(150.0f);
 
     // lights
     Lantern& lantern = Entity::create<Lantern>(&defaultScene);
@@ -147,7 +111,6 @@ void runScene() {
 
     Engine::activeScene().addSystem<LanternSystem>();
     Engine::activeScene().addSystem<ModelSystem>();
-    Engine::activeScene().addSystem<LightTester>(light);
 
     Engine::loop();
 }

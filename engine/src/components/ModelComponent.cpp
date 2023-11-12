@@ -43,7 +43,7 @@ ModelComponent::ModelComponent(const std::string& directory, std::string_view fi
 
     processNode(scene->mRootNode, scene);
 
-    m_mesh = {{m_vertices.data(), m_vertices.size()}, {m_indices.data(), m_indices.size()}};
+    m_mesh = {{m_vertices}, {m_indices}};
     m_vertices = {};
     m_indices = {};
 }
@@ -60,57 +60,42 @@ void ModelComponent::processNode(aiNode* node, const aiScene* scene) {
 }
 
 void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
-    std::vector<Vertex> vertices;
-    vertices.reserve(mesh->mNumVertices);
+    constexpr auto toGlmVec3 = [](const auto& v) -> glm::vec3 { return {v.x, v.y, v.z}; };
+    constexpr auto toGlmVec2 = [](const auto& v) -> glm::vec2 { return {v.x, v.y}; };
 
-    std::vector<uint32> indices;
-    indices.reserve((size_t)mesh->mNumFaces * 3);
+    constexpr uint32 VERTICES_PER_TRIANGLE = 3;
+    const uint32 vertexOffset = static_cast<uint32>(m_vertices.size());
 
+    //--- populate index data
+    for (uint32 i = 0; i < mesh->mNumFaces; i++) {
+        const aiFace& face = mesh->mFaces[i];
+        CHECK(face.mNumIndices == VERTICES_PER_TRIANGLE);
+
+        m_indices.push_back(face.mIndices[0] + vertexOffset);
+        m_indices.push_back(face.mIndices[1] + vertexOffset);
+        m_indices.push_back(face.mIndices[2] + vertexOffset);
+    }
+
+    //--- populate vertex data
     for (uint32 i = 0; i < mesh->mNumVertices; i++) {
         Vertex vertex{};
 
-        vertex.position.x = mesh->mVertices[i].x;
-        vertex.position.y = mesh->mVertices[i].y;
-        vertex.position.z = mesh->mVertices[i].z;
+        vertex.position = toGlmVec3(mesh->mVertices[i]);
 
         if (mesh->HasNormals()) {
-            vertex.normal.x = mesh->mNormals[i].x;
-            vertex.normal.y = mesh->mNormals[i].y;
-            vertex.normal.z = mesh->mNormals[i].z;
+            vertex.normal = toGlmVec3(mesh->mNormals[i]);
         }
 
         if (mesh->mTextureCoords[0]) {
-            vertex.textureCoords.x = mesh->mTextureCoords[0][i].x;
-            vertex.textureCoords.y = mesh->mTextureCoords[0][i].y;
-
-            vertex.tangent.x = mesh->mTangents[i].x;
-            vertex.tangent.y = mesh->mTangents[i].y;
-            vertex.tangent.z = mesh->mTangents[i].z;
-
-            vertex.bitangent.x = mesh->mBitangents[i].x;
-            vertex.bitangent.y = mesh->mBitangents[i].y;
-            vertex.bitangent.z = mesh->mBitangents[i].z;
+            vertex.textureCoords = toGlmVec2(mesh->mTextureCoords[0][i]);
+            vertex.tangent = toGlmVec3(mesh->mTangents[i]);
+            vertex.bitangent = toGlmVec3(mesh->mBitangents[i]);
         }
 
-        vertices.push_back(vertex);
-    }
-
-    for (uint32 i = 0; i < mesh->mNumFaces; i++) {
-        const aiFace& face = mesh->mFaces[i];
-        CHECK(face.mNumIndices == 3);
-        indices.push_back(face.mIndices[0]);
-        indices.push_back(face.mIndices[1]);
-        indices.push_back(face.mIndices[2]);
-    }
-
-    for (uint32 index : indices) {
-        m_indices.push_back(index + static_cast<uint32>(m_vertices.size()));
-    }
-    for (Vertex& vertex : vertices) {
         m_vertices.push_back(vertex);
     }
-    // m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
 
+    //--- populate texture data
     if (mesh->mMaterialIndex >= 0 && m_loadedTextures.size() < scene->mNumMaterials) {
         aiMaterial* material = scene->mMaterials[mesh->mMaterialIndex];
         loadMaterialTextures(scene, material, aiTextureType_EMISSIVE, TextureType::Emissive);
@@ -123,24 +108,19 @@ void ModelComponent::processMesh(aiMesh* mesh, const aiScene* scene) {
 
 void ModelComponent::loadMaterialTextures(const aiScene* scene, aiMaterial* material, uint32 typeFlag, TextureType type) {
     aiTextureType aiType = aiTextureType(typeFlag);
-    aiString path;
 
     for (uint32 i = 0; i < material->GetTextureCount(aiType); i++) {
+        aiString path;
         ENSURE(material->GetTexture(aiType, 0, &path) == AI_SUCCESS);
 
-        if (m_loadedTextures.contains(path.C_Str())) {
-            continue;
-        } else {
+        if (!m_loadedTextures.contains(path.C_Str())) {
             m_loadedTextures.emplace(path.C_Str());
-        }
 
-        const aiTexture* texture = scene->GetEmbeddedTexture(path.C_Str());
-        LOG(Info, path.C_Str(), texture);
+            const aiTexture* embedded = scene->GetEmbeddedTexture(path.C_Str());
 
-        if (texture) {
-            m_textures.emplace_back(texture->mWidth, texture->mHeight, (void*)texture->pcData, type);
-        } else {
-            m_textures.emplace_back("assets/" + m_directory + path.C_Str(), type);
+            embedded != nullptr
+                ? m_textures.emplace_back(embedded->mWidth, embedded->mHeight, (void*)embedded->pcData, type)
+                : m_textures.emplace_back("assets/" + m_directory + path.C_Str(), type);
         }
     }
 }
