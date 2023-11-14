@@ -32,7 +32,7 @@ ModelComponent::ModelComponent(const std::string& directory, std::string_view fi
       m_directory(directory + "/"),
       m_file(file) {
     Assimp::Importer importer;
-    rapidjson::Document document;
+    // rapidjson::Document document;
     // document.Parse();
 
     std::string path = "assets/" + m_directory + file.data();

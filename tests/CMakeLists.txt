@@ -22,6 +22,10 @@ function(TEST_PROJECT)
 	add_dependencies(${DIRNAME} COPY_TEXTURES)
 endfunction()
 
-add_subdirectory(cube)
-add_subdirectory(model)
-add_subdirectory(animation)
+file(GLOB SUBDIRS LIST_DIRECTORIES true "*")
+foreach (DIR ${SUBDIRS})
+	if (IS_DIRECTORY ${DIR})
+		add_subdirectory(${DIR})
+	endif ()
+endforeach ()
+

@@ -17,7 +17,6 @@ namespace R3 {
 class ModelComponent {
 public:
     ModelComponent(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs = false);
-    ModelComponent(ModelComponent&&) = default;
 
     auto mesh() -> Mesh& { return m_mesh; }
     auto shader() -> Shader& { return m_shader; };

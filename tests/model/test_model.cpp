@@ -82,9 +82,9 @@ void runScene() {
 
     Shader shader(ShaderType::GLSL, "shaders/default.vert", "shaders/default.frag");
 
-    ModelComponent lanternModel("lantern", "scene.gltf", shader);
+    ModelComponent lanternModel("lantern", "lantern.glb", shader);
     ModelComponent backpackModel("backpack", "backpack.obj", shader, true);
-    ModelComponent floorModel("floor", "scene.gltf", shader);
+    ModelComponent floorModel("floor", "floor.glb", shader);
 
     AnyAsset& backpack = Entity::create<AnyAsset>(&defaultScene);
     ModelComponent& backpackComponent = backpack.emplace<ModelComponent>(std::move(backpackModel));
