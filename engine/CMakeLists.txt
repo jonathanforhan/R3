@@ -6,14 +6,15 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
-file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE H_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 file(GLOB_RECURSE HXX_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.hpp")
-
-list(APPEND R3_ENGINE_SOURCES ${C_SOURCES} ${CXX_SOURCES})
 list(APPEND R3_ENGINE_HEADERS ${H_HEADERS} ${HXX_HEADERS})
 set(R3_ENGINE_INCLUDES ${R3_ENGINE_HEADERS} PARENT_SCOPE)
+
+file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+list(APPEND R3_ENGINE_SOURCES ${C_SOURCES} ${CXX_SOURCES})
+
 
 add_library(R3_ENGINE STATIC ${R3_ENGINE_SOURCES})
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
@@ -24,36 +25,13 @@ else ()
     set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Werror")
 endif ()
 
-set(BUILD_SHARED_LIBS OFF)
-set(GLFW_BUILD_EXAMPLES OFF)
-set(GLFW_BUILD_TEST OFF)
-set(ASSIMP_BUILD_TESTS OFF)
-set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
-set(ASSIMP_INSTALL OFF)
-set(ASSIMP_WARNINGS_AS_ERRORS OFF)
-add_subdirectory(extern/glad SYSTEM)
-add_subdirectory(extern/glfw SYSTEM)
-add_subdirectory(extern/glm SYSTEM)
-add_subdirectory(extern/stb SYSTEM)
-add_subdirectory(extern/entt SYSTEM)
-add_subdirectory(extern/assimp SYSTEM)
-add_subdirectory(extern/rapidjson SYSTEM)
-find_package(OpenGL REQUIRED)
+add_subdirectory(extern)
 
-include(GNUInstallDirs)
+target_link_libraries(R3_ENGINE PUBLIC ${R3_EXTERN_LIBS})
+target_link_libraries(R3_ENGINE PRIVATE ${R3_EXTERN_LIBS_PRIVATE})
 
-target_link_libraries(R3_ENGINE PRIVATE
-    glad
-    glfw
-    stb_image
-    assimp::assimp
-    RapidJSON
-    )
-
-target_link_libraries(R3_ENGINE PUBLIC
-    glm
-    EnTT::EnTT
-    )
+target_include_directories(R3_ENGINE PUBLIC "${R3_EXTERN_INCLUDE_DIRS}")
+target_include_directories(R3_ENGINE PRIVATE "${R3_EXTERN_INCLUDE_DIRS_PRIVATE}")
 
 target_compile_definitions(R3_ENGINE PUBLIC
     -DR3_OPENGL=1
@@ -70,8 +48,11 @@ target_compile_definitions(R3_ENGINE PUBLIC
 
     # -DGLM_FORCE_DEPTH_ZERO_TO_ONE=1
     -DGLFW_INCLUDE_NONE=1
-    -DGLFW_EXPOSE_NATIVE_WIN32=1
-    # -DGLFW_EXPOSE_NATIVE_X11=1
-
     -DENTT_NOEXCEPTION=0
     )
+
+if (WIN32)
+    target_compile_definitions(R3_ENGINE PUBLIC -DGLFW_EXPOSE_NATIVE_WIN32=1)
+else ()
+    target_compile_definitions(R3_ENGINE PUBLIC -DGLFW_EXPOSE_NATIVE_X11=1)
+endif ()

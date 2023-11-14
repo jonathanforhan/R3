@@ -27,15 +27,14 @@ add_custom_target(COPY_TEXTURES
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
 
-option(R3_BUILD_TESTS ON)
-set(R3_BUILD_TESTS ON)
-
 add_subdirectory(engine)
 
 add_subdirectory(editor)
 target_sources(R3_EDITOR PRIVATE ${R3_ENGINE_INCLUDES})
 target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
 
+option(R3_BUILD_TESTS ON)
+set(R3_BUILD_TESTS ON)
 if(R3_BUILD_TESTS)
 	add_subdirectory(tests)
 endif()

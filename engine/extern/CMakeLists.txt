@@ -1,0 +1,50 @@
+set(BUILD_SHARED_LIBS OFF)
+
+# glad
+add_subdirectory(glad SYSTEM)
+list(APPEND EXTERN_LIBS_PRIVATE "glad")
+
+# glfw
+set(GLFW_BUILD_EXAMPLES OFF)
+set(GLFW_BUILD_TEST OFF)
+add_subdirectory(glfw SYSTEM)
+list(APPEND EXTERN_LIBS_PRIVATE "glfw")
+
+# glm
+add_subdirectory(glm SYSTEM)
+list(APPEND EXTERN_LIBS "glm")
+
+# std_image
+add_subdirectory(stb SYSTEM)
+list(APPEND EXTERN_LIBS_PRIVATE "stb_image")
+
+# entt
+add_subdirectory(entt SYSTEM)
+list(APPEND EXTERN_LIBS "EnTT::EnTT")
+
+# rapidjson
+set(RAPIDJSON_BUILD_TESTS OFF)
+set(RAPIDJSON_BUILD_DOC OFF)
+set(RAPIDJSON_BUILD_EXAMPLES OFF)
+add_subdirectory(rapidjson SYSTEM)
+list(APPEND EXTERN_LIBS_PRIVATE "RapidJSON")
+list(APPEND EXTERN_INCLUDE_DIRS_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include")
+
+# assimp
+set(ASSIMP_BUILD_TESTS OFF)
+set(ASSIMP_INJECT_DEBUG_POSTFIX OFF)
+set(ASSIMP_INSTALL OFF)
+set(ASSIMP_WARNINGS_AS_ERRORS OFF)
+add_subdirectory(assimp SYSTEM)
+list(APPEND EXTERN_LIBS_PRIVATE "assimp::assimp")
+
+# opengl
+find_package(OpenGL REQUIRED)
+
+include(GNUInstallDirs)
+
+set(R3_EXTERN_LIBS ${EXTERN_LIBS} PARENT_SCOPE)
+set(R3_EXTERN_INCLUDE_DIRS ${EXTERN_INCLUDE_DIRS} PARENT_SCOPE)
+
+set(R3_EXTERN_LIBS_PRIVATE ${EXTERN_LIBS_PRIVATE} PARENT_SCOPE)
+set(R3_EXTERN_INCLUDE_DIRS_PRIVATE ${EXTERN_INCLUDE_DIRS_PRIVATE} PARENT_SCOPE)
