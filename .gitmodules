@@ -10,3 +10,6 @@
 [submodule "engine/extern/assimp"]
 	path = engine/extern/assimp
 	url = https://github.com/assimp/assimp.git
+[submodule "engine/extern/rapidjson"]
+	path = engine/extern/rapidjson
+	url = https://github.com/Tencent/rapidjson.git

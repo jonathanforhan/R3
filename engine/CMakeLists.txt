@@ -37,6 +37,7 @@ add_subdirectory(extern/glm SYSTEM)
 add_subdirectory(extern/stb SYSTEM)
 add_subdirectory(extern/entt SYSTEM)
 add_subdirectory(extern/assimp SYSTEM)
+add_subdirectory(extern/rapidjson SYSTEM)
 find_package(OpenGL REQUIRED)
 
 include(GNUInstallDirs)
@@ -46,6 +47,7 @@ target_link_libraries(R3_ENGINE PRIVATE
     glfw
     stb_image
     assimp::assimp
+    RapidJSON
     )
 
 target_link_libraries(R3_ENGINE PUBLIC

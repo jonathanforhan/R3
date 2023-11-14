@@ -27,28 +27,6 @@ add_custom_target(COPY_TEXTURES
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
 
-function(TEST_PROJECT)
-	file(GLOB_RECURSE C_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.c")
-	file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
-
-	get_filename_component(DIRNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-	add_executable(${DIRNAME})
-
-	if (MSVC)
-		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
-	else ()
-		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-	endif ()
-
-	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
-	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
-	add_dependencies(${DIRNAME} COPY_ASSETS)
-	add_dependencies(${DIRNAME} COPY_SHADERS)
-	add_dependencies(${DIRNAME} COPY_TEXTURES)
-endfunction()
-
-
 option(R3_BUILD_TESTS ON)
 set(R3_BUILD_TESTS ON)
 
