@@ -22,6 +22,7 @@ public:
     auto mesh() -> Mesh& { return m_mesh; }
     auto shader() -> Shader& { return m_shader; };
     auto textures() -> std::vector<Texture2D>& { return m_textures; }
+    auto path() const -> const std::string& { return m_directory + m_file; }
 
 private:
     void processNode(aiNode* node, const aiScene* scene);
@@ -41,6 +42,7 @@ private:
 
     std::set<std::string> m_loadedTextures;
     std::string m_directory;
+    std::string m_file;
 };
 
 } // namespace R3

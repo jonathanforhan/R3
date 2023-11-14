@@ -3,6 +3,7 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <rapidjson/rapidjson.h>
+#include <rapidjson/document.h>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
@@ -28,8 +29,11 @@ namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs)
     : m_shader(shader),
-      m_directory(directory + "/") {
+      m_directory(directory + "/"),
+      m_file(file) {
     Assimp::Importer importer;
+    rapidjson::Document document;
+    // document.Parse();
 
     std::string path = "assets/" + m_directory + file.data();
     const aiScene* scene = importer.ReadFile(path.c_str(), ASSIMP_LOAD_FLAGS | (aiProcess_FlipUVs * flipUVs));
