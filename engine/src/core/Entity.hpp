@@ -9,7 +9,6 @@
 
 #pragma once
 #include <entt/entt.hpp>
-#include <set>
 #include "core/Scene.hpp"
 #include "systems/TickSystem.hpp"
 

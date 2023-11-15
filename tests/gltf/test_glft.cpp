@@ -10,17 +10,21 @@
 
 using namespace R3;
 
-struct Lantern : Entity {};
+struct AnyAsset : Entity {};
+struct Player : Entity {};
 
 void runScene() {
     Scene& defaultScene = Engine::addScene("default", true);
     Shader shader(ShaderType::GLSL, "shaders/default.vert", "shaders/no_shading.frag");
 
-    ModelComponent lanternModel("lantern_gltf", "scene.gltf", shader);
-    lanternModel.transform = glm::scale(mat4(1.0f), vec3(0.01f));
-    Lantern& lantern = Lantern::create<Lantern>(&defaultScene);
-    lantern.emplace<ModelComponent>(std::move(lanternModel));
-    lantern.emplace<CameraComponent>().setActive();
+    Player& player = Entity::create<Player>(&defaultScene);
+    player.emplace<CameraComponent>().setActive();
+
+    ModelComponent mc("assets/TriangleWithoutIndices/glTF/TriangleWithoutIndices.gltf", shader);
+    mc.transform = glm::scale(mat4(1.0f), vec3(0.01f));
+
+    AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);
+    aa.emplace<ModelComponent>(std::move(mc));
 
     Engine::activeScene().addSystem<ModelSystem>();
     Engine::activeScene().addSystem<CameraSystem>();

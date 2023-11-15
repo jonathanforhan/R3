@@ -7,16 +7,11 @@
 #include "core/Shader.hpp"
 #include "core/Texture2D.hpp"
 
-class aiScene;
-class aiNode;
-class aiMesh;
-class aiMaterial;
-
 namespace R3 {
 
 class ModelComponent {
 public:
-    ModelComponent(const std::string& directory, std::string_view file, Shader& shader, bool flipUVs = false);
+    ModelComponent(const std::string& path, Shader& shader);
 
     auto mesh() -> Mesh& { return m_mesh; }
     auto shader() -> Shader& { return m_shader; };
@@ -24,9 +19,7 @@ public:
     auto path() const -> const std::string& { return m_directory + m_file; }
 
 private:
-    void processNode(aiNode* node, const aiScene* scene);
-    void processMesh(aiMesh* mesh, const aiScene* scene);
-    void loadMaterialTextures(const aiScene* scene, aiMaterial* material, uint32 typeFlag, TextureType type);
+    // Members Private
 
 public:
     mat4 transform{1.0f};

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <sstream>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Todo.hpp"
@@ -16,12 +17,11 @@ static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
 
     try {
         ifs.open(shaderFile.data());
-        std::stringstream ss;
-        ss << ifs.rdbuf();
+        s = (std::stringstream() << ifs.rdbuf()).str();
         ifs.close();
-        s = ss.str();
     } catch (std::ifstream::failure& e) {
         LOG(Error, "shader file read failure", shaderFile.data(), e.what());
+        ENSURE(false);
     }
 
     const char* pStr = s.c_str();
@@ -35,6 +35,7 @@ static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
         char infoLog[512];
         glGetShaderInfoLog(shader, 512, nullptr, infoLog);
         LOG(Error, "shader compilation failure:", shaderFile.data(), infoLog);
+        ENSURE(false);
     }
 
     return shader;
@@ -71,8 +72,15 @@ auto Shader::location(std::string_view uniform) const -> uint32 const {
 }
 
 void Shader::importGLSL(std::string_view vs, std::string_view fs) {
-    uint32 vertexShader = importGLSLHelper(vs, GL_VERTEX_SHADER);
-    uint32 fragmentShader = importGLSLHelper(fs, GL_FRAGMENT_SHADER);
+    uint32 vertexShader, fragmentShader;
+    try {
+        vertexShader = importGLSLHelper(vs, GL_VERTEX_SHADER);
+        fragmentShader = importGLSLHelper(fs, GL_FRAGMENT_SHADER);
+    } catch (std::exception& e) {
+        LOG(Error, "GLSL import failure", e.what());
+        return;
+    }
+
     int success;
 
     uint32 program = glCreateProgram();
