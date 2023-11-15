@@ -20,7 +20,7 @@ void runScene() {
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
-    ModelComponent mc("assets/TriangleWithoutIndices/glTF/TriangleWithoutIndices.gltf", shader);
+    ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
     mc.transform = glm::scale(mat4(1.0f), vec3(0.01f));
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);

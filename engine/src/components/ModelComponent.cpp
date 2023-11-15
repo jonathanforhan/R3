@@ -15,6 +15,8 @@ namespace json {
 using namespace rapidjson;
 }
 
+constexpr auto GLB_MAGIC = 0x46546C67;
+
 ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     : m_shader(shader),
       m_directory(),
@@ -23,50 +25,37 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     m_directory = path.substr(0, split);
     m_file = path.substr(split);
 
-    json::Document document;
+    std::ifstream bifs(path, std::ios::binary);
+    CHECK(bifs.is_open() && bifs.good());
 
-    std::string s;
-    std::ifstream ifs;
-    ifs.exceptions(std::ifstream::badbit);
+    uint32 magic = 0;
+    bifs.read((char*)(&magic), sizeof(magic));
+    CHECK(magic == GLB_MAGIC);
 
-    try {
-        ifs.open(path);
-
-        json::IStreamWrapper stream(ifs);
-        document.ParseStream(stream);
-
-        ifs.close();
-    } catch(std::exception& e) {
-        LOG(Error, "model import error", path, e.what());
-        return;
+    uint32 version = 0;
+    bifs.read((char*)(&version), sizeof(version));
+    if (version > GLB_VERSION) {
+        LOG(Warning, "glb container version for", path, "is", version, "while R3 supports glb container version",
+            GLB_VERSION);
     }
 
-    CHECK(document.HasMember("asset") && document["asset"].HasMember("version"));
-    std::string version = document["asset"]["version"].GetString();
-    checkVersion(version);
+    uint32 length = 0;
+    bifs.read((char*)(&length), sizeof(length));
 
-    std::string binFilename = document["buffers"][0]["uri"].GetString();
-    LOG(Info, "opening", binFilename);
+    json::Document document;
 
-    std::ifstream binFile = std::ifstream(m_directory + binFilename, std::ios::binary | std::ios::ate);
-    CHECK(binFile.is_open());
-
-    usize binLen = binFile.tellg();
-    binFile.seekg(0);
-
-    std::vector<char> bin(binLen);
-    binFile.read(bin.data(), binLen);
-    binFile.close();
+    // std::string version = document["asset"]["version"].GetString();
+    // checkVersion(version);
 }
 
-void ModelComponent::checkVersion(std::string_view version) {
+void ModelComponent::checkVersion(std::string_view version) const {
     char* end;
     uint32 major = strtol(version.data(), &end, 10);
     uint32 minor = strtol(end, NULL, 10);
     checkVersion(major, minor);
 }
 
-void ModelComponent::checkVersion(uint32 major, uint32 minor) {
+void ModelComponent::checkVersion(uint32 major, uint32 minor) const {
     if (major > R3::GLTF_VERSION_MAJOR || (major == R3::GLTF_VERSION_MAJOR && minor > R3::GLTF_VERSION_MINOR)) {
         std::string assetVersion = (std::stringstream() << major << "." << minor).str();
         std::string engineGltfVersion = (std::stringstream() << GLTF_VERSION_MAJOR << "." << GLTF_VERSION_MINOR).str();

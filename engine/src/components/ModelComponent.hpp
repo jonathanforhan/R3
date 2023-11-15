@@ -19,8 +19,8 @@ public:
     auto path() const -> const std::string& { return m_directory + m_file; }
 
 private:
-    void checkVersion(std::string_view version);
-    void checkVersion(uint32 major, uint32 minor);
+    void checkVersion(std::string_view version) const;
+    void checkVersion(uint32 major, uint32 minor) const;
 
 public:
     mat4 transform{1.0f};
