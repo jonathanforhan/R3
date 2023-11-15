@@ -22,7 +22,6 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     usize split = path.find_last_of('/') + 1;
     m_directory = path.substr(0, split);
     m_file = path.substr(split);
-    LOG(Info, m_directory, m_file);
 
     json::Document document;
 
@@ -46,11 +45,10 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     std::string version = document["asset"]["version"].GetString();
     checkVersion(version);
 
-    std::string binFilename= document["buffers"][0]["uri"].GetString();
+    std::string binFilename = document["buffers"][0]["uri"].GetString();
     LOG(Info, "opening", binFilename);
 
-    std::ifstream binFile = std::ifstream(binFilename, std::ios::binary | std::ios::ate);
-    binFile.exceptions(std::ifstream::badbit);
+    std::ifstream binFile = std::ifstream(m_directory + binFilename, std::ios::binary | std::ios::ate);
     CHECK(binFile.is_open());
 
     usize binLen = binFile.tellg();
@@ -72,8 +70,8 @@ void ModelComponent::checkVersion(uint32 major, uint32 minor) {
     if (major > R3::GLTF_VERSION_MAJOR || (major == R3::GLTF_VERSION_MAJOR && minor > R3::GLTF_VERSION_MINOR)) {
         std::string assetVersion = (std::stringstream() << major << "." << minor).str();
         std::string engineGltfVersion = (std::stringstream() << GLTF_VERSION_MAJOR << "." << GLTF_VERSION_MINOR).str();
-        LOG(Warning, "glTF version of asset", path, "is", assetVersion, "while R3 supports glTF version",
-            engineGltfVersion);
+        LOG(Warning, "glTF version of asset", m_directory + m_file, "is", assetVersion,
+            "while R3 supports glTF version", engineGltfVersion);
     }
 }
 

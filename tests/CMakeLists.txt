@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 project(R3_TESTS VERSION 1.0.0 LANGUAGES CXX C)
 
 function(TEST_PROJECT)
@@ -17,9 +17,6 @@ function(TEST_PROJECT)
 	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
 	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
-	add_dependencies(${DIRNAME} COPY_ASSETS)
-	add_dependencies(${DIRNAME} COPY_SHADERS)
-	add_dependencies(${DIRNAME} COPY_TEXTURES)
 endfunction()
 
 file(GLOB SUBDIRS LIST_DIRECTORIES true "*")

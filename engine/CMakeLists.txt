@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 project(R3_ENGINE VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_C_STANDARD 17)

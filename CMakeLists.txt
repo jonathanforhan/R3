@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.26)
 project(R3 VERSION 1.0.0 LANGUAGES CXX C)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
@@ -14,15 +14,15 @@ endif ()
 
 set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_custom_target(COPY_ASSETS
+execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
-add_custom_target(COPY_SHADERS
+execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
-add_custom_target(COPY_TEXTURES
+execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
