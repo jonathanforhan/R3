@@ -27,7 +27,7 @@ public:
     void kill();
 
 private:
-    void* m_pNativeWindow;
+    void* m_nativeWindow;
 
     friend class Engine;
 };
