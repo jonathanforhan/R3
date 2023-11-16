@@ -10,7 +10,14 @@
 
 using namespace R3;
 
-struct AnyAsset : Entity {};
+struct AnyAsset : Entity {
+    void tick(double) {
+        if (Engine::window().isVisible()) {
+            Engine::window().hide();
+        }
+    }
+};
+
 struct Player : Entity {};
 
 void runScene() {

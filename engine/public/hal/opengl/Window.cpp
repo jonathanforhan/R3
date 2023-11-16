@@ -6,7 +6,9 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
+#include "api/Ensure.hpp"
 #include "api/Log.hpp"
+#include "api/Version.hpp"
 
 #define GLWIN(_Win) (reinterpret_cast<GLFWwindow*>(_Win))
 
@@ -14,8 +16,8 @@ namespace R3 {
 
 Window::Window(std::string_view title) {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, OPENGL_VERSION_MAJOR);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, OPENGL_VERSION_MINOR);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
@@ -31,13 +33,13 @@ Window::Window(std::string_view title) {
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    int w = static_cast<int>(vidmode->width * 0.75);
-    int h = static_cast<int>(vidmode->height * 0.75);
+    int32 w = static_cast<int>(vidmode->width * 0.75);
+    int32 h = static_cast<int>(vidmode->height * 0.75);
 
     m_nativeWindow = glfwCreateWindow(w, h, title.data(), nullptr, nullptr);
     if (!m_nativeWindow) {
         LOG(Error, "Failed to create GLFW window");
-        glfwTerminate();
+        ENSURE(false);
     }
     glfwSetWindowPos(GLWIN(m_nativeWindow), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
     glfwMakeContextCurrent(GLWIN(m_nativeWindow));
@@ -49,6 +51,7 @@ Window::Window(std::string_view title) {
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         LOG(Error, "Failed to initialize GLAD");
+        ENSURE(false);
     }
 }
 

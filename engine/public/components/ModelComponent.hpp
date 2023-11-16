@@ -19,8 +19,11 @@ public:
     auto path() const -> const std::string& { return m_directory + m_file; }
 
 private:
-    void checkVersion(std::string_view version) const;
-    void checkVersion(uint32 major, uint32 minor) const;
+    template <typename... Args>
+    void emplaceMesh(Args&&... args);
+
+    template <typename... Args>
+    void emplaceTexture(Args&&... args);
 
 public:
     mat4 transform{1.0f};
@@ -37,5 +40,15 @@ private:
     std::string m_directory;
     std::string m_file;
 };
+
+template <typename... Args>
+inline void ModelComponent::emplaceMesh(Args&&... args) {
+    m_mesh = std::move(Mesh(std::forward<Args>(args)...));
+}
+
+template <typename... Args>
+inline void ModelComponent::emplaceTexture(Args&&... args) {
+    m_textures.emplace_back(std::forward<Args>(args)...);
+}
 
 } // namespace R3
