@@ -22,7 +22,7 @@ void runScene() {
     player.emplace<CameraComponent>().setActive();
 
     ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
-    mc.transform = glm::translate(mc.transform, vec3(4, 0, 0));
+    mc.transform = glm::translate(mc.transform, vec3(0, 0, 4));
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);
     aa.emplace<ModelComponent>(std::move(mc));

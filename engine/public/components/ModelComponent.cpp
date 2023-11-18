@@ -1,6 +1,7 @@
 #include "ModelComponent.hpp"
 #include "detail/media/GLTF_Model.hxx"
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "api/Log.hpp"
 
 namespace R3 {
@@ -35,62 +36,61 @@ void ModelComponent::processNode(GLTF_Model* model, GLTF_Node* node) {
 }
 
 void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
+    auto datatypeSize = [](uint32 datatype) -> usize {
+        if (datatype == GLTF_UNSIGNED_BYTE)
+            return sizeof(uint8);
+        if (datatype == GLTF_UNSIGNED_SHORT)
+            return sizeof(uint16);
+        if (datatype == GLTF_UNSIGNED_INT)
+            return sizeof(uint32);
+        if (datatype == GLTF_FLOAT)
+            return sizeof(float);
+        else
+            ENSURE(false);
+    };
+
+    auto populateVertexAttrib = [=](const GLTF_MeshPrimitive& primitive, std::vector<float>& vec, const char* attrib) {
+        if (primitive.attributes.HasMember(attrib)) {
+            GLTF_Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
+            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
+            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
+
+            constexpr uint32 nComponents = 3;
+            usize nBytes = usize(accessor.byteOffset) + bufferView.byteOffset;
+            usize nSize = datatypeSize(accessor.componentType);
+            vec.resize((usize)accessor.count * nComponents);
+            memcpy(vec.data(), model->buffer().data() + nBytes, accessor.count * nSize * nComponents);
+        }
+    };
+
     for (auto& primitive : mesh->primitives) {
         std::vector<float> positions;
-        if (primitive.attributes.HasMember(GLTF_POSITION)) {
-            uint32 iAccessor = primitive.attributes[GLTF_POSITION].GetUint();
-            GLTF_Accessor& accessor = model->accessors[iAccessor];
-            CHECK(accessor.type == GLTF_VEC3 && accessor.componentType == GLTF_FLOAT);
+        populateVertexAttrib(primitive, positions, GLTF_POSITION);
 
-            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
-
-            usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
-            positions.resize(accessor.count * 3);
-            memcpy(positions.data(), model->buffer().data() + nBytes, accessor.count * sizeof(float) * 3);
-        }
-        
-        #if 0
         std::vector<float> normals;
-        if (primitive.attributes.HasMember(GLTF_NORMAL)) {
-            uint32 iAccessor = primitive.attributes[GLTF_NORMAL].GetUint();
-            GLTF_Accessor& accessor = model->accessors[iAccessor];
-            CHECK(accessor.type == GLTF_VEC3 && accessor.componentType == GLTF_FLOAT);
-
-            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
-
-            usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
-            normals.resize(accessor.count);
-            memcpy(normals.data(), model->buffer().data() + nBytes, accessor.count * sizeof(float));
-        }
+        populateVertexAttrib(primitive, normals, GLTF_NORMAL);
 
         std::vector<float> tangents;
-        if (primitive.attributes.HasMember(GLTF_TANGENT)) {
-            uint32 iAccessor = primitive.attributes[GLTF_TANGENT].GetUint();
-            GLTF_Accessor& accessor = model->accessors[iAccessor];
-            CHECK(accessor.type == GLTF_VEC3 && accessor.componentType == GLTF_FLOAT);
+        populateVertexAttrib(primitive, tangents, GLTF_TANGENT);
 
-            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
-
-            usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
-            tangents.resize(accessor.count);
-            memcpy(tangents.data(), model->buffer().data() + nBytes, accessor.count * sizeof(float));
-        }
-        #endif
-
-        std::vector<uint16> indices;
+        std::vector<uint32> indices;
         if (primitive.indices != GLTF_UNDEFINED) {
             GLTF_Accessor& accessor = model->accessors[primitive.indices];
-            CHECK(accessor.type == GLTF_SCALAR && accessor.componentType == GLTF_UNSIGNED_SHORT);
-
             GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
             GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
 
             usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
+            usize nSize = datatypeSize(accessor.componentType);
             indices.resize(accessor.count);
-            memcpy(indices.data(), model->buffer().data() + nBytes, accessor.count * sizeof(uint16));
+            if (nSize == 2) {
+                for (uint32 i = 0; i < accessor.count; i++)
+                    indices[i] = *(uint16*)(&model->buffer()[nBytes + i * nSize]);
+            } else if (nSize == 4) {
+                for (uint32 i = 0; i < accessor.count; i++)
+                    indices[i] = *(uint32*)(&model->buffer()[nBytes + i * nSize]);
+            } else {
+                LOG(Warning, "exotic indice size, undefined behavior");
+            }
         }
 
         if (primitive.material != GLTF_UNDEFINED) {
@@ -104,7 +104,6 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
             vertex.position.y = positions[i + 1];
             vertex.position.z = positions[i + 2];
 
-            #if 0
             if (normals.size()) {
                 vertex.normal.x = normals[i + 0];
                 vertex.normal.y = normals[i + 1];
@@ -116,7 +115,6 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
                 vertex.tangent.y = tangents[i + 1];
                 vertex.tangent.z = tangents[i + 2];
             }
-            #endif
 
             i += 3;
         }
