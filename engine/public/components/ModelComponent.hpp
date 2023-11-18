@@ -11,6 +11,8 @@ namespace R3 {
 
 struct GLTF_Node;
 struct GLTF_Mesh;
+struct GLTF_Material;
+struct GLTF_TextureInfo;
 class GLTF_Model;
 
 class ModelComponent {
@@ -28,7 +30,9 @@ public:
 
 private:
     void processNode(GLTF_Model* model, GLTF_Node* node);
-    void processMesh(GLTF_Model* model, GLTF_Mesh* mesh); 
+    void processMesh(GLTF_Model* model, GLTF_Mesh* mesh);
+    void processMaterial(GLTF_Model* model, GLTF_Material* material);
+    void processTexture(GLTF_Model* model, GLTF_TextureInfo* textureInfo, TextureType type);
 
 private:
     Mesh m_mesh;

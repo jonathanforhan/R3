@@ -18,7 +18,7 @@ enum class TextureType : uint8 {
 class Texture2D {
 public:
     Texture2D(std::string_view path, TextureType type);
-    Texture2D(uint32 width, uint32 height, void* data, TextureType type);
+    Texture2D(uint32 width, uint32 height, const void* data, TextureType type);
     Texture2D(const Texture2D&) = delete;
     Texture2D(Texture2D&& src) noexcept
         : m_id(src.m_id),

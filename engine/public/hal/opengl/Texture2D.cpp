@@ -19,8 +19,6 @@ Texture2D::Texture2D(std::string_view path, TextureType type)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    stbi_set_flip_vertically_on_load(true);
-
     int32 w, h, channels;
     uint8* bytes = stbi_load(path.data(), &w, &h, &channels, 0);
     CHECK(bytes != nullptr);
@@ -32,7 +30,7 @@ Texture2D::Texture2D(std::string_view path, TextureType type)
     stbi_image_free(bytes);
 }
 
-Texture2D::Texture2D(uint32 width, uint32 height, void* data, TextureType type)
+Texture2D::Texture2D(uint32 width, uint32 height, const void* data, TextureType type)
     : m_type(type) {
     CHECK(data != nullptr);
 
@@ -43,8 +41,6 @@ Texture2D::Texture2D(uint32 width, uint32 height, void* data, TextureType type)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    stbi_set_flip_vertically_on_load(true);
 
     uint32 len = height ? width * height : width;
     int32 w, h, channels;

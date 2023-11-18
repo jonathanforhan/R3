@@ -47,6 +47,6 @@ uniform Light u_Lights[MAX_LIGHTS];
 uniform lowp uint u_NumLights;
 
 void main() {
-	// f_Color = vec4(vec3(texture(u_Material.diffuse, v_TexCoords)), 1.0);
-	f_Color = vec4(1, 0, 1, 1);
+	f_Color = vec4(vec3(texture(u_Material.diffuse, v_TexCoords)), 1.0);
+	// f_Color = vec4(clamp(v_TexCoords.x, 0, 1), clamp(v_TexCoords.y, 0, 1), 1, 1);
 }

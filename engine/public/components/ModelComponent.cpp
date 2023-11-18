@@ -1,4 +1,6 @@
 #include "ModelComponent.hpp"
+#include "ModelComponent.hpp"
+#include "ModelComponent.hpp"
 #include "detail/media/GLTF_Model.hxx"
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
@@ -84,6 +86,7 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
 
             usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
             usize nSize = datatypeSize(accessor.componentType);
+
             indices.resize(accessor.count);
             if (nSize == 2) {
                 for (uint32 i = 0; i < accessor.count; i++)
@@ -94,9 +97,6 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
             } else {
                 LOG(Warning, "exotic indice size, undefined behavior");
             }
-        }
-
-        if (primitive.material != GLTF_UNDEFINED) {
         }
 
         CHECK(primitive.mode == GLTF_TRIANGLES);
@@ -114,13 +114,42 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Mesh* mesh) {
             if (i < texCoords.size())
                 vertices[i].textureCoords = texCoords[i];
         }
-        m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
 
-        for (uint32 index : indices) {
-            m_indices.push_back(index);
+        m_vertices.insert(m_vertices.end(), vertices.begin(), vertices.end());
+        m_indices.insert(m_indices.end(), indices.begin(), indices.end());
+
+        if (primitive.material != GLTF_UNDEFINED) {
+            processMaterial(model, &model->materials[primitive.material]);
         }
     }
 }
- 
+
+void ModelComponent::processMaterial(GLTF_Model* model, GLTF_Material* material) {
+    if (material->pbrMetallicRoughness.has_value()) {
+        if (material->pbrMetallicRoughness->baseColorTexture.has_value()) {
+            processTexture(model, &*material->pbrMetallicRoughness->baseColorTexture, TextureType::Diffuse);
+        }
+    }
+}
+
+void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* textureInfo, TextureType type) {
+    GLTF_Texture& texture = model->textures[textureInfo->index];
+    GLTF_Sampler defaultSampler{};
+    GLTF_Sampler& sampler = texture.sampler != GLTF_UNDEFINED ? model->samplers[texture.sampler] : defaultSampler;
+
+    if (texture.source != GLTF_UNDEFINED) {
+        GLTF_Image& image = model->images[texture.source];
+        if (!image.uri.empty()) {
+            m_textures.emplace_back(m_directory + image.uri, type);
+        } else if (image.bufferView) {
+            GLTF_BufferView& bufferView = model->bufferViews[image.bufferView];
+            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
+
+            LOG(Verbose, m_directory + m_file, "mimeType =", image.mimeType);
+            const char* data = model->buffer().data() + bufferView.byteOffset;
+            m_textures.emplace_back(bufferView.byteLength, 0, data, type);
+        }
+    }
+}
 
 } // namespace R3
