@@ -14,14 +14,14 @@ endif ()
 
 set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_custom_target(COPY_SHADERS
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"

@@ -9,6 +9,10 @@
 
 namespace R3 {
 
+struct GLTF_Node;
+struct GLTF_Mesh;
+class GLTF_Model;
+
 class ModelComponent {
 public:
     ModelComponent(const std::string& path, Shader& shader);
@@ -18,16 +22,13 @@ public:
     auto textures() -> std::vector<Texture2D>& { return m_textures; }
     auto path() const -> const std::string& { return m_directory + m_file; }
 
-private:
-    template <typename... Args>
-    void emplaceMesh(Args&&... args);
-
-    template <typename... Args>
-    void emplaceTexture(Args&&... args);
-
 public:
     mat4 transform{1.0f};
     vec2 tiling{1.0f};
+
+private:
+    void processNode(GLTF_Model* model, GLTF_Node* node);
+    void processMesh(GLTF_Model* model, GLTF_Mesh* mesh); 
 
 private:
     Mesh m_mesh;
@@ -40,15 +41,5 @@ private:
     std::string m_directory;
     std::string m_file;
 };
-
-template <typename... Args>
-inline void ModelComponent::emplaceMesh(Args&&... args) {
-    m_mesh = std::move(Mesh(std::forward<Args>(args)...));
-}
-
-template <typename... Args>
-inline void ModelComponent::emplaceTexture(Args&&... args) {
-    m_textures.emplace_back(std::forward<Args>(args)...);
-}
 
 } // namespace R3

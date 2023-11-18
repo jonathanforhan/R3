@@ -17,6 +17,7 @@ function(TEST_PROJECT)
 	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
 	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
+	add_dependencies(${DIRNAME} COPY_SHADERS)
 endfunction()
 
 file(GLOB SUBDIRS LIST_DIRECTORIES true "*")

@@ -1,6 +1,5 @@
 #!/bin/bash
 
-find engine/src/api -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i
-find engine/src/hal -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i
-find engine/src/core -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i
+find engine/public -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i
+find engine/private -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i
 find editor -iname *.[ch]pp -o -iname *.[ch] | xargs clang-format -i

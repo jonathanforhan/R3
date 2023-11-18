@@ -1,5 +1,6 @@
 #pragma once
-#include <rapidjson/fwd.h>
+#include <rapidjson/document.h>
+#include <optional>
 #include "api/Types.hpp"
 
 // glTF file format spec info
@@ -9,17 +10,6 @@
 // glTF version major : 2
 // glTF version minor : 0
 // glb container version : 2
-
-#ifdef R3_INCLUDE_GLTF_EXTENSIONS
-#define GLTF_EXTENSIONS rapidjson::Value extensions
-#else
-#define GLTF_EXTENSIONS
-#endif
-#ifdef R3_INCLUDE_GLTF_EXTRAS
-#define GLTF_EXTRAS rapidjson::Value extras
-#else
-#define GLTF_EXTRAS
-#endif
 
 namespace R3 {
 
@@ -86,6 +76,14 @@ constexpr auto GLTF_WEIGHTS_1 = "WEIGHTS_1";
 constexpr auto GLTF_WEIGHTS_2 = "WEIGHTS_2";
 constexpr auto GLTF_WEIGHTS_3 = "WEIGHTS_3";
 
+constexpr auto GLTF_OPAQUE = "OPAQUE";
+constexpr auto GLTF_MASK = "MASK";
+constexpr auto GLTF_BLEND = "BLEND";
+
+constexpr auto GLTF_SAMPLER_LINEAR = "LINEAR";
+constexpr auto GLTF_SAMPLER_STEP = "STEP";
+constexpr auto GLTF_SAMPLER_CUBICSPLINE = "CUBICSPLINE";
+
 constexpr auto GLTF_UNDEFINED = UINT32_MAX;
 
 #pragma pack(push, 1)
@@ -106,24 +104,25 @@ struct GLTF_ChunkHeader {
 #pragma pack(pop)
 
 struct GLTF_Accessor;
-// struct GLTF_AccessorSparse;
-// struct GLTF_AccessorSparseIndices;
-// struct GLTF_AccessorSparseValues;
-// struct GLTF_Animation;
-// struct GLTF_AnimationChannel;
-// struct GLTF_AnimationChannelTarget;
-// struct GLTF_AnimationSampler;
+struct GLTF_AccessorSparse;
+struct GLTF_AccessorSparseIndices;
+struct GLTF_AccessorSparseValues;
+struct GLTF_Animation;
+struct GLTF_AnimationChannel;
+struct GLTF_AnimationChannelTarget;
+struct GLTF_AnimationSampler;
 struct GLTF_Asset;
 struct GLTF_Buffer;
 struct GLTF_BufferView;
-// struct GLTF_Camera;
-// struct GLTF_CameraOrthographic;
-// struct GLTF_CameraPerspective;
+struct GLTF_Camera;
+struct GLTF_CameraOrthographic;
+struct GLTF_CameraPerspective;
+struct GLTF_Root; // aka glTF
 struct GLTF_Image;
-// struct GLTF_Material;
-// struct GLTF_MaterialNormalTextureInfo;
-// struct GLTF_MaterialOcclusionTextureInfo;
-// struct GLTF_MaterialPBRMetallicRoughness;
+struct GLTF_Material;
+struct GLTF_MaterialNormalTextureInfo;
+struct GLTF_MaterialOcclusionTextureInfo;
+struct GLTF_MaterialPBRMetallicRoughness;
 struct GLTF_Mesh;
 struct GLTF_MeshPrimitive;
 struct GLTF_Node;
@@ -133,6 +132,49 @@ struct GLTF_Skin;
 struct GLTF_Texture;
 struct GLTF_TextureInfo;
 
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
+struct GLTF_Texture {
+    uint32 sampler{GLTF_UNDEFINED};
+    uint32 source{GLTF_UNDEFINED};
+    std::string name;
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
+struct GLTF_TextureInfo {
+    uint32 index; // REQUIRED
+    uint32 texCoord{0};
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-indices
+struct GLTF_AccessorSparseIndices {
+    uint32 bufferView; // REQUIRED
+    uint32 byteOffset{0};
+    uint32 componentType; // REQUIRED
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-values
+struct GLTF_AccessorSparseValues {
+    uint32 bufferView; // REQUIRED
+    uint32 byteOffset{0};
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse
+struct GLTF_AccessorSparse {
+    uint32 count;                       // REQUIRED
+    GLTF_AccessorSparseIndices indices; // REQUIRED
+    GLTF_AccessorSparseValues values;   // REQUIRED
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor
 struct GLTF_Accessor {
     uint32 bufferView{GLTF_UNDEFINED};
@@ -141,34 +183,47 @@ struct GLTF_Accessor {
     bool normalized{false};
     uint32 count;     // REQUIRED
     std::string type; // REQUIRED
-    uint32 max{GLTF_UNDEFINED};
-    uint32 min{GLTF_UNDEFINED};
-    // GLTF_AccessorSparse sparse | NOT IMPLEMENTED
+    std::vector<float> max;
+    std::vector<float> min;
+    GLTF_AccessorSparse sparse{};
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-indices
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-values
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation
-// NOT IMPLEMENTED
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel-target
+struct GLTF_AnimationChannelTarget {
+    uint32 node{GLTF_UNDEFINED};
+    std::string path; // REQUIRED
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel-target
-// NOT IMPLEMENTED
+struct GLTF_AnimationChannel {
+    uint32 sampler;                     // REQUIRED
+    GLTF_AnimationChannelTarget target; // REQUIRED
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-sampler
-// NOT IMPLEMENTED
+struct GLTF_AnimationSampler {
+    uint32 input; // REQUIRED
+    std::string interpolation{GLTF_SAMPLER_LINEAR};
+    uint32 output; // REQUIRED
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation
+struct GLTF_Animation {
+    std::vector<GLTF_AnimationChannel> channels; // REQUIRED
+    std::vector<GLTF_AnimationSampler> samplers; // REQUIRED
+    std::string name;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-asset
 struct GLTF_Asset {
@@ -176,8 +231,8 @@ struct GLTF_Asset {
     std::string generator;
     std::string version; // REQUIRED
     std::string minVersion;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-buffer
@@ -185,8 +240,8 @@ struct GLTF_Buffer {
     std::string uri;
     uint32 byteLength; // REQUIRED
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-bufferview
@@ -197,27 +252,45 @@ struct GLTF_BufferView {
     uint32 byteStride{GLTF_UNDEFINED};
     uint32 target{GLTF_UNDEFINED};
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-orthographic
+struct GLTF_CameraOrthographic {
+    float xmag;  // REQUIRED
+    float ymag;  // REQUIRED
+    float zfar;  // REQUIRED
+    float znear; // REQUIRED
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-perspective
+struct GLTF_CameraPerspective {
+    float aspectRation{0};
+    float yfov; // REQUIRED
+    float zfar{0};
+    float znear; // REQUIRED
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-orthographic
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-perspective
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extension
-// DOCUMENTATION
+struct GLTF_Camera {
+    GLTF_CameraOrthographic orthographic{};
+    GLTF_CameraPerspective perspective{};
+    std::string type; // REQUIRED
+    std::string name;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extension
 // DOCUMENTATION
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extension
-// DOCUMENTATION : glTF is kept as a json object
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extras
+// DOCUMENTATION
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-image
 struct GLTF_Image {
@@ -225,29 +298,51 @@ struct GLTF_Image {
     std::string mimeType;
     uint32 bufferView{GLTF_UNDEFINED};
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
+struct GLTF_MaterialNormalTextureInfo {
+    uint32 index; // REQUIRED
+    uint32 texCoord{0};
+    float scale{1.0f};
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-occlusiontextureinfo
+struct GLTF_MaterialOcclusionTextureInfo {
+    uint32 index; // REQUIRED
+    uint32 texCoord{0};
+    float strength{1.0f};
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
+struct GLTF_MaterialPBRMetallicRoughness {
+    float baseColorFactor[4]{1.0f, 1.0f, 1.0f, 1.0f};
+    GLTF_TextureInfo baseColorTexture{};
+    float metallicFactor{1.0f};
+    float roughnessFactor{1.0f};
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-occlusiontextureinfo
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
-// NOT IMPLEMENTED
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh
-struct GLTF_Mesh {
-    std::vector<GLTF_MeshPrimitive> primitives; // REQUIRED
-    std::vector<float> weights;
+struct GLTF_Material {
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    GLTF_MaterialPBRMetallicRoughness pbrMetallicRoughtness{};
+    GLTF_MaterialNormalTextureInfo normalTexture{};
+    GLTF_MaterialOcclusionTextureInfo occlusionTexture{};
+    GLTF_TextureInfo emissiveTexture{};
+    float emissiveFactor[3]{0.0f, 0.0f, 0.0f};
+    std::string alphaMode{GLTF_OPAQUE};
+    float alphaCutoff{0.5};
+    bool doubleSided{false};
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
@@ -256,14 +351,23 @@ struct GLTF_MeshPrimitive {
     uint32 indices{GLTF_UNDEFINED};
     uint32 material{GLTF_UNDEFINED};
     uint32 mode{4};
-    std::vector<uint32> targets;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::vector<rapidjson::Value> targets;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh
+struct GLTF_Mesh {
+    std::vector<GLTF_MeshPrimitive> primitives; // REQUIRED
+    std::vector<float> weights;
+    std::string name;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-node
 struct GLTF_Node {
-    // uint32 camera | NOT IMPLEMENTED
+    uint32 camera{GLTF_UNDEFINED};
     std::vector<uint32> children;
     uint32 skin{GLTF_UNDEFINED};
     float matrix[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
@@ -273,8 +377,8 @@ struct GLTF_Node {
     float translation[3] = {0.0f, 0.0f, 0.0f};
     std::vector<float> weights;
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-sampler
@@ -284,16 +388,16 @@ struct GLTF_Sampler {
     uint32 wrapS{GLTF_REPEAT};
     uint32 wrapT{GLTF_REPEAT};
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-scene
 struct GLTF_Scene {
     std::vector<uint32> nodes;
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-skin
@@ -302,25 +406,31 @@ struct GLTF_Skin {
     uint32 skeleton{GLTF_UNDEFINED};
     std::vector<uint32> joints; // REQUIRED
     std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
-struct GLTF_Texture {
-    uint32 sample{GLTF_UNDEFINED};
-    uint32 source{GLTF_UNDEFINED};
-    std::string name;
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
-};
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
-struct GLTF_TextureInfo {
-    uint32 index; // REQUIRED
-    uint32 texCoord{0};
-    GLTF_EXTENSIONS;
-    GLTF_EXTRAS;
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-gltf
+struct GLTF_Root {
+    std::vector<std::string> extensionsUsed;
+    std::vector<std::string> extensionsRequired;
+    std::vector<GLTF_Accessor> accessors;
+    std::vector<GLTF_Animation> animations;
+    GLTF_Asset asset; // REQUIRED
+    std::vector<GLTF_Buffer> buffers;
+    std::vector<GLTF_BufferView> bufferViews;
+    std::vector<GLTF_Camera> cameras;
+    std::vector<GLTF_Image> images;
+    std::vector<GLTF_Material> materials;
+    std::vector<GLTF_Mesh> meshes;
+    std::vector<GLTF_Node> nodes;
+    std::vector<GLTF_Sampler> samplers;
+    uint32 scene{GLTF_UNDEFINED};
+    std::vector<GLTF_Scene> scenes;
+    std::vector<GLTF_Skin> skins;
+    std::vector<GLTF_Texture> textures;
+    std::optional<rapidjson::Value> extensions;
+    std::optional<rapidjson::Value> extras;
 };
 
 } // namespace R3

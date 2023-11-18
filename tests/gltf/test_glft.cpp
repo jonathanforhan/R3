@@ -10,13 +10,7 @@
 
 using namespace R3;
 
-struct AnyAsset : Entity {
-    void tick(double) {
-        if (Engine::window().isVisible()) {
-            Engine::window().hide();
-        }
-    }
-};
+struct AnyAsset : Entity {};
 
 struct Player : Entity {};
 
@@ -28,7 +22,7 @@ void runScene() {
     player.emplace<CameraComponent>().setActive();
 
     ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
-    mc.transform = glm::scale(mat4(1.0f), vec3(0.01f));
+    mc.transform = glm::translate(mc.transform, vec3(4, 0, 0));
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);
     aa.emplace<ModelComponent>(std::move(mc));

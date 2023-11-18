@@ -9,8 +9,6 @@
 
 namespace R3 {
 
-int draws = 0;
-
 void ModelSystem::tick(double) {
     CameraComponent camera;
     Engine::activeScene().componentView<CameraComponent>().each([&camera](CameraComponent& cam) {
@@ -63,10 +61,7 @@ void ModelSystem::tick(double) {
         model.mesh().bind();
         shader.bind();
         renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
-        draws++;
     });
-    // LOG(Verbose, draws, "draws");
-    draws = 0;
 }
 
 } // namespace R3
