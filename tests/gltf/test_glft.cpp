@@ -21,7 +21,8 @@ void runScene() {
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
-    ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
+    // ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
+    ModelComponent mc("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
     mc.transform = glm::translate(mc.transform, vec3(0, 0, 4));
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);

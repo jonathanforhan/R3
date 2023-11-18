@@ -15,6 +15,30 @@ public:
 private:
     void populateRoot();
 
+    // top level populates
+    void populateExtensionsUsed();
+    void populateExtensionsRequired();
+    void populateAccessors();
+    void populateAnimations();
+    void populateAsset();
+    void populateBuffers();
+    void populateBufferViews();
+    void populateCameras();
+    void populateImages();
+    void populateMaterials();
+    void populateMeshes();
+    void populateNodes();
+    void populateSamplers();
+    void populateScene();
+    void populateScenes();
+    void populateSkins();
+    void populateTextures();
+    void populateExtensions();
+    void populateExtras();
+
+    // helper populates
+    void populateTextureInfo(GLTF_TextureInfo& textureInfo, rapidjson::Value& value);
+
     void checkVersion(std::string_view version) const;
     void checkVersion(uint32 major, uint32 minor) const;
 

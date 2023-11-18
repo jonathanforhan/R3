@@ -132,23 +132,6 @@ struct GLTF_Skin;
 struct GLTF_Texture;
 struct GLTF_TextureInfo;
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
-struct GLTF_Texture {
-    uint32 sampler{GLTF_UNDEFINED};
-    uint32 source{GLTF_UNDEFINED};
-    std::string name;
-    std::optional<rapidjson::Value> extensions{std::nullopt};
-    std::optional<rapidjson::Value> extras{std::nullopt};
-};
-
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
-struct GLTF_TextureInfo {
-    uint32 index; // REQUIRED
-    uint32 texCoord{0};
-    std::optional<rapidjson::Value> extensions{std::nullopt};
-    std::optional<rapidjson::Value> extras{std::nullopt};
-};
-
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-indices
 struct GLTF_AccessorSparseIndices {
     uint32 bufferView; // REQUIRED
@@ -302,6 +285,23 @@ struct GLTF_Image {
     std::optional<rapidjson::Value> extras;
 };
 
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
+struct GLTF_Texture {
+    uint32 sampler{GLTF_UNDEFINED};
+    uint32 source{GLTF_UNDEFINED};
+    std::string name;
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
+// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
+struct GLTF_TextureInfo {
+    uint32 index; // REQUIRED
+    uint32 texCoord{0};
+    std::optional<rapidjson::Value> extensions{std::nullopt};
+    std::optional<rapidjson::Value> extras{std::nullopt};
+};
+
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
 struct GLTF_MaterialNormalTextureInfo {
     uint32 index; // REQUIRED
@@ -323,24 +323,25 @@ struct GLTF_MaterialOcclusionTextureInfo {
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
 struct GLTF_MaterialPBRMetallicRoughness {
     float baseColorFactor[4]{1.0f, 1.0f, 1.0f, 1.0f};
-    GLTF_TextureInfo baseColorTexture{};
+    std::optional<GLTF_TextureInfo> baseColorTexture{std::nullopt};
     float metallicFactor{1.0f};
     float roughnessFactor{1.0f};
+    std::optional<GLTF_TextureInfo> metallicRoughnessTexture{std::nullopt};
     std::optional<rapidjson::Value> extensions;
     std::optional<rapidjson::Value> extras;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
 struct GLTF_Material {
-    std::string name;
-    GLTF_MaterialPBRMetallicRoughness pbrMetallicRoughtness{};
-    GLTF_MaterialNormalTextureInfo normalTexture{};
-    GLTF_MaterialOcclusionTextureInfo occlusionTexture{};
-    GLTF_TextureInfo emissiveTexture{};
+    std::optional<GLTF_MaterialPBRMetallicRoughness> pbrMetallicRoughness{std::nullopt};
+    std::optional<GLTF_MaterialNormalTextureInfo> normalTexture{std::nullopt};
+    std::optional<GLTF_MaterialOcclusionTextureInfo> occlusionTexture{std::nullopt};
+    std::optional<GLTF_TextureInfo> emissiveTexture{std::nullopt};
     float emissiveFactor[3]{0.0f, 0.0f, 0.0f};
     std::string alphaMode{GLTF_OPAQUE};
     float alphaCutoff{0.5};
     bool doubleSided{false};
+    std::string name;
     std::optional<rapidjson::Value> extensions;
     std::optional<rapidjson::Value> extras;
 };
