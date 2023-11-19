@@ -1,7 +1,7 @@
 #version 460
 
 #define M_PI 3.14159265359
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 64
 
 in vec3 v_Position;
 in vec3 v_Normal;
@@ -13,6 +13,7 @@ out vec4 f_Color;
 struct Light {
 	vec3 position;
 	vec3 color;
+	vec3 intensity;
 };
 
 uniform	layout (binding = 0) sampler2D u_Albedo;
@@ -24,6 +25,7 @@ uniform	layout (binding = 4) sampler2D u_Emissive;
 uniform vec3 u_ViewPosition;
 uniform Light u_Lights[MAX_LIGHTS];
 uniform lowp uint u_NumLights;
+uniform float u_EmissiveIntensity;
 
 vec3 calcTangentNormal() {
 	vec3 tangentNormal = texture(u_Normal, v_TexCoords).xyz * 2.0 - 1.0;
@@ -100,7 +102,7 @@ void main() {
 		vec3 H = normalize(V + L);
 		float dist = length(u_Lights[i].position - v_Position);
 		float attenuation = 1.0 / (dist * dist);
-		vec3 radiance = u_Lights[i].color * attenuation;
+		vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation;
 
 		// cook-terrance BRDF
 		float NDF = distributionGGX(N, H, roughness);
@@ -128,7 +130,9 @@ void main() {
 	vec3 color = ambient + Lo;
 
 	// emission
-	color += pow(texture(u_Emissive, v_TexCoords).rgb, vec3(2.2));
+	if ((v_Flags & (1 << 4)) > 0) {
+		color += pow(texture(u_Emissive, v_TexCoords).rgb, vec3(2.2)) * u_EmissiveIntensity;
+	}
 
 	// HDR tonemapping
 	color = color / (color + vec3(1.0));

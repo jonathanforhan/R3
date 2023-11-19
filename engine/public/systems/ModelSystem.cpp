@@ -29,19 +29,16 @@ void ModelSystem::tick(double) {
 
         uint32 i = 0;
         Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {
-            std::string name = (std::stringstream() << "u_Lights[" << char('0' + i) << ']').str();
+            std::string name = (std::stringstream() << "u_Lights[" << i << ']').str();
             shader.writeUniform(name + ".position", light.position);
             shader.writeUniform(name + ".color", light.color);
+            shader.writeUniform(name + ".intensity", vec3(light.intensity));
             i++;
         });
         shader.writeUniform("u_NumLights", i);
 
         auto& renderer = Engine::renderer();
 
-        #if 0
-        model.mesh().bind();
-        renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
-        #else
         for (auto& mesh : model.meshes()) {
             uint32_t flags = 0;
             for (usize iTexture : mesh.textures()) {
@@ -51,11 +48,11 @@ void ModelSystem::tick(double) {
                 flags |= (1 << t);
             }
             shader.writeUniform("u_Flags", flags);
+            shader.writeUniform("u_EmissiveIntensity", model.emissiveIntensity);
 
             mesh.bind();
             renderer.drawElements(RenderPrimitive::Triangles, mesh.indexCount());
         }
-        #endif
     });
 }
 

@@ -11,36 +11,115 @@
 
 using namespace R3;
 
-struct AnyAsset : Entity {};
+struct Lantern : Entity {
+    Lantern() = default;
 
-struct Player : Entity {};
+    void init() {
+        LightComponent& light = emplace<LightComponent>();
+        light.color = vec3(0.97, 0.85, 0.45) * 2.0f;
+        light.intensity = 1.0f;
+    }
+
+    void tick(double dt) {
+        LightComponent& light = get<LightComponent>();
+        vec3 position{};
+
+        Engine::activeScene().componentView<CameraComponent>().each([&](CameraComponent& camera) {
+            vec3 side = 0.5f * glm::normalize(glm::cross(camera.front(), vec3(0, 1, 0)));
+            vec3 down = -vec3(0, 0.3, 0);
+            position = camera.position() + camera.front() + side + down;
+        });
+
+        ModelComponent& lamp = get<ModelComponent>();
+        lamp.transform = glm::scale(glm::translate(mat4(1.0f), position), vec3(0.005f));
+        lamp.emissiveIntensity = light.intensity;
+        light.position = position;
+
+        if (shouldDim && light.intensity > 0.0f) {
+            light.intensity -= static_cast<float>(dt);
+            if (light.intensity < 0.0f) {
+                light.intensity = 0.0f;
+                shouldDim = false;
+            }
+        }
+    }
+
+    bool shouldDim = false;
+};
+
+std::chrono::system_clock::time_point prev = std::chrono::system_clock::now();
+
+struct LanternSystem : InputSystem {
+    LanternSystem() {
+        setKeyBinding(Key::Key_H, [](InputAction action) {
+            if (action != InputAction::Press) {
+                return;
+            }
+            Engine::activeScene().componentView<Lantern>().each([action](Lantern& lantern) {
+                auto now = std::chrono::system_clock::now();
+                if (std::chrono::duration<double>(now - prev).count() > 0.2) {
+                    LightComponent& light = lantern.get<LightComponent>();
+                    if (light.intensity && !lantern.shouldDim) {
+                        lantern.shouldDim = true;
+                    } else {
+                        light.intensity = 1.0f;
+                        lantern.shouldDim = false;
+                    }
+                    prev = now;
+                }
+            });
+        });
+        setKeyBinding(Key::Key_K, [](InputAction action) {
+            if (action != InputAction::Press) {
+                return;
+            }
+            auto now = std::chrono::system_clock::now();
+            Engine::activeScene().componentView<LightComponent>().each([now, action](LightComponent& light) {
+                if (std::chrono::duration<double>(now - prev).count() > 0.2) {
+                    if (light.position.y == 2.0f) {
+                        if (light.intensity == 0.0f) {
+                            light.intensity = 1.0f;
+                        } else {
+                            light.intensity = 0.0f;
+                        }
+                    }
+                }
+            });
+            prev = now;
+        });
+    }
+};
+
+struct AnyAsset : Entity {};
 
 void runScene() {
     Scene& defaultScene = Engine::addScene("default", true);
 
     Shader shader(ShaderType::GLSL, "shaders/pbr.vert", "shaders/pbr.frag");
 
-    // ModelComponent helmetModel("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
-    // ModelComponent helmetModel("assets/DamagedHelmet/glTF/DamagedHelmet.gltf", shader);
-    ModelComponent helmetModel("assets/Sponza/glTF/Sponza.gltf", shader);
-    // ModelComponent helmetModel("assets/phoenix_bird.glb", shader);
-    helmetModel.transform = glm::translate(helmetModel.transform, vec3(0, 0, 3));
-    // helmetModel.transform = glm::scale(helmetModel.transform , vec3(0.01));
     AnyAsset& helmet = Entity::create<AnyAsset>(&defaultScene);
-    ModelComponent& helmetComponent = helmet.emplace<ModelComponent>(std::move(helmetModel));
+    ModelComponent& helmetComponent = helmet.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf", shader);
 
-    Player& player = Entity::create<Player>(&defaultScene);
+    AnyAsset& player = Entity::create<AnyAsset>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
+    Lantern& lantern = Entity::create<Lantern>(&defaultScene);
+    ModelComponent& laternComponent = lantern.emplace<ModelComponent>("assets/lantern.glb", shader);
+
     // lights
-    LightComponent& light1 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
-    light1.color = vec3(1, 0.3, 1) * 2.0f;
-    light1.position = vec3(2, 2, 4);
+    for (int i = -4; i <= 4; i += 2) {
+        LightComponent& light1 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+        light1.color = vec3(0.97, 0.84, 0.92);
+        light1.position = vec3(i, 2, 1);
+        light1.intensity = 0.0f;
 
-    LightComponent& light2 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
-    light2.color = vec3(0.3, 1, 1) * 2.0f;
-    light2.position = vec3(-2, 2, 4);
+        LightComponent& light2 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+        light2.color = vec3(0.97, 0.84, 0.92);
+        light2.position = vec3(i, 2, -1);
+        light2.intensity = 0.0f;
+    }
 
+    Engine::activeScene().addSystem<LanternSystem>();
     Engine::activeScene().addSystem<CameraSystem>();
     Engine::activeScene().addSystem<ModelSystem>();
 

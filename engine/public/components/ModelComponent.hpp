@@ -33,7 +33,7 @@ public:
 
 public:
     mat4 transform{1.0f};
-    vec2 tiling{1.0f};
+    float emissiveIntensity{1.0f};
 
 private:
     void processNode(GLTF_Model* model, GLTF_Node* node);

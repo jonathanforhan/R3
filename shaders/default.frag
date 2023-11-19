@@ -1,6 +1,6 @@
 #version 460
 
-#define MAX_LIGHTS 10
+#define MAX_LIGHTS 20
 
 // flag bits
 // bit is set if that shader is present
