@@ -1,5 +1,4 @@
 #include "GLTF_Model.hxx"
-#include <fstream>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
@@ -39,31 +38,60 @@ GLTF_Model::GLTF_Model(std::string_view path)
     std::ifstream ifs(path.data(), std::ios::binary);
     ENSURE(ifs.is_open() && ifs.good());
 
-    // GLTF-BIN HEADER
+    try {
+        parseGLB(ifs);
+    } catch (...) {
+        ifs.seekg(0);
+        parseGLTF(ifs);
+    }
+
+    populateRoot();
+}
+
+void GLTF_Model::parseGLB(std::ifstream& ifs) {
     GLTF_Header header = {};
     ifs.read((char*)(&header), sizeof(header));
 
-    ENSURE(header.magic == GLTF_HEADER_MAGIC);
+    ENSURE(header.magic == GLTF_HEADER_MAGIC); // its ok if this fails
     if (header.version > GLB_VERSION) {
-        LOG(Warning, "glb version for", path, "is", header.version, "while R3 supports glb version", GLB_VERSION);
+        LOG(Warning, "glb version for", m_path, "is", header.version, "while R3 supports glb version", GLB_VERSION);
     }
 
-    // GLTF-BIN CHUNK
     GLTF_ChunkHeader chunkHeader = {};
+
+    auto readJson = [&]() {
+        std::string jsonFile(chunkHeader.length, '\0');
+        ifs.read(jsonFile.data(), chunkHeader.length);
+        m_document.Parse(jsonFile.c_str());
+    };
+
+    auto readBin = [&]() {
+        m_buffer.resize(chunkHeader.length);
+        ifs.read(m_buffer.data(), chunkHeader.length);
+    };
+
     ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    ENSURE(chunkHeader.type == GLTF_CHUNK_TYPE_JSON);
-
-    std::string jsonFile(chunkHeader.length, '\0');
-    ifs.read(jsonFile.data(), chunkHeader.length);
-
-    m_document.Parse(jsonFile.c_str());
+    if (chunkHeader.type == GLTF_CHUNK_TYPE_JSON) {
+        readJson();
+    } else if (chunkHeader.type == GLTF_CHUNK_TYPE_BIN) {
+        readBin();
+    } else {
+        ENSURE(false);
+    }
 
     ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    ENSURE(chunkHeader.type == GLTF_CHUNK_TYPE_BIN);
-    m_buffer.resize(chunkHeader.length);
-    ifs.read(m_buffer.data(), chunkHeader.length);
+    if (chunkHeader.type == GLTF_CHUNK_TYPE_JSON) {
+        readJson();
+    } else if (chunkHeader.type == GLTF_CHUNK_TYPE_BIN) {
+        readBin();
+    } else {
+        ENSURE(false);
+    }
+}
 
-    populateRoot();
+void GLTF_Model::parseGLTF(std::ifstream& ifs) {
+    std::string json = (std::stringstream() << ifs.rdbuf()).str();
+    m_document.Parse(json.c_str());
 }
 
 void GLTF_Model::populateRoot() {
@@ -162,7 +190,77 @@ void GLTF_Model::populateAnimations() {
     if (!m_document.HasMember("animations"))
         return;
 
-    LOG(Warning, "TODO animations");
+    for (auto& itAnimation : m_document["animations"].GetArray()) {
+        GLTF_Animation& animation = animations.emplace_back();
+
+        // channels
+        for (auto& itChannel : itAnimation["channels"].GetArray()) {
+            GLTF_AnimationChannel& channel = animation.channels.emplace_back();
+
+            // sampler
+            channel.sampler = itChannel["sampler"].GetUint();
+
+            // target
+            {
+                auto& jsTarget = itChannel["target"];
+
+                // node
+                maybeAssign(channel.target.node, jsTarget, "node");
+
+                // path
+                channel.target.path = jsTarget["path"].GetString();
+
+                // extensions
+                if (jsTarget.HasMember("extensions"))
+                    channel.extensions = std::move(jsTarget["extensions"]);
+
+                // extras
+                if (jsTarget.HasMember("extras"))
+                    channel.extras = std::move(jsTarget["extras"]);
+            }
+
+            // extensions
+            if (itChannel.HasMember("extensions"))
+                channel.extensions = std::move(itChannel["extensions"]);
+
+            // extras
+            if (itChannel.HasMember("extras"))
+                channel.extras = std::move(itChannel["extras"]);
+        }
+
+        // samplers
+        for (auto& itSampler : itAnimation["samplers"].GetArray()) {
+            GLTF_AnimationSampler& sampler = animation.samplers.emplace_back();
+
+            // input
+            sampler.input = itSampler["input"].GetUint();
+
+            // interpolation
+            maybeAssign(sampler.interpolation, itSampler, "interpolation");
+
+            // output
+            sampler.output = itSampler["output"].GetUint();
+
+            // extensions
+            if (itSampler.HasMember("extensions"))
+                sampler.extensions = std::move(itSampler["extensions"]);
+
+            // extras
+            if (itSampler.HasMember("extras"))
+                sampler.extras = std::move(itSampler["extras"]);
+        }
+
+        // name
+        maybeAssign(animation.name, itAnimation, "name");
+
+        // extensions
+        if (itAnimation.HasMember("extensions"))
+            animation.extensions = std::move(itAnimation["extensions"]);
+
+        // extras
+        if (itAnimation.HasMember("extras"))
+            animation.extras = std::move(itAnimation["extras"]);
+    }
 }
 
 void GLTF_Model::populateAsset() {
@@ -199,7 +297,7 @@ void GLTF_Model::populateBuffers() {
         maybeAssign(buffer.uri, itBuffer, "uri");
 
         // byteLength
-        maybeAssign(buffer.byteLength, itBuffer, "byteLength");
+        buffer.byteLength = itBuffer["byteLength"].GetUint();
 
         // name
         maybeAssign(buffer.name, itBuffer, "name");
@@ -211,6 +309,23 @@ void GLTF_Model::populateBuffers() {
         // extras
         if (itBuffer.HasMember("extras"))
             buffer.extras = std::move(itBuffer["extras"]);
+
+        /* load in buffer if external file */
+        if (!buffer.uri.empty()) {
+            usize split = m_path.find_last_of('/') + 1;
+            std::string dir = m_path.substr(0, split);
+
+            std::ifstream ifs;
+            ifs.exceptions(std::ifstream::badbit);
+
+            try {
+                ifs.open(dir + buffer.uri, std::ios::binary);
+                m_buffer.resize(buffer.byteLength);
+                ifs.read((char*)m_buffer.data(), buffer.byteLength);
+            } catch (std::exception& e) {
+                LOG(Error, "glTF buffer read error", e.what());
+            }
+        }
     }
 }
 

@@ -23,6 +23,10 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
         }
     }
 
+    for (auto& ext : gltf.extensionsUsed) {
+        LOG(Info, ext);
+    }
+
     m_mesh = {{m_vertices}, {m_indices}};
 }
 

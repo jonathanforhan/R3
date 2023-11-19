@@ -11,7 +11,6 @@
 using namespace R3;
 
 struct AnyAsset : Entity {};
-
 struct Player : Entity {};
 
 void runScene() {
@@ -21,8 +20,7 @@ void runScene() {
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
-    ModelComponent mc("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
-    mc.transform = glm::translate(mc.transform, vec3(0, 0, 4));
+    ModelComponent mc("assets/ToyCar/glTF-Binary/ToyCar.glb", shader);
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);
     aa.emplace<ModelComponent>(std::move(mc));

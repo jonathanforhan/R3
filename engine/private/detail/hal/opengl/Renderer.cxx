@@ -59,7 +59,7 @@ Renderer::Renderer() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_MULTISAMPLE);
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
 }
 
 Renderer::~Renderer() {}

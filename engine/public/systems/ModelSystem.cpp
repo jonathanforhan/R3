@@ -47,7 +47,6 @@ void ModelSystem::tick(double) {
         auto& renderer = Engine::renderer();
 
         model.mesh().bind();
-        shader.bind();
         renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
     });
 }

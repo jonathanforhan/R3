@@ -1,4 +1,5 @@
 #pragma once
+#include <fstream>
 #include <string_view>
 #include <vector>
 #include "api/Types.hpp"
@@ -13,6 +14,9 @@ public:
     auto buffer() const -> const std::vector<char>& { return m_buffer; }
 
 private:
+    void parseGLB(std::ifstream& ifs);
+    void parseGLTF(std::ifstream& ifs);
+
     void populateRoot();
 
     // top level populates

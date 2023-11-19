@@ -20,7 +20,8 @@ void runScene() {
 
     Shader shader(ShaderType::GLSL, "shaders/pbr.vert", "shaders/pbr.frag");
 
-    ModelComponent helmetModel("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
+    // ModelComponent helmetModel("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
+    ModelComponent helmetModel("assets/DamagedHelmet/glTF/DamagedHelmet.gltf", shader);
     helmetModel.transform = glm::translate(helmetModel.transform, vec3(0, 0, 3));
     AnyAsset& helmet = Entity::create<AnyAsset>(&defaultScene);
     ModelComponent& helmetComponent = helmet.emplace<ModelComponent>(std::move(helmetModel));
@@ -31,11 +32,11 @@ void runScene() {
     // lights
     LightComponent& light1 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
     light1.color = vec3(1, 0.3, 1) * 2.0f;
-    light1.position = vec3(1, 1, 4);
+    light1.position = vec3(2, 2, 4);
 
     LightComponent& light2 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
     light2.color = vec3(0.3, 1, 1) * 2.0f;
-    light2.position = vec3(-1, 1, 4);
+    light2.position = vec3(-2, 2, 4);
 
     Engine::activeScene().addSystem<CameraSystem>();
     Engine::activeScene().addSystem<ModelSystem>();
