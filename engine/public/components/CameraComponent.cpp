@@ -41,7 +41,7 @@ void CameraComponent::lookAround(float x, float y) {
 }
 
 void CameraComponent::apply(mat4* view, mat4* projection, float aspectRatio) const {
-    *projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 100.0f);
+    *projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 1000.0f);
     *view = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 

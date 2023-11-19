@@ -1,5 +1,5 @@
 #pragma once
-#include <set>
+#include <unordered_map>
 #include <string_view>
 #include <vector>
 #include "api/Types.hpp"
@@ -20,8 +20,13 @@ class GLTF_Model;
 class ModelComponent {
 public:
     ModelComponent(const std::string& path, Shader& shader);
+    ModelComponent(const ModelComponent&) = delete;
+    ModelComponent(ModelComponent&&) = default;
+    void operator=(const ModelComponent&) = delete;
+    ModelComponent& operator=(ModelComponent&&) = default;
 
-    auto mesh() -> Mesh& { return m_mesh; }
+    // auto mesh() -> Mesh& { return m_mesh; }
+    auto meshes() -> std::vector<Mesh>& { return m_meshes; }
     auto shader() -> Shader& { return m_shader; };
     auto textures() -> std::vector<Texture2D>& { return m_textures; }
     auto path() const -> const std::string& { return m_directory + m_file; }
@@ -39,13 +44,13 @@ private:
     void processTexture(GLTF_Model* model, GLTF_OcclusionTextureInfo* textureInfo, TextureType type);
 
 private:
-    Mesh m_mesh;
+    std::vector<Mesh> m_meshes;
     Shader& m_shader;
     std::vector<Vertex> m_vertices;
     std::vector<uint32> m_indices;
     std::vector<Texture2D> m_textures;
 
-    std::set<std::string> m_loadedTextures;
+    std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
     std::string m_file;
 };

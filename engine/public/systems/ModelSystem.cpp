@@ -18,20 +18,12 @@ void ModelSystem::tick(double) {
     });
 
     Engine::activeScene().componentView<ModelComponent>().each([&camera](ModelComponent& model) {
-        uint32_t flags = 0;
-        for (auto& texture : model.textures()) {
-            uint8 t = uint8(texture.type());
-            texture.bind(t);
-            flags |= (1 << t);
-        }
-
         Shader& shader = model.shader();
         shader.bind();
 
         shader.writeUniform("u_Model", model.transform);
         shader.writeUniform("u_View", Engine::activeScene().view);
         shader.writeUniform("u_Projection", Engine::activeScene().projection);
-        shader.writeUniform("u_Flags", flags);
 
         shader.writeUniform("u_ViewPosition", camera.position());
 
@@ -46,8 +38,24 @@ void ModelSystem::tick(double) {
 
         auto& renderer = Engine::renderer();
 
+        #if 0
         model.mesh().bind();
         renderer.drawElements(RenderPrimitive::Triangles, model.mesh().indexCount());
+        #else
+        for (auto& mesh : model.meshes()) {
+            uint32_t flags = 0;
+            for (usize iTexture : mesh.textures()) {
+                Texture2D& texture = model.textures()[iTexture];
+                uint8 t = texture.typeBits();
+                texture.bind(t);
+                flags |= (1 << t);
+            }
+            shader.writeUniform("u_Flags", flags);
+
+            mesh.bind();
+            renderer.drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+        }
+        #endif
     });
 }
 

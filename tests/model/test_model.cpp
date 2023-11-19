@@ -21,8 +21,11 @@ void runScene() {
     Shader shader(ShaderType::GLSL, "shaders/pbr.vert", "shaders/pbr.frag");
 
     // ModelComponent helmetModel("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
-    ModelComponent helmetModel("assets/DamagedHelmet/glTF/DamagedHelmet.gltf", shader);
+    // ModelComponent helmetModel("assets/DamagedHelmet/glTF/DamagedHelmet.gltf", shader);
+    ModelComponent helmetModel("assets/Sponza/glTF/Sponza.gltf", shader);
+    // ModelComponent helmetModel("assets/phoenix_bird.glb", shader);
     helmetModel.transform = glm::translate(helmetModel.transform, vec3(0, 0, 3));
+    // helmetModel.transform = glm::scale(helmetModel.transform , vec3(0.01));
     AnyAsset& helmet = Entity::create<AnyAsset>(&defaultScene);
     ModelComponent& helmetComponent = helmet.emplace<ModelComponent>(std::move(helmetModel));
 
