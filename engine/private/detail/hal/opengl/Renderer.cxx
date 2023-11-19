@@ -58,7 +58,8 @@ Renderer::Renderer() {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
-    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glEnable(GL_MULTISAMPLE);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 }
 
 Renderer::~Renderer() {}
@@ -75,6 +76,10 @@ void Renderer::enableStencilTest() {
     glEnable(GL_STENCIL_TEST);
 }
 
+void Renderer::enableMultisample() {
+    glEnable(GL_MULTISAMPLE);
+}
+
 void Renderer::disableCulling() {
     glDisable(GL_CULL_FACE);
 }
@@ -85,6 +90,10 @@ void Renderer::disableDepthTest() {
 
 void Renderer::disableStencilTest() {
     glDisable(GL_STENCIL_TEST);
+}
+
+void Renderer::disableMultisample() {
+    glDisable(GL_MULTISAMPLE);
 }
 
 void Renderer::stencilFunction(StencilFunction func, int32 ref, uint8 mask) {

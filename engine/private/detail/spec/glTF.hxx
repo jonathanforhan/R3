@@ -120,9 +120,9 @@ struct GLTF_CameraPerspective;
 struct GLTF_Root; // aka glTF
 struct GLTF_Image;
 struct GLTF_Material;
-struct GLTF_MaterialNormalTextureInfo;
-struct GLTF_MaterialOcclusionTextureInfo;
-struct GLTF_MaterialPBRMetallicRoughness;
+struct GLTF_NormalTextureInfo;
+struct GLTF_OcclusionTextureInfo;
+struct GLTF_PBRMetallicRoughness;
 struct GLTF_Mesh;
 struct GLTF_MeshPrimitive;
 struct GLTF_Node;
@@ -303,7 +303,7 @@ struct GLTF_TextureInfo {
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
-struct GLTF_MaterialNormalTextureInfo {
+struct GLTF_NormalTextureInfo {
     uint32 index; // REQUIRED
     uint32 texCoord{0};
     float scale{1.0f};
@@ -312,7 +312,7 @@ struct GLTF_MaterialNormalTextureInfo {
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-occlusiontextureinfo
-struct GLTF_MaterialOcclusionTextureInfo {
+struct GLTF_OcclusionTextureInfo {
     uint32 index; // REQUIRED
     uint32 texCoord{0};
     float strength{1.0f};
@@ -321,7 +321,7 @@ struct GLTF_MaterialOcclusionTextureInfo {
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
-struct GLTF_MaterialPBRMetallicRoughness {
+struct GLTF_PBRMetallicRoughness {
     float baseColorFactor[4]{1.0f, 1.0f, 1.0f, 1.0f};
     std::optional<GLTF_TextureInfo> baseColorTexture{std::nullopt};
     float metallicFactor{1.0f};
@@ -333,9 +333,9 @@ struct GLTF_MaterialPBRMetallicRoughness {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
 struct GLTF_Material {
-    std::optional<GLTF_MaterialPBRMetallicRoughness> pbrMetallicRoughness{std::nullopt};
-    std::optional<GLTF_MaterialNormalTextureInfo> normalTexture{std::nullopt};
-    std::optional<GLTF_MaterialOcclusionTextureInfo> occlusionTexture{std::nullopt};
+    std::optional<GLTF_PBRMetallicRoughness> pbrMetallicRoughness{std::nullopt};
+    std::optional<GLTF_NormalTextureInfo> normalTexture{std::nullopt};
+    std::optional<GLTF_OcclusionTextureInfo> occlusionTexture{std::nullopt};
     std::optional<GLTF_TextureInfo> emissiveTexture{std::nullopt};
     float emissiveFactor[3]{0.0f, 0.0f, 0.0f};
     std::string alphaMode{GLTF_OPAQUE};
@@ -433,5 +433,30 @@ struct GLTF_Root {
     std::optional<rapidjson::Value> extensions;
     std::optional<rapidjson::Value> extras;
 };
+
+// TODO support ratified extensions
+
+/*
+[ ] KHR_draco_mesh_compression
+[ ] KHR_lights_punctual
+[ ] KHR_materials_anisotropy
+[ ] KHR_materials_clearcoat
+[ ] KHR_materials_emissive_strength
+[ ] KHR_materials_ior
+[ ] KHR_materials_iridescence
+[ ] KHR_materials_sheen
+[ ] KHR_materials_specular
+[ ] KHR_materials_transmission
+[ ] KHR_materials_unlit
+[ ] KHR_materials_variants
+[ ] KHR_materials_volume
+[ ] KHR_mesh_quantization
+[ ] KHR_texture_basisu
+[ ] KHR_texture_transform
+[ ] KHR_xmp_json_ld
+[ ] EXT_mesh_gpu_instancing
+[ ] EXT_meshopt_compression
+[ ] EXT_texture_webp
+*/
 
 } // namespace R3

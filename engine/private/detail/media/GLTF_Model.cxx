@@ -295,13 +295,13 @@ void GLTF_Model::populateMaterials() {
         // pbrMetallicRoughness
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
             auto& jsPbr = itMaterial["pbrMetallicRoughness"];
-            material.pbrMetallicRoughness = GLTF_MaterialPBRMetallicRoughness{};
-            GLTF_MaterialPBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
+            material.pbrMetallicRoughness = GLTF_PBRMetallicRoughness{};
+            GLTF_PBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
 
             // baseColorFactor
             if (jsPbr.HasMember("baseColorFactor")) {
                 for (uint32 i = 0; auto& baseColorFactor : jsPbr["baseColorFactor"].GetArray())
-                    pbrMetallicRoughness.baseColorFactor[i++] = baseColorFactor.GetUint();
+                    pbrMetallicRoughness.baseColorFactor[i++] = baseColorFactor.GetFloat();
             }
 
             // baseColorTexture
@@ -334,8 +334,8 @@ void GLTF_Model::populateMaterials() {
         // normalTexture
         if (itMaterial.HasMember("normalTexture")) {
             auto& jsNormal = itMaterial["normalTexture"];
-            material.normalTexture = GLTF_MaterialNormalTextureInfo{};
-            GLTF_MaterialNormalTextureInfo& normalTexture = *material.normalTexture;
+            material.normalTexture = GLTF_NormalTextureInfo{};
+            GLTF_NormalTextureInfo& normalTexture = *material.normalTexture;
 
             // index
             normalTexture.index = jsNormal["index"].GetUint();
@@ -358,8 +358,8 @@ void GLTF_Model::populateMaterials() {
         // occlusionTexture
         if (itMaterial.HasMember("occlusionTexture")) {
             auto& jsOcclusion = itMaterial["occlusionTexture"];
-            material.occlusionTexture = GLTF_MaterialOcclusionTextureInfo{};
-            GLTF_MaterialOcclusionTextureInfo& occlusionTexture = *material.occlusionTexture;
+            material.occlusionTexture = GLTF_OcclusionTextureInfo{};
+            GLTF_OcclusionTextureInfo& occlusionTexture = *material.occlusionTexture;
 
             // index
             occlusionTexture.index = jsOcclusion["index"].GetUint();

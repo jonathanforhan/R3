@@ -16,12 +16,11 @@ struct Player : Entity {};
 
 void runScene() {
     Scene& defaultScene = Engine::addScene("default", true);
-    Shader shader(ShaderType::GLSL, "shaders/default.vert", "shaders/no_shading.frag");
+    Shader shader(ShaderType::GLSL, "shaders/pbr.vert", "shaders/pbr.frag");
 
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
-    // ModelComponent mc("assets/Box/glTF-Binary/Box.glb", shader);
     ModelComponent mc("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
     mc.transform = glm::translate(mc.transform, vec3(0, 0, 4));
 

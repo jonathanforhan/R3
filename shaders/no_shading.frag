@@ -4,7 +4,7 @@
 
 // flag bits
 // bit is set if that shader is present
-#define DIFFUSE_FLAG	(1 << 0)
+#define BASE_COLOR_FLAG	(1 << 0)
 #define SPECULAR_FLAG   (1 << 1)
 #define NORMAL_FLAG		(1 << 2)
 #define HEIGHT_FLAG		(1 << 3)
@@ -48,5 +48,4 @@ uniform lowp uint u_NumLights;
 
 void main() {
 	f_Color = vec4(vec3(texture(u_Material.diffuse, v_TexCoords)), 1.0);
-	// f_Color = vec4(clamp(v_TexCoords.x, 0, 1), clamp(v_TexCoords.y, 0, 1), 1, 1);
 }

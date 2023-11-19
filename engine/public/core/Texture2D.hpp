@@ -6,12 +6,11 @@ namespace R3 {
 
 // clang-format off
 enum class TextureType : uint8 {
-    Undefined   = UINT8_MAX,
-    Diffuse     = 0,
-    Specular    = 1,
-    Normals     = 2,
-    Height      = 3,
-    Emissive    = 4,
+    Albedo              = 0,
+    Normal              = 1,
+    MetallicRoughness   = 2,
+    AmbientOcclusion    = 3,
+    Emissive            = 4,
 };
 // clang-format on
 
@@ -23,14 +22,13 @@ public:
     Texture2D(Texture2D&& src) noexcept
         : m_id(src.m_id),
           m_type(src.m_type) {
-        src.m_id = 0;
+        src.m_id = UINT32_MAX;
     }
     void operator=(const Texture2D&) = delete;
     Texture2D& operator=(Texture2D&& src) noexcept {
         m_id = src.m_id;
         m_type = src.m_type;
-        src.m_id = 0;
-        src.m_type = TextureType::Undefined;
+        src.m_id = UINT32_MAX;
         return *this;
     }
     ~Texture2D();

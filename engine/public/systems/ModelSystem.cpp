@@ -26,31 +26,19 @@ void ModelSystem::tick(double) {
         }
 
         Shader& shader = model.shader();
-
         shader.bind();
 
         shader.writeUniform("u_Model", model.transform);
         shader.writeUniform("u_View", Engine::activeScene().view);
         shader.writeUniform("u_Projection", Engine::activeScene().projection);
-        shader.writeUniform("u_Tiling", model.tiling);
         shader.writeUniform("u_Flags", flags);
 
         shader.writeUniform("u_ViewPosition", camera.position());
-        shader.writeUniform("u_Material.diffuse", 0);
-        shader.writeUniform("u_Material.specular", 1);
-        shader.writeUniform("u_Material.shininess", 1.0f);
 
         uint32 i = 0;
         Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {
             std::string name = (std::stringstream() << "u_Lights[" << char('0' + i) << ']').str();
             shader.writeUniform(name + ".position", light.position);
-            shader.writeUniform(name + ".ambient", vec3(0.05f) * light.intensity);
-            shader.writeUniform(name + ".diffuse", vec3(0.8f) * 2.0f * light.intensity);
-            shader.writeUniform(name + ".specular", vec3(1.0f) * light.intensity);
-            shader.writeUniform(name + ".emissive", vec3(light.intensity) * 1.2f);
-            shader.writeUniform(name + ".constant", 1.0f);
-            shader.writeUniform(name + ".linear", 0.09f);
-            shader.writeUniform(name + ".quadratic", 0.032f);
             shader.writeUniform(name + ".color", light.color);
             i++;
         });

@@ -37,9 +37,11 @@ public:
     void enableCulling();
     void enableDepthTest();
     void enableStencilTest();
+    void enableMultisample();
     void disableCulling();
     void disableDepthTest();
     void disableStencilTest();
+    void disableMultisample();
     void stencilFunction(StencilFunction func, int32 ref, uint8 mask);
     void stencilMask(uint8 mask);
     void stencilOperation(StencilOperation stencilFail, StencilOperation depthFail, StencilOperation pass);
