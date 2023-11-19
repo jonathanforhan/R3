@@ -20,10 +20,21 @@ void runScene() {
     Player& player = Entity::create<Player>(&defaultScene);
     player.emplace<CameraComponent>().setActive();
 
-    ModelComponent mc("assets/ToyCar/glTF-Binary/ToyCar.glb", shader);
+    ModelComponent mc("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb", shader);
 
     AnyAsset& aa = AnyAsset::create<AnyAsset>(&defaultScene);
     aa.emplace<ModelComponent>(std::move(mc));
+
+    // lights
+    LightComponent& light1 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+    light1.color = vec3(1, 0.3, 1) * 3.0f;
+    light1.position = vec3(1, 1, 1);
+    light1.intensity = 1.0f;
+
+    LightComponent& light2 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+    light2.color = vec3(0.3, 1, 1) * 3.0f;
+    light2.position = vec3(-1, 1, 1);
+    light2.intensity = 1.0f;
 
     Engine::activeScene().addSystem<ModelSystem>();
     Engine::activeScene().addSystem<CameraSystem>();

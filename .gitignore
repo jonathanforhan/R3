@@ -8,3 +8,8 @@ compile_commands.json
 CMakePresets.json
 CMakeUserPresets.json
 R3.proj.DotSettings
+
+assets/*
+!assets/Sponza
+!assets/DamagedHelmet
+!assets/lantern.glb
