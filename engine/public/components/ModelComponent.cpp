@@ -82,7 +82,7 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
             // (referenced by an animation.channel.target), matrix MUST NOT be present
             mat4 t;
             for (uint32 i = 0; i < 16; i++)
-                t[i % 4][i / 4] = node->matrix[i];
+                t[i / 4][i % 4] = node->matrix[i];
 
             vec3 T = vec3(node->translation[0], node->translation[1], node->translation[2]);
             t *= glm::translate(t, T);
@@ -172,7 +172,8 @@ void ModelComponent::processMaterial(GLTF_Model* model, GLTF_Material* material)
 
 void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* textureInfo, TextureType type) {
     if (m_loadedTextures.contains(textureInfo->index)) {
-        return m_meshes.back().addTextureIndex(textureInfo->index);
+        m_meshes.back().addTextureIndex(textureInfo->index);
+        return;
     } else {
         m_loadedTextures.emplace(textureInfo->index, m_textures.size());
     }
