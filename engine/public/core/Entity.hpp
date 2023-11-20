@@ -1,12 +1,3 @@
-/**
- * Entity is the base class for all entities
- * when an entity is created with Entity::create<Derived> IF it is Tickable
- * (implements tick(double) method [checked through a C++20 concept]) then
- * we add a TickSystem for the entity and it's tick function gets called every frame
- * there is not virtual function overhead with the tick system just a normal c++ method call
- * if the class is `Initializable` (implements init() method) that will be called as well
- */
-
 #pragma once
 #include <entt/entt.hpp>
 #include "core/Scene.hpp"
@@ -14,14 +5,22 @@
 
 namespace R3 {
 
+//! used to check if we can/must initialize an Entity
 template <typename T>
 concept Initializable = requires(T t) { t.init(); };
 
+/*!
+ * \brief Entity base class that other Entity subclasses can derive
+ *
+ * when an entity is created with Entity::create<Derived> *if* it is Tickable
+ * (implements tick(double) method [checked through a C++20 concept]) then
+ * we add a TickSystem for the entity and it's tick function gets called every frame
+ * there is no virtual function overhead with the tick system just a normal c++ method call
+ * if the class is `Initializable` (implements init() method) that will be called as well
+ */
 class Entity {
-protected:
-    Entity() = default;
-
 public:
+    Entity() = default;
     Entity(const Entity&) = delete;
     Entity(Entity&& src) noexcept
         : m_id(src.m_id),
@@ -36,23 +35,30 @@ public:
         return *this;
     }
 
-    auto parentScene() -> Scene* { return m_parentScene; }
+    //! get the Entities owning scene
+    Scene* parentScene() { return m_parentScene; }
 
-    [[nodiscard]] auto valid() -> bool const;
+    //! query whether or not the Entity is valid in the Registry
+    [[nodiscard]] bool valid() const;
 
+    /*!
+     * \brief create an Entity class/subclass bound to a controling scene
+     * \param parentScene the scene to bind the entity
+     * \param args forwarded to the Entity-Derived constructor
+     */
     template <typename T, typename... Args>
-    static auto create(Scene* parentScene, Args&&... args) -> T&;
+    static T& create(Scene* parentScene, Args&&... args);
 
     void destroy();
 
     template <typename T, typename... Args>
-    auto emplace(Args&&... args) -> T&;
+    T& emplace(Args&&... args);
 
     template <typename T, typename... Args>
-    auto emplaceOrReplace(Args&&... args) -> T&;
+    T& emplaceOrReplace(Args&&... args);
 
     template <typename T, typename... Args>
-    auto replace(Args&&... args) -> usize;
+    usize replace(Args&&... args);
 
     template <typename T, typename... Other>
     auto remove() -> usize;
@@ -83,28 +89,33 @@ private:
     Scene* m_parentScene{nullptr};
 };
 
-inline auto Entity::valid() -> bool const {
+inline bool Entity::valid() const {
     return m_parentScene->m_registry.valid(m_id);
 }
 
 template <typename T, typename... Args>
-inline auto Entity::create(Scene* parentScene, Args&&... args) -> T& {
+inline T& Entity::create(Scene* parentScene, Args&&... args) {
     static_assert(std::is_base_of_v<Entity, T>);
     // add to registry
     entt::entity id = parentScene->m_registry.create();
+
     // add Entity derived component, what the api thinks of as 'an entity'
     T& entity = parentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
+
     // setup fields
     entity.m_id = id;
     entity.m_parentScene = parentScene;
+
     // if entity is has init() method call it
     if constexpr (Initializable<T>) {
         entity.init();
     }
+
     // if entity has tick(double) add TickSystem (Scene ensures no duplicate systems)
     if constexpr (Tickable<T>) {
         Engine::activeScene().addSystem<TickSystem<T>>();
     }
+
     return entity;
 }
 
@@ -113,22 +124,22 @@ inline void Entity::destroy() {
 }
 
 template <typename T, typename... Args>
-inline auto Entity::emplace(Args&&... args) -> T& {
+inline T& Entity::emplace(Args&&... args) {
     return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
 }
 
 template <typename T, typename... Args>
-inline auto Entity::emplaceOrReplace(Args&&... args) -> T& {
+inline T& Entity::emplaceOrReplace(Args&&... args) {
     return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
 }
 
 template <typename T, typename... Args>
-inline auto Entity::replace(Args&&... args) -> usize {
+inline usize Entity::replace(Args&&... args) {
     return m_parentScene->m_registry.replace<T>(m_id, std::forward<Args>(args)...);
 }
 
 template <typename T, typename... Other>
-inline auto Entity::remove() -> usize {
+inline usize Entity::remove() {
     return m_parentScene->m_registry.replace<T, Other...>(m_id);
 }
 
