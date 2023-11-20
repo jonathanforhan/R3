@@ -6,6 +6,9 @@
 
 namespace R3 {
 
+/*!
+ *  \brief Singleton Game-Engine class used to access the Window, Renderer, and Scenes
+ */
 class Engine final {
 private:
     Engine();
@@ -14,24 +17,42 @@ public:
     Engine(const Engine&) = delete;
     void operator=(const Engine&) = delete;
 
-    static void initialize() { (void)inst(); }
+    //! add scene to scene-map by name
+    static Scene& addScene(const std::string& name, bool setActive = false);
 
-    // Scene Management
-    static auto addScene(const std::string& name, bool setActive = false) -> Scene&;
+    //! remove scene from scene-map by name
     static void removeScene(const std::string& name);
-    static auto activeScene() -> Scene&;
-    static auto getScene(const std::string& name) -> Scene&;
-    static auto isActiveScene(const std::string& name) -> bool;
+
+    //! returns the current active scene
+    static Scene& activeScene();
+
+    //! get a scene by name
+    static Scene& getScene(const std::string& name);
+
+    //! returns whether a scene is the current active scene
+    static bool isActiveScene(const std::string& name);
+
+    //! set the current active scene
     static void setActiveScene(const std::string& name);
 
+    /*!
+     * \brief starts main game loop
+     * \warning this function will not return until the gameloop i.e. the game is over
+     */ 
     static void loop();
 
-    static auto window() -> Window& { return Engine::inst().m_window; }
-    static auto renderer() -> Renderer& { return Engine::inst().m_renderer; }
+    //! Window getter
+    static Window& window() { return Engine::inst().m_window; }
+
+    //! Renderer getter
+    static Renderer& renderer() { return Engine::inst().m_renderer; }
 
 private:
-    static auto inst() -> Engine&;
-    auto deltaTime() const -> double const;
+    //! returns the Engine singleton instance, this will initialize the engine if not already initialized
+    static Engine& inst();
+
+    //! returns the delta time between each frame / tick
+    double deltaTime() const;
 
 private:
     Window m_window;

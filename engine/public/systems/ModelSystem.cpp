@@ -37,8 +37,6 @@ void ModelSystem::tick(double) {
         });
         shader.writeUniform("u_NumLights", i);
 
-        auto& renderer = Engine::renderer();
-
         for (auto& mesh : model.meshes()) {
             uint32_t flags = 0;
             for (usize iTexture : mesh.textures()) {
@@ -51,7 +49,13 @@ void ModelSystem::tick(double) {
             shader.writeUniform("u_EmissiveIntensity", model.emissiveIntensity);
 
             mesh.bind();
-            renderer.drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+
+            [[likely]]
+            if (mesh.indexCount()) {
+                Engine::renderer().drawElements(RenderPrimitive::Triangles, mesh.indexCount());
+            } else {
+                Engine::renderer().drawArrays(RenderPrimitive::Triangles, mesh.vertexCount());
+            }
         }
     });
 }

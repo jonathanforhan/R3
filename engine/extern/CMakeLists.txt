@@ -1,28 +1,30 @@
+#[[ R3 Extern Dependencies ]]
+
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
-# glad
+#[[ Glad ]]
 add_subdirectory(glad SYSTEM)
 list(APPEND EXTERN_LIBS_PRIVATE "glad")
 
-# glfw
+#[[ GLFW ]]
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(GLFW_BUILD_TEST OFF CACHE BOOL "" FORCE)
 add_subdirectory(glfw SYSTEM)
 list(APPEND EXTERN_LIBS_PRIVATE "glfw")
 
-# glm
+#[[ glm ]]
 add_subdirectory(glm SYSTEM)
 list(APPEND EXTERN_LIBS "glm")
 
-# std_image
+#[[ stb_image ]]
 add_subdirectory(stb SYSTEM)
 list(APPEND EXTERN_LIBS_PRIVATE "stb_image")
 
-# entt
+#[[ EnTT ]]
 add_subdirectory(entt SYSTEM)
 list(APPEND EXTERN_LIBS "EnTT::EnTT")
 
-# rapidjson
+#[[ RapidJSON ]]
 set(RAPIDJSON_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(RAPIDJSON_BUILD_DOC OFF CACHE BOOL "" FORCE)
 set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -31,7 +33,7 @@ set(RAPIDJSON_BUILD_CXX17 ON CACHE BOOL "" FORCE)
 add_subdirectory(rapidjson SYSTEM)
 list(APPEND EXTERN_INCLUDE_DIRS_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include")
 
-# opengl
+#[[ OpenGL ]]
 find_package(OpenGL REQUIRED)
 
 include(GNUInstallDirs)

@@ -8,7 +8,7 @@ Engine::Engine()
       m_renderer(),
       m_activeScene(nullptr) {}
 
-auto Engine::addScene(const std::string& name, bool setActive) -> Scene& {
+Scene& Engine::addScene(const std::string& name, bool setActive) {
     auto& engine = Engine::inst();
     engine.m_scenes.try_emplace(name);
     if (setActive) {
@@ -29,11 +29,11 @@ auto Engine::activeScene() -> Scene& {
     return *Engine::inst().m_activeScene;
 }
 
-auto Engine::getScene(const std::string& name) -> Scene& {
+Scene& Engine::getScene(const std::string& name) {
     return Engine::inst().m_scenes.at(name);
 }
 
-auto Engine::isActiveScene(const std::string& name) -> bool {
+bool Engine::isActiveScene(const std::string& name) {
     auto& engine = Engine::inst();
     return &engine.m_scenes.at(name) == engine.m_activeScene;
 }
@@ -53,12 +53,12 @@ void Engine::loop() {
     }
 }
 
-auto Engine::inst() -> Engine& {
+Engine& Engine::inst() {
     static Engine s_instance;
     return s_instance;
 }
 
-auto Engine::deltaTime() const -> double const {
+double Engine::deltaTime() const {
     using namespace std::chrono;
 
     static auto s_prev = system_clock::now();

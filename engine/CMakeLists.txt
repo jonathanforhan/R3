@@ -62,3 +62,16 @@ if (WIN32)
 else ()
     target_compile_definitions(R3_ENGINE PUBLIC -DGLFW_EXPOSE_NATIVE_X11=1)
 endif ()
+
+#[[ DOCUMENTATION ]]
+find_package(Doxygen)
+
+if (DOXYGEN_FOUND)
+add_custom_target(R3_DOCS
+    COMMAND ${DOXYGEN_EXECUTABLE} "${R3_SOURCE_DIR}/Doxyfile"
+    WORKING_DIRECTORY ${R3_SOURCE_DIR}
+    COMMENT "Generating R3 Documentation with Doxygen"
+    OUTPUT_QUIET
+)
+add_dependencies(R3_ENGINE R3_DOCS)
+endif ()

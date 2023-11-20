@@ -45,10 +45,7 @@ private:
 private:
     std::vector<Mesh> m_meshes;
     Shader& m_shader;
-    std::vector<Vertex> m_vertices;
-    std::vector<uint32> m_indices;
     std::vector<Texture2D> m_textures;
-
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
     std::string m_file;
