@@ -1,7 +1,7 @@
 #version 460
 
 #define M_PI 3.14159265359
-#define MAX_LIGHTS 64
+#define MAX_LIGHTS 32
 
 in vec3 v_Position;
 in vec3 v_Normal;

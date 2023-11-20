@@ -104,7 +104,7 @@ void runScene() {
     player.emplace<CameraComponent>().setActive();
 
     Lantern& lantern = Entity::create<Lantern>(&defaultScene);
-    ModelComponent& laternComponent = lantern.emplace<ModelComponent>("assets/lantern.glb", shader);
+    ModelComponent& laternComponent = lantern.emplace<ModelComponent>("assets/Lantern/Lantern.glb", shader);
 
     // lights
     for (int i = -4; i <= 4; i += 2) {

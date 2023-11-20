@@ -56,7 +56,6 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
         if (primitive.attributes.HasMember(attrib)) {
             GLTF_Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
             GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
 
             uint32 nComponents{}; 
             if (accessor.type == GLTF_VEC3)
@@ -109,7 +108,6 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
         if (primitive.indices != GLTF_UNDEFINED) {
             GLTF_Accessor& accessor = model->accessors[primitive.indices];
             GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
 
             usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
             usize nSize = datatypeSize(accessor.componentType);
@@ -180,8 +178,6 @@ void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* texture
     }
 
     GLTF_Texture& texture = model->textures[textureInfo->index];
-    GLTF_Sampler defaultSampler{};
-    GLTF_Sampler& sampler = texture.sampler != GLTF_UNDEFINED ? model->samplers[texture.sampler] : defaultSampler;
 
     if (texture.source != GLTF_UNDEFINED) {
         m_meshes.back().addTextureIndex(m_textures.size());
@@ -190,7 +186,6 @@ void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* texture
             m_textures.emplace_back(m_directory + image.uri, type);
         } else {
             GLTF_BufferView& bufferView = model->bufferViews[image.bufferView];
-            GLTF_Buffer& buffer = model->buffers[bufferView.buffer];
 
             const char* data = model->buffer().data() + bufferView.byteOffset;
             m_textures.emplace_back(bufferView.byteLength, 0, data, type);

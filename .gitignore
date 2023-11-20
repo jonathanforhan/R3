@@ -10,6 +10,6 @@ CMakeUserPresets.json
 R3.proj.DotSettings
 
 assets/*
-!assets/Sponza
 !assets/DamagedHelmet
-!assets/lantern.glb
+!assets/Lantern
+!assets/Sponza

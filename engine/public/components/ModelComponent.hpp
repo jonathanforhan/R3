@@ -25,7 +25,6 @@ public:
     void operator=(const ModelComponent&) = delete;
     ModelComponent& operator=(ModelComponent&&) = default;
 
-    // auto mesh() -> Mesh& { return m_mesh; }
     auto meshes() -> std::vector<Mesh>& { return m_meshes; }
     auto shader() -> Shader& { return m_shader; };
     auto textures() -> std::vector<Texture2D>& { return m_textures; }
