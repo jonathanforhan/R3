@@ -1,9 +1,8 @@
 #pragma once
 #include <array>
 #include <functional>
-#include "api/Types.hpp"
-#include "core/Window.hpp"
 #include "System.hpp"
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -14,7 +13,7 @@ public:
     void setKeyBinding(Key key, std::function<void(InputAction)> keyBinding);
     void setMouseBinding(MouseButton button, std::function<void(InputAction)> mouseBinding);
 
-    auto cursorPosition() -> std::tuple<double, double> const;
+    std::tuple<double, double> cursorPosition() const;
 
     void tick(double);
 

@@ -9,13 +9,13 @@
 
 namespace R3 {
 
-struct GLTF_Node;
-struct GLTF_Mesh;
-struct GLTF_Material;
-struct GLTF_TextureInfo;
-struct GLTF_NormalTextureInfo;
-struct GLTF_OcclusionTextureInfo;
-class GLTF_Model;
+struct GLTF_Node;                 ///< @private
+struct GLTF_Mesh;                 ///< @private
+struct GLTF_Material;             ///< @private
+struct GLTF_TextureInfo;          ///< @private
+struct GLTF_NormalTextureInfo;    ///< @private
+struct GLTF_OcclusionTextureInfo; ///< @private
+class GLTF_Model;                 ///< @private
 
 class ModelComponent {
 public:
@@ -25,10 +25,10 @@ public:
     void operator=(const ModelComponent&) = delete;
     ModelComponent& operator=(ModelComponent&&) = default;
 
-    auto meshes() -> std::vector<Mesh>& { return m_meshes; }
-    auto shader() -> Shader& { return m_shader; };
-    auto textures() -> std::vector<Texture2D>& { return m_textures; }
-    auto path() const -> const std::string& { return m_directory + m_file; }
+    std::vector<Mesh>& meshes() { return m_meshes; }
+    Shader& shader() { return m_shader; };
+    std::vector<Texture2D>& textures() { return m_textures; }
+    const std::string& path() const { return m_directory + m_file; }
 
 public:
     mat4 transform{1.0f};

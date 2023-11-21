@@ -13,19 +13,33 @@ enum class ShaderType {
 /// @brief Shader program wrapper that can bind and unbind per draw
 class Shader {
 public:
+    /// @brief Construct Shader of from vertex and fragment source
+    /// @param type type of shader [GLSL|HLSL|SPIRV]
+    /// @param vs vertex shader path
+    /// @param fs fragment shader path
     Shader(ShaderType type, std::string_view vs, std::string_view fs);
-    Shader(const Shader&) = delete;
+
+    Shader(const Shader&) = delete; ///< non-copyable
+
+    /// @brief Moveable
+    /// @param src 
     Shader(Shader&& src) noexcept
         : m_id(src.m_id) {
         src.m_id = 0;
     }
-    void operator=(const Shader&) = delete;
+
+    void operator=(const Shader&) = delete; ///< non-copyable
+
+    /// @brief Moveable
+    /// @param src 
+    /// @return moved Shader
     Shader& operator=(Shader&& src) noexcept {
         m_id = src.m_id;
         src.m_id = 0;
         return *this;
     }
-    ~Shader();
+
+    ~Shader(); ///< destroy shader program
 
     /// @brief bind shader program
     void bind();

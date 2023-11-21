@@ -7,8 +7,8 @@ namespace R3 {
 class ModelSystem : public System {
 public:
     /// @brief Standard R3 tick method
-    /// @param delta time
-    void tick(double) override;
+    /// @param dt delta time
+    void tick(double dt) override;
 };
 
 } // namespace R3

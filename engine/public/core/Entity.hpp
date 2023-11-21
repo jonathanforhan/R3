@@ -19,13 +19,22 @@ concept Initializable = requires(T t) { t.init(); };
 class Entity {
 public:
     Entity() = default;
-    Entity(const Entity&) = delete;
+
+    Entity(const Entity&) = delete; ///< @brief non-copyable
+
+    /// @brief Moveable
+    /// @param src
     Entity(Entity&& src) noexcept
         : m_id(src.m_id),
           m_parentScene(src.m_parentScene) {
         src.m_id = entt::null;
     }
-    void operator=(const Entity&) = delete;
+
+    void operator=(const Entity&) = delete; ///< @brief non-copyable
+
+    /// @brief Moveable
+    /// @param src
+    /// @return Moved Entity
     Entity& operator=(Entity&& src) noexcept {
         m_id = src.m_id;
         m_parentScene = src.m_parentScene;

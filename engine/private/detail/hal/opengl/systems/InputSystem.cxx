@@ -55,18 +55,18 @@ static void cursorCallback(GLFWwindow* window, double x, double y) {
 namespace R3 {
 
 InputSystem::InputSystem() {
-    GLFWwindow* pNativeWindow = reinterpret_cast<GLFWwindow*>(Engine::window().nativeWindow());
+    GLFWwindow* nativeWindow = reinterpret_cast<GLFWwindow*>(Engine::window().nativeWindow());
 
     static bool s_initialized = false;
     if (!s_initialized) {
-        glfwSetKeyCallback(pNativeWindow, keyCallback);
-        glfwSetMouseButtonCallback(pNativeWindow, mouseCallback);
-        glfwSetCursorPosCallback(pNativeWindow, cursorCallback);
+        glfwSetKeyCallback(nativeWindow, keyCallback);
+        glfwSetMouseButtonCallback(nativeWindow, mouseCallback);
+        glfwSetCursorPosCallback(nativeWindow, cursorCallback);
         s_initialized = true;
     }
 }
 
-auto InputSystem::cursorPosition() -> std::tuple<double, double> const {
+std::tuple<double, double> InputSystem::cursorPosition() const {
     return {g_cursorPos.x, g_cursorPos.y};
 }
 
