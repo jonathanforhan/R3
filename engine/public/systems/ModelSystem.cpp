@@ -1,21 +1,22 @@
 #include "ModelSystem.hpp"
 #include <sstream>
-#include "core/Engine.hpp"
-#include "components/ModelComponent.hpp"
+#include "api/Check.hpp"
+#include "api/Log.hpp"
+#include "api/Math.hpp"
 #include "components/CameraComponent.hpp"
 #include "components/LightComponent.hpp"
-#include "api/Math.hpp"
-#include "api/Log.hpp"
+#include "components/ModelComponent.hpp"
+#include "core/Engine.hpp"
 
 namespace R3 {
 
 void ModelSystem::tick(double) {
-    CameraComponent camera;
+    CameraComponent* camera(nullptr);
     Engine::activeScene().componentView<CameraComponent>().each([&camera](CameraComponent& cam) {
-        if (cam.active()) {
-            camera = cam;
-        }
+        if (cam.active())
+            camera = &cam;
     });
+    CHECK(camera != nullptr);
 
     Engine::activeScene().componentView<ModelComponent>().each([&camera](ModelComponent& model) {
         Shader& shader = model.shader();
@@ -25,7 +26,7 @@ void ModelSystem::tick(double) {
         shader.writeUniform("u_View", Engine::activeScene().view);
         shader.writeUniform("u_Projection", Engine::activeScene().projection);
 
-        shader.writeUniform("u_ViewPosition", camera.position());
+        shader.writeUniform("u_ViewPosition", camera->position());
 
         uint32 i = 0;
         Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {

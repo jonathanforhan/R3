@@ -69,7 +69,7 @@ void Window::hide() {
     glfwHideWindow(GLWIN(m_nativeWindow));
 }
 
-auto Window::isVisible() const -> bool const {
+bool Window::isVisible() const {
     return glfwGetWindowAttrib(GLWIN(m_nativeWindow), GLFW_VISIBLE);
 }
 
@@ -77,7 +77,7 @@ void Window::resize(int32 width, int32 height) {
     glfwSetWindowSize(GLWIN(m_nativeWindow), width, height);
 }
 
-auto Window::size() const -> std::tuple<int32, int32> const {
+std::tuple<int32, int32> Window::size() const  {
     int32 w, h;
     glfwGetFramebufferSize(GLWIN(m_nativeWindow), &w, &h);
     return {w, h};
@@ -87,12 +87,12 @@ void Window::size(int32& width, int32& height) const {
     glfwGetFramebufferSize(GLWIN(m_nativeWindow), &width, &height);
 }
 
-auto Window::aspectRatio() const -> float const {
+float Window::aspectRatio() const {
     auto [width, height] = size();
     return static_cast<float>(width) / static_cast<float>(height);
 }
 
-auto Window::shouldClose() const -> bool const {
+bool Window::shouldClose() const {
     return glfwWindowShouldClose(GLWIN(m_nativeWindow));
 }
 
@@ -101,7 +101,7 @@ void Window::update() {
     glfwPollEvents();
 }
 
-auto Window::nativeId() const -> void* const {
+void* Window::nativeId() const {
 #ifdef WIN32
     return glfwGetWin32Window(GLWIN(m_nativeWindow));
 #else
@@ -109,7 +109,7 @@ auto Window::nativeId() const -> void* const {
 #endif // WIN32
 }
 
-auto Window::nativeWindow() const -> void* const {
+void* Window::nativeWindow() const {
     return m_nativeWindow;
 }
 

@@ -5,19 +5,17 @@
 
 namespace R3 {
 
-//! used to check if we can/must initialize an Entity
+/// @brief Used to check if we can/must initialize an Entity on Entity::create<Derived>
 template <typename T>
 concept Initializable = requires(T t) { t.init(); };
 
-/*!
- * \brief Entity base class that other Entity subclasses can derive
- *
- * when an entity is created with Entity::create<Derived> *if* it is Tickable
- * (implements tick(double) method [checked through a C++20 concept]) then
- * we add a TickSystem for the entity and it's tick function gets called every frame
- * there is no virtual function overhead with the tick system just a normal c++ method call
- * if the class is `Initializable` (implements init() method) that will be called as well
- */
+/// @brief Entity base class that other Entity subclasses can derive
+///
+/// when an entity is created with Entity::create<Derived> *if* it is Tickable
+/// (implements tick(double) method [checked through a C++20 concept]) then
+/// we add a TickSystem for the entity and it's tick function gets called every frame
+/// there is no virtual function overhead with the tick system just a normal c++ method call
+/// if the class is `Initializable` (implements init() method) that will be called as well
 class Entity {
 public:
     Entity() = default;
@@ -35,52 +33,83 @@ public:
         return *this;
     }
 
-    //! get the Entities owning scene
+    /// @brief Get the Entity's owning scene
+    /// @return parent scene
     Scene* parentScene() { return m_parentScene; }
 
-    //! query whether or not the Entity is valid in the Registry
+    /// @brief Query whether or not the Entity is valid in the Registry.
+    /// @return validity
     [[nodiscard]] bool valid() const;
 
-    /*!
-     * \brief create an Entity class/subclass bound to a controling scene
-     * \param parentScene the scene to bind the entity
-     * \param args forwarded to the Entity-Derived constructor
-     */
+    /// @brief Create an Entity class/subclass bound to a controling scene.
+    /// @tparam T Entity type
+    /// @tparam ...Args constructor args
+    /// @param parentScene the scene to bind the entity
+    /// @param ...args forwarded to the Entity-Derived constructor
+    /// @return reference to created entity
     template <typename T, typename... Args>
     static T& create(Scene* parentScene, Args&&... args);
 
+    /// @brief Destroy Entity / make invalid
     void destroy();
 
+    /// @brief Emplace a component onto this Entity
+    /// @tparam T Component type 
+    /// @tparam ...Args construct args
+    /// @param ...args forwarded to component constructor
+    /// @return reference to emplaced component
     template <typename T, typename... Args>
     T& emplace(Args&&... args);
 
+    /// @brief Emplace a component onto this Entity or replace it with this new one
+    /// @tparam T Component type
+    /// @tparam ...Args construct args
+    /// @param ...args forwarded to component constructor
+    /// @return reference to component
     template <typename T, typename... Args>
     T& emplaceOrReplace(Args&&... args);
 
+    /// @brief Replace a component on this entity
+    /// @tparam T Component type
+    /// @tparam ...Args constructor args
+    /// @param ...args forwarded to component constructor
+    /// @return a reference to the component being replaced
     template <typename T, typename... Args>
-    usize replace(Args&&... args);
+    T& replace(Args&&... args);
 
+    /// @brief Remove a component from entity
+    /// @tparam T component to remove
+    /// @tparam ...Other variadic list of many components to remove
+    /// @return the number of components removed from the Entity
     template <typename T, typename... Other>
-    auto remove() -> usize;
+    usize remove();
 
-    template <typename T, typename... Other>
-    void erase();
-
-    template <typename F>
-    void eraseIf(F func);
-
+    /// @brief Removes all invalid Entities from the Entity Registry
+    /// @tparam ...T Entities to remove
     template <typename... T>
-    void compact();
+    static void compact();
 
+    /// @brief Get a component or components for an entities
+    /// @tparam ...T component types
+    /// @return reference or tuple of returned components
     template <typename... T>
     [[nodiscard]] decltype(auto) get();
 
+    /// @brief Get a component or components for an entities
+    /// @tparam ...T component types
+    /// @return reference or tuple of returned components
     template <typename... T>
     [[nodiscard]] decltype(auto) get() const;
 
+    /// @brief Get a component or components for an entities
+    /// @tparam ...T component types, T may or make not be attached to Entity
+    /// @return pointer to components
     template <typename... T>
     [[nodiscard]] auto tryGet();
 
+    /// @brief Get a component or components for an entities
+    /// @tparam ...T component types, T may or make not be attached to Entity
+    /// @return pointer to components
     template <typename... T>
     [[nodiscard]] auto tryGet() const;
 
@@ -130,27 +159,17 @@ inline T& Entity::emplace(Args&&... args) {
 
 template <typename T, typename... Args>
 inline T& Entity::emplaceOrReplace(Args&&... args) {
-    return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
+    return m_parentScene->m_registry.emplace_or_replace<T>(m_id, std::forward<Args>(args)...);
 }
 
 template <typename T, typename... Args>
-inline usize Entity::replace(Args&&... args) {
+inline T& Entity::replace(Args&&... args) {
     return m_parentScene->m_registry.replace<T>(m_id, std::forward<Args>(args)...);
 }
 
 template <typename T, typename... Other>
 inline usize Entity::remove() {
-    return m_parentScene->m_registry.replace<T, Other...>(m_id);
-}
-
-template <typename T, typename... Other>
-inline void Entity::erase() {
-    m_parentScene->m_registry.erase<T, Other...>(m_id);
-}
-
-template <typename F>
-inline void Entity::eraseIf(F func) {
-    m_parentScene->m_registry.erase_if<F>(m_id);
+    return m_parentScene->m_registry.remove<T, Other...>(m_id);
 }
 
 template <typename... T>

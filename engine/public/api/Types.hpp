@@ -61,18 +61,21 @@ using uint32 = uint32_t;
 using uint64 = uint64_t;
 using usize = size_t;
 
+/// @brief Key or mouse input action.
 enum class InputAction : int8 {
     Release = 0,
     Press = 1,
     Repeat = 2,
 };
 
+/// @brief Mouse buttons [Left|Right|Middle]
 enum class MouseButton : int8 {
     Left = 0,
     Right = 1,
     Middle = 2,
 };
 
+/// @brief R3 key codes
 enum class Key : int16 {
     Unknown = -1,
     Space = 32,

@@ -3,8 +3,14 @@
 #include <stdexcept>
 #include <string>
 
+/// @def ENSURE(_Expr)
+/// @brief ENSURE throws an exception if the expression is evaluated as false
+/// @param _Expr expression to evaluate
+/// @note runs in any project configurations
+
 namespace R3::detail::ensure {
 template <typename... Args>
+/// @private
 inline std::string _fmt(Args&&... args) {
     std::stringstream ss;
     ((ss << args), ...);

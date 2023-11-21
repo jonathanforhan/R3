@@ -4,6 +4,7 @@
 
 namespace R3 {
 
+/// @brief Window class to abstract window operations
 class Window {
 private:
     explicit Window(std::string_view title);
@@ -13,17 +14,50 @@ public:
     void operator=(const Window&) = delete;
     ~Window();
 
+    /// @brief Present Window
     void show();
+
+    /// @brief Hide Window
     void hide();
-    auto isVisible() const -> bool const;
+
+    /// @brief Query whether Window is visible
+    /// @return if window is visible
+    bool isVisible() const;
+    
+    /// @brief Resize the application Window
+    /// @param width width in pixels
+    /// @param height height in pixels
     void resize(int32 width, int32 height);
-    auto size() const -> std::tuple<int32, int32> const;
+
+    /// @brief Query the Window size
+    /// @return Window dimensions in pixels
+    std::tuple<int32, int32> size() const;
+
+    /// @brief Query the Window size
+    /// @param width return the window width in pixels
+    /// @param height return the window height in pixels
     void size(int32& width, int32& height) const;
-    auto aspectRatio() const -> float const;
-    auto shouldClose() const -> bool const;
+
+    /// @brief Query the aspect ratio of the application window
+    /// @return aspect ratio
+    float aspectRatio() const;
+
+    /// @brief Query the Window state for if it should close
+    /// @return true if the window should close
+    bool shouldClose() const;
+
+    /// @brief Swapbuffers and poll events
     void update();
-    auto nativeId() const -> void* const;
-    auto nativeWindow() const -> void* const;
+
+    /// @brief Query the Window's native ID
+    /// @return native OS Window ID
+    void* nativeId() const;
+
+    /// @brief Get the native window pointer, often times this is GLFWwindow*
+    /// @return window pointer
+    void* nativeWindow() const;
+
+    /// @brief Set the window should close to true
     void kill();
 
 private:

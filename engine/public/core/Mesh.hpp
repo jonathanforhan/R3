@@ -6,11 +6,20 @@
 
 namespace R3 {
 
+/// @brief Holds buffer data for rendering as well as texture ID data
 class Mesh {
 public:
-    Mesh() = default;
+    Mesh() = default; ///< @brief default constructable
+
+    /// @brief Mesh constructor
+    /// @param vertices vertice data
+    /// @param indices indice data
     Mesh(std::span<Vertex> vertices, std::span<uint32> indices = {});
-    Mesh(const Mesh&) = delete;
+
+    Mesh(const Mesh&) = delete; ///< @brief non-copyable
+
+    /// @brief Move constructor
+    /// @param src
     Mesh(Mesh&& src) noexcept {
         this->~Mesh();
         m_vao = src.m_vao;
@@ -21,7 +30,12 @@ public:
         m_textures = src.m_textures;
         src.m_vao = src.m_vbo = src.m_ebo = 0;
     }
-    void operator=(const Mesh&) = delete;
+
+    void operator=(const Mesh&) = delete; ///< @brief non-copyable
+
+    /// @brief Move assignment operator
+    /// @param src
+    /// @return moved Mesh
     Mesh& operator=(Mesh&& src) noexcept {
         this->~Mesh();
         m_vao = src.m_vao;
@@ -33,13 +47,27 @@ public:
         src.m_vao = src.m_vbo = src.m_ebo = 0;
         return *this;
     }
+
+    /// @brief delete VAO
     ~Mesh();
 
+    /// @brief Bind VAO to gpu
     void bind();
 
-    auto indexCount() const -> uint32 const { return m_indexCount; }
-    auto vertexCount() const -> uint32 const { return m_vertexCount; }
-    auto textures() const -> const std::vector<usize>& { return m_textures; }
+    /// @brief Get index count of Mesh
+    /// @return count
+    uint32 indexCount() const { return m_indexCount; }
+
+    /// @brief Get vertex count of Mesh
+    /// @return count
+    uint32 vertexCount() const { return m_vertexCount; }
+
+    /// @brief Get the indices of Model textures bound to this mesh, used by ModelSystem
+    /// @return list of texture indices
+    const std::vector<usize>& textures() const { return m_textures; }
+
+    /// @brief Addes a texture index to the list of bound textures
+    /// @param i index of texture stored in the Model
     void addTextureIndex(usize i) { m_textures.push_back(i); }
 
 private:

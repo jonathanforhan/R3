@@ -65,7 +65,7 @@ void Shader::bind() {
     glUseProgram(m_id);
 }
 
-auto Shader::location(std::string_view uniform) const -> uint32 const {
+uint32 Shader::location(std::string_view uniform) const {
     uint32 location = glGetUniformLocation(m_id, uniform.data());
     CHECK(location >= 0);
     return location;

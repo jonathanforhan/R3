@@ -1,12 +1,20 @@
 #pragma once
 #include <iostream>
 
+/// @def LOG(_Level, ...)
+/// @brief Log message, LogLevel dependant
+/// All arguements are seperated by spaces
+/// @param _Level log level [Verbose|Info|Warning|Error]
+/// @param ... variadic log arguements
+
 #if R3_LOGGING_ENABLED
 namespace R3::detail::logging {
+/// @private
 inline void _LOG() {
     std::cout << std::endl;
 }
 template <typename T, typename... Args>
+/// @private
 inline void _LOG(T x, Args&&... args) {
     std::cout << x << ' ';
     _LOG(args...);

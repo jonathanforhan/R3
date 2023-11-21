@@ -3,8 +3,14 @@
 #include <stdexcept>
 #include <string>
 
+/// @def CHECK(_Expr)
+/// @brief CHECK throws an exception if the expression is evaluated as false
+/// @param _Expr expression to evaluate
+/// @warning CHECK only applies in debug and release builds, not dist builds, see ENSURE.
+
 namespace R3::detail::check {
 template <typename... Args>
+/// @private
 inline std::string _fmt(Args&&... args) {
     std::stringstream ss;
     ((ss << args), ...);

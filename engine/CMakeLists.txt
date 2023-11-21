@@ -27,6 +27,7 @@ else ()
 endif ()
 
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
+target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public/include")
 target_include_directories(R3_ENGINE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
 
 #[[ R3 EXTERNAL DEPENDECIES ]]

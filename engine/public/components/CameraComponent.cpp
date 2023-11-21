@@ -4,6 +4,7 @@
 #include "core/Engine.hpp"
 
 namespace R3 {
+
 void CameraComponent::translateForward(float magnitude) {
     m_position += magnitude * glm::normalize(vec3(m_front.x, 0, m_front.z));
 }
@@ -41,7 +42,15 @@ void CameraComponent::lookAround(float x, float y) {
 }
 
 void CameraComponent::apply(mat4* view, mat4* projection, float aspectRatio) const {
-    *projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 1000.0f);
+    if (m_cameraType == CameraType::Perspective) {
+        *projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
+    } else {
+        auto [width, height] = Engine::window().size();
+        float denom = std::max(width, height) / 2.0f;
+        float w = width / denom;
+        float h = height / denom;
+        *projection = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
+    }
     *view = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 

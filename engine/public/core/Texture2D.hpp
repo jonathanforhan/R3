@@ -14,6 +14,7 @@ enum class TextureType : uint8 {
 };
 // clang-format on
 
+/// @brief 2D Texture that can bind to texture slot
 class Texture2D {
 public:
     Texture2D(std::string_view path, TextureType type);
@@ -33,8 +34,16 @@ public:
     }
     ~Texture2D();
 
+    /// @brief Bind texture slot
+    /// @param index texture slot 0-32 normally
     void bind(uint8 index);
+
+    /// @brief Get the texture type
+    /// @return type as an enum class
     auto type() const -> TextureType { return m_type; }
+
+    /// @brief Get the texture type in bits
+    /// @return type as a byte
     auto typeBits() const -> uint8 { return static_cast<uint8>(m_type); }
 
 private:

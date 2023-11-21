@@ -1,11 +1,8 @@
+#include <R3>
 #include <chrono>
-#include "api/Log.hpp"
-#include "api/Math.hpp"
 #include "components/CameraComponent.hpp"
-#include "components/ModelComponent.hpp"
 #include "components/LightComponent.hpp"
-#include "core/Engine.hpp"
-#include "core/Entity.hpp"
+#include "components/ModelComponent.hpp"
 #include "systems/CameraSystem.hpp"
 #include "systems/ModelSystem.hpp"
 
@@ -24,7 +21,7 @@ struct Lantern : Entity {
         LightComponent& light = get<LightComponent>();
         vec3 position{};
 
-        Engine::activeScene().componentView<CameraComponent>().each([&](CameraComponent& camera) {
+        Engine::activeScene().componentView<CameraComponent>().each([&](auto& camera) {
             vec3 side = 0.5f * glm::normalize(glm::cross(camera.front(), vec3(0, 1, 0)));
             vec3 down = -vec3(0, 0.3, 0);
             position = camera.position() + camera.front() + side + down;
@@ -101,7 +98,9 @@ void runScene() {
     ModelComponent& helmetComponent = helmet.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf", shader);
 
     AnyAsset& player = Entity::create<AnyAsset>(&defaultScene);
-    player.emplace<CameraComponent>().setActive();
+    CameraComponent& camera = player.emplace<CameraComponent>(CameraType::Orthographic);
+    camera.setActive();
+    camera.setPosition(vec3(0, 2, 0));
 
     Lantern& lantern = Entity::create<Lantern>(&defaultScene);
     ModelComponent& laternComponent = lantern.emplace<ModelComponent>("assets/Lantern/Lantern.glb", shader);
