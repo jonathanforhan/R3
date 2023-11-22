@@ -1,5 +1,7 @@
 #pragma once
 #include "api/Types.hpp"
+#include "core/Framebuffer.hpp"
+#include "core/Renderbuffer.hpp"
 
 namespace R3 {
 
@@ -8,6 +10,18 @@ enum class RenderPrimitive {
     Triangles,
     Lines,
     Points,
+};
+
+/// @brief depth function for depth buffer
+enum class DepthFunction {
+    Always,
+    Never,
+    Less,
+    Equal,
+    LessEqual,
+    Greater,
+    NotEqual,
+    GreaterEqual,
 };
 
 /// @brief stencil function for stecil buffer
@@ -35,12 +49,11 @@ enum class StencilOperation {
 /// @warning OpenGL is currently the only supported Renderer
 class Renderer {
 protected:
+    /// @brief Constructable by Engine
     Renderer();
     friend class Engine; // friend so engine can construct
 
 public:
-    ~Renderer();
-
     /// @brief Cull back faces
     void enableCulling();
 
@@ -65,13 +78,21 @@ public:
     /// @brief Disable MSAA multisampling-antialiasing
     void disableMultisample();
 
+    /// @brief Specify depthbuffer function
+    /// @param func function
+    void depthFunction(DepthFunction func);
+
+    /// @brief Apply depth buffer bit mask
+    /// @param mask
+    void depthMask(bool b);
+
     /// @brief Specify the stencilbuffer function
     /// @param func function from R3::StencilFunction
     /// @param ref refernce
     /// @param mask stencil mask
     void stencilFunction(StencilFunction func, int32 ref, uint8 mask);
 
-    /// @brief Apply stencil mask
+    /// @brief Apply stencil bit mask
     /// @param mask 0-255 mask
     void stencilMask(uint8 mask);
 
@@ -93,6 +114,10 @@ public:
     /// @param primitive primitive to use for rendering
     /// @param vertexCount number of vertices
     void drawArrays(RenderPrimitive primitive, uint32 vertexCount) const;
+
+private:
+    Framebuffer m_framebuffer;
+    Renderbuffer m_renderbuffer;
 };
 
 } // namespace R3

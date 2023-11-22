@@ -27,6 +27,8 @@ void ModelSystem::tick(double) {
         shader.writeUniform("u_Projection", Engine::activeScene().projection);
 
         shader.writeUniform("u_ViewPosition", camera->position());
+        shader.writeUniform("u_DirectionalLight.direction", vec3(10.0f, -10.0f, 10.0f));
+        shader.writeUniform("u_DirectionalLight.diffuse", vec3(10.0f));
 
         uint32 i = 0;
         Engine::activeScene().componentView<LightComponent>().each([&i, &shader](LightComponent& light) {

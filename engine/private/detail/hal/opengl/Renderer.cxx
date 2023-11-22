@@ -2,10 +2,11 @@
 
 #include "core/Renderer.hpp"
 #include <glad/glad.h>
+#include "api/Log.hpp"
 
 namespace R3 {
 
-static auto renderPrimitiveToGlEnum(RenderPrimitive primitive) -> GLenum {
+static constexpr GLenum renderPrimitiveToGlEnum(RenderPrimitive primitive) {
     switch (primitive) {
         case RenderPrimitive::Triangles:
             return GL_TRIANGLES;
@@ -18,7 +19,28 @@ static auto renderPrimitiveToGlEnum(RenderPrimitive primitive) -> GLenum {
     }
 }
 
-static auto stencilFunctionToGlStencilFunc(StencilFunction func) -> GLenum {
+static constexpr GLenum depthFunctionToGlDepthFunc(DepthFunction func) {
+    switch (func) {
+        case DepthFunction::Always:
+            return GL_ALWAYS;
+        case DepthFunction::Never:
+            return GL_NEVER;
+        case DepthFunction::Less:
+            return GL_LESS;
+        case DepthFunction::Equal:
+            return GL_EQUAL;
+        case DepthFunction::LessEqual:
+            return GL_LEQUAL;
+        case DepthFunction::Greater:
+            return GL_GREATER;
+        case DepthFunction::NotEqual:
+            return GL_NOTEQUAL;
+        case DepthFunction::GreaterEqual:
+            return GL_GEQUAL;
+    }
+}
+
+static constexpr GLenum stencilFunctionToGlStencilFunc(StencilFunction func) {
     switch (func) {
         case StencilFunction::Always:
             return GL_ALWAYS;
@@ -31,7 +53,7 @@ static auto stencilFunctionToGlStencilFunc(StencilFunction func) -> GLenum {
     }
 }
 
-static auto stencilOperationToGlStencilOp(StencilOperation op) -> GLenum {
+static constexpr GLenum stencilOperationToGlStencilOp(StencilOperation op) {
     switch (op) {
         case StencilOperation::Keep:
             return GL_KEEP;
@@ -54,15 +76,21 @@ static auto stencilOperationToGlStencilOp(StencilOperation op) -> GLenum {
     }
 }
 
-Renderer::Renderer() {
+Renderer::Renderer()
+    : m_framebuffer(),
+      m_renderbuffer() {
+    m_framebuffer.attachRenderBuffer(m_renderbuffer);
+
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
     glEnable(GL_MULTISAMPLE);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-}
 
-Renderer::~Renderer() {}
+    GLint maxImages;
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &maxImages);
+    LOG(Verbose, "Texture Slots", maxImages);
+}
 
 void Renderer::enableCulling() {
     glEnable(GL_CULL_FACE);
@@ -96,6 +124,14 @@ void Renderer::disableMultisample() {
     glDisable(GL_MULTISAMPLE);
 }
 
+void Renderer::depthFunction(DepthFunction func) {
+    glDepthFunc(depthFunctionToGlDepthFunc(func));
+}
+
+void Renderer::depthMask(bool b) {
+    glDepthMask(b);
+}
+
 void Renderer::stencilFunction(StencilFunction func, int32 ref, uint8 mask) {
     glStencilFunc(stencilFunctionToGlStencilFunc(func), ref, mask);
 }
@@ -113,6 +149,7 @@ void Renderer::stencilOperation(StencilOperation stencilFail, StencilOperation d
 
 void Renderer::predraw() const {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    Framebuffer::bindDefault();
 }
 
 void Renderer::drawElements(RenderPrimitive primitive, uint32 indiceCount) const {

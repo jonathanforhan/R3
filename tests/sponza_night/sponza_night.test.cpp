@@ -104,16 +104,21 @@ void runScene() {
     camera.setActive();
     camera.setPosition(vec3(0, 2, 0));
 
-    AnyAsset& skybox = Entity::create<AnyAsset>(&defaultScene);
-    TextureCubeMap skyboxTexture = TextureCubeMap(TextureCubeMapCreateInfo{
-        .right = "textures/skybox/right.jpg",
-        .left = "textures/skybox/left.jpg",
-        .top = "textures/skybox/top.jpg",
-        .bottom = "textures/skybox/bottom.jpg",
-        .front = "textures/skybox/front.jpg",
-        .back = "textures/skybox/back.jpg",
-    });
-    skybox.emplace<CubeMapComponent>(skyboxTexture, skyboxShader);
+    Lantern& lantern = Entity::create<Lantern>(&defaultScene);
+    ModelComponent& laternComponent = lantern.emplace<ModelComponent>("assets/Lantern/Lantern.glb", shader);
+
+    // lights
+    for (int i = -4; i <= 4; i += 2) {
+        LightComponent& light1 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+        light1.color = vec3(0.97, 0.84, 0.92);
+        light1.position = vec3(i, 2, 1);
+        light1.intensity = 0.0f;
+
+        LightComponent& light2 = Entity::create<AnyAsset>(&defaultScene).emplace<LightComponent>();
+        light2.color = vec3(0.97, 0.84, 0.92);
+        light2.position = vec3(i, 2, -1);
+        light2.intensity = 0.0f;
+    }
 
     Engine::activeScene().addSystem<LanternSystem>();
 

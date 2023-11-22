@@ -3,6 +3,13 @@
 #define M_PI 3.14159265359
 #define MAX_LIGHTS 32
 
+#define ALBEDO_FLAG_BIT				(1 << 0)
+#define NORMAL_FLAG_BIT				(1 << 1)
+#define METALLIC_ROUGHNESS_FLAG_BIT	(1 << 2)
+#define AMBIENT_OCCULSION_FLAG_BIT	(1 << 3)
+#define EMISSIVE_FLAG_BIT			(1 << 4)
+#define HAS_BIT(X, BIT) ((X & BIT) != 0)
+
 in vec3 v_Position;
 in vec3 v_Normal;
 in vec2 v_TexCoords;
@@ -10,10 +17,18 @@ in flat highp uint v_Flags;
 
 out vec4 f_Color;
 
+// point light
 struct Light {
 	vec3 position;
 	vec3 color;
 	vec3 intensity;
+};
+
+struct DirectionalLight {
+	vec3 direction;
+	vec3 ambient;
+	vec3 diffuse;
+	vec3 specular;
 };
 
 uniform	layout (binding = 0) sampler2D u_Albedo;
@@ -23,6 +38,7 @@ uniform	layout (binding = 3) sampler2D u_AmbientOcclusion;
 uniform	layout (binding = 4) sampler2D u_Emissive;
 
 uniform vec3 u_ViewPosition;
+uniform DirectionalLight u_DirectionalLight;
 uniform Light u_Lights[MAX_LIGHTS];
 uniform lowp uint u_NumLights;
 uniform float u_EmissiveIntensity;
@@ -84,7 +100,11 @@ void main() {
 	vec4 mr = texture(u_MetallicRoughness, v_TexCoords);
 	float metallic = mr.b;
 	float roughness = mr.g;
-	vec3 ambientOcclusion = texture(u_AmbientOcclusion, v_TexCoords).rgb;
+
+	vec3 ambientOcclusion = vec3(1.0);
+	if (HAS_BIT(v_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
+		ambientOcclusion = texture(u_AmbientOcclusion, v_TexCoords).rgb;
+	}
 
 	vec3 N = calcTangentNormal();
 	vec3 V = normalize(u_ViewPosition - v_Position);
@@ -125,12 +145,19 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
+	//--- sunlight
+	vec3 directionalLight = normalize(-u_DirectionalLight.direction);
+	float diff = max(dot(normalize(v_Normal), directionalLight), 0.0);
+
+	vec3 ambient = vec3(0.05) * albedo * ambientOcclusion;
+
+	//--- sunlight
+	ambient = ambient * clamp(diff, 0.05, 1.0) * u_DirectionalLight.diffuse;
 
 	vec3 color = ambient + Lo;
 
 	// emission
-	if ((v_Flags & (1 << 4)) > 0) {
+	if (HAS_BIT(v_Flags, EMISSIVE_FLAG_BIT)) {
 		color += pow(texture(u_Emissive, v_TexCoords).rgb, vec3(2.2)) * u_EmissiveIntensity;
 	}
 

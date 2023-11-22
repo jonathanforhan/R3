@@ -3,7 +3,9 @@
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Math.hpp"
+#include "core/Engine.hpp"
 #include "detail/media/GLTF_Model.hxx"
+#include "systems/ModelSystem.hpp"
 
 namespace R3 {
 
@@ -26,6 +28,8 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     for (auto& ext : gltf.extensionsUsed) {
         LOG(Info, ext);
     }
+
+    Engine::activeScene().addSystem<ModelSystem>();
 }
 
 void ModelComponent::processNode(GLTF_Model* model, GLTF_Node* node) {

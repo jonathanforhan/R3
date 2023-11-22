@@ -13,8 +13,7 @@ class CameraComponent {
 public:
     /// @brief construct new camera component
     /// @param type type of camera
-    CameraComponent(CameraType type = CameraType::Perspective)
-        : m_cameraType(type) {}
+    explicit CameraComponent(CameraType type = CameraType::Perspective);
 
     CameraComponent(const CameraComponent&) = delete; ///< non-copyable
     void operator=(const CameraComponent&) = delete;  ///< non-copyable

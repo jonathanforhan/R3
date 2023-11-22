@@ -4,6 +4,7 @@
 
 namespace R3 {
 
+/// @brief Language of shader to import
 enum class ShaderType {
     GLSL,
     HLSL,

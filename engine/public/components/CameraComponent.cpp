@@ -2,8 +2,14 @@
 #include <algorithm>
 #include "api/Math.hpp"
 #include "core/Engine.hpp"
+#include "systems/CameraSystem.hpp"
 
 namespace R3 {
+
+CameraComponent::CameraComponent(CameraType type)
+    : m_cameraType(type) {
+    Engine::activeScene().addSystem<CameraSystem>();
+}
 
 void CameraComponent::translateForward(float magnitude) {
     m_position += magnitude * glm::normalize(vec3(m_front.x, 0, m_front.z));

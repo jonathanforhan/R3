@@ -1,8 +1,9 @@
 #pragma once
-#include <unordered_map>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 #include "api/Types.hpp"
+#include "core/BasicGeometry.hpp"
 #include "core/Mesh.hpp"
 #include "core/Shader.hpp"
 #include "core/Texture2D.hpp"
@@ -19,20 +20,35 @@ class GLTF_Model;                 ///< @private
 
 class ModelComponent {
 public:
+    /// @brief Construct a ModelComponent and add a ModelSystem to active scene if not present
+    /// @param path path to glTF resourse
+    /// @param shader shader used by model
     ModelComponent(const std::string& path, Shader& shader);
-    ModelComponent(const ModelComponent&) = delete;
-    ModelComponent(ModelComponent&&) = default;
-    void operator=(const ModelComponent&) = delete;
-    ModelComponent& operator=(ModelComponent&&) = default;
 
+    ModelComponent(const ModelComponent&) = delete;        ///< @brief non-copyable
+    ModelComponent(ModelComponent&&) = default;            ///< @brief moveable
+    void operator=(const ModelComponent&) = delete;        ///< @brief non-copyable
+    ModelComponent& operator=(ModelComponent&&) = default; ///< @brief moveable
+
+    /// @brief Get the Model mesh list
+    /// @return meshes
     std::vector<Mesh>& meshes() { return m_meshes; }
+
+    /// @brief Get the shader refernce used by ModelComponent
+    /// @return shade ref
     Shader& shader() { return m_shader; };
+
+    /// @brief Get the texture data stored in ModelComponent
+    /// @return textures
     std::vector<Texture2D>& textures() { return m_textures; }
+
+    /// @brief Get the glTF resource path used for the ModelComponent
+    /// @return filepath
     const std::string& path() const { return m_directory + m_file; }
 
 public:
-    mat4 transform{1.0f};
-    float emissiveIntensity{1.0f};
+    mat4 transform{1.0f};          ///< @brief ModelComponent Transform Matrix as used by shader
+    float emissiveIntensity{1.0f}; ///< @brief Intensity of emissive material, ignored if no emissive texture present
 
 private:
     void processNode(GLTF_Model* model, GLTF_Node* node);

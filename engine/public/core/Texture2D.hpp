@@ -37,7 +37,7 @@ public:
     Texture2D(Texture2D&& src) noexcept
         : m_id(src.m_id),
           m_type(src.m_type) {
-        src.m_id = UINT32_MAX;
+        src.m_id = 0;
     }
 
     void operator=(const Texture2D&) = delete; ///< non-copyable
@@ -48,7 +48,7 @@ public:
     Texture2D& operator=(Texture2D&& src) noexcept {
         m_id = src.m_id;
         m_type = src.m_type;
-        src.m_id = UINT32_MAX;
+        src.m_id = 0;
         return *this;
     }
 
@@ -60,11 +60,11 @@ public:
 
     /// @brief Get the texture type
     /// @return type as an enum class
-    auto type() const -> TextureType { return m_type; }
+    TextureType type() const { return m_type; }
 
     /// @brief Get the texture type in bits
     /// @return type as a byte
-    auto typeBits() const -> uint8 { return static_cast<uint8>(m_type); }
+    uint8 typeBits() const { return static_cast<uint8>(m_type); }
 
 private:
     uint32 m_id{0};
