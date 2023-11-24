@@ -4,7 +4,7 @@
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "core/Engine.hpp"
-#include "detail/media/GLTF_Model.hxx"
+#include "media/glTF/glTF-Model.hxx"
 #include "systems/ModelSystem.hpp"
 
 namespace R3 {
@@ -17,7 +17,7 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     m_directory = path.substr(0, split);
     m_file = path.substr(split);
 
-    GLTF_Model gltf(path);
+    glTF::Model gltf(path);
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
@@ -32,8 +32,8 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
     Engine::activeScene().addSystem<ModelSystem>();
 }
 
-void ModelComponent::processNode(GLTF_Model* model, GLTF_Node* node) {
-    if (node->mesh != GLTF_UNDEFINED) {
+void ModelComponent::processNode(glTF::Model* model, glTF::Node* node) {
+    if (node->mesh != glTF::UNDEFINED) {
         processMesh(model, node, &model->meshes[node->mesh]);
     }
 
@@ -42,29 +42,29 @@ void ModelComponent::processNode(GLTF_Model* model, GLTF_Node* node) {
     }
 }
 
-void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* mesh) {
+void ModelComponent::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh) {
     auto datatypeSize = [](uint32 datatype) -> usize {
-        if (datatype == GLTF_UNSIGNED_BYTE)
+        if (datatype == glTF::UNSIGNED_BYTE)
             return sizeof(uint8);
-        if (datatype == GLTF_UNSIGNED_SHORT)
+        if (datatype == glTF::UNSIGNED_SHORT)
             return sizeof(uint16);
-        if (datatype == GLTF_UNSIGNED_INT)
+        if (datatype == glTF::UNSIGNED_INT)
             return sizeof(uint32);
-        if (datatype == GLTF_FLOAT)
+        if (datatype == glTF::FLOAT)
             return sizeof(float);
         else
             ENSURE(false);
     };
 
-    auto populateVertexAttrib = [=](const GLTF_MeshPrimitive& primitive, auto& vec, const char* attrib) {
+    auto populateVertexAttrib = [=](const glTF::MeshPrimitive& primitive, auto& vec, const char* attrib) {
         if (primitive.attributes.HasMember(attrib)) {
-            GLTF_Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
-            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
+            glTF::Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
+            glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
             uint32 nComponents{}; 
-            if (accessor.type == GLTF_VEC3)
+            if (accessor.type == glTF::VEC3)
                 nComponents = 3;
-            else if (accessor.type == GLTF_VEC2)
+            else if (accessor.type == glTF::VEC2)
                 nComponents = 2;
 
             usize nBytes = usize(accessor.byteOffset) + bufferView.byteOffset;
@@ -76,7 +76,7 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
 
     for (auto& primitive : mesh->primitives) {
         std::vector<vec3> positions;
-        populateVertexAttrib(primitive, positions, GLTF_POSITION);
+        populateVertexAttrib(primitive, positions, glTF::POSITION);
 
         for (auto& position : positions) {
             // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS) properties.
@@ -103,15 +103,15 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
         }
 
         std::vector<vec3> normals;
-        populateVertexAttrib(primitive, normals, GLTF_NORMAL);
+        populateVertexAttrib(primitive, normals, glTF::NORMAL);
 
         std::vector<vec2> texCoords;
-        populateVertexAttrib(primitive, texCoords, GLTF_TEXCOORD_0);
+        populateVertexAttrib(primitive, texCoords, glTF::TEXCOORD_0);
 
         std::vector<uint32> indices;
-        if (primitive.indices != GLTF_UNDEFINED) {
-            GLTF_Accessor& accessor = model->accessors[primitive.indices];
-            GLTF_BufferView& bufferView = model->bufferViews[accessor.bufferView];
+        if (primitive.indices != glTF::UNDEFINED) {
+            glTF::Accessor& accessor = model->accessors[primitive.indices];
+            glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
             usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
             usize nSize = datatypeSize(accessor.componentType);
@@ -132,7 +132,7 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
             }
         }
 
-        CHECK(primitive.mode == GLTF_TRIANGLES);
+        CHECK(primitive.mode == glTF::TRIANGLES);
 
         std::vector<Vertex> vertices(positions.size());
         for (usize i = 0; i < vertices.size(); i++) {
@@ -147,13 +147,13 @@ void ModelComponent::processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* 
 
         m_meshes.emplace_back(vertices, indices);
 
-        if (primitive.material != GLTF_UNDEFINED) {
+        if (primitive.material != glTF::UNDEFINED) {
             processMaterial(model, &model->materials[primitive.material]);
         }
     }
 }
 
-void ModelComponent::processMaterial(GLTF_Model* model, GLTF_Material* material) {
+void ModelComponent::processMaterial(glTF::Model* model, glTF::Material* material) {
     if (material->pbrMetallicRoughness.has_value()) {
         if (material->emissiveTexture.has_value())
             processTexture(model, &*material->emissiveTexture, TextureType::Emissive);
@@ -174,7 +174,7 @@ void ModelComponent::processMaterial(GLTF_Model* model, GLTF_Material* material)
     }
 }
 
-void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* textureInfo, TextureType type) {
+void ModelComponent::processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type) {
     if (m_loadedTextures.contains(textureInfo->index)) {
         m_meshes.back().addTextureIndex(textureInfo->index);
         return;
@@ -182,15 +182,15 @@ void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* texture
         m_loadedTextures.emplace(textureInfo->index, m_textures.size());
     }
 
-    GLTF_Texture& texture = model->textures[textureInfo->index];
+    glTF::Texture& texture = model->textures[textureInfo->index];
 
-    if (texture.source != GLTF_UNDEFINED) {
+    if (texture.source != glTF::UNDEFINED) {
         m_meshes.back().addTextureIndex(m_textures.size());
-        GLTF_Image& image = model->images[texture.source];
+        glTF::Image& image = model->images[texture.source];
         if (!image.uri.empty()) {
             m_textures.emplace_back(m_directory + image.uri, type);
         } else {
-            GLTF_BufferView& bufferView = model->bufferViews[image.bufferView];
+            glTF::BufferView& bufferView = model->bufferViews[image.bufferView];
 
             const char* data = model->buffer().data() + bufferView.byteOffset;
             m_textures.emplace_back(bufferView.byteLength, 0, data, type);
@@ -198,13 +198,13 @@ void ModelComponent::processTexture(GLTF_Model* model, GLTF_TextureInfo* texture
     }
 }
 
-void ModelComponent::processTexture(GLTF_Model* model, GLTF_NormalTextureInfo* textureInfo, TextureType type) {
-    GLTF_TextureInfo adapter{.index = textureInfo->index};
+void ModelComponent::processTexture(glTF::Model* model, glTF::NormalTextureInfo* textureInfo, TextureType type) {
+    glTF::TextureInfo adapter{.index = textureInfo->index};
     processTexture(model, &adapter, type);
 }
 
-void ModelComponent::processTexture(GLTF_Model* model, GLTF_OcclusionTextureInfo* textureInfo, TextureType type) {
-    GLTF_TextureInfo adapter{.index = textureInfo->index};
+void ModelComponent::processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type) {
+    glTF::TextureInfo adapter{.index = textureInfo->index};
     processTexture(model, &adapter, type);
 }
 

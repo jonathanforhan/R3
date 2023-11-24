@@ -14,7 +14,7 @@ constexpr void Cube(Vertex vertices[36]) {
         -1.0f,  1.0f, -1.0f,
         -1.0f, -1.0f, -1.0f,
          1.0f, -1.0f, -1.0f,
-         1.0f, -1.0f, -1.0f,
+         1.0f, -1.0f, -1.0f, 
          1.0f,  1.0f, -1.0f,
         -1.0f,  1.0f, -1.0f,
 
@@ -22,7 +22,7 @@ constexpr void Cube(Vertex vertices[36]) {
         -1.0f, -1.0f, -1.0f,
         -1.0f,  1.0f, -1.0f,
         -1.0f,  1.0f, -1.0f,
-        -1.0f,  1.0f,  1.0f,
+        -1.0f,  1.0f,  1.0f, 
         -1.0f, -1.0f,  1.0f,
 
          1.0f, -1.0f, -1.0f,

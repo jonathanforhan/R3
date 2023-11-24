@@ -15,6 +15,7 @@ R3 currently uses OpenGL, after the SNHU software hack-a-thon I plan to change o
 
 - wsl (if windows)
 - clang-format (not optional for contributions)
+- Doxygen
 
 ### Build steps
 

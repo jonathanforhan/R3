@@ -10,13 +10,15 @@
 
 namespace R3 {
 
-struct GLTF_Node;                 ///< @private
-struct GLTF_Mesh;                 ///< @private
-struct GLTF_Material;             ///< @private
-struct GLTF_TextureInfo;          ///< @private
-struct GLTF_NormalTextureInfo;    ///< @private
-struct GLTF_OcclusionTextureInfo; ///< @private
-class GLTF_Model;                 ///< @private
+namespace glTF {
+struct Node;                 ///< @private
+struct Mesh;                 ///< @private
+struct Material;             ///< @private
+struct TextureInfo;          ///< @private
+struct NormalTextureInfo;    ///< @private
+struct OcclusionTextureInfo; ///< @private
+class Model;                 ///< @private
+} // namespace glTF
 
 class ModelComponent {
 public:
@@ -51,12 +53,12 @@ public:
     float emissiveIntensity{1.0f}; ///< @brief Intensity of emissive material, ignored if no emissive texture present
 
 private:
-    void processNode(GLTF_Model* model, GLTF_Node* node);
-    void processMesh(GLTF_Model* model, GLTF_Node* node, GLTF_Mesh* mesh);
-    void processMaterial(GLTF_Model* model, GLTF_Material* material);
-    void processTexture(GLTF_Model* model, GLTF_TextureInfo* textureInfo, TextureType type);
-    void processTexture(GLTF_Model* model, GLTF_NormalTextureInfo* textureInfo, TextureType type);
-    void processTexture(GLTF_Model* model, GLTF_OcclusionTextureInfo* textureInfo, TextureType type);
+    void processNode(glTF::Model* model, glTF::Node* node);
+    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh);
+    void processMaterial(glTF::Model* model, glTF::Material* material);
+    void processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type);
+    void processTexture(glTF::Model* model, glTF::NormalTextureInfo* textureInfo, TextureType type);
+    void processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type);
 
 private:
     std::vector<Mesh> m_meshes;

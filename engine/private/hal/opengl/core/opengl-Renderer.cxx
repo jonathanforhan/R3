@@ -1,6 +1,6 @@
 #if R3_OPENGL
 
-#include "core/Renderer.hpp"
+#include "render/Renderer.hpp"
 #include <glad/glad.h>
 #include "api/Log.hpp"
 
@@ -37,6 +37,8 @@ static constexpr GLenum depthFunctionToGlDepthFunc(DepthFunction func) {
             return GL_NOTEQUAL;
         case DepthFunction::GreaterEqual:
             return GL_GEQUAL;
+        default:
+            return NULL;
     }
 }
 
@@ -76,11 +78,7 @@ static constexpr GLenum stencilOperationToGlStencilOp(StencilOperation op) {
     }
 }
 
-Renderer::Renderer()
-    : m_framebuffer(),
-      m_renderbuffer() {
-    m_framebuffer.attachRenderBuffer(m_renderbuffer);
-
+Renderer::Renderer() {
     glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_STENCIL_TEST);
@@ -149,7 +147,6 @@ void Renderer::stencilOperation(StencilOperation stencilFail, StencilOperation d
 
 void Renderer::predraw() const {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-    Framebuffer::bindDefault();
 }
 
 void Renderer::drawElements(RenderPrimitive primitive, uint32 indiceCount) const {

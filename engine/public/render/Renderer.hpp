@@ -1,7 +1,11 @@
 #pragma once
 #include "api/Types.hpp"
-#include "core/Framebuffer.hpp"
-#include "core/Renderbuffer.hpp"
+
+#if R3_VULKAN
+namespace R3::vulkan {
+class VulkanRenderer;
+} // namespace R3::vk
+#endif // R3_VULKAN
 
 namespace R3 {
 
@@ -116,8 +120,9 @@ public:
     void drawArrays(RenderPrimitive primitive, uint32 vertexCount) const;
 
 private:
-    Framebuffer m_framebuffer;
-    Renderbuffer m_renderbuffer;
+#if R3_VULKAN
+    vulkan::VulkanRenderer* m_vulkanRenderer;
+#endif // R3_VULKAN
 };
 
 } // namespace R3

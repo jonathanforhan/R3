@@ -3,13 +3,13 @@
 #include <string_view>
 #include <vector>
 #include "api/Types.hpp"
-#include "detail/spec/glTF.hxx"
+#include "glTF.hxx"
 
-namespace R3 {
+namespace R3::glTF {
 
-class GLTF_Model : public GLTF_Root {
+class Model : public Root {
 public:
-    explicit GLTF_Model(std::string_view path);
+    explicit Model(std::string_view path);
 
     auto buffer() const -> const std::vector<char>& { return m_buffer; }
 
@@ -41,7 +41,7 @@ private:
     void populateExtras();
 
     // helper populates
-    void populateTextureInfo(GLTF_TextureInfo& textureInfo, rapidjson::Value& value);
+    void populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value);
 
     void checkVersion(std::string_view version) const;
     void checkVersion(uint32 major, uint32 minor) const;
@@ -52,4 +52,4 @@ private:
     std::string m_path;
 };
 
-} // namespace R3
+} // namespace R3::glTF

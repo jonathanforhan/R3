@@ -10,3 +10,11 @@
 [submodule "engine/extern/rapidjson"]
 	path = engine/extern/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
+[submodule "editor/extern/SDL"]
+	path = editor/extern/SDL
+	url = https://github.com/libsdl-org/SDL.git
+	branch = SDL2
+[submodule "editor/extern/SDL_image"]
+	path = editor/extern/SDL_image
+	url = https://github.com/libsdl-org/SDL_image.git
+	branch = SDL2

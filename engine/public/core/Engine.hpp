@@ -1,8 +1,8 @@
 #pragma once
 #include <unordered_map>
-#include "core/Renderer.hpp"
 #include "core/Scene.hpp"
 #include "core/Window.hpp"
+#include "render/Renderer.hpp"
 
 namespace R3 {
 

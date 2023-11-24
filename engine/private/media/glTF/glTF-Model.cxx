@@ -1,4 +1,4 @@
-#include "GLTF_Model.hxx"
+#include "glTF-Model.hxx"
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
@@ -7,7 +7,7 @@
 
 using namespace rapidjson;
 
-namespace R3 {
+namespace R3::glTF {
 
 template <typename T>
 static constexpr void maybeAssign(T& dst, const Value& value, const char* key) {
@@ -33,7 +33,7 @@ static constexpr void maybeAssign(T& dst, const Value& value, const char* key) {
     }
 }
 
-GLTF_Model::GLTF_Model(std::string_view path)
+Model::Model(std::string_view path)
     : m_path(path) {
     std::ifstream ifs(path.data(), std::ios::binary);
     ENSURE(ifs.is_open() && ifs.good());
@@ -48,16 +48,16 @@ GLTF_Model::GLTF_Model(std::string_view path)
     populateRoot();
 }
 
-void GLTF_Model::parseGLB(std::ifstream& ifs) {
-    GLTF_Header header = {};
+void Model::parseGLB(std::ifstream& ifs) {
+    Header header = {};
     ifs.read((char*)(&header), sizeof(header));
 
-    ENSURE(header.magic == GLTF_HEADER_MAGIC); // its ok if this fails
+    ENSURE(header.magic == HEADER_MAGIC); // its ok if this fails
     if (header.version > GLB_VERSION) {
         LOG(Warning, "glb version for", m_path, "is", header.version, "while R3 supports glb version", GLB_VERSION);
     }
 
-    GLTF_ChunkHeader chunkHeader = {};
+    ChunkHeader chunkHeader = {};
 
     auto readJson = [&]() {
         std::string jsonFile(chunkHeader.length, '\0');
@@ -71,30 +71,30 @@ void GLTF_Model::parseGLB(std::ifstream& ifs) {
     };
 
     ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    if (chunkHeader.type == GLTF_CHUNK_TYPE_JSON) {
+    if (chunkHeader.type == CHUNK_TYPE_JSON) {
         readJson();
-    } else if (chunkHeader.type == GLTF_CHUNK_TYPE_BIN) {
+    } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
         readBin();
     } else {
         ENSURE(false);
     }
 
     ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    if (chunkHeader.type == GLTF_CHUNK_TYPE_JSON) {
+    if (chunkHeader.type == CHUNK_TYPE_JSON) {
         readJson();
-    } else if (chunkHeader.type == GLTF_CHUNK_TYPE_BIN) {
+    } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
         readBin();
     } else {
         ENSURE(false);
     }
 }
 
-void GLTF_Model::parseGLTF(std::ifstream& ifs) {
+void Model::parseGLTF(std::ifstream& ifs) {
     std::string json = (std::stringstream() << ifs.rdbuf()).str();
     m_document.Parse(json.c_str());
 }
 
-void GLTF_Model::populateRoot() {
+void Model::populateRoot() {
     populateExtensionsUsed();
     populateExtensionsRequired();
     populateAccessors();
@@ -116,7 +116,7 @@ void GLTF_Model::populateRoot() {
     populateExtras();
 }
 
-void GLTF_Model::populateExtensionsUsed() {
+void Model::populateExtensionsUsed() {
     if (!m_document.HasMember("extensionsUsed"))
         return;
 
@@ -124,7 +124,7 @@ void GLTF_Model::populateExtensionsUsed() {
         extensionsUsed.emplace_back(extension.GetString());
 }
 
-void GLTF_Model::populateExtensionsRequired() {
+void Model::populateExtensionsRequired() {
     if (!m_document.HasMember("extensionsRequired"))
         return;
 
@@ -132,12 +132,12 @@ void GLTF_Model::populateExtensionsRequired() {
         extensionsRequired.emplace_back(extension.GetString());
 }
 
-void GLTF_Model::populateAccessors() {
+void Model::populateAccessors() {
     if (!m_document.HasMember("accessors"))
         return;
 
     for (auto& itAccessor : m_document["accessors"].GetArray()) {
-        GLTF_Accessor& accessor = accessors.emplace_back();
+        Accessor& accessor = accessors.emplace_back();
 
         // bufferView
         maybeAssign(accessor.bufferView, itAccessor, "bufferView");
@@ -186,16 +186,16 @@ void GLTF_Model::populateAccessors() {
     }
 }
 
-void GLTF_Model::populateAnimations() {
+void Model::populateAnimations() {
     if (!m_document.HasMember("animations"))
         return;
 
     for (auto& itAnimation : m_document["animations"].GetArray()) {
-        GLTF_Animation& animation = animations.emplace_back();
+        Animation& animation = animations.emplace_back();
 
         // channels
         for (auto& itChannel : itAnimation["channels"].GetArray()) {
-            GLTF_AnimationChannel& channel = animation.channels.emplace_back();
+            AnimationChannel& channel = animation.channels.emplace_back();
 
             // sampler
             channel.sampler = itChannel["sampler"].GetUint();
@@ -230,7 +230,7 @@ void GLTF_Model::populateAnimations() {
 
         // samplers
         for (auto& itSampler : itAnimation["samplers"].GetArray()) {
-            GLTF_AnimationSampler& sampler = animation.samplers.emplace_back();
+            AnimationSampler& sampler = animation.samplers.emplace_back();
 
             // input
             sampler.input = itSampler["input"].GetUint();
@@ -263,7 +263,7 @@ void GLTF_Model::populateAnimations() {
     }
 }
 
-void GLTF_Model::populateAsset() {
+void Model::populateAsset() {
     auto& jsAsset = m_document["asset"];
 
     // copyright -- ignore
@@ -286,12 +286,12 @@ void GLTF_Model::populateAsset() {
         asset.extras = std::move(jsAsset["extras"]);
 }
 
-void GLTF_Model::populateBuffers() {
+void Model::populateBuffers() {
     if (!m_document.HasMember("buffers"))
         return;
 
     for (auto& itBuffer : m_document["buffers"].GetArray()) {
-        GLTF_Buffer& buffer = buffers.emplace_back();
+        Buffer& buffer = buffers.emplace_back();
 
         // uri
         maybeAssign(buffer.uri, itBuffer, "uri");
@@ -329,12 +329,12 @@ void GLTF_Model::populateBuffers() {
     }
 }
 
-void GLTF_Model::populateBufferViews() {
+void Model::populateBufferViews() {
     if (!m_document.HasMember("bufferViews"))
         return;
 
     for (auto& itBufferView : m_document["bufferViews"].GetArray()) {
-        GLTF_BufferView& bufferView = bufferViews.emplace_back();
+        BufferView& bufferView = bufferViews.emplace_back();
 
         // buffer
         bufferView.buffer = itBufferView["buffer"].GetUint();
@@ -364,19 +364,19 @@ void GLTF_Model::populateBufferViews() {
     }
 }
 
-void GLTF_Model::populateCameras() {
+void Model::populateCameras() {
     if (!m_document.HasMember("cameras"))
         return;
 
     LOG(Warning, "TODO cameras");
 }
 
-void GLTF_Model::populateImages() {
+void Model::populateImages() {
     if (!m_document.HasMember("images"))
         return;
 
     for (auto& itImage : m_document["images"].GetArray()) {
-        GLTF_Image& image = images.emplace_back();
+        Image& image = images.emplace_back();
 
         // uri
         maybeAssign(image.uri, itImage, "uri");
@@ -400,18 +400,18 @@ void GLTF_Model::populateImages() {
     }
 }
 
-void GLTF_Model::populateMaterials() {
+void Model::populateMaterials() {
     if (!m_document.HasMember("materials"))
         return;
 
     for (auto& itMaterial : m_document["materials"].GetArray()) {
-        GLTF_Material& material = materials.emplace_back();
+        Material& material = materials.emplace_back();
 
         // pbrMetallicRoughness
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
             auto& jsPbr = itMaterial["pbrMetallicRoughness"];
-            material.pbrMetallicRoughness = GLTF_PBRMetallicRoughness{};
-            GLTF_PBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
+            material.pbrMetallicRoughness = PBRMetallicRoughness{};
+            PBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
 
             // baseColorFactor
             if (jsPbr.HasMember("baseColorFactor")) {
@@ -421,7 +421,7 @@ void GLTF_Model::populateMaterials() {
 
             // baseColorTexture
             if (jsPbr.HasMember("baseColorTexture")) {
-                pbrMetallicRoughness.baseColorTexture = GLTF_TextureInfo{};
+                pbrMetallicRoughness.baseColorTexture = TextureInfo{};
                 populateTextureInfo(*pbrMetallicRoughness.baseColorTexture, jsPbr["baseColorTexture"]);
             }
 
@@ -433,7 +433,7 @@ void GLTF_Model::populateMaterials() {
 
             // metallicRoughnessTexture
             if (jsPbr.HasMember("metallicRoughnessTexture")) {
-                pbrMetallicRoughness.metallicRoughnessTexture = GLTF_TextureInfo{};
+                pbrMetallicRoughness.metallicRoughnessTexture = TextureInfo{};
                 populateTextureInfo(*pbrMetallicRoughness.metallicRoughnessTexture, jsPbr["metallicRoughnessTexture"]);
             }
 
@@ -449,8 +449,8 @@ void GLTF_Model::populateMaterials() {
         // normalTexture
         if (itMaterial.HasMember("normalTexture")) {
             auto& jsNormal = itMaterial["normalTexture"];
-            material.normalTexture = GLTF_NormalTextureInfo{};
-            GLTF_NormalTextureInfo& normalTexture = *material.normalTexture;
+            material.normalTexture = NormalTextureInfo{};
+            NormalTextureInfo& normalTexture = *material.normalTexture;
 
             // index
             normalTexture.index = jsNormal["index"].GetUint();
@@ -473,8 +473,8 @@ void GLTF_Model::populateMaterials() {
         // occlusionTexture
         if (itMaterial.HasMember("occlusionTexture")) {
             auto& jsOcclusion = itMaterial["occlusionTexture"];
-            material.occlusionTexture = GLTF_OcclusionTextureInfo{};
-            GLTF_OcclusionTextureInfo& occlusionTexture = *material.occlusionTexture;
+            material.occlusionTexture = OcclusionTextureInfo{};
+            OcclusionTextureInfo& occlusionTexture = *material.occlusionTexture;
 
             // index
             occlusionTexture.index = jsOcclusion["index"].GetUint();
@@ -497,8 +497,8 @@ void GLTF_Model::populateMaterials() {
         // emissiveTexture
         if (itMaterial.HasMember("emissiveTexture")) {
             auto& jsEmissive = itMaterial["emissiveTexture"];
-            material.emissiveTexture = GLTF_TextureInfo{};
-            GLTF_TextureInfo& emissiveTexture = *material.emissiveTexture;
+            material.emissiveTexture = TextureInfo{};
+            TextureInfo& emissiveTexture = *material.emissiveTexture;
 
             populateTextureInfo(emissiveTexture, jsEmissive);
         }
@@ -531,16 +531,16 @@ void GLTF_Model::populateMaterials() {
     }
 }
 
-void GLTF_Model::populateMeshes() {
+void Model::populateMeshes() {
     if (!m_document.HasMember("meshes"))
         return;
 
     for (auto& itMesh : m_document["meshes"].GetArray()) {
-        GLTF_Mesh& mesh = meshes.emplace_back();
+        Mesh& mesh = meshes.emplace_back();
 
         // primitives
         for (auto& itPrimitive : itMesh["primitives"].GetArray()) {
-            GLTF_MeshPrimitive& primitive = mesh.primitives.emplace_back();
+            MeshPrimitive& primitive = mesh.primitives.emplace_back();
 
             // attributes
             primitive.attributes = std::move(itPrimitive["attributes"]);
@@ -588,12 +588,12 @@ void GLTF_Model::populateMeshes() {
     }
 }
 
-void GLTF_Model::populateNodes() {
+void Model::populateNodes() {
     if (!m_document.HasMember("nodes"))
         return;
 
     for (auto& itNode : m_document["nodes"].GetArray()) {
-        GLTF_Node& node = nodes.emplace_back();
+        Node& node = nodes.emplace_back();
 
         // camera
         maybeAssign(node.camera, itNode, "camera");
@@ -653,12 +653,12 @@ void GLTF_Model::populateNodes() {
     }
 }
 
-void GLTF_Model::populateSamplers() {
+void Model::populateSamplers() {
     if (!m_document.HasMember("samplers"))
         return;
 
     for (auto& itSampler : m_document["samplers"].GetArray()) {
-        GLTF_Sampler& sampler = samplers.emplace_back();
+        Sampler& sampler = samplers.emplace_back();
 
         // magFilter
         maybeAssign(sampler.magFilter, itSampler, "magFilter");
@@ -685,16 +685,16 @@ void GLTF_Model::populateSamplers() {
     }
 }
 
-void GLTF_Model::populateScene() {
+void Model::populateScene() {
     maybeAssign(scene, m_document, "scene");
 }
 
-void GLTF_Model::populateScenes() {
+void Model::populateScenes() {
     if (!m_document.HasMember("scenes"))
         return;
 
     for (auto& itScene : m_document["scenes"].GetArray()) {
-        GLTF_Scene& nthScene = scenes.emplace_back();
+        Scene& nthScene = scenes.emplace_back();
 
         // nodes
         if (itScene.HasMember("nodes")) {
@@ -715,12 +715,12 @@ void GLTF_Model::populateScenes() {
     }
 }
 
-void GLTF_Model::populateSkins() {
+void Model::populateSkins() {
     if (!m_document.HasMember("skins"))
         return;
 
     for (auto& itSkin : m_document["skins"].GetArray()) {
-        GLTF_Skin& skin = skins.emplace_back();
+        Skin& skin = skins.emplace_back();
 
         // inverseBindMatrices
         maybeAssign(skin.inverseBindMatrices, itSkin, "inverseBindMatrices");
@@ -745,12 +745,12 @@ void GLTF_Model::populateSkins() {
     }
 }
 
-void GLTF_Model::populateTextures() {
+void Model::populateTextures() {
     if (!m_document.HasMember("textures"))
         return;
 
     for (auto& itTexture : m_document["textures"].GetArray()) {
-        GLTF_Texture& texture = textures.emplace_back();
+        Texture& texture = textures.emplace_back();
 
         // sampler
         maybeAssign(texture.sampler, itTexture, "sampler");
@@ -771,21 +771,21 @@ void GLTF_Model::populateTextures() {
     }
 }
 
-void GLTF_Model::populateExtensions() {
+void Model::populateExtensions() {
     if (!m_document.HasMember("extensions"))
         return;
 
     extensions = std::move(m_document["extensions"]);
 }
 
-void GLTF_Model::populateExtras() {
+void Model::populateExtras() {
     if (!m_document.HasMember("extras"))
         return;
 
     extras = std::move(m_document["extras"]);
 }
 
-void GLTF_Model::populateTextureInfo(GLTF_TextureInfo& textureInfo, rapidjson::Value& value) {
+void Model::populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value) {
     // index
     textureInfo.index = value["index"].GetUint();
 
@@ -801,20 +801,20 @@ void GLTF_Model::populateTextureInfo(GLTF_TextureInfo& textureInfo, rapidjson::V
         textureInfo.extras = std::move(value["extras"]);
 }
 
-void GLTF_Model::checkVersion(std::string_view version) const {
+void Model::checkVersion(std::string_view version) const {
     char* end;
     uint32 major = strtol(version.data(), &end, 10);
     uint32 minor = strtol(end, NULL, 10);
     checkVersion(major, minor);
 }
 
-void GLTF_Model::checkVersion(uint32 major, uint32 minor) const {
+void Model::checkVersion(uint32 major, uint32 minor) const {
     if (major > R3::GLTF_VERSION_MAJOR || (major == R3::GLTF_VERSION_MAJOR && minor > R3::GLTF_VERSION_MINOR)) {
         std::string assetVersion = (std::stringstream() << major << "." << minor).str();
         std::string engineGltfVersion = (std::stringstream() << GLTF_VERSION_MAJOR << "." << GLTF_VERSION_MINOR).str();
-        LOG(Warning, "glTF version of asset", m_path, "is", assetVersion,
-            "while R3 supports glTF version", engineGltfVersion);
+        LOG(Warning, "glTF version of asset", m_path, "is", assetVersion, "while R3 supports glTF version",
+            engineGltfVersion);
     }
 }
 
-} // namespace R3
+} // namespace R3::glTF

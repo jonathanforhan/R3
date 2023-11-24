@@ -1,10 +1,12 @@
-#[[ R3 Extern Dependencies ]]
+#[=[ R3 Extern Dependencies ]=]
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
+if (R3_OPENGL)
 #[[ Glad ]]
 add_subdirectory(glad SYSTEM)
 list(APPEND EXTERN_LIBS_PRIVATE "glad")
+endif ()
 
 #[[ GLFW ]]
 set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
@@ -33,8 +35,16 @@ set(RAPIDJSON_BUILD_CXX17 ON CACHE BOOL "" FORCE)
 add_subdirectory(rapidjson SYSTEM)
 list(APPEND EXTERN_INCLUDE_DIRS_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include")
 
-#[[ OpenGL ]]
-find_package(OpenGL REQUIRED)
+if (R3_OPENGL)
+	#[[ OpenGL ]]
+	find_package(OpenGL REQUIRED)
+elseif (R3_VULKAN)
+	#[[ Vulkan ]]
+	find_package(Vulkan REQUIRED)
+	list(APPEND EXTERN_LIBS_PRIVATE "Vulkan::Vulkan")
+else ()
+	message(FATAL_ERROR "Renderer must be set")
+endif ()
 
 include(GNUInstallDirs)
 
