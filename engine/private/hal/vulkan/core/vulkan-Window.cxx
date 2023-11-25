@@ -12,7 +12,7 @@
 
 #include <vector>
 
-#define GLWIN(_Win) (reinterpret_cast<GLFWwindow*>(_Win))
+#define GLFW_WIN(_Win) (reinterpret_cast<GLFWwindow*>(_Win))
 
 namespace R3 {
 
@@ -39,41 +39,41 @@ Window::Window(std::string_view title) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);
     }
-    glfwSetWindowPos(GLWIN(m_nativeWindow), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
-    glfwMakeContextCurrent(GLWIN(m_nativeWindow));
+    glfwSetWindowPos(GLFW_WIN(m_nativeWindow), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
+    glfwMakeContextCurrent(GLFW_WIN(m_nativeWindow));
 
     glfwSwapInterval(GLFW_TRUE);
 }
 
 Window::~Window() {
-    glfwDestroyWindow(GLWIN(m_nativeWindow));
+    glfwDestroyWindow(GLFW_WIN(m_nativeWindow));
     glfwTerminate();
 }
 
 void Window::show() {
-    glfwShowWindow(GLWIN(m_nativeWindow));
+    glfwShowWindow(GLFW_WIN(m_nativeWindow));
 }
 
 void Window::hide() {
-    glfwHideWindow(GLWIN(m_nativeWindow));
+    glfwHideWindow(GLFW_WIN(m_nativeWindow));
 }
 
 bool Window::isVisible() const {
-    return glfwGetWindowAttrib(GLWIN(m_nativeWindow), GLFW_VISIBLE);
+    return glfwGetWindowAttrib(GLFW_WIN(m_nativeWindow), GLFW_VISIBLE);
 }
 
 void Window::resize(int32 width, int32 height) {
-    glfwSetWindowSize(GLWIN(m_nativeWindow), width, height);
+    glfwSetWindowSize(GLFW_WIN(m_nativeWindow), width, height);
 }
 
 std::tuple<int32, int32> Window::size() const  {
     int32 w, h;
-    glfwGetFramebufferSize(GLWIN(m_nativeWindow), &w, &h);
+    glfwGetFramebufferSize(GLFW_WIN(m_nativeWindow), &w, &h);
     return {w, h};
 }
 
 void Window::size(int32& width, int32& height) const {
-    glfwGetFramebufferSize(GLWIN(m_nativeWindow), &width, &height);
+    glfwGetFramebufferSize(GLFW_WIN(m_nativeWindow), &width, &height);
 }
 
 float Window::aspectRatio() const {
@@ -82,17 +82,16 @@ float Window::aspectRatio() const {
 }
 
 bool Window::shouldClose() const {
-    return glfwWindowShouldClose(GLWIN(m_nativeWindow));
+    return glfwWindowShouldClose(GLFW_WIN(m_nativeWindow));
 }
 
 void Window::update() {
-    glfwSwapBuffers(GLWIN(m_nativeWindow));
     glfwPollEvents();
 }
 
 void* Window::nativeId() const {
 #ifdef WIN32
-    return glfwGetWin32Window(GLWIN(m_nativeWindow));
+    return glfwGetWin32Window(GLFW_WIN(m_nativeWindow));
 #else
     return glfwGetWinX11Window(GLWIN(m_nativeWindow));
 #endif // WIN32
@@ -103,7 +102,7 @@ void* Window::nativeWindow() const {
 }
 
 void Window::kill() {
-    glfwSetWindowShouldClose(GLWIN(m_nativeWindow), GLFW_TRUE);
+    glfwSetWindowShouldClose(GLFW_WIN(m_nativeWindow), GLFW_TRUE);
 }
 
 } // namespace R3

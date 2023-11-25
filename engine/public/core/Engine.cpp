@@ -47,7 +47,7 @@ void Engine::loop() {
     auto& engine = Engine::inst();
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
-        engine.m_renderer.predraw();
+        // engine.m_renderer.predraw();
         engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_window.update();
     }

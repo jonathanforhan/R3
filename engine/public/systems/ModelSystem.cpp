@@ -11,6 +11,7 @@
 namespace R3 {
 
 void ModelSystem::tick(double) {
+#if 0
     CameraComponent* camera(nullptr);
     Engine::activeScene().componentView<CameraComponent>().each([&camera](CameraComponent& cam) {
         if (cam.active())
@@ -61,6 +62,7 @@ void ModelSystem::tick(double) {
             }
         }
     });
+#endif
 }
 
 } // namespace R3

@@ -13,6 +13,7 @@ CubeMapSystem::CubeMapSystem() {
 }
 
 void CubeMapSystem::tick(double dt) {
+#if 0
     Engine::renderer().depthFunction(DepthFunction::LessEqual);
     m_cubeMesh.bind();
 
@@ -26,6 +27,7 @@ void CubeMapSystem::tick(double dt) {
     });
 
     Engine::renderer().depthFunction(DepthFunction::Less);
+#endif
 }
 
 } // namespace R3
