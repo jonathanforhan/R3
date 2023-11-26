@@ -24,7 +24,9 @@ void Swapchain::create(const SwapchainSpecification& spec) {
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
         m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
 
-    auto [m_surfaceFormat, m_colorSpace] = swapchainSupportDetails.optimalSurfaceFormat();
+    auto format = swapchainSupportDetails.optimalSurfaceFormat();
+    m_surfaceFormat = std::get<0>(format);
+    m_colorSpace = std::get<1>(format);
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
     swapchainSupportDetails.capabilities.minImageCount == swapchainSupportDetails.capabilities.maxImageCount

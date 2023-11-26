@@ -1,11 +1,13 @@
 #version 460
 
-layout (location = 0) in vec3 a_Position;
+layout(location = 0) in vec3 a_Position;
 
-out vec3 v_TexCoords;
+layout(location = 0) out vec3 v_TexCoords;
 
-uniform mat4 u_View;
-uniform mat4 u_Projection;
+layout(set = 0, binding = 0) uniform ViewProjection {
+	uniform mat4 u_View;
+	uniform mat4 u_Projection;
+};
 
 void main() {
 	v_TexCoords = a_Position;

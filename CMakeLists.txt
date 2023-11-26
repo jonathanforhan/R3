@@ -14,22 +14,6 @@ endif ()
 
 set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_custom_target(COPY_SHADERS
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders")
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
-
-
 #[[ RENDERER ]]
 option(R3_OPENGL "Use OpenGL Renderer" OFF)
 option(R3_VULKAN "Use Vulkan Renderer" OFF)
@@ -50,6 +34,42 @@ option(R3_EXTENDED_RENDER_INFO OFF)
 #[[ DOCS ]]
 option(R3_DOCS OFF)
 
+#[[ TEST ]]
+option(R3_BUILD_TESTS ON)
+
+if (R3_VULKAN)
+	find_package(Vulkan REQUIRED COMPONENTS glslc)
+	find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
+endif ()
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E make_directory
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
+)
+
+file(GLOB SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*")
+foreach (SHADER ${SHADERS})
+	get_filename_component(FILENAME ${SHADER} NAME)
+	add_custom_command(
+		COMMAND ${glslc_executable} ${SHADER} -o  "spirv/${FILENAME}.spv"
+		OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv/${FILENAME}.spv"
+		DEPENDS ${SHADER} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
+		COMMENT "Compiling ${FILENAME}"
+	)
+	list(APPEND SPV_SHADERS  "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv/${FILENAME}.spv")
+endforeach ()
+add_custom_target(COMPILE_SHADERS ALL DEPENDS ${SPV_SHADERS})
+
 add_subdirectory(engine)
 
 #[[
@@ -58,8 +78,7 @@ target_sources(R3_EDITOR PRIVATE ${R3_ENGINE_INCLUDES})
 target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
 ]]
 
-option(R3_BUILD_TESTS ON)
-
 if(R3_BUILD_TESTS)
 	add_subdirectory(tests)
 endif()
+

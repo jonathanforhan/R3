@@ -1,10 +1,10 @@
 #version 460
 
-in vec3 v_TexCoords;
+layout(location = 0) in vec3 v_TexCoords;
 
-out vec4 f_Color;
+layout(location = 0) out vec4 f_Color;
 
-uniform samplerCube u_Skybox;
+layout(binding = 0) uniform samplerCube u_Skybox;
 
 void main() {
 	f_Color = texture(u_Skybox, v_TexCoords);

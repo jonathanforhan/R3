@@ -3,7 +3,7 @@
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "render/Pipeline.hpp"
+#include "render/GraphicsPipeline.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
@@ -34,7 +34,7 @@ private:
     PhysicalDevice m_physicalDevice;
     LogicalDevice m_logicalDevice;
     Swapchain m_swapchain;
-    Pipeline m_pipeline;
+    GraphicsPipeline m_graphicsPipeline;
 
     RenderSpecification m_spec;
 };
