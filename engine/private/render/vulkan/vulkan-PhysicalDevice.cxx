@@ -3,6 +3,7 @@
 #include "render/PhysicalDevice.hpp"
 
 #include <vulkan/vulkan.h>
+#include <cstring>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"

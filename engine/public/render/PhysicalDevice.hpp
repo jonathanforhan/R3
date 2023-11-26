@@ -6,7 +6,7 @@
 
 namespace R3 {
 
-const struct PhysicalDeviceSpecification {
+struct PhysicalDeviceSpecification {
     const Instance* instance;
     const Surface* surface;
     std::vector<const char*> extensions;

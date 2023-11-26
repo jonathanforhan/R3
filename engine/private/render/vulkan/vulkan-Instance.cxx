@@ -3,6 +3,7 @@
 #include "render/Instance.hpp"
 
 #include <vulkan/vulkan.h>
+#include <cstring>
 #include <vector>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"

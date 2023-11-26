@@ -11,7 +11,7 @@
 
 namespace R3 {
 
-Renderer::Renderer(RenderSpecification spec) {
+Renderer::Renderer(RendererSpecification spec) {
     CHECK(spec.window != nullptr);
     m_spec = spec;
 
@@ -64,6 +64,8 @@ Renderer::Renderer(RenderSpecification spec) {
         .logicalDevice = &m_logicalDevice,
         .window = spec.window,
     });
+
+    //--- RenderPass
 
     //--- Pipeline Layout
     m_pipelineLayout.create({

@@ -11,8 +11,9 @@ class Queue;
 class Swapchain;
 class Image;
 class ImageView;
-class GraphicsPipeline;
+class RenderPass;
 class PipelineLayout;
+class GraphicsPipeline;
 class Shader;
 
 } // namespace R3

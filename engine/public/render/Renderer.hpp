@@ -11,14 +11,14 @@
 
 namespace R3 {
 
-const struct RenderSpecification {
+struct RendererSpecification {
     const Window* window;
 };
 
 class Renderer {
 protected:
     Renderer() = default;
-    Renderer(RenderSpecification spec);
+    Renderer(RendererSpecification spec);
     friend class Engine;
 
 public:
@@ -38,7 +38,7 @@ private:
     GraphicsPipeline m_graphicsPipeline;
     PipelineLayout m_pipelineLayout;
 
-    RenderSpecification m_spec;
+    RendererSpecification m_spec;
 };
 
 } // namespace R3
