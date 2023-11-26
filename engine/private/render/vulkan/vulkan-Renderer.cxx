@@ -66,6 +66,10 @@ Renderer::Renderer(RendererSpecification spec) {
     });
 
     //--- RenderPass
+    m_renderPass.create({
+        .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
+    });
 
     //--- Pipeline Layout
     m_pipelineLayout.create({
@@ -85,6 +89,7 @@ Renderer::Renderer(RendererSpecification spec) {
 Renderer::~Renderer() {
     m_pipelineLayout.destroy();
     m_graphicsPipeline.destroy();
+    m_renderPass.destroy();
     m_swapchain.destroy();
     m_logicalDevice.destroy();
     m_surface.destroy();

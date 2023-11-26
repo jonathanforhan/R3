@@ -1,10 +1,11 @@
 #pragma once
 #include "api/Types.hpp"
+#include "render/GraphicsPipeline.hpp"
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "render/GraphicsPipeline.hpp"
 #include "render/PipelineLayout.hpp"
+#include "render/RenderPass.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
@@ -35,6 +36,7 @@ private:
     PhysicalDevice m_physicalDevice;
     LogicalDevice m_logicalDevice;
     Swapchain m_swapchain;
+    RenderPass m_renderPass;
     GraphicsPipeline m_graphicsPipeline;
     PipelineLayout m_pipelineLayout;
 

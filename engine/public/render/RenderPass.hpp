@@ -6,6 +6,7 @@
 namespace R3 {
 
 struct RenderPassSpecification {
+    const LogicalDevice* logicalDevice;
     const Swapchain* swapchain;
 };
 
