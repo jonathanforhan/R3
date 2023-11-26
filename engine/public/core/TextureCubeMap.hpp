@@ -1,6 +1,6 @@
 #pragma once
-#include "api/Types.hpp"
 #include <string_view>
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -23,7 +23,7 @@ public:
     TextureCubeMap(const TextureCubeMap&) = delete; ///< non-copyable
 
     /// @brief Moveable
-    /// @param src 
+    /// @param src
     TextureCubeMap(TextureCubeMap&& src) noexcept
         : m_id(src.m_id) {
         src.m_id = 0;
@@ -32,7 +32,7 @@ public:
     void operator=(const TextureCubeMap&) = delete; ///< non-copyable
 
     /// @brief Movable
-    /// @param src 
+    /// @param src
     /// @return moved TextureCubeMap
     TextureCubeMap& operator=(TextureCubeMap&& src) noexcept {
         m_id = src.m_id;

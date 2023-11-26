@@ -77,7 +77,7 @@ void Window::resize(int32 width, int32 height) {
     glfwSetWindowSize(GLFW_WIN(m_nativeWindow), width, height);
 }
 
-std::tuple<int32, int32> Window::size() const  {
+std::tuple<int32, int32> Window::size() const {
     int32 w, h;
     glfwGetFramebufferSize(GLFW_WIN(m_nativeWindow), &w, &h);
     return {w, h};

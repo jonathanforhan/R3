@@ -5,7 +5,9 @@ namespace R3 {
 
 Engine::Engine()
     : m_window("R3"),
-      m_renderer(),
+      m_renderer({
+          .window = &m_window,
+      }),
       m_activeScene(nullptr) {}
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
@@ -64,7 +66,8 @@ double Engine::deltaTime() const {
     static auto s_prev = system_clock::now();
     auto now = system_clock::now();
     double dt = duration<double>(now - s_prev).count();
-    // LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp line", __LINE__);
+    // LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp
+    // line", __LINE__);
     s_prev = now;
     return dt;
 }

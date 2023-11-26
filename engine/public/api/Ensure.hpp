@@ -18,10 +18,10 @@ inline std::string _fmt(Args&&... args) {
 }
 } // namespace R3::detail::ensure
 
-#define ENSURE(_Expr)                                                                                                \
-    do {                                                                                                             \
-        if (!(_Expr)) {                                                                                              \
-            throw std::runtime_error(R3::detail::ensure::_fmt("R3 ensure failure: '", #_Expr, "', File: ", __FILE__, \
-                                                              ", Line: ", __LINE__));                                \
-        }                                                                                                            \
+#define ENSURE(_Expr)                                                                          \
+    do {                                                                                       \
+        if (!(_Expr)) {                                                                        \
+            throw std::runtime_error(R3::detail::ensure::_fmt(                                 \
+                "R3 ensure failure: '", #_Expr, "', File: ", __FILE__, ", Line: ", __LINE__)); \
+        }                                                                                      \
     } while (0)

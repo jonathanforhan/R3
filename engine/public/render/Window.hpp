@@ -1,13 +1,15 @@
 #pragma once
 #include <string_view>
 #include "api/Types.hpp"
+#include "render/NativeRenderObject.hpp"
 
 namespace R3 {
 
 /// @brief Window class to abstract window operations
-class Window {
+class Window : public NativeRenderObject {
 private:
     explicit Window(std::string_view title);
+    friend class Engine;
 
 public:
     Window(const Window&) = delete;
@@ -23,7 +25,7 @@ public:
     /// @brief Query whether Window is visible
     /// @return if window is visible
     bool isVisible() const;
-    
+
     /// @brief Resize the application Window
     /// @param width width in pixels
     /// @param height height in pixels
@@ -53,17 +55,8 @@ public:
     /// @return native OS Window ID
     void* nativeId() const;
 
-    /// @brief Get the native window pointer, often times this is GLFWwindow*
-    /// @return window pointer
-    void* nativeWindow() const;
-
     /// @brief Set the window should close to true
     void kill();
-
-private:
-    void* m_nativeWindow;
-
-    friend class Engine;
 };
 
 } // namespace R3

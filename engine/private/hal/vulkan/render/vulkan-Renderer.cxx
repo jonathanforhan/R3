@@ -11,8 +11,11 @@
 
 namespace R3 {
 
-Renderer::Renderer() {
-    //--- Extensions
+Renderer::Renderer(RenderSpecification spec) {
+    CHECK(spec.window != nullptr);
+    m_spec = spec;
+
+    //--- Instance Extensions
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
     std::vector<const char*> extensions(extensions_, extensions_ + extensionCount);
@@ -31,13 +34,44 @@ Renderer::Renderer() {
         .validationLayers = validationLayers,
     });
 
+    //--- Surface
+    m_surface.create({
+        .instance = &m_instance,
+        .window = m_spec.window,
+    });
+
     //--- Physical Device
     m_physicalDevice.select({
         .instance = &m_instance,
+        .surface = &m_surface,
+        .extensions =
+            {
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+            },
     });
+
+    //--- Logical Device and Queues
+    m_logicalDevice.create({
+        .instance = &m_instance,
+        .surface = &m_surface,
+        .physicalDevice = &m_physicalDevice,
+    });
+
+    //--- Swapchain
+    m_swapchain.create({
+        .physicalDevice = &m_physicalDevice,
+        .surface = &m_surface,
+        .logicalDevice = &m_logicalDevice,
+        .window = spec.window,
+    });
+
+    //--- Graphics Pipeline
 }
 
 Renderer::~Renderer() {
+    m_swapchain.destroy();
+    m_logicalDevice.destroy();
+    m_surface.destroy();
     m_instance.destroy();
 }
 

@@ -5,22 +5,26 @@ namespace R3 {
 class NativeRenderObject {
 protected:
     NativeRenderObject() = default;
+
 public:
     using Handle = void*;
-    
-    constexpr Handle handle() { return m_handle; }
 
-    template <typename T>
+    template <typename T = Handle>
     constexpr T handle() {
-        return (T)m_handle;
+        return reinterpret_cast<T>(m_handle);
     }
 
-    template <typename T>
-    constexpr T* handlePtr() {
-        return (T*)&m_handle;
+    template <typename T = Handle>
+    constexpr T handle() const {
+        return reinterpret_cast<T>(m_handle);
     }
 
 protected:
+    template <typename T = Handle*>
+    constexpr T handlePtr() {
+        return reinterpret_cast<T>(&m_handle);
+    }
+
     void setHandle(Handle handle) { m_handle = handle; }
 
 private:

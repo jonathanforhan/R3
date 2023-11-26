@@ -23,7 +23,7 @@ public:
     Shader(const Shader&) = delete; ///< non-copyable
 
     /// @brief Moveable
-    /// @param src 
+    /// @param src
     Shader(Shader&& src) noexcept
         : m_id(src.m_id) {
         src.m_id = 0;
@@ -32,7 +32,7 @@ public:
     void operator=(const Shader&) = delete; ///< non-copyable
 
     /// @brief Moveable
-    /// @param src 
+    /// @param src
     /// @return moved Shader
     Shader& operator=(Shader&& src) noexcept {
         m_id = src.m_id;

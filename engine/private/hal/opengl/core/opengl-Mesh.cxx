@@ -1,7 +1,7 @@
 #if R3_OPENGL
 
-#include "core/Mesh.hpp"
 #include <glad/glad.h>
+#include "core/Mesh.hpp"
 
 namespace R3 {
 

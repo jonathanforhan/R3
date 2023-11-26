@@ -1,5 +1,4 @@
 #pragma once
-#include <span>
 #include <vector>
 #include "render/NativeRenderObject.hpp"
 
@@ -19,8 +18,8 @@ public:
     void destroy();
 
 private:
-    bool checkExtensionSupport(std::span<const char*> requiredExtensions);
-    bool checkValidationLayerSupport(std::span<const char*> requiredValidationLayers);
+    bool checkExtensionSupport(const std::vector<const char*>& requiredExtensions) const;
+    bool checkValidationLayerSupport(const std::vector<const char*>& requiredValidationLayers) const;
 
 private:
     InstanceSpecification m_spec;

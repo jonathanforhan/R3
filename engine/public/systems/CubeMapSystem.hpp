@@ -14,4 +14,4 @@ private:
     Mesh m_cubeMesh;
 };
 
-} // namespace R3 {
+} // namespace R3

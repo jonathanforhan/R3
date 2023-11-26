@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 #include "api/Types.hpp"
 
 namespace R3 {

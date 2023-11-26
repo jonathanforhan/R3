@@ -45,6 +45,7 @@ option(R3_LOG_VERBOSE ON)
 option(R3_LOG_INFO ON)
 option(R3_LOG_WARNING ON)
 option(R3_LOG_ERROR ON)
+option(R3_EXTENDED_RENDER_INFO OFF)
 
 #[[ DOCS ]]
 option(R3_DOCS OFF)

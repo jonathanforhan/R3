@@ -463,7 +463,8 @@ void Model::populateMaterials() {
 
             // extensions
             if (jsNormal.HasMember("extensions"))
-                normalTexture.extensions = std::move(jsNormal["extensions"]);;
+                normalTexture.extensions = std::move(jsNormal["extensions"]);
+            ;
 
             // extras
             if (jsNormal.HasMember("extras"))
@@ -487,7 +488,8 @@ void Model::populateMaterials() {
 
             // extensions
             if (jsOcclusion.HasMember("extensions"))
-                occlusionTexture.extensions = std::move(jsOcclusion["extensions"]);;
+                occlusionTexture.extensions = std::move(jsOcclusion["extensions"]);
+            ;
 
             // extras
             if (jsOcclusion.HasMember("extras"))
@@ -812,7 +814,12 @@ void Model::checkVersion(uint32 major, uint32 minor) const {
     if (major > R3::GLTF_VERSION_MAJOR || (major == R3::GLTF_VERSION_MAJOR && minor > R3::GLTF_VERSION_MINOR)) {
         std::string assetVersion = (std::stringstream() << major << "." << minor).str();
         std::string engineGltfVersion = (std::stringstream() << GLTF_VERSION_MAJOR << "." << GLTF_VERSION_MINOR).str();
-        LOG(Warning, "glTF version of asset", m_path, "is", assetVersion, "while R3 supports glTF version",
+        LOG(Warning,
+            "glTF version of asset",
+            m_path,
+            "is",
+            assetVersion,
+            "while R3 supports glTF version",
             engineGltfVersion);
     }
 }

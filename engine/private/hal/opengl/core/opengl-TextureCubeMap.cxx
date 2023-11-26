@@ -1,9 +1,9 @@
 #if R3_OPENGL
 
-#include "core/TextureCubeMap.hpp"
 #include <glad/glad.h>
 #include <stb_image.h>
 #include "api/Check.hpp"
+#include "core/TextureCubeMap.hpp"
 
 namespace R3 {
 

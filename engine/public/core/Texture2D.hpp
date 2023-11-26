@@ -33,7 +33,7 @@ public:
     Texture2D(const Texture2D&) = delete; ///< non-copyable
 
     /// @brief Moveable
-    /// @param src 
+    /// @param src
     Texture2D(Texture2D&& src) noexcept
         : m_id(src.m_id),
           m_type(src.m_type) {
@@ -43,7 +43,7 @@ public:
     void operator=(const Texture2D&) = delete; ///< non-copyable
 
     /// @brief Movable
-    /// @param src 
+    /// @param src
     /// @return moved Texture2D
     Texture2D& operator=(Texture2D&& src) noexcept {
         m_id = src.m_id;

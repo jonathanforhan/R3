@@ -1,8 +1,8 @@
 #if R3_OPENGL
 
-#include "render/Renderer.hpp"
 #include <glad/glad.h>
 #include "api/Log.hpp"
+#include "render/Renderer.hpp"
 
 namespace R3 {
 

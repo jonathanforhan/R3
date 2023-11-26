@@ -1,7 +1,7 @@
 #if R3_OPENGL
 
-#include "core/Texture2D.hpp"
 #include <glad/glad.h>
+#include "core/Texture2D.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include "api/Check.hpp"

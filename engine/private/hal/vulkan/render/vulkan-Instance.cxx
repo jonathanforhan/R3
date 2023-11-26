@@ -69,7 +69,7 @@ void Instance::create(const InstanceSpecification& spec) {
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
         .messageType =
-#if R3_LOG_EXTENDED_RENDER_INFO /* NOT IMPLEMENTED */
+#if R3_LOG_EXTENDED_RENDER_INFO
             VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
 #endif
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
@@ -95,14 +95,17 @@ void Instance::create(const InstanceSpecification& spec) {
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = nullptr,
-        .enabledExtensionCount = static_cast<uint32>(glfwExtensions.size()),
-        .ppEnabledExtensionNames = glfwExtensions.data(),
+        .enabledExtensionCount = static_cast<uint32>(m_spec.extensions.size()),
+        .ppEnabledExtensionNames = m_spec.extensions.data(),
     };
 #endif
-    ENSURE(vkCreateInstance(&instanceCreateInfo, nullptr, handlePtr<VkInstance>()) == VK_SUCCESS);
+    ENSURE(vkCreateInstance(&instanceCreateInfo, nullptr, handlePtr<VkInstance*>()) == VK_SUCCESS);
 
 #if R3_VALIDATION_LAYERS_ENABLED
-    ENSURE(R3_VK_CALL_EXT(vkCreateDebugUtilsMessengerEXT, handle<VkInstance>(), &debugMessengerCreateInfo, nullptr,
+    ENSURE(R3_VK_CALL_EXT(vkCreateDebugUtilsMessengerEXT,
+                          handle<VkInstance>(),
+                          &debugMessengerCreateInfo,
+                          nullptr,
                           &s_debugMessenger) == VK_SUCCESS);
 #endif
 }
@@ -114,9 +117,10 @@ void Instance::destroy() {
     vkDestroyInstance(handle<VkInstance>(), nullptr);
 }
 
-bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) {
+bool Instance::checkExtensionSupport(const std::vector<const char*>& requiredExtensions) const {
     uint32 instanceExtensionCount = 0;
     vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
+    CHECK(instanceExtensionCount != 0);
 
     std::vector<VkExtensionProperties> instanceExtensions(instanceExtensionCount);
     vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensions.data());
@@ -134,9 +138,10 @@ bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) 
     return true;
 }
 
-bool Instance::checkValidationLayerSupport(std::span<const char*> requiredValidationLayers) {
+bool Instance::checkValidationLayerSupport(const std::vector<const char*>& requiredValidationLayers) const {
     uint32 validationLayerCount = 0;
     vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
+    CHECK(validationLayerCount != 0);
 
     std::vector<VkLayerProperties> validationLayers(validationLayerCount);
     vkEnumerateInstanceLayerProperties(&validationLayerCount, validationLayers.data());

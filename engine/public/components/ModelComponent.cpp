@@ -61,7 +61,7 @@ void ModelComponent::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mes
             glTF::Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
             glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
-            uint32 nComponents{}; 
+            uint32 nComponents{};
             if (accessor.type == glTF::VEC3)
                 nComponents = 3;
             else if (accessor.type == glTF::VEC2)
@@ -80,9 +80,9 @@ void ModelComponent::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mes
 
         for (auto& position : positions) {
             // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS) properties.
-            // TRS properties are converted to matrices and postmultiplied in the T * R * S order to compose the transformation matrix;
-            // first the scale is applied to the vertices, then the rotation, and then the translation.
-            // If none are provided, the transform is the identity. When a node is targeted for animation
+            // TRS properties are converted to matrices and postmultiplied in the T * R * S order to compose the
+            // transformation matrix; first the scale is applied to the vertices, then the rotation, and then the
+            // translation. If none are provided, the transform is the identity. When a node is targeted for animation
             // (referenced by an animation.channel.target), matrix MUST NOT be present
             mat4 t;
             for (uint32 i = 0; i < 16; i++)
@@ -164,10 +164,9 @@ void ModelComponent::processMaterial(glTF::Model* model, glTF::Material* materia
         if (material->normalTexture.has_value())
             processTexture(model, &*material->normalTexture, TextureType::Normal);
 
-
         if (material->pbrMetallicRoughness->metallicRoughnessTexture.has_value())
-            processTexture(model, &*material->pbrMetallicRoughness->metallicRoughnessTexture,
-                           TextureType::MetallicRoughness);
+            processTexture(
+                model, &*material->pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness);
 
         if (material->pbrMetallicRoughness->baseColorTexture.has_value())
             processTexture(model, &*material->pbrMetallicRoughness->baseColorTexture, TextureType::Albedo);

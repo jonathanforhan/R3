@@ -1,8 +1,8 @@
 #include "CubeMapSystem.hpp"
+#include "api/Log.hpp"
 #include "components/CubeMapComponent.hpp"
 #include "core/BasicGeometry.hpp"
 #include "core/Engine.hpp"
-#include "api/Log.hpp"
 
 namespace R3 {
 

@@ -1,6 +1,5 @@
 #if R3_OPENGL
 
-#include "core/Shader.hpp"
 #include <glad/glad.h>
 #include <fstream>
 #include <sstream>
@@ -9,6 +8,7 @@
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Todo.hpp"
+#include "core/Shader.hpp"
 
 static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
     std::string s;
