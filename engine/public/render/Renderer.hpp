@@ -4,6 +4,7 @@
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/GraphicsPipeline.hpp"
+#include "render/PipelineLayout.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
@@ -35,6 +36,7 @@ private:
     LogicalDevice m_logicalDevice;
     Swapchain m_swapchain;
     GraphicsPipeline m_graphicsPipeline;
+    PipelineLayout m_pipelineLayout;
 
     RenderSpecification m_spec;
 };

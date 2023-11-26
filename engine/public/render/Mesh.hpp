@@ -2,7 +2,7 @@
 #include <span>
 #include <vector>
 #include "api/Types.hpp"
-#include "core/Vertex.hpp"
+#include "render/Vertex.hpp"
 
 namespace R3 {
 

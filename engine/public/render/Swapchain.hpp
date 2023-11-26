@@ -23,6 +23,7 @@ public:
     Format surfaceFormat() const { return m_surfaceFormat; }
     ColorSpace colorSpace() const { return m_colorSpace; }
     PresentMode presentMode() const { return m_presentMode; }
+    uvec2 extent() const { return m_extent2D; }
     const std::vector<Image>& images() const { return m_images; }
 
 private:

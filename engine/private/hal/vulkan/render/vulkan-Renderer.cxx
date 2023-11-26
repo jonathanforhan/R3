@@ -65,10 +65,24 @@ Renderer::Renderer(RenderSpecification spec) {
         .window = spec.window,
     });
 
+    //--- Pipeline Layout
+    m_pipelineLayout.create({
+        .logicalDevice = &m_logicalDevice,
+    });
+
     //--- Graphics Pipeline
+    m_graphicsPipeline.create({
+        .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
+        .pipelineLayout = &m_pipelineLayout,
+        .vertexShaderPath = "spirv/test.vert.spv",
+        .fragmentShaderPath = "spirv/test.frag.spv",
+    });
 }
 
 Renderer::~Renderer() {
+    m_pipelineLayout.destroy();
+    m_graphicsPipeline.destroy();
     m_swapchain.destroy();
     m_logicalDevice.destroy();
     m_surface.destroy();

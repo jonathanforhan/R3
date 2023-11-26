@@ -1,7 +1,7 @@
 #pragma once
 #include "core/Engine.hpp"
-#include "core/Shader.hpp"
-#include "core/TextureCubeMap.hpp"
+#include "render/Shader.hpp"
+#include "render/TextureCubeMap.hpp"
 #include "systems/CubeMapSystem.hpp"
 
 namespace R3 {

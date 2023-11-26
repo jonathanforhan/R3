@@ -1,6 +1,6 @@
 #pragma once
 #include "System.hpp"
-#include "core/Mesh.hpp"
+#include "render/Mesh.hpp"
 
 namespace R3 {
 

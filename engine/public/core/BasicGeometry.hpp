@@ -1,5 +1,5 @@
 #pragma once
-#include "core/Vertex.hpp"
+#include "render/Vertex.hpp"
 
 namespace R3 {
 // clang-format off

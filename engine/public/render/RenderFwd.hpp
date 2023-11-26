@@ -12,6 +12,7 @@ class Swapchain;
 class Image;
 class ImageView;
 class GraphicsPipeline;
+class PipelineLayout;
 class Shader;
 
 } // namespace R3
