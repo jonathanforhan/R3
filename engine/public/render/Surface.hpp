@@ -1,10 +1,8 @@
 #pragma once
 #include "render/NativeRenderObject.hpp"
+#include "render/RenderFwd.hpp"
 
 namespace R3 {
-
-class Instance;
-class Window;
 
 struct SurfaceSpecification {
     const Instance* instance;

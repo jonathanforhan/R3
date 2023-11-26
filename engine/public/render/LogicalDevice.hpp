@@ -1,12 +1,9 @@
 #pragma once
 #include "render/NativeRenderObject.hpp"
 #include "render/Queue.hpp"
+#include "render/RenderFwd.hpp"
 
 namespace R3 {
-
-class Instance;
-class PhysicalDevice;
-class Surface;
 
 struct LogicalDeviceSpecification {
     const Instance* instance;

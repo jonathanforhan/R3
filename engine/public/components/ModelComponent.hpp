@@ -5,8 +5,8 @@
 #include "api/Types.hpp"
 #include "core/BasicGeometry.hpp"
 #include "core/Mesh.hpp"
-#include "core/Shader.hpp"
 #include "core/Texture2D.hpp"
+#include "render/Shader.hpp"
 
 namespace R3 {
 

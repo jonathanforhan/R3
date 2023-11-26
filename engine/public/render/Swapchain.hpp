@@ -3,14 +3,10 @@
 #include "render/Image.hpp"
 #include "render/ImageView.hpp"
 #include "render/NativeRenderObject.hpp"
+#include "render/RenderFwd.hpp"
 #include "render/RenderSpecification.hpp"
 
 namespace R3 {
-
-class PhysicalDevice;
-class Surface;
-class LogicalDevice;
-class Window;
 
 struct SwapchainSpecification {
     const PhysicalDevice* physicalDevice;

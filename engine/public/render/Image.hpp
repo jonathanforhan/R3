@@ -1,11 +1,9 @@
 #pragma once
 #include <vector>
 #include "render/NativeRenderObject.hpp"
+#include "render/RenderFwd.hpp"
 
 namespace R3 {
-
-class LogicalDevice;
-class Swapchain;
 
 struct ImageSpecification {
     const LogicalDevice* logicalDevice;

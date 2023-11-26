@@ -2,11 +2,9 @@
 #include <vector>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
+#include "render/RenderFwd.hpp"
 
 namespace R3 {
-
-class Instance;
-class Surface;
 
 const struct PhysicalDeviceSpecification {
     const Instance* instance;

@@ -8,7 +8,7 @@
 #include "api/Log.hpp"
 #include "api/Math.hpp"
 #include "api/Todo.hpp"
-#include "core/Shader.hpp"
+#include "render/Shader.hpp"
 
 static GLuint importGLSLHelper(std::string_view shaderFile, GLenum shaderType) {
     std::string s;

@@ -2,12 +2,9 @@
 
 #include <vector>
 #include "render/NativeRenderObject.hpp"
+#include "render/RenderFwd.hpp"
 
 namespace R3 {
-
-class LogicalDevice;
-class Swapchain;
-class Image;
 
 struct ImageViewSpecification {
     const LogicalDevice* logicalDevice;
