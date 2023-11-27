@@ -15,6 +15,8 @@ public:
     Engine(const Engine&) = delete;
     void operator=(const Engine&) = delete;
 
+    ~Engine();
+
     /// @brief Add scene to scene-map by name
     /// @param name name of scene
     /// @param setActive activation scene on creation

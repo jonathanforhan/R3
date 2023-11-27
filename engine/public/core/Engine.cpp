@@ -5,10 +5,16 @@ namespace R3 {
 
 Engine::Engine()
     : m_window("R3"),
-      m_renderer({
-          .window = &m_window,
-      }),
-      m_activeScene(nullptr) {}
+      m_renderer(),
+      m_activeScene(nullptr) {
+    m_renderer.create({
+        .window = &m_window,
+    });
+}
+
+Engine::~Engine() {
+    m_renderer.destroy();
+}
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
     auto& engine = Engine::inst();
@@ -50,7 +56,8 @@ void Engine::loop() {
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
         // engine.m_renderer.predraw();
-        engine.m_activeScene->runSystems(engine.deltaTime());
+        engine.m_renderer.render();
+        // engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_window.update();
     }
 }

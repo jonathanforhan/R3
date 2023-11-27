@@ -20,7 +20,7 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
                             nullptr);
     CHECK(swapchainImageCount != 0);
 
-    std::vector<VkImage> swapchainImages;
+    std::vector<VkImage> swapchainImages(swapchainImageCount);
     vkGetSwapchainImagesKHR(spec.logicalDevice->handle<VkDevice>(),
                             spec.swapchain->handle<VkSwapchainKHR>(),
                             &swapchainImageCount,

@@ -4,11 +4,7 @@
 using namespace R3;
 
 void runScene() {
-    Engine::window().show();
-
-    while (!Engine::window().shouldClose()) {
-        Engine::window().update();
-    }
+    Engine::loop();
 }
 
 int main() {

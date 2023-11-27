@@ -15,5 +15,10 @@ class RenderPass;
 class PipelineLayout;
 class GraphicsPipeline;
 class Shader;
+class Framebuffer;
+class CommandPool;
+class CommandBuffer;
+class Semaphore;
+class Fence;
 
 } // namespace R3

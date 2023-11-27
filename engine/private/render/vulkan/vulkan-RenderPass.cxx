@@ -5,8 +5,8 @@
 #include <vulkan/vulkan.h>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
-#include "render/Swapchain.hpp"
 #include "render/LogicalDevice.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 
@@ -45,6 +45,16 @@ void RenderPass::create(const RenderPassSpecification& spec) {
         .pPreserveAttachments = nullptr,
     };
 
+    VkSubpassDependency subpassDependency = {
+        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .dstSubpass = 0,
+        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .srcAccessMask = 0,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        .dependencyFlags = 0U,
+    };
+
     VkRenderPassCreateInfo renderPassCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext = nullptr,
@@ -53,8 +63,8 @@ void RenderPass::create(const RenderPassSpecification& spec) {
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
         .pSubpasses = &subpassDescription,
-        .dependencyCount = 0,
-        .pDependencies = nullptr,
+        .dependencyCount = 1,
+        .pDependencies = &subpassDependency,
     };
 
     ENSURE(vkCreateRenderPass(

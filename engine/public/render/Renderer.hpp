@@ -1,11 +1,15 @@
 #pragma once
 #include "api/Types.hpp"
+#include "render/CommandPool.hpp"
+#include "render/Fence.hpp"
+#include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
+#include "render/Semaphore.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
@@ -17,18 +21,13 @@ struct RendererSpecification {
 };
 
 class Renderer {
-protected:
-    Renderer() = default;
-    Renderer(RendererSpecification spec);
-    friend class Engine;
-
 public:
-    Renderer(const Renderer&) = delete;
-    void operator=(const Renderer&) = delete;
-    Renderer(Renderer&&) = default;
-    Renderer& operator=(Renderer&&) = default;
+    Renderer() = default;
 
-    ~Renderer();
+    void create(RendererSpecification spec);
+    void destroy();
+
+    void render();
 
 private:
     Instance m_instance;
@@ -39,6 +38,12 @@ private:
     RenderPass m_renderPass;
     GraphicsPipeline m_graphicsPipeline;
     PipelineLayout m_pipelineLayout;
+    std::vector<Framebuffer> m_framebuffers;
+    CommandPool m_commandPool;
+
+    Semaphore m_imageAvailable;
+    Semaphore m_renderFinished;
+    Fence m_inFlight;
 
     RendererSpecification m_spec;
 };

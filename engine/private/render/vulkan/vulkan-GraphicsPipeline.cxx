@@ -5,14 +5,18 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/Swapchain.hpp"
+#include "render/PipelineLayout.hpp"
+#include "render/RenderPass.hpp"
 
 namespace R3 {
 
 void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.swapchain != nullptr);
+    CHECK(spec.renderPass != nullptr);
     CHECK(spec.pipelineLayout != nullptr);
     m_spec = spec;
 
@@ -183,11 +187,41 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
                 0.0f,
             },
     };
+
+    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0U,
+        .stageCount = 2,
+        .pStages = shaderStageCreateInfos,
+        .pVertexInputState = &vertexInputStateCreateInfo,
+        .pInputAssemblyState = &inputAssemblyStateCreateInfo,
+        .pTessellationState = nullptr,
+        .pViewportState = &viewportStateCreateInfo,
+        .pRasterizationState = &rasterizationStateCreateInfo,
+        .pMultisampleState = &multisampleStateCreateInfo,
+        .pDepthStencilState = nullptr,
+        .pColorBlendState = &colorBlendStateCreateInfo,
+        .pDynamicState = &dynamicStateCreateInfo,
+        .layout = m_spec.pipelineLayout->handle<VkPipelineLayout>(),
+        .renderPass = m_spec.renderPass->handle<VkRenderPass>(),
+        .subpass = 0,
+        .basePipelineHandle = VK_NULL_HANDLE,
+        .basePipelineIndex = -1,
+    };
+
+    ENSURE(vkCreateGraphicsPipelines(m_spec.logicalDevice->handle<VkDevice>(),
+                                     VK_NULL_HANDLE,
+                                     1,
+                                     &graphicsPipelineCreateInfo,
+                                     nullptr,
+                                     handlePtr<VkPipeline*>()) == VK_SUCCESS);
 }
 
 void GraphicsPipeline::destroy() {
     m_vertexShader.destroy();
     m_fragmentShader.destroy();
+    vkDestroyPipeline(m_spec.logicalDevice->handle<VkDevice>(), handle<VkPipeline>(), nullptr);
 }
 
 } // namespace R3

@@ -4,6 +4,7 @@
 
 #include <vulkan/vulkan.h>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/Swapchain.hpp"
@@ -39,6 +40,10 @@ void ImageView::create(const ImageViewSpecification& spec) {
                 .layerCount = 1,
             },
     };
+
+    ENSURE(vkCreateImageView(
+               m_spec.logicalDevice->handle<VkDevice>(), &imageViewCreateInfo, nullptr, handlePtr<VkImageView*>()) ==
+           VK_SUCCESS);
 }
 
 void ImageView::destroy() {

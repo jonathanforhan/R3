@@ -11,7 +11,7 @@
 
 namespace R3 {
 
-Renderer::Renderer(RendererSpecification spec) {
+void Renderer::create(RendererSpecification spec) {
     CHECK(spec.window != nullptr);
     m_spec = spec;
 
@@ -80,20 +80,115 @@ Renderer::Renderer(RendererSpecification spec) {
     m_graphicsPipeline.create({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
+        .renderPass = &m_renderPass,
         .pipelineLayout = &m_pipelineLayout,
         .vertexShaderPath = "spirv/test.vert.spv",
         .fragmentShaderPath = "spirv/test.frag.spv",
     });
+
+    //--- Framebuffers
+    for (const auto& swapchainImageView : m_swapchain.imageViews()) {
+        Framebuffer& framebuffer = m_framebuffers.emplace_back();
+        framebuffer.create({
+            .logicalDevice = &m_logicalDevice,
+            .swapchain = &m_swapchain,
+            .imageView = &swapchainImageView,
+            .renderPass = &m_renderPass,
+        });
+    }
+
+    //--- CommandPool and CommandBuffer
+    m_commandPool.create({
+        .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
+    });
+
+    //--- Synchronization
+    m_imageAvailable.create({.logicalDevice = &m_logicalDevice});
+    m_renderFinished.create({.logicalDevice = &m_logicalDevice});
+    m_inFlight.create({.logicalDevice = &m_logicalDevice});
 }
 
-Renderer::~Renderer() {
-    m_pipelineLayout.destroy();
+void Renderer::destroy() {
+    vkDeviceWaitIdle(m_logicalDevice.handle<VkDevice>());
+
+    m_inFlight.destroy();
+    m_renderFinished.destroy();
+    m_imageAvailable.destroy();
+
+    m_commandPool.destroy();
+    for (auto& framebuffer : m_framebuffers)
+        framebuffer.destroy();
     m_graphicsPipeline.destroy();
+    m_pipelineLayout.destroy();
     m_renderPass.destroy();
     m_swapchain.destroy();
     m_logicalDevice.destroy();
     m_surface.destroy();
     m_instance.destroy();
+}
+
+void Renderer::render() {
+    auto& commandBuffer = m_commandPool.commandBuffer();
+
+    uint32 imageIndex;
+    vkAcquireNextImageKHR(m_logicalDevice.handle<VkDevice>(),
+                          m_swapchain.handle<VkSwapchainKHR>(),
+                          UINT64_MAX,
+                          m_imageAvailable.handle<VkSemaphore>(),
+                          VK_NULL_HANDLE,
+                          &imageIndex);
+
+    const VkFence fences[]{m_inFlight.handle<VkFence>()};
+    vkWaitForFences(m_logicalDevice.handle<VkDevice>(), 1, fences, VK_TRUE, UINT64_MAX);
+    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
+
+    commandBuffer.resetCommandBuffer();
+    commandBuffer.beginCommandBuffer();
+    {
+        commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
+        {
+            commandBuffer.bindPipeline(m_graphicsPipeline);
+            vkCmdDraw(commandBuffer.handle<VkCommandBuffer>(), 3, 1, 0, 0);
+        }
+        commandBuffer.endRenderPass();
+    }
+    commandBuffer.endCommandBuffer();
+
+    VkSemaphore waitSemaphores[] = {m_imageAvailable.handle<VkSemaphore>()};
+    VkSemaphore singalSemaphores[] = {m_renderFinished.handle<VkSemaphore>()};
+    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    VkCommandBuffer commandBuffers[] = {commandBuffer.handle<VkCommandBuffer>()};
+    VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = waitSemaphores,
+        .pWaitDstStageMask = waitStages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = commandBuffers,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = singalSemaphores,
+    };
+
+    VkResult result = vkQueueSubmit(
+        m_logicalDevice.graphicsQueue().handle<VkQueue>(), 1, &submitInfo, m_inFlight.handle<VkFence>());
+    CHECK(result == VK_SUCCESS);
+
+    VkSwapchainKHR swapchains[]{m_swapchain.handle<VkSwapchainKHR>()};
+    VkPresentInfoKHR presentInfo = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = singalSemaphores,
+        .swapchainCount = 1,
+        .pSwapchains = swapchains,
+        .pImageIndices = &imageIndex,
+        .pResults = nullptr,
+    };
+
+    result = vkQueuePresentKHR(m_logicalDevice.presentattionQueue().handle<VkQueue>(), &presentInfo);
+    CHECK(result == VK_SUCCESS);
 }
 
 } // namespace R3

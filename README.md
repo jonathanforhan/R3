@@ -8,7 +8,7 @@
 
 ### Dev Dependencies (optional)
 
-- wsl (if windows)
+- wsl
 - clang-format (not optional for contributions)
 - Doxygen
 

@@ -25,6 +25,7 @@ public:
     PresentMode presentMode() const { return m_presentMode; }
     uvec2 extent() const { return m_extent2D; }
     const std::vector<Image>& images() const { return m_images; }
+    const std::vector<ImageView>& imageViews() const { return m_imageViews; }
 
 private:
     SwapchainSpecification m_spec;
