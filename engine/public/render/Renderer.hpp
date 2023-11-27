@@ -16,6 +16,10 @@
 
 namespace R3 {
 
+namespace detail {
+constexpr auto MAX_FRAMES_IN_FLIGHT = 2;
+} // namespace detail
+
 struct RendererSpecification {
     const Window* window;
 };
@@ -41,9 +45,10 @@ private:
     std::vector<Framebuffer> m_framebuffers;
     CommandPool m_commandPool;
 
-    Semaphore m_imageAvailable;
-    Semaphore m_renderFinished;
-    Fence m_inFlight;
+    Semaphore m_imageAvailable[detail::MAX_FRAMES_IN_FLIGHT];
+    Semaphore m_renderFinished[detail::MAX_FRAMES_IN_FLIGHT];
+    Fence m_inFlight[detail::MAX_FRAMES_IN_FLIGHT];
+    uint32 m_currentFrame = 0;
 
     RendererSpecification m_spec;
 };

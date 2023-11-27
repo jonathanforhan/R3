@@ -12,6 +12,7 @@ namespace R3 {
 void CommandPool::create(const CommandPoolSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.swapchain != nullptr);
+    CHECK(spec.commandBufferCount > 0);
     m_spec = spec;
 
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -26,15 +27,20 @@ void CommandPool::create(const CommandPoolSpecification& spec) {
                                nullptr,
                                handlePtr<VkCommandPool*>()) == VK_SUCCESS);
 
-    m_commandBuffer.create({
-        .logicalDevice = m_spec.logicalDevice,
-        .swapchain = m_spec.swapchain,
-        .commandPool = this,
-    });
+    m_commandBuffers.resize(m_spec.commandBufferCount);
+    for (auto& commandBuffer : m_commandBuffers) {
+        commandBuffer.create({
+            .logicalDevice = m_spec.logicalDevice,
+            .swapchain = m_spec.swapchain,
+            .commandPool = this,
+        });
+    }
 }
 
 void CommandPool::destroy() {
-    m_commandBuffer.destroy();
+    for (auto& commandBuffer : m_commandBuffers) {
+        commandBuffer.destroy();
+    }
     vkDestroyCommandPool(m_spec.logicalDevice->handle<VkDevice>(), handle<VkCommandPool>(), nullptr);
 }
 

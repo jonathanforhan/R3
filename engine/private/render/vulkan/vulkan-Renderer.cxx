@@ -101,20 +101,25 @@ void Renderer::create(RendererSpecification spec) {
     m_commandPool.create({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
+        .commandBufferCount = detail::MAX_FRAMES_IN_FLIGHT,
     });
 
     //--- Synchronization
-    m_imageAvailable.create({.logicalDevice = &m_logicalDevice});
-    m_renderFinished.create({.logicalDevice = &m_logicalDevice});
-    m_inFlight.create({.logicalDevice = &m_logicalDevice});
+    for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
+        m_imageAvailable[i].create({.logicalDevice = &m_logicalDevice});
+        m_renderFinished[i].create({.logicalDevice = &m_logicalDevice});
+        m_inFlight[i].create({.logicalDevice = &m_logicalDevice});
+    }
 }
 
 void Renderer::destroy() {
     vkDeviceWaitIdle(m_logicalDevice.handle<VkDevice>());
 
-    m_inFlight.destroy();
-    m_renderFinished.destroy();
-    m_imageAvailable.destroy();
+    for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
+        m_imageAvailable[i].destroy();
+        m_renderFinished[i].destroy();
+        m_inFlight[i].destroy();
+    }
 
     m_commandPool.destroy();
     for (auto& framebuffer : m_framebuffers)
@@ -129,20 +134,19 @@ void Renderer::destroy() {
 }
 
 void Renderer::render() {
-    auto& commandBuffer = m_commandPool.commandBuffer();
+    const VkFence fences[]{m_inFlight[m_currentFrame].handle<VkFence>()};
+    vkWaitForFences(m_logicalDevice.handle<VkDevice>(), 1, fences, VK_TRUE, UINT64_MAX);
+    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
 
     uint32 imageIndex;
     vkAcquireNextImageKHR(m_logicalDevice.handle<VkDevice>(),
                           m_swapchain.handle<VkSwapchainKHR>(),
                           UINT64_MAX,
-                          m_imageAvailable.handle<VkSemaphore>(),
+                          m_imageAvailable[m_currentFrame].handle<VkSemaphore>(),
                           VK_NULL_HANDLE,
                           &imageIndex);
 
-    const VkFence fences[]{m_inFlight.handle<VkFence>()};
-    vkWaitForFences(m_logicalDevice.handle<VkDevice>(), 1, fences, VK_TRUE, UINT64_MAX);
-    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
-
+    CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     {
@@ -155,8 +159,8 @@ void Renderer::render() {
     }
     commandBuffer.endCommandBuffer();
 
-    VkSemaphore waitSemaphores[] = {m_imageAvailable.handle<VkSemaphore>()};
-    VkSemaphore singalSemaphores[] = {m_renderFinished.handle<VkSemaphore>()};
+    VkSemaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].handle<VkSemaphore>()};
+    VkSemaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].handle<VkSemaphore>()};
     VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     VkCommandBuffer commandBuffers[] = {commandBuffer.handle<VkCommandBuffer>()};
     VkSubmitInfo submitInfo = {
@@ -171,8 +175,10 @@ void Renderer::render() {
         .pSignalSemaphores = singalSemaphores,
     };
 
-    VkResult result = vkQueueSubmit(
-        m_logicalDevice.graphicsQueue().handle<VkQueue>(), 1, &submitInfo, m_inFlight.handle<VkFence>());
+    VkResult result = vkQueueSubmit(m_logicalDevice.graphicsQueue().handle<VkQueue>(),
+                                    1,
+                                    &submitInfo,
+                                    m_inFlight[m_currentFrame].handle<VkFence>());
     CHECK(result == VK_SUCCESS);
 
     VkSwapchainKHR swapchains[]{m_swapchain.handle<VkSwapchainKHR>()};
@@ -189,6 +195,8 @@ void Renderer::render() {
 
     result = vkQueuePresentKHR(m_logicalDevice.presentattionQueue().handle<VkQueue>(), &presentInfo);
     CHECK(result == VK_SUCCESS);
+
+    m_currentFrame = (m_currentFrame + 1) % detail::MAX_FRAMES_IN_FLIGHT;
 }
 
 } // namespace R3
