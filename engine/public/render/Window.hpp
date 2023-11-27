@@ -5,16 +5,15 @@
 
 namespace R3 {
 
+struct WindowSpecification {
+    std::string_view title;
+};
+
 /// @brief Window class to abstract window operations
 class Window : public NativeRenderObject {
-private:
-    explicit Window(std::string_view title);
-    friend class Engine;
-
 public:
-    Window(const Window&) = delete;
-    void operator=(const Window&) = delete;
-    ~Window();
+    void create(const WindowSpecification& spec);
+    void destroy();
 
     /// @brief Present Window
     void show();
@@ -48,6 +47,14 @@ public:
     /// @return true if the window should close
     bool shouldClose() const;
 
+    /// @brief Query the Window state for if it should resize
+    /// @return true if the window should resize
+    bool shouldResize() const;
+
+    /// @brief Set Window state, Window will set this automatically if it's framebuffer is resized
+    /// @param b yes/no
+    void setShouldResize(bool b);
+
     /// @brief Swapbuffers and poll events
     void update();
 
@@ -57,6 +64,11 @@ public:
 
     /// @brief Set the window should close to true
     void kill();
+
+private:
+    WindowSpecification m_spec;
+
+    bool m_shouldResize = false;
 };
 
 } // namespace R3

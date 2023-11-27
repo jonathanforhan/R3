@@ -6,15 +6,16 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
+#include <vector>
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Version.hpp"
 
-#include <vector>
-
 namespace R3 {
 
-Window::Window(std::string_view title) {
+void Window::create(const WindowSpecification& spec) {
+    m_spec = spec;
+
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -32,18 +33,23 @@ Window::Window(std::string_view title) {
     int32 w = static_cast<int>(vidmode->width * 0.75);
     int32 h = static_cast<int>(vidmode->height * 0.75);
 
-    setHandle(glfwCreateWindow(w, h, title.data(), nullptr, nullptr));
+    setHandle(glfwCreateWindow(w, h, m_spec.title.data(), nullptr, nullptr));
     if (handle() == nullptr) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);
     }
-    glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
     glfwMakeContextCurrent(handle<GLFWwindow*>());
-
+    glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
     glfwSwapInterval(GLFW_TRUE);
+    glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
+
+    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
+        Window* self = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
+        self->setShouldResize(true);
+    });
 }
 
-Window::~Window() {
+void Window::destroy() {
     glfwDestroyWindow(handle<GLFWwindow*>());
     glfwTerminate();
 }
@@ -81,6 +87,14 @@ float Window::aspectRatio() const {
 
 bool Window::shouldClose() const {
     return glfwWindowShouldClose(handle<GLFWwindow*>());
+}
+
+bool Window::shouldResize() const {
+    return m_shouldResize;
+}
+
+void Window::setShouldResize(bool b) {
+    m_shouldResize = b;
 }
 
 void Window::update() {

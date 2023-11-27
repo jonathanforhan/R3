@@ -2,7 +2,10 @@
 
 #include "render/Swapchain.hpp"
 
+// clang-format off
 #include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
+// clang-format on
 #include <vector>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
@@ -75,6 +78,83 @@ void Swapchain::create(const SwapchainSpecification& spec) {
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .image = &m_images[i],
+        });
+    }
+}
+
+void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPass& renderPass) {
+    CHECK(framebuffers.size() == m_imageViews.size());
+
+    // query
+    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+        m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
+    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+
+    while (m_extent2D.x == 0 || m_extent2D.y == 0) {
+        glfwWaitEvents();
+        auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+            m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
+        m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+    }
+    
+    uint32 queueFamilyIndices[] = {
+        m_spec.logicalDevice->graphicsQueue().index(),
+        m_spec.logicalDevice->presentattionQueue().index(),
+    };
+    bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
+
+    // store old
+    VkSwapchainKHR oldSwapchain = handle<VkSwapchainKHR>();
+
+    VkSwapchainCreateInfoKHR swapchainCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        .pNext = nullptr,
+        .flags = 0U,
+        .surface = m_spec.surface->handle<VkSurfaceKHR>(),
+        .minImageCount = m_imageCount,
+        .imageFormat = (VkFormat)m_surfaceFormat,
+        .imageColorSpace = (VkColorSpaceKHR)m_colorSpace,
+        .imageExtent = VkExtent2D(m_extent2D.x, m_extent2D.y),
+        .imageArrayLayers = 1,
+        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        .imageSharingMode = sameQueueFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
+        .queueFamilyIndexCount = 2,                // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
+        .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
+        .preTransform = swapchainSupportDetails.capabilities.currentTransform,
+        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        .presentMode = (VkPresentModeKHR)m_presentMode,
+        .clipped = VK_TRUE,
+        .oldSwapchain = oldSwapchain,
+    };
+
+    // create new
+    ENSURE(vkCreateSwapchainKHR(
+               m_spec.logicalDevice->handle<VkDevice>(), &swapchainCreateInfo, nullptr, handlePtr<VkSwapchainKHR*>()) ==
+           VK_SUCCESS);
+
+    // destroy old
+    vkDestroySwapchainKHR(m_spec.logicalDevice->handle<VkDevice>(), oldSwapchain, nullptr);
+
+    // restore
+    m_images = Image::acquireImages({
+        .logicalDevice = m_spec.logicalDevice,
+        .swapchain = this,
+    });
+
+    for (usize i = 0; i < m_images.size(); i++) {
+        m_imageViews[i].destroy();
+        m_imageViews[i].create({
+            .logicalDevice = m_spec.logicalDevice,
+            .swapchain = this,
+            .image = &m_images[i],
+        });
+
+        framebuffers[i].destroy();
+        framebuffers[i].create({
+            .logicalDevice = m_spec.logicalDevice,
+            .swapchain = this,
+            .imageView = &m_imageViews[i],
+            .renderPass = &renderPass,
         });
     }
 }

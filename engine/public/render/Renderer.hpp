@@ -21,13 +21,11 @@ constexpr auto MAX_FRAMES_IN_FLIGHT = 2;
 } // namespace detail
 
 struct RendererSpecification {
-    const Window* window;
+    Window* window;
 };
 
 class Renderer {
 public:
-    Renderer() = default;
-
     void create(RendererSpecification spec);
     void destroy();
 

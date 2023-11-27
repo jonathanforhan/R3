@@ -134,17 +134,29 @@ void Renderer::destroy() {
 }
 
 void Renderer::render() {
+    VkResult result;
+
     const VkFence fences[]{m_inFlight[m_currentFrame].handle<VkFence>()};
     vkWaitForFences(m_logicalDevice.handle<VkDevice>(), 1, fences, VK_TRUE, UINT64_MAX);
-    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
 
     uint32 imageIndex;
-    vkAcquireNextImageKHR(m_logicalDevice.handle<VkDevice>(),
-                          m_swapchain.handle<VkSwapchainKHR>(),
-                          UINT64_MAX,
-                          m_imageAvailable[m_currentFrame].handle<VkSemaphore>(),
-                          VK_NULL_HANDLE,
-                          &imageIndex);
+    result = vkAcquireNextImageKHR(m_logicalDevice.handle<VkDevice>(),
+                                   m_swapchain.handle<VkSwapchainKHR>(),
+                                   UINT64_MAX,
+                                   m_imageAvailable[m_currentFrame].handle<VkSemaphore>(),
+                                   VK_NULL_HANDLE,
+                                   &imageIndex);
+
+    if (result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            m_swapchain.recreate(m_framebuffers, m_renderPass);
+            return;
+        } else if (result != VK_SUBOPTIMAL_KHR) {
+            ENSURE(false);
+        }
+    }
+
+    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
 
     CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
@@ -175,10 +187,10 @@ void Renderer::render() {
         .pSignalSemaphores = singalSemaphores,
     };
 
-    VkResult result = vkQueueSubmit(m_logicalDevice.graphicsQueue().handle<VkQueue>(),
-                                    1,
-                                    &submitInfo,
-                                    m_inFlight[m_currentFrame].handle<VkFence>());
+    result = vkQueueSubmit(m_logicalDevice.graphicsQueue().handle<VkQueue>(),
+                           1,
+                           &submitInfo,
+                           m_inFlight[m_currentFrame].handle<VkFence>());
     CHECK(result == VK_SUCCESS);
 
     VkSwapchainKHR swapchains[]{m_swapchain.handle<VkSwapchainKHR>()};
@@ -194,7 +206,14 @@ void Renderer::render() {
     };
 
     result = vkQueuePresentKHR(m_logicalDevice.presentattionQueue().handle<VkQueue>(), &presentInfo);
-    CHECK(result == VK_SUCCESS);
+    if (result != VK_SUCCESS) {
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_spec.window->shouldResize()) {
+            m_spec.window->setShouldResize(false);
+            m_swapchain.recreate(m_framebuffers, m_renderPass);
+        } else if (result != VK_SUBOPTIMAL_KHR) {
+            ENSURE(false);
+        }
+    }
 
     m_currentFrame = (m_currentFrame + 1) % detail::MAX_FRAMES_IN_FLIGHT;
 }

@@ -1,5 +1,7 @@
 #pragma once
+#include <vector>
 #include "api/Types.hpp"
+#include "render/Framebuffer.hpp"
 #include "render/Image.hpp"
 #include "render/ImageView.hpp"
 #include "render/NativeRenderObject.hpp"
@@ -18,6 +20,7 @@ struct SwapchainSpecification {
 class Swapchain : public NativeRenderObject {
 public:
     void create(const SwapchainSpecification& spec);
+    void recreate(std::vector<Framebuffer>& framebuffers, const RenderPass& renderPass);
     void destroy();
 
     Format surfaceFormat() const { return m_surfaceFormat; }

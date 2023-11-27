@@ -4,9 +4,13 @@
 namespace R3 {
 
 Engine::Engine()
-    : m_window("R3"),
+    : m_window(),
       m_renderer(),
       m_activeScene(nullptr) {
+    m_window.create({
+        .title = "R3",
+    });
+
     m_renderer.create({
         .window = &m_window,
     });
@@ -14,6 +18,7 @@ Engine::Engine()
 
 Engine::~Engine() {
     m_renderer.destroy();
+    m_window.destroy();
 }
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
