@@ -80,7 +80,7 @@ uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) 
             return i;
     }
 
-    ENSURE(false && "unable to find suitable memory type");
+    ENSURE(false); /* unable to find suitable memory type */
 }
 
 bool PhysicalDevice::checkExtensionSupport(Handle deviceHandle) const {

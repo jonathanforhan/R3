@@ -17,7 +17,7 @@ void VertexBuffer::create(const VertexBufferSpecification& spec) {
 
     uint32 indices[]{
         m_spec.logicalDevice->graphicsQueue().index(),
-        m_spec.logicalDevice->presentattionQueue().index(),
+        m_spec.logicalDevice->presentationQueue().index(),
     };
     VkBufferCreateInfo bufferCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,

@@ -221,7 +221,7 @@ void Renderer::render() {
         .pResults = nullptr,
     };
 
-    result = vkQueuePresentKHR(m_logicalDevice.presentattionQueue().handle<VkQueue>(), &presentInfo);
+    result = vkQueuePresentKHR(m_logicalDevice.presentationQueue().handle<VkQueue>(), &presentInfo);
     if (result != VK_SUCCESS) {
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_spec.window->shouldResize()) {
             m_spec.window->setShouldResize(false);

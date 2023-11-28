@@ -7,7 +7,6 @@
 #include <vector>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
-#include "api/Log.hpp"
 #include "render/Instance.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/Surface.hpp"

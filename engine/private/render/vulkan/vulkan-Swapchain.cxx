@@ -38,7 +38,7 @@ void Swapchain::create(const SwapchainSpecification& spec) {
 
     uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
-        m_spec.logicalDevice->presentattionQueue().index(),
+        m_spec.logicalDevice->presentationQueue().index(),
     };
     bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
@@ -90,16 +90,17 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
+    // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent2D.x == 0 || m_extent2D.y == 0) {
         glfwWaitEvents();
-        auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+        swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
             m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
     
     uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
-        m_spec.logicalDevice->presentattionQueue().index(),
+        m_spec.logicalDevice->presentationQueue().index(),
     };
     bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
