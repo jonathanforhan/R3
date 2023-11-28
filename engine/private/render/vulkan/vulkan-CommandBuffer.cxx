@@ -11,6 +11,7 @@
 #include "render/LogicalDevice.hpp"
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
+#include "render/VertexBuffer.hpp"
 
 namespace R3 {
 
@@ -104,6 +105,16 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) {
         .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
     };
     vkCmdSetScissor(handle<VkCommandBuffer>(), 0, 1, &scissor);
+}
+
+void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) {
+    std::vector<VkBuffer> buffers(vertexBuffers.size());
+    for (uint32 i = 0; auto& vertexBuffer : vertexBuffers) {
+        buffers[i] = vertexBuffer.handle<VkBuffer>();
+        i++;
+    }
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(handle<VkCommandBuffer>(), 0, 1, buffers.data(), offsets);
 }
 
 } // namespace R3

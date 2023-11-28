@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vector>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -23,6 +24,7 @@ public:
     void beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer);
     void endRenderPass();
     void bindPipeline(const GraphicsPipeline& graphicsPipeline);
+    void bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers);
 
 private:
     CommandBufferSpecification m_spec;

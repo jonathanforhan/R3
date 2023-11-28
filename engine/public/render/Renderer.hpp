@@ -12,6 +12,7 @@
 #include "render/Semaphore.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
+#include "render/VertexBuffer.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
@@ -47,6 +48,8 @@ private:
     Semaphore m_renderFinished[detail::MAX_FRAMES_IN_FLIGHT];
     Fence m_inFlight[detail::MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
+
+    std::vector<VertexBuffer> m_vertexBuffers;
 
     RendererSpecification m_spec;
 };

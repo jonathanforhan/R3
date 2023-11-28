@@ -6,17 +6,20 @@
 
 namespace R3 {
 
-/// @brief Holds buffer data for rendering as well as texture ID data
+struct MeshSpecification {
+    uint32 location;
+    uint32 binding;
+    uint32 offset;
+};
+
 class Mesh {
 public:
     Mesh() = default; ///< @brief default constructable
 
-    /// @brief Mesh constructor
-    /// @param vertices vertice data
-    /// @param indices indice data
     Mesh(std::span<Vertex> vertices, std::span<uint32> indices = {});
 
-    Mesh(const Mesh&) = delete; ///< @brief non-copyable
+    Mesh(const Mesh&) = delete;           ///< @brief non-copyable
+    void operator=(const Mesh&) = delete; ///< @brief non-copyable
 
     /// @brief Move constructor
     /// @param src
@@ -30,8 +33,6 @@ public:
         m_textures = src.m_textures;
         src.m_vao = src.m_vbo = src.m_ebo = 0;
     }
-
-    void operator=(const Mesh&) = delete; ///< @brief non-copyable
 
     /// @brief Move assignment operator
     /// @param src

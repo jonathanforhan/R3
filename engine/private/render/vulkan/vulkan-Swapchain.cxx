@@ -127,12 +127,10 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         .oldSwapchain = oldSwapchain,
     };
 
-    // create new
     ENSURE(vkCreateSwapchainKHR(
                m_spec.logicalDevice->handle<VkDevice>(), &swapchainCreateInfo, nullptr, handlePtr<VkSwapchainKHR*>()) ==
            VK_SUCCESS);
 
-    // destroy old
     vkDestroySwapchainKHR(m_spec.logicalDevice->handle<VkDevice>(), oldSwapchain, nullptr);
 
     // restore

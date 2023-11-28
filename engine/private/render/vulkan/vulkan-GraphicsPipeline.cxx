@@ -7,9 +7,10 @@
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/Swapchain.hpp"
+#include "render/Mesh.hpp"
 #include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 
@@ -55,14 +56,67 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
         fragmentShaderStageCreateInfo,
     };
 
+    VkVertexInputBindingDescription bindingDescription = {
+        .binding = 0,
+        .stride = sizeof(Vertex),
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+
+    VkVertexInputAttributeDescription attributeDescriptions[] = {
+        {
+            .location = 0,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = offsetof(Vertex, position),
+        },
+        {
+            .location = 1,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = offsetof(Vertex, normal),
+        },
+        {
+            .location = 2,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = offsetof(Vertex, tangent),
+        },
+        {
+            .location = 3,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset = offsetof(Vertex, tangent),
+        },
+        {
+            .location = 4,
+            .binding = 0,
+            .format = VK_FORMAT_R32G32_SFLOAT,
+            .offset = offsetof(Vertex, textureCoords),
+        },
+#if TODO_ANIMATION
+        {
+            .location = 5,
+            .binding = 0,
+            .format = VK_FORMAT_R32_SINT,
+            .offset = offsetof(Vertex, boneIDs),
+        },
+        {
+            .location = 6,
+            .binding = 0,
+            .format = VK_FORMAT_R32_SFLOAT,
+            .offset = offsetof(Vertex, weights),
+        },
+#endif
+    };
+
     VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0U,
-        .vertexBindingDescriptionCount = 0,
-        .pVertexBindingDescriptions = nullptr,
-        .vertexAttributeDescriptionCount = 0,
-        .pVertexAttributeDescriptions = nullptr,
+        .vertexBindingDescriptionCount = 1,
+        .pVertexBindingDescriptions = &bindingDescription,
+        .vertexAttributeDescriptionCount = sizeof(attributeDescriptions) / sizeof(*attributeDescriptions),
+        .pVertexAttributeDescriptions = attributeDescriptions,
     };
 
     VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {

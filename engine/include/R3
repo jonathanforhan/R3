@@ -8,4 +8,4 @@
 
 #include "public/core/Engine.hpp"
 #include "public/core/Entity.hpp"
-#include "public/core/TextureCubeMap.hpp"
+#include "public/render/TextureCubeMap.hpp"

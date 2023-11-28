@@ -20,5 +20,7 @@ class CommandPool;
 class CommandBuffer;
 class Semaphore;
 class Fence;
+class Buffer;
+class VertexBuffer;
 
 } // namespace R3

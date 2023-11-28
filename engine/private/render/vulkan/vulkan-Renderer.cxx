@@ -8,6 +8,7 @@
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
+#include "core/BasicGeometry.hpp"
 
 namespace R3 {
 
@@ -110,10 +111,24 @@ void Renderer::create(RendererSpecification spec) {
         m_renderFinished[i].create({.logicalDevice = &m_logicalDevice});
         m_inFlight[i].create({.logicalDevice = &m_logicalDevice});
     }
+
+    //--- Test
+    Vertex vertices[36];
+    Cube(vertices);
+
+    auto& vbuf = m_vertexBuffers.emplace_back();
+    vbuf.create({
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .vertices = vertices,
+    });
 }
 
 void Renderer::destroy() {
     vkDeviceWaitIdle(m_logicalDevice.handle<VkDevice>());
+
+    for (auto& vertexBuffer : m_vertexBuffers)
+        vertexBuffer.destroy();
 
     for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
         m_imageAvailable[i].destroy();
@@ -165,7 +180,8 @@ void Renderer::render() {
         commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
         {
             commandBuffer.bindPipeline(m_graphicsPipeline);
-            vkCmdDraw(commandBuffer.handle<VkCommandBuffer>(), 3, 1, 0, 0);
+            commandBuffer.bindVertexBuffers(m_vertexBuffers);
+            vkCmdDraw(commandBuffer.handle<VkCommandBuffer>(), 36, 1, 0, 0);
         }
         commandBuffer.endRenderPass();
     }

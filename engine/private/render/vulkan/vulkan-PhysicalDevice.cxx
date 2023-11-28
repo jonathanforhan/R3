@@ -71,6 +71,18 @@ int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
     return deviceScore;
 }
 
+uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const {
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(handle<VkPhysicalDevice>(), &memoryProperties);
+
+    for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+            return i;
+    }
+
+    ENSURE(false && "unable to find suitable memory type");
+}
+
 bool PhysicalDevice::checkExtensionSupport(Handle deviceHandle) const {
     uint32 deviceExtensionCount = 0;
     vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)deviceHandle, nullptr, &deviceExtensionCount, nullptr);

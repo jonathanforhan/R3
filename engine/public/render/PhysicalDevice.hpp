@@ -16,6 +16,8 @@ class PhysicalDevice : public NativeRenderObject {
 public:
     void select(const PhysicalDeviceSpecification& spec);
 
+    uint32 queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const;
+
     const std::vector<const char*>& extensions() const { return m_spec.extensions; }
 
 private:
