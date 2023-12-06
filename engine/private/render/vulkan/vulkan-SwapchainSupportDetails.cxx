@@ -7,34 +7,18 @@
 
 namespace R3::vulkan {
 
-SwapchainSupportDetails SwapchainSupportDetails::query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+SwapchainSupportDetails SwapchainSupportDetails::query(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface) {
     SwapchainSupportDetails swapchainSupportDetails;
-
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &swapchainSupportDetails.capabilities);
-
-    uint32 surfaceFormatCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr);
-    CHECK(surfaceFormatCount != 0);
-
-    swapchainSupportDetails.surfaceFormats.resize(surfaceFormatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(
-        physicalDevice, surface, &surfaceFormatCount, swapchainSupportDetails.surfaceFormats.data());
-
-    uint32 presentModeCount = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
-    CHECK(presentModeCount != 0);
-
-    swapchainSupportDetails.presentModes.resize(presentModeCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(
-        physicalDevice, surface, &presentModeCount, swapchainSupportDetails.presentModes.data());
-
+    swapchainSupportDetails.capabilities = physicalDevice.getSurfaceCapabilitiesKHR(surface);
+    swapchainSupportDetails.surfaceFormats = physicalDevice.getSurfaceFormatsKHR(surface);
+    swapchainSupportDetails.presentModes = physicalDevice.getSurfacePresentModesKHR(surface);
     return swapchainSupportDetails;
 }
 
 std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() const {
     for (const auto& surfaceFormat : surfaceFormats) {
-        if (surfaceFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-            surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+        if (surfaceFormat.format == vk::Format::eB8G8R8A8Srgb &&
+            surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             return {
                 (Format)surfaceFormat.format,
                 (ColorSpace)surfaceFormat.colorSpace,
@@ -52,12 +36,12 @@ std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() c
 
 PresentMode SwapchainSupportDetails::optimalPresentMode() const {
     for (const auto& presentMode : presentModes) {
-        if (presentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+        if (presentMode == vk::PresentModeKHR::eMailbox) {
             return (PresentMode)presentMode;
         }
     }
 
-    return (PresentMode)VK_PRESENT_MODE_FIFO_KHR;
+    return (PresentMode)vk::PresentModeKHR::eFifo;
 }
 
 uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {
@@ -68,7 +52,7 @@ uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
-    VkExtent2D extent = {
+    vk::Extent2D extent = {
         .width = static_cast<uint32>(width),
         .height = static_cast<uint32>(height),
     };

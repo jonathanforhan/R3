@@ -3,7 +3,7 @@
 #include "render/Swapchain.hpp"
 
 // clang-format off
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
 #include <vector>
@@ -42,30 +42,28 @@ void Swapchain::create(const SwapchainSpecification& spec) {
     };
     bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
-    VkSwapchainCreateInfoKHR swapchainCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+    vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
+        .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .surface = m_spec.surface->handle<VkSurfaceKHR>(),
         .minImageCount = m_imageCount,
-        .imageFormat = (VkFormat)m_surfaceFormat,
-        .imageColorSpace = (VkColorSpaceKHR)m_colorSpace,
-        .imageExtent = VkExtent2D(m_extent2D.x, m_extent2D.y),
+        .imageFormat = (vk::Format)m_surfaceFormat,
+        .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
+        .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        .imageSharingMode = sameQueueFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
+        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .imageSharingMode = sameQueueFamily ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
         .queueFamilyIndexCount = 2,                // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .preTransform = swapchainSupportDetails.capabilities.currentTransform,
-        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .presentMode = (VkPresentModeKHR)m_presentMode,
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        .presentMode = (vk::PresentModeKHR)m_presentMode,
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_HANDLE,
     };
 
-    ENSURE(vkCreateSwapchainKHR(
-               m_spec.logicalDevice->handle<VkDevice>(), &swapchainCreateInfo, nullptr, handlePtr<VkSwapchainKHR*>()) ==
-           VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
 
     m_images = Image::acquireImages({
         .logicalDevice = m_spec.logicalDevice,
@@ -105,34 +103,31 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
     bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
     // store old
-    VkSwapchainKHR oldSwapchain = handle<VkSwapchainKHR>();
+    vk::SwapchainKHR oldSwapchain = as<vk::SwapchainKHR>();
 
-    VkSwapchainCreateInfoKHR swapchainCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+    vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
+        .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .surface = m_spec.surface->handle<VkSurfaceKHR>(),
         .minImageCount = m_imageCount,
-        .imageFormat = (VkFormat)m_surfaceFormat,
-        .imageColorSpace = (VkColorSpaceKHR)m_colorSpace,
-        .imageExtent = VkExtent2D(m_extent2D.x, m_extent2D.y),
+        .imageFormat = (vk::Format)m_surfaceFormat,
+        .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
+        .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
         .imageArrayLayers = 1,
-        .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        .imageSharingMode = sameQueueFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
+        .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+        .imageSharingMode = sameQueueFamily ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
         .queueFamilyIndexCount = 2,                // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .preTransform = swapchainSupportDetails.capabilities.currentTransform,
-        .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .presentMode = (VkPresentModeKHR)m_presentMode,
-        .clipped = VK_TRUE,
+        .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+        .presentMode = (vk::PresentModeKHR)m_presentMode,
+        .clipped = vk::True,
         .oldSwapchain = oldSwapchain,
     };
 
-    ENSURE(vkCreateSwapchainKHR(
-               m_spec.logicalDevice->handle<VkDevice>(), &swapchainCreateInfo, nullptr, handlePtr<VkSwapchainKHR*>()) ==
-           VK_SUCCESS);
-
-    vkDestroySwapchainKHR(m_spec.logicalDevice->handle<VkDevice>(), oldSwapchain, nullptr);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
+    m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(oldSwapchain);
 
     // restore
     m_images = Image::acquireImages({
@@ -162,7 +157,7 @@ void Swapchain::destroy() {
     for (auto& imageView : m_imageViews) {
         imageView.destroy();
     }
-    vkDestroySwapchainKHR(m_spec.logicalDevice->handle<VkDevice>(), handle<VkSwapchainKHR>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(as<vk::SwapchainKHR>());
 }
 
 } // namespace R3

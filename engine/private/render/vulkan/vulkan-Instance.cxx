@@ -2,16 +2,14 @@
 
 #include "render/Instance.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <cstring>
 #include <vector>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Types.hpp"
 #include "api/Version.hpp"
 
-#define R3_VK_CALL_EXT(_Ext, _Inst, ...) ((PFN_##_Ext)(vkGetInstanceProcAddr(_Inst, #_Ext)))(_Inst, __VA_ARGS__)
 #define R3_VK_VERSION (VK_MAKE_API_VERSION(0, VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, 0))
 
 static VkDebugUtilsMessengerEXT s_debugMessenger;
@@ -48,8 +46,8 @@ namespace R3 {
 void Instance::create(const InstanceSpecification& spec) {
     m_spec = spec;
 
-    VkApplicationInfo applicationInfo = {
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+    vk::ApplicationInfo applicationInfo = {
+        .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,
         .pApplicationName = m_spec.applicationName,
         .applicationVersion = R3_VK_VERSION,
@@ -62,26 +60,26 @@ void Instance::create(const InstanceSpecification& spec) {
     CHECK(checkValidationLayerSupport(m_spec.validationLayers));
 
 #if R3_VALIDATION_LAYERS_ENABLED
-    VkDebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {
+        .sType = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .messageSeverity =
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
-            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
+            vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
         .messageType =
 #if R3_LOG_EXTENDED_RENDER_INFO
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 #endif
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+            vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
         .pfnUserCallback = validationDebugCallback,
         .pUserData = nullptr,
     };
 
-    VkInstanceCreateInfo instanceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+    vk::InstanceCreateInfo instanceCreateInfo = {
+        .sType = vk::StructureType::eInstanceCreateInfo,
         .pNext = &debugMessengerCreateInfo,
-        .flags = 0U,
+        .flags = {},
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = static_cast<uint32>(m_spec.validationLayers.size()),
         .ppEnabledLayerNames = m_spec.validationLayers.data(),
@@ -89,10 +87,10 @@ void Instance::create(const InstanceSpecification& spec) {
         .ppEnabledExtensionNames = m_spec.extensions.data(),
     };
 #else
-    VkInstanceCreateInfo instanceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0U,
+    vk::InstanceCreateInfo instanceCreateInfo = {
+        .sType = vk::StructureType::eInstanceCreateInfo,
+        .pNext = &debugMessengerCreateInfo,
+        .flags = {},
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = nullptr,
@@ -100,34 +98,18 @@ void Instance::create(const InstanceSpecification& spec) {
         .ppEnabledExtensionNames = m_spec.extensions.data(),
     };
 #endif
-    ENSURE(vkCreateInstance(&instanceCreateInfo, nullptr, handlePtr<VkInstance*>()) == VK_SUCCESS);
-
-#if R3_VALIDATION_LAYERS_ENABLED
-    ENSURE(R3_VK_CALL_EXT(vkCreateDebugUtilsMessengerEXT,
-                          handle<VkInstance>(),
-                          &debugMessengerCreateInfo,
-                          nullptr,
-                          &s_debugMessenger) == VK_SUCCESS);
-#endif
+    setHandle(vk::createInstance(instanceCreateInfo));
 }
 
 void Instance::destroy() {
-#if R3_VALIDATION_LAYERS_ENABLED
-    R3_VK_CALL_EXT(vkDestroyDebugUtilsMessengerEXT, handle<VkInstance>(), s_debugMessenger, nullptr);
-#endif
-    vkDestroyInstance(handle<VkInstance>(), nullptr);
+    as<vk::Instance>().destroy();
 }
 
 bool Instance::checkExtensionSupport(const std::vector<const char*>& requiredExtensions) const {
-    uint32 instanceExtensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, nullptr);
-    CHECK(instanceExtensionCount != 0);
-
-    std::vector<VkExtensionProperties> instanceExtensions(instanceExtensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &instanceExtensionCount, instanceExtensions.data());
+    std::vector<vk::ExtensionProperties> instanceExtensions = vk::enumerateInstanceExtensionProperties();
 
     for (const auto& requiredExtension : requiredExtensions) {
-        auto it = std::ranges::find_if(instanceExtensions, [=](VkExtensionProperties& extension) -> bool {
+        auto it = std::ranges::find_if(instanceExtensions, [=](vk::ExtensionProperties& extension) -> bool {
             return strcmp(requiredExtension, extension.extensionName) == 0;
         });
 
@@ -140,15 +122,10 @@ bool Instance::checkExtensionSupport(const std::vector<const char*>& requiredExt
 }
 
 bool Instance::checkValidationLayerSupport(const std::vector<const char*>& requiredValidationLayers) const {
-    uint32 validationLayerCount = 0;
-    vkEnumerateInstanceLayerProperties(&validationLayerCount, nullptr);
-    CHECK(validationLayerCount != 0);
-
-    std::vector<VkLayerProperties> validationLayers(validationLayerCount);
-    vkEnumerateInstanceLayerProperties(&validationLayerCount, validationLayers.data());
+    std::vector<vk::LayerProperties> validationLayers = vk::enumerateInstanceLayerProperties();
 
     for (const char* requiredValidationLayer : requiredValidationLayers) {
-        auto it = std::ranges::find_if(validationLayers, [=](VkLayerProperties& layer) -> bool {
+        auto it = std::ranges::find_if(validationLayers, [=](vk::LayerProperties& layer) -> bool {
             return strcmp(requiredValidationLayer, layer.layerName) == 0;
         });
 

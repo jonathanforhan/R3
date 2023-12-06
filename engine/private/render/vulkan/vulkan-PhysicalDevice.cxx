@@ -2,7 +2,7 @@
 
 #include "render/PhysicalDevice.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <cstring>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
@@ -19,15 +19,10 @@ void PhysicalDevice::select(const PhysicalDeviceSpecification& spec) {
     CHECK(spec.surface != nullptr);
     m_spec = spec;
 
-    uint32 physicalDeviceCount = 0;
-    vkEnumeratePhysicalDevices(m_spec.instance->handle<VkInstance>(), &physicalDeviceCount, nullptr);
-    ENSURE(physicalDeviceCount != 0);
-
-    std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-    vkEnumeratePhysicalDevices(m_spec.instance->handle<VkInstance>(), &physicalDeviceCount, physicalDevices.data());
+    std::vector<vk::PhysicalDevice> physicalDevices = m_spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
 
     int32 bestScore = INT32_MIN;
-    for (VkPhysicalDevice physicalDevice : physicalDevices) {
+    for (vk::PhysicalDevice physicalDevice : physicalDevices) {
         int32 score = evaluateDevice(physicalDevice);
         if (score > bestScore) {
             setHandle(physicalDevice);
@@ -72,11 +67,11 @@ int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
 }
 
 uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const {
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(handle<VkPhysicalDevice>(), &memoryProperties);
+    vk::PhysicalDeviceMemoryProperties memoryProperties = as<vk::PhysicalDevice>().getMemoryProperties();
+    vk::MemoryPropertyFlags flags(propertyFlags);
 
     for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & propertyFlags) == propertyFlags)
+        if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags)
             return i;
     }
 
@@ -84,13 +79,7 @@ uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) 
 }
 
 bool PhysicalDevice::checkExtensionSupport(Handle deviceHandle) const {
-    uint32 deviceExtensionCount = 0;
-    vkEnumerateDeviceExtensionProperties((VkPhysicalDevice)deviceHandle, nullptr, &deviceExtensionCount, nullptr);
-    CHECK(deviceExtensionCount != 0);
-
-    std::vector<VkExtensionProperties> deviceExtensions(deviceExtensionCount);
-    vkEnumerateDeviceExtensionProperties(
-        (VkPhysicalDevice)deviceHandle, nullptr, &deviceExtensionCount, deviceExtensions.data());
+    auto deviceExtensions = vk::PhysicalDevice((VkPhysicalDevice)deviceHandle).enumerateDeviceExtensionProperties();
 
     for (const auto& requiredExtension : extensions()) {
         auto it = std::ranges::find_if(deviceExtensions, [=](VkExtensionProperties& extension) -> bool {

@@ -2,9 +2,8 @@
 
 #include "render/Fence.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
@@ -13,18 +12,17 @@ void Fence::create(const FenceSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     m_spec = spec;
 
-    VkFenceCreateInfo fenceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+    vk::FenceCreateInfo fenceCreateInfo = {
+        .sType = vk::StructureType::eFenceCreateInfo,
         .pNext = nullptr,
-        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+        .flags = vk::FenceCreateFlagBits::eSignaled,
     };
 
-    ENSURE(vkCreateFence(m_spec.logicalDevice->handle<VkDevice>(), &fenceCreateInfo, nullptr, handlePtr<VkFence*>()) ==
-           VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createFence(fenceCreateInfo));
 }
 
 void Fence::destroy() {
-    vkDestroyFence(m_spec.logicalDevice->handle<VkDevice>(), handle<VkFence>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroyFence(as<vk::Fence>());
 }
 
 } // namespace R3

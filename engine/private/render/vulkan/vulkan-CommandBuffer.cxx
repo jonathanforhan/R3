@@ -2,9 +2,8 @@
 
 #include "render/CommandBuffer.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/CommandPool.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
@@ -21,52 +20,46 @@ void CommandBuffer::create(const CommandBufferSpecification& spec) {
     CHECK(spec.commandPool != nullptr);
     m_spec = spec;
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+    vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
+        .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
         .commandPool = m_spec.commandPool->handle<VkCommandPool>(),
-        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = 1,
     };
 
-    ENSURE(vkAllocateCommandBuffers(m_spec.logicalDevice->handle<VkDevice>(),
-                                    &commandBufferAllocateInfo,
-                                    handlePtr<VkCommandBuffer*>()) == VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo).front());
 }
 
 void CommandBuffer::destroy() {
-    vkFreeCommandBuffers(m_spec.logicalDevice->handle<VkDevice>(),
-                         m_spec.commandPool->handle<VkCommandPool>(),
-                         1,
-                         handlePtr<VkCommandBuffer*>());
+    m_spec.logicalDevice->as<vk::Device>().freeCommandBuffers(m_spec.commandPool->as<vk::CommandPool>(),
+                                                              {as<vk::CommandBuffer>()});
 }
 
 void CommandBuffer::resetCommandBuffer() {
-    vkResetCommandBuffer(handle<VkCommandBuffer>(), 0U);
+    as<vk::CommandBuffer>().reset();
 }
 
 void CommandBuffer::beginCommandBuffer() {
-    VkCommandBufferBeginInfo commandBufferBeginInfo = {
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+    vk::CommandBufferBeginInfo commandBufferBeginInfo = {
+        .sType = vk::StructureType::eCommandBufferBeginInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .pInheritanceInfo = nullptr,
     };
 
-    VkResult result = vkBeginCommandBuffer(handle<VkCommandBuffer>(), &commandBufferBeginInfo);
-    CHECK(result == VK_SUCCESS);
+    as<vk::CommandBuffer>().begin(commandBufferBeginInfo);
 }
 
 void CommandBuffer::endCommandBuffer() {
-    VkResult result = vkEndCommandBuffer(handle<VkCommandBuffer>());
-    CHECK(result == VK_SUCCESS);
+    as<vk::CommandBuffer>().end();
 }
 
 void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) {
-    VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
-    VkRenderPassBeginInfo renderPassBeginInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+    vk::RenderPassBeginInfo renderPassBeginInfo = {
+        .sType = vk::StructureType::eRenderPassBeginInfo,
         .pNext = nullptr,
         .renderPass = renderPass.handle<VkRenderPass>(),
         .framebuffer = framebuffer.handle<VkFramebuffer>(),
@@ -79,18 +72,17 @@ void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuf
         .pClearValues = &clearColor,
     };
 
-    vkCmdBeginRenderPass(handle<VkCommandBuffer>(), &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+    as<vk::CommandBuffer>().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 }
 
 void CommandBuffer::endRenderPass() {
-    vkCmdEndRenderPass(handle<VkCommandBuffer>());
+    as<vk::CommandBuffer>().endRenderPass();
 }
 
 void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) {
-    vkCmdBindPipeline(
-        handle<VkCommandBuffer>(), VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.handle<VkPipeline>());
+    as<vk::CommandBuffer>().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.as<vk::Pipeline>());
 
-    VkViewport viewport = {
+    vk::Viewport viewport = {
         .x = 0.0f,
         .y = 0.0f,
         .width = static_cast<float>(m_spec.swapchain->extent().x),
@@ -98,23 +90,23 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) {
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
-    vkCmdSetViewport(handle<VkCommandBuffer>(), 0, 1, &viewport);
+    as<vk::CommandBuffer>().setViewport(0, {viewport});
 
-    VkRect2D scissor = {
+    vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
     };
-    vkCmdSetScissor(handle<VkCommandBuffer>(), 0, 1, &scissor);
+    as<vk::CommandBuffer>().setScissor(0, {scissor});
 }
 
 void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) {
-    std::vector<VkBuffer> buffers(vertexBuffers.size());
-    for (uint32 i = 0; auto& vertexBuffer : vertexBuffers) {
-        buffers[i] = vertexBuffer.handle<VkBuffer>();
-        i++;
+    std::vector<vk::Buffer> buffers(vertexBuffers.size());
+
+    for (uint32 i = 0; i < vertexBuffers.size(); i++) {
+        buffers[i] = vertexBuffers[i].as<vk::Buffer>();
     }
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(handle<VkCommandBuffer>(), 0, 1, buffers.data(), offsets);
+
+    as<vk::CommandBuffer>().bindVertexBuffers(0, {buffers}, {0});
 }
 
 } // namespace R3

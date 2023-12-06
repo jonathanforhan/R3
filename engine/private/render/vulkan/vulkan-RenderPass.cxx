@@ -2,7 +2,7 @@
 
 #include "render/RenderPass.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
@@ -15,26 +15,26 @@ void RenderPass::create(const RenderPassSpecification& spec) {
     CHECK(spec.swapchain != nullptr);
     m_spec = spec;
 
-    VkAttachmentDescription colorAttachment = {
-        .flags = 0U,
-        .format = (VkFormat)m_spec.swapchain->surfaceFormat(),
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    vk::AttachmentDescription colorAttachment = {
+        .flags = {},
+        .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
+        .samples = vk::SampleCountFlagBits::e1,
+        .loadOp = vk::AttachmentLoadOp::eClear,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+        .initialLayout = vk::ImageLayout::eUndefined,
+        .finalLayout = vk::ImageLayout::ePresentSrcKHR,
     };
 
-    VkAttachmentReference colorAttachmentReference = {
+    vk::AttachmentReference colorAttachmentReference = {
         .attachment = 0,
-        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .layout = vk::ImageLayout::eColorAttachmentOptimal,
     };
 
-    VkSubpassDescription subpassDescription = {
-        .flags = 0U,
-        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+    vk::SubpassDescription subpassDescription = {
+        .flags = {},
+        .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
         .inputAttachmentCount = 0,
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
@@ -45,20 +45,20 @@ void RenderPass::create(const RenderPassSpecification& spec) {
         .pPreserveAttachments = nullptr,
     };
 
-    VkSubpassDependency subpassDependency = {
+    vk::SubpassDependency subpassDependency = {
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
-        .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .srcAccessMask = 0,
-        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dependencyFlags = 0U,
+        .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .srcAccessMask = {},
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .dependencyFlags = {},
     };
 
-    VkRenderPassCreateInfo renderPassCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+    vk::RenderPassCreateInfo renderPassCreateInfo = {
+        .sType = vk::StructureType::eRenderPassCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .attachmentCount = 1,
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
@@ -67,13 +67,11 @@ void RenderPass::create(const RenderPassSpecification& spec) {
         .pDependencies = &subpassDependency,
     };
 
-    ENSURE(vkCreateRenderPass(
-               m_spec.logicalDevice->handle<VkDevice>(), &renderPassCreateInfo, nullptr, handlePtr<VkRenderPass*>()) ==
-           VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
 }
 
 void RenderPass::destroy() {
-    vkDestroyRenderPass(m_spec.logicalDevice->handle<VkDevice>(), handle<VkRenderPass>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroyRenderPass(as<vk::RenderPass>());
 }
 
 } // namespace R3

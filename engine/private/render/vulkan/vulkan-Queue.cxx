@@ -2,8 +2,7 @@
 
 #include "render/Queue.hpp"
 
-#include <vulkan/vulkan.h>
-#include <vector>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"
 
@@ -13,22 +12,16 @@ QueueFamilyIndices QueueFamilyIndices::query(NativeRenderObject::Handle physical
                                              NativeRenderObject::Handle surfaceHandle) {
     CHECK(physicalDeviceHandle != nullptr);
     CHECK(surfaceHandle != nullptr);
-    VkPhysicalDevice vkPhysicalDevice = (VkPhysicalDevice)physicalDeviceHandle;
-    VkSurfaceKHR vkSurface = (VkSurfaceKHR)surfaceHandle;
+    vk::PhysicalDevice physicalDevice = (VkPhysicalDevice)physicalDeviceHandle;
+    vk::SurfaceKHR surface = (VkSurfaceKHR)surfaceHandle;
 
+    auto queueFamilies = physicalDevice.getQueueFamilyProperties();
     QueueFamilyIndices queueFamilyIndices;
 
-    uint32 queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(vkPhysicalDevice, &queueFamilyCount, queueFamilies.data());
-
     for (uint32 i = 0; const auto& queueFamily : queueFamilies) {
-        VkBool32 presentationSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, i, vkSurface, &presentationSupport);
+        vk::Bool32 presentationSupport = physicalDevice.getSurfaceSupportKHR(i, surface);
 
-        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if (queueFamily.queueFlags & vk::QueueFlagBits::eGraphics) {
             queueFamilyIndices.graphics = i;
         }
 
@@ -50,7 +43,7 @@ void Queue::acquire(const QueueSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     m_spec = spec;
 
-    vkGetDeviceQueue(m_spec.logicalDevice->handle<VkDevice>(), spec.queueIndex, 0, handlePtr<VkQueue*>());
+    setHandle(m_spec.logicalDevice->as<vk::Device>().getQueue(m_spec.queueIndex, 0));
 }
 
 } // namespace R3

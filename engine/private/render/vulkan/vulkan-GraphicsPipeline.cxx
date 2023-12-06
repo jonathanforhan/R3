@@ -2,8 +2,7 @@
 
 #include "render/GraphicsPipeline.hpp"
 
-#include <vulkan/vulkan.h>
-#include <vector>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
@@ -31,66 +30,66 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
         .path = m_spec.fragmentShaderPath
     });
 
-    VkPipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+    vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
+        .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
-        .stage = VK_SHADER_STAGE_VERTEX_BIT,
-        .module = m_vertexShader.handle<VkShaderModule>(),
+        .flags = {},
+        .stage = vk::ShaderStageFlagBits::eVertex,
+        .module = m_vertexShader.as<vk::ShaderModule>(),
         .pName = "main",
         .pSpecializationInfo = nullptr,
     };
 
-    VkPipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+    vk::PipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = {
+        .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
-        .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .module = m_fragmentShader.handle<VkShaderModule>(),
+        .flags = {},
+        .stage = vk::ShaderStageFlagBits::eFragment,
+        .module = m_fragmentShader.as<vk::ShaderModule>(),
         .pName = "main",
         .pSpecializationInfo = nullptr,
     };
 
-    VkPipelineShaderStageCreateInfo shaderStageCreateInfos[] = {
+    vk::PipelineShaderStageCreateInfo shaderStageCreateInfos[] = {
         vertexShaderStageCreateInfo,
         fragmentShaderStageCreateInfo,
     };
 
-    VkVertexInputBindingDescription bindingDescription = {
+    vk::VertexInputBindingDescription bindingDescription = {
         .binding = 0,
         .stride = sizeof(Vertex),
-        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+        .inputRate = vk::VertexInputRate::eVertex,
     };
 
-    VkVertexInputAttributeDescription attributeDescriptions[] = {
+    vk::VertexInputAttributeDescription attributeDescriptions[] = {
         {
             .location = 0,
             .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .format = vk::Format::eR32G32B32Sfloat,
             .offset = offsetof(Vertex, position),
         },
         {
             .location = 1,
             .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .format = vk::Format::eR32G32B32Sfloat,
             .offset = offsetof(Vertex, normal),
         },
         {
             .location = 2,
             .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .format = vk::Format::eR32G32B32Sfloat,
             .offset = offsetof(Vertex, tangent),
         },
         {
             .location = 3,
             .binding = 0,
-            .format = VK_FORMAT_R32G32B32_SFLOAT,
+            .format = vk::Format::eR32G32B32Sfloat,
             .offset = offsetof(Vertex, tangent),
         },
         {
             .location = 4,
             .binding = 0,
-            .format = VK_FORMAT_R32G32_SFLOAT,
+            .format = vk::Format::eR32G32Sfloat,
             .offset = offsetof(Vertex, textureCoords),
         },
 #if TODO_ANIMATION
@@ -109,25 +108,25 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
 #endif
     };
 
-    VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+    vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &bindingDescription,
         .vertexAttributeDescriptionCount = sizeof(attributeDescriptions) / sizeof(*attributeDescriptions),
         .pVertexAttributeDescriptions = attributeDescriptions,
     };
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineInputAssemblyStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
-        .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        .flags = {},
+        .topology = vk::PrimitiveTopology::eTriangleList,
         .primitiveRestartEnable = VK_FALSE,
     };
 
-    VkViewport viewport = {
+    vk::Viewport viewport = {
         .x = 0.0f,
         .y = 0.0f,
         .width = static_cast<float>(m_spec.swapchain->extent().x),
@@ -136,28 +135,28 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
         .maxDepth = 1.0f,
     };
 
-    VkRect2D scissor = {
+    vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
     };
 
-    std::vector<VkDynamicState> dynamicStates = {
-        VK_DYNAMIC_STATE_VIEWPORT,
-        VK_DYNAMIC_STATE_SCISSOR,
+    std::vector<vk::DynamicState> dynamicStates = {
+        vk::DynamicState::eViewport,
+        vk::DynamicState::eScissor,
     };
 
-    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+    vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineDynamicStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .dynamicStateCount = static_cast<uint32>(dynamicStates.size()),
         .pDynamicStates = dynamicStates.data(),
     };
 
-    VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+    vk::PipelineViewportStateCreateInfo viewportStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineViewportStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .viewportCount = 1,
     #if STATIC_STATE
         .pViewports = &viewport,
@@ -168,15 +167,15 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
     #endif
     };
 
-    VkPipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+    vk::PipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineRasterizationStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .depthClampEnable = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
-        .polygonMode = VK_POLYGON_MODE_FILL,
-        .cullMode = VK_CULL_MODE_BACK_BIT,
-        .frontFace = VK_FRONT_FACE_CLOCKWISE,
+        .polygonMode = vk::PolygonMode::eFill,
+        .cullMode = vk::CullModeFlagBits::eBack,
+        .frontFace = vk::FrontFace::eClockwise,
         .depthBiasEnable = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp = 0.0f,
@@ -184,16 +183,16 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
         .lineWidth = 1.0f,
     };
 
-    VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+    vk::PipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
-        .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
-        .sampleShadingEnable = VK_FALSE,
+        .flags = {},
+        .rasterizationSamples = vk::SampleCountFlagBits::e1,
+        .sampleShadingEnable = vk::False,
         .minSampleShading = 1.0f,
         .pSampleMask = nullptr,
-        .alphaToCoverageEnable = VK_FALSE,
-        .alphaToOneEnable = VK_FALSE,
+        .alphaToCoverageEnable = vk::False,
+        .alphaToOneEnable = vk::False,
     };
 
     #if TODO
@@ -213,39 +212,38 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
     };
     #endif
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
-        .blendEnable = VK_FALSE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_ONE,
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .colorBlendOp = VK_BLEND_OP_ADD,
-        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
-        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .alphaBlendOp = VK_BLEND_OP_ADD,
-        .colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+    vk::PipelineColorBlendAttachmentState colorBlendAttachmentState = {
+        .blendEnable = vk::False,
+        .srcColorBlendFactor = vk::BlendFactor::eOne,
+        .dstColorBlendFactor = vk::BlendFactor::eZero,
+        .colorBlendOp = vk::BlendOp::eAdd,
+        .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+        .dstAlphaBlendFactor = vk::BlendFactor::eZero,
+        .alphaBlendOp = vk::BlendOp::eAdd,
+        .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                          vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
     };
 
-    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+    vk::PipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
+        .sType = vk::StructureType::ePipelineColorBlendStateCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .logicOpEnable = VK_FALSE,
-        .logicOp = VK_LOGIC_OP_COPY,
+        .logicOp = vk::LogicOp::eCopy,
         .attachmentCount = 1,
         .pAttachments = &colorBlendAttachmentState,
-        .blendConstants =
-            {
-                0.0f,
-                0.0f,
-                0.0f,
-                0.0f,
-            },
+        .blendConstants = {{
+            0.0f,
+            0.0f,
+            0.0f,
+            0.0f,
+        }},
     };
 
-    VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
+        .sType = vk::StructureType::eGraphicsPipelineCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .stageCount = 2,
         .pStages = shaderStageCreateInfos,
         .pVertexInputState = &vertexInputStateCreateInfo,
@@ -264,18 +262,15 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
         .basePipelineIndex = -1,
     };
 
-    ENSURE(vkCreateGraphicsPipelines(m_spec.logicalDevice->handle<VkDevice>(),
-                                     VK_NULL_HANDLE,
-                                     1,
-                                     &graphicsPipelineCreateInfo,
-                                     nullptr,
-                                     handlePtr<VkPipeline*>()) == VK_SUCCESS);
+    auto r = m_spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+    ENSURE(r.result == vk::Result::eSuccess);
+    setHandle(r.value);
 }
 
 void GraphicsPipeline::destroy() {
     m_vertexShader.destroy();
     m_fragmentShader.destroy();
-    vkDestroyPipeline(m_spec.logicalDevice->handle<VkDevice>(), handle<VkPipeline>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroyPipeline(as<vk::Pipeline>());
 }
 
 } // namespace R3

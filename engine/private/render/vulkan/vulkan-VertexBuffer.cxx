@@ -2,7 +2,7 @@
 
 #include "render/VertexBuffer.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
@@ -19,26 +19,24 @@ void VertexBuffer::create(const VertexBufferSpecification& spec) {
         m_spec.logicalDevice->graphicsQueue().index(),
         m_spec.logicalDevice->presentationQueue().index(),
     };
-    VkBufferCreateInfo bufferCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+
+    vk::BufferCreateInfo bufferCreateInfo = {
+        .sType = vk::StructureType::eBufferCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .size = spec.vertices.size_bytes(),
-        .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+        .usage = vk::BufferUsageFlagBits::eVertexBuffer,
+        .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,
     };
 
-    ENSURE(
-        vkCreateBuffer(m_spec.logicalDevice->handle<VkDevice>(), &bufferCreateInfo, nullptr, handlePtr<VkBuffer*>()) ==
-        VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createBuffer(bufferCreateInfo));
 
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(m_spec.logicalDevice->handle<VkDevice>(), handle<VkBuffer>(), &memoryRequirements);
+    auto memoryRequirements = m_spec.logicalDevice->as<vk::Device>().getBufferMemoryRequirements(as<vk::Buffer>());
 
-    VkMemoryAllocateInfo memoryAllocateInfo = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+    vk::MemoryAllocateInfo memoryAllocateInfo = {
+        .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
         .memoryTypeIndex = m_spec.physicalDevice->queryMemoryType(
@@ -46,25 +44,20 @@ void VertexBuffer::create(const VertexBufferSpecification& spec) {
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT),
     };
 
-    ENSURE(vkAllocateMemory(
-               m_spec.logicalDevice->handle<VkDevice>(), &memoryAllocateInfo, nullptr, bufferPtr<VkDeviceMemory*>()) ==
-           VK_SUCCESS);
-    vkBindBufferMemory(m_spec.logicalDevice->handle<VkDevice>(), handle<VkBuffer>(), buffer<VkDeviceMemory>(), 0);
+    setBuffer(m_spec.logicalDevice->as<vk::Device>().allocateMemory(memoryAllocateInfo));
+    m_spec.logicalDevice->as<vk::Device>().bindBufferMemory(as<vk::Buffer>(), bufferAs<vk::DeviceMemory>(), 0);
 
-    void* data;
-    ENSURE(vkMapMemory(m_spec.logicalDevice->handle<VkDevice>(),
-                       buffer<VkDeviceMemory>(),
-                       0,
-                       m_spec.vertices.size_bytes(),
-                       0,
-                       &data) == VK_SUCCESS);
+    void* data = m_spec.logicalDevice->as<vk::Device>().mapMemory(
+        bufferAs<vk::DeviceMemory>(), 0, m_spec.vertices.size_bytes(), {});
+
     memcpy(data, m_spec.vertices.data(), m_spec.vertices.size_bytes());
-    vkUnmapMemory(m_spec.logicalDevice->handle<VkDevice>(), buffer<VkDeviceMemory>());
+
+    m_spec.logicalDevice->as<vk::Device>().unmapMemory(bufferAs<vk::DeviceMemory>());
 }
 
 void VertexBuffer::destroy() {
-    vkDestroyBuffer(m_spec.logicalDevice->handle<VkDevice>(), handle<VkBuffer>(), nullptr);
-    vkFreeMemory(m_spec.logicalDevice->handle<VkDevice>(), buffer<VkDeviceMemory>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+    m_spec.logicalDevice->as<vk::Device>().freeMemory(bufferAs<vk::DeviceMemory>());
 }
 
 } // namespace R3

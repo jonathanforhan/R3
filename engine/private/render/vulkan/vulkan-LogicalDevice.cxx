@@ -2,9 +2,8 @@
 
 #include "render/LogicalDevice.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <set>
-#include <vector>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/Instance.hpp"
@@ -22,7 +21,7 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
     auto queueFamilyIndices = QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
     CHECK(queueFamilyIndices.isValid());
 
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     std::set<int32> uniqueQueueIndices = {
         queueFamilyIndices.graphics,
         queueFamilyIndices.presentation,
@@ -31,24 +30,24 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
     float queuePriority = 1.0f;
 
     for (uint32 index : uniqueQueueIndices) {
-        queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        queueCreateInfos.emplace_back(vk::DeviceQueueCreateInfo{
+            .sType = vk::StructureType::eDeviceQueueCreateInfo,
             .pNext = nullptr,
-            .flags = 0U,
+            .flags = {},
             .queueFamilyIndex = static_cast<uint32>(index),
             .queueCount = 1,
             .pQueuePriorities = &queuePriority,
         });
     }
 
-    VkPhysicalDeviceFeatures physicalDeviceFeatures = {};
+    vk::PhysicalDeviceFeatures physicalDeviceFeatures = {};
 
     const std::vector<const char*>& deviceExtensions = m_spec.physicalDevice->extensions();
 
-    VkDeviceCreateInfo logicalDeviceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    vk::DeviceCreateInfo logicalDeviceCreateInfo = {
+        .sType = vk::StructureType::eDeviceCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size()),
         .pQueueCreateInfos = queueCreateInfos.data(),
         .enabledLayerCount = 0,
@@ -57,10 +56,7 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
         .ppEnabledExtensionNames = deviceExtensions.empty() ? nullptr : deviceExtensions.data(),
         .pEnabledFeatures = &physicalDeviceFeatures};
 
-    ENSURE(vkCreateDevice(m_spec.physicalDevice->handle<VkPhysicalDevice>(),
-                          &logicalDeviceCreateInfo,
-                          nullptr,
-                          handlePtr<VkDevice*>()) == VK_SUCCESS);
+    setHandle(m_spec.physicalDevice->as<vk::PhysicalDevice>().createDevice(logicalDeviceCreateInfo));
 
     m_graphicsQueue.acquire({
         .logicalDevice = this,
@@ -76,7 +72,7 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
 }
 
 void LogicalDevice::destroy() {
-    vkDestroyDevice(handle<VkDevice>(), nullptr);
+    as<vk::Device>().destroy();
 }
 
 } // namespace R3

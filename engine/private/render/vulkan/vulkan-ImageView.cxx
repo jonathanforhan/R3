@@ -2,9 +2,8 @@
 
 #include "render/ImageView.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/Swapchain.hpp"
@@ -17,23 +16,23 @@ void ImageView::create(const ImageViewSpecification& spec) {
     CHECK(spec.image != nullptr);
     m_spec = spec;
 
-    VkImageViewCreateInfo imageViewCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+    vk::ImageViewCreateInfo imageViewCreateInfo = {
+        .sType = vk::StructureType::eImageViewCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
         .image = m_spec.image->handle<VkImage>(),
-        .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format = (VkFormat)m_spec.swapchain->surfaceFormat(),
+        .viewType = vk::ImageViewType::e2D,
+        .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
         .components =
             {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .r = vk::ComponentSwizzle::eIdentity,
+                .g = vk::ComponentSwizzle::eIdentity,
+                .b = vk::ComponentSwizzle::eIdentity,
+                .a = vk::ComponentSwizzle::eIdentity,
             },
         .subresourceRange =
             {
-                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask = vk::ImageAspectFlagBits::eColor,
                 .baseMipLevel = 0,
                 .levelCount = 1,
                 .baseArrayLayer = 0,
@@ -41,13 +40,11 @@ void ImageView::create(const ImageViewSpecification& spec) {
             },
     };
 
-    ENSURE(vkCreateImageView(
-               m_spec.logicalDevice->handle<VkDevice>(), &imageViewCreateInfo, nullptr, handlePtr<VkImageView*>()) ==
-           VK_SUCCESS);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createImageView(imageViewCreateInfo));
 }
 
 void ImageView::destroy() {
-    vkDestroyImageView(m_spec.logicalDevice->handle<VkDevice>(), handle<VkImageView>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroyImageView(as<vk::ImageView>());
 }
 
 } // namespace R3

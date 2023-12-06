@@ -2,9 +2,8 @@
 
 #include "render/Semaphore.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
@@ -13,18 +12,17 @@ void Semaphore::create(const SemaphoreSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     m_spec = spec;
 
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+    vk::SemaphoreCreateInfo semaphoreCreateInfo = {
+        .sType = vk::StructureType::eSemaphoreCreateInfo,
         .pNext = nullptr,
-        .flags = 0U,
+        .flags = {},
     };
-    ENSURE(vkCreateSemaphore(
-               m_spec.logicalDevice->handle<VkDevice>(), &semaphoreCreateInfo, nullptr, handlePtr<VkSemaphore*>()) ==
-           VK_SUCCESS);
+
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createSemaphore(semaphoreCreateInfo));
 }
 
 void Semaphore::destroy() {
-    vkDestroySemaphore(m_spec.logicalDevice->handle<VkDevice>(), handle<VkSemaphore>(), nullptr);
+    m_spec.logicalDevice->as<vk::Device>().destroySemaphore(as<vk::Semaphore>());
 }
 
 } // namespace R3

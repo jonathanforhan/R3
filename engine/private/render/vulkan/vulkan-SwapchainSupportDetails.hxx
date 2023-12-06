@@ -1,11 +1,9 @@
 #if R3_VULKAN
 
 // clang-format off
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
-#include <tuple>
-#include <vector>
 #include "api/Types.hpp"
 #include "render/RenderSpecification.hpp"
 
@@ -16,13 +14,13 @@ private:
     SwapchainSupportDetails() = default;
 
 public:
-    VkSurfaceCapabilitiesKHR capabilities = {};
-    std::vector<VkSurfaceFormatKHR> surfaceFormats;
-    std::vector<VkPresentModeKHR> presentModes;
+    vk::SurfaceCapabilitiesKHR capabilities = {};
+    std::vector<vk::SurfaceFormatKHR> surfaceFormats;
+    std::vector<vk::PresentModeKHR> presentModes;
 
     bool isValid() const { return !surfaceFormats.empty() && !presentModes.empty(); }
 
-    [[nodiscard]] static SwapchainSupportDetails query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    [[nodiscard]] static SwapchainSupportDetails query(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
     std::tuple<Format, ColorSpace> optimalSurfaceFormat() const;
     PresentMode optimalPresentMode() const;
     uvec2 optimalExtent(GLFWwindow* window) const;
