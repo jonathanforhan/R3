@@ -4,20 +4,37 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
+namespace local {
+
+static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolFlags flags) {
+    switch (flags) {
+        case CommandPoolFlags::Protected:
+            return vk::CommandPoolCreateFlagBits::eProtected;
+        case CommandPoolFlags::Reset:
+            return vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        case CommandPoolFlags::Transient:
+            return vk::CommandPoolCreateFlagBits::eTransient;
+        default:
+            ENSURE(false);
+    }
+}
+
+} // namespace local
+
 void CommandPool::create(const CommandPoolSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.swapchain != nullptr);
-    CHECK(spec.commandBufferCount > 0);
     m_spec = spec;
 
     vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
         .pNext = nullptr,
-        .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer,
+        .flags = local::CommandPoolFlagsToVkFlags(m_spec.flags),
         .queueFamilyIndex = m_spec.logicalDevice->graphicsQueue().index(),
     };
 

@@ -7,9 +7,16 @@
 
 namespace R3 {
 
+enum class CommandPoolFlags {
+    Transient,
+    Reset,
+    Protected,
+};
+
 struct CommandPoolSpecification {
     const LogicalDevice* logicalDevice;
     const Swapchain* swapchain;
+    CommandPoolFlags flags;
     usize commandBufferCount;
 };
 
@@ -19,6 +26,7 @@ public:
     void destroy();
 
     std::vector<CommandBuffer>& commandBuffers() { return m_commandBuffers; }
+    const std::vector<CommandBuffer>& commandBuffers() const { return m_commandBuffers; }
 
 private:
     CommandPoolSpecification m_spec;

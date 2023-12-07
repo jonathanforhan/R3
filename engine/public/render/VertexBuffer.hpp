@@ -11,6 +11,7 @@ namespace R3 {
 struct VertexBufferSpecification {
     const PhysicalDevice* physicalDevice;
     const LogicalDevice* logicalDevice;
+    const CommandPool* commandPool;
     std::span<Vertex> vertices;
 };
 
@@ -19,10 +20,11 @@ public:
     void create(const VertexBufferSpecification& spec);
     void destroy();
 
-    uint32 vertexCount() const { return static_cast<uint32>(m_spec.vertices.size()); }
+    uint32 vertexCount() const { return m_vertexCount; }
 
 private:
     VertexBufferSpecification m_spec;
+    uint32 m_vertexCount = 0;
 };
 
 } // namespace R3

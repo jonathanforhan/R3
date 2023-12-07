@@ -14,6 +14,24 @@
 
 namespace R3 {
 
+namespace local {
+
+static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(CommandBufferFlags flags) {
+    switch (flags) {
+        case CommandBufferFlags::OneTimeSubmit:
+            return vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+        case CommandBufferFlags::RenderPassContinue:
+            return vk::CommandBufferUsageFlagBits::eRenderPassContinue;
+        case CommandBufferFlags::SimultaneousUse:
+            return vk::CommandBufferUsageFlagBits::eSimultaneousUse;
+        case CommandBufferFlags::Nil:
+        default:
+            return {};
+    }
+}
+
+} // namespace local
+
 void CommandBuffer::create(const CommandBufferSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.swapchain != nullptr);
@@ -36,26 +54,26 @@ void CommandBuffer::destroy() {
                                                               {as<vk::CommandBuffer>()});
 }
 
-void CommandBuffer::resetCommandBuffer() {
+void CommandBuffer::resetCommandBuffer() const {
     as<vk::CommandBuffer>().reset();
 }
 
-void CommandBuffer::beginCommandBuffer() {
+void CommandBuffer::beginCommandBuffer(CommandBufferFlags flags) const {
     vk::CommandBufferBeginInfo commandBufferBeginInfo = {
         .sType = vk::StructureType::eCommandBufferBeginInfo,
         .pNext = nullptr,
-        .flags = {},
+        .flags = local::CommandBufferFlagsToVkFlags(flags),
         .pInheritanceInfo = nullptr,
     };
 
     as<vk::CommandBuffer>().begin(commandBufferBeginInfo);
 }
 
-void CommandBuffer::endCommandBuffer() {
+void CommandBuffer::endCommandBuffer() const {
     as<vk::CommandBuffer>().end();
 }
 
-void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) {
+void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const {
     vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
     vk::RenderPassBeginInfo renderPassBeginInfo = {
@@ -75,11 +93,11 @@ void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuf
     as<vk::CommandBuffer>().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);
 }
 
-void CommandBuffer::endRenderPass() {
+void CommandBuffer::endRenderPass() const {
     as<vk::CommandBuffer>().endRenderPass();
 }
 
-void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) {
+void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const {
     as<vk::CommandBuffer>().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.as<vk::Pipeline>());
 
     vk::Viewport viewport = {
@@ -99,7 +117,7 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) {
     as<vk::CommandBuffer>().setScissor(0, {scissor});
 }
 
-void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) {
+void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) const {
     std::vector<vk::Buffer> buffers(vertexBuffers.size());
 
     for (uint32 i = 0; i < vertexBuffers.size(); i++) {

@@ -10,10 +10,12 @@ void runScene() {
 }
 
 int main() {
+
     try {
         runScene();
     } catch (std::exception& e) {
         LOG(Error, e.what());
     }
+
     return 0;
 }

@@ -7,6 +7,13 @@
 
 namespace R3 {
 
+enum class CommandBufferFlags {
+    Nil = 0,
+    OneTimeSubmit,
+    RenderPassContinue,
+    SimultaneousUse,
+};
+
 struct CommandBufferSpecification {
     const LogicalDevice* logicalDevice;
     const Swapchain* swapchain;
@@ -18,13 +25,13 @@ public:
     void create(const CommandBufferSpecification& spec);
     void destroy();
 
-    void resetCommandBuffer();
-    void beginCommandBuffer();
-    void endCommandBuffer();
-    void beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer);
-    void endRenderPass();
-    void bindPipeline(const GraphicsPipeline& graphicsPipeline);
-    void bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers);
+    void resetCommandBuffer() const;
+    void beginCommandBuffer(CommandBufferFlags flags = {}) const;
+    void endCommandBuffer() const;
+    void beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const;
+    void endRenderPass() const;
+    void bindPipeline(const GraphicsPipeline& graphicsPipeline) const;
+    void bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) const;
 
 private:
     CommandBufferSpecification m_spec;

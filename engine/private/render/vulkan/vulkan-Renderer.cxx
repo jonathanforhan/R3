@@ -2,7 +2,7 @@
 
 #include "render/Renderer.hpp"
 // clang-format off
-#include "vulkan/vulkan.h"
+#include "vulkan/vulkan.hpp"
 #include "GLFW/glfw3.h"
 // clang-format on
 #include "api/Check.hpp"
@@ -102,7 +102,14 @@ void Renderer::create(RendererSpecification spec) {
     m_commandPool.create({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
+        .flags = CommandPoolFlags::Reset,
         .commandBufferCount = detail::MAX_FRAMES_IN_FLIGHT,
+    });
+    m_commandPoolTransient.create({
+        .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
+        .flags = CommandPoolFlags::Reset,
+        .commandBufferCount = 1,
     });
 
     //--- Synchronization
@@ -116,10 +123,12 @@ void Renderer::create(RendererSpecification spec) {
     Vertex vertices[36];
     Cube(vertices);
 
+        // Vertex Buffer
     auto& vbuf = m_vertexBuffers.emplace_back();
     vbuf.create({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
+        .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
 }
@@ -137,8 +146,10 @@ void Renderer::destroy() {
     }
 
     m_commandPool.destroy();
-    for (auto& framebuffer : m_framebuffers)
+    m_commandPoolTransient.destroy();
+    for (auto& framebuffer : m_framebuffers) {
         framebuffer.destroy();
+    }
     m_graphicsPipeline.destroy();
     m_pipelineLayout.destroy();
     m_renderPass.destroy();
@@ -149,29 +160,24 @@ void Renderer::destroy() {
 }
 
 void Renderer::render() {
-    VkResult result;
+    const vk::Fence fences[]{m_inFlight[m_currentFrame].as<vk::Fence>()};
+    m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::True, UINT64_MAX);
 
-    const VkFence fences[]{m_inFlight[m_currentFrame].handle<VkFence>()};
-    vkWaitForFences(m_logicalDevice.handle<VkDevice>(), 1, fences, VK_TRUE, UINT64_MAX);
+    auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
+    auto [result, value] =
+        m_logicalDevice.as<vk::Device>().acquireNextImageKHR(m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, semaphore);
+    uint32 imageIndex = value;
 
-    uint32 imageIndex;
-    result = vkAcquireNextImageKHR(m_logicalDevice.handle<VkDevice>(),
-                                   m_swapchain.handle<VkSwapchainKHR>(),
-                                   UINT64_MAX,
-                                   m_imageAvailable[m_currentFrame].handle<VkSemaphore>(),
-                                   VK_NULL_HANDLE,
-                                   &imageIndex);
-
-    if (result != VK_SUCCESS) {
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+    if (result != vk::Result::eSuccess) {
+        if (result == vk::Result::eErrorOutOfDateKHR) {
             m_swapchain.recreate(m_framebuffers, m_renderPass);
             return;
-        } else if (result != VK_SUBOPTIMAL_KHR) {
+        } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
         }
     }
 
-    vkResetFences(m_logicalDevice.handle<VkDevice>(), 1, fences);
+    m_logicalDevice.as<vk::Device>().resetFences(fences);
 
     CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
@@ -181,18 +187,18 @@ void Renderer::render() {
         {
             commandBuffer.bindPipeline(m_graphicsPipeline);
             commandBuffer.bindVertexBuffers(m_vertexBuffers);
-            vkCmdDraw(commandBuffer.handle<VkCommandBuffer>(), 36, 1, 0, 0);
+            commandBuffer.as<vk::CommandBuffer>().draw(36, 1, 0, 0);
         }
         commandBuffer.endRenderPass();
     }
     commandBuffer.endCommandBuffer();
 
-    VkSemaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].handle<VkSemaphore>()};
-    VkSemaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].handle<VkSemaphore>()};
-    VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    VkCommandBuffer commandBuffers[] = {commandBuffer.handle<VkCommandBuffer>()};
-    VkSubmitInfo submitInfo = {
-        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+    vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
+    vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
+    vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    vk::CommandBuffer commandBuffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+    vk::SubmitInfo submitInfo = {
+        .sType = vk::StructureType::eSubmitInfo,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = waitSemaphores,
@@ -203,15 +209,11 @@ void Renderer::render() {
         .pSignalSemaphores = singalSemaphores,
     };
 
-    result = vkQueueSubmit(m_logicalDevice.graphicsQueue().handle<VkQueue>(),
-                           1,
-                           &submitInfo,
-                           m_inFlight[m_currentFrame].handle<VkFence>());
-    CHECK(result == VK_SUCCESS);
+    m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, m_inFlight[m_currentFrame].as<vk::Fence>());
 
-    VkSwapchainKHR swapchains[]{m_swapchain.handle<VkSwapchainKHR>()};
-    VkPresentInfoKHR presentInfo = {
-        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+    vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
+    vk::PresentInfoKHR presentInfo = {
+        .sType = vk::StructureType::ePresentInfoKHR,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores = singalSemaphores,
@@ -221,12 +223,14 @@ void Renderer::render() {
         .pResults = nullptr,
     };
 
-    result = vkQueuePresentKHR(m_logicalDevice.presentationQueue().handle<VkQueue>(), &presentInfo);
-    if (result != VK_SUCCESS) {
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_spec.window->shouldResize()) {
+    try {
+        result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
+    } catch (...) {
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
+            m_spec.window->shouldResize()) {
             m_spec.window->setShouldResize(false);
             m_swapchain.recreate(m_framebuffers, m_renderPass);
-        } else if (result != VK_SUBOPTIMAL_KHR) {
+        } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
         }
     }

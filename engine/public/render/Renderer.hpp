@@ -42,7 +42,8 @@ private:
     GraphicsPipeline m_graphicsPipeline;
     PipelineLayout m_pipelineLayout;
     std::vector<Framebuffer> m_framebuffers;
-    CommandPool m_commandPool;
+    CommandPool m_commandPool;          // used for the render command buffers
+    CommandPool m_commandPoolTransient; // used for small command buffer operations like CPU -> GPU copy
 
     Semaphore m_imageAvailable[detail::MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[detail::MAX_FRAMES_IN_FLIGHT];

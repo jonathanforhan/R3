@@ -3,8 +3,6 @@
 #include "render/Instance.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include <cstring>
-#include <vector>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
 #include "api/Types.hpp"
@@ -12,7 +10,10 @@
 
 #define R3_VK_VERSION (VK_MAKE_API_VERSION(0, VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, 0))
 
-static VkDebugUtilsMessengerEXT s_debugMessenger;
+namespace R3 {
+
+namespace local {
+
 static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                               VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -41,7 +42,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
     return VK_FALSE;
 }
 
-namespace R3 {
+} // namespace local
 
 void Instance::create(const InstanceSpecification& spec) {
     m_spec = spec;
@@ -72,7 +73,7 @@ void Instance::create(const InstanceSpecification& spec) {
             vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 #endif
             vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
-        .pfnUserCallback = validationDebugCallback,
+        .pfnUserCallback = local::validationDebugCallback,
         .pUserData = nullptr,
     };
 
@@ -89,7 +90,7 @@ void Instance::create(const InstanceSpecification& spec) {
 #else
     vk::InstanceCreateInfo instanceCreateInfo = {
         .sType = vk::StructureType::eInstanceCreateInfo,
-        .pNext = &debugMessengerCreateInfo,
+        .pNext = nullptr,
         .flags = {},
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
