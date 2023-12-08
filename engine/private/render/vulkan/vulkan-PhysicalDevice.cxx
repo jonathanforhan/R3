@@ -68,7 +68,7 @@ int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
 
 uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const {
     vk::PhysicalDeviceMemoryProperties memoryProperties = as<vk::PhysicalDevice>().getMemoryProperties();
-    vk::MemoryPropertyFlags flags(propertyFlags);
+    vk::MemoryPropertyFlags flags((uint32)propertyFlags);
 
     for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags)

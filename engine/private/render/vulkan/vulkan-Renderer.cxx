@@ -161,7 +161,7 @@ void Renderer::destroy() {
 
 void Renderer::render() {
     const vk::Fence fences[]{m_inFlight[m_currentFrame].as<vk::Fence>()};
-    m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::True, UINT64_MAX);
+    (void)m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::True, UINT64_MAX);
 
     auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
     auto [result, value] =

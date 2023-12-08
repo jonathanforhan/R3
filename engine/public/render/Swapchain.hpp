@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "api/Types.hpp"
-#include "render/Framebuffer.hpp"
 #include "render/Image.hpp"
 #include "render/ImageView.hpp"
 #include "render/NativeRenderObject.hpp"

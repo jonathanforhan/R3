@@ -1,10 +1,10 @@
 #pragma once
 
 #include <span>
+#include "render/Buffer.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 #include "render/Vertex.hpp"
-#include "render/Buffer.hpp"
 
 namespace R3 {
 

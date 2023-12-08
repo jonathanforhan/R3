@@ -9,6 +9,7 @@
 #include <vector>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
+#include "render/Framebuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/Surface.hpp"

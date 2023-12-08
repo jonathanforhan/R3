@@ -13,6 +13,7 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
+// #include "render/IndexBuffer.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
@@ -50,6 +51,7 @@ private:
     Fence m_inFlight[detail::MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
 
+    // TODO
     std::vector<VertexBuffer> m_vertexBuffers;
 
     RendererSpecification m_spec;
