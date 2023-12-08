@@ -32,6 +32,8 @@ public:
     void endRenderPass() const;
     void bindPipeline(const GraphicsPipeline& graphicsPipeline) const;
     void bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) const;
+    void bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const;
+    void bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const;
 
 private:
     CommandBufferSpecification m_spec;

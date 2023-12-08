@@ -1,4 +1,6 @@
 #pragma once
+#include <concepts>
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -23,6 +25,7 @@ class Fence;
 class DeviceMemory;
 class Buffer;
 class VertexBuffer;
+template <std::integral T>
 class IndexBuffer;
 
 } // namespace R3

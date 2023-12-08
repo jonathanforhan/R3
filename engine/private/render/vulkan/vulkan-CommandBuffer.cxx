@@ -11,6 +11,7 @@
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
+#include "render/IndexBuffer.hpp"
 
 namespace R3 {
 
@@ -125,6 +126,14 @@ void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuf
     }
 
     as<vk::CommandBuffer>().bindVertexBuffers(0, {buffers}, {0});
+}
+
+void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const {
+    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), {0}, vk::IndexType::eUint16);
+}
+
+void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const {
+    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), {0}, vk::IndexType::eUint32);
 }
 
 } // namespace R3

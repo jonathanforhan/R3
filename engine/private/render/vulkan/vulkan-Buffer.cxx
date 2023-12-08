@@ -25,7 +25,7 @@ namespace R3 {
         .pNext = nullptr,
         .flags = {},
         .size = size,
-        .usage = (vk::BufferUsageFlags)bufferFlags,
+        .usage = (vk::BufferUsageFlags)static_cast<uint32>(bufferFlags),
         .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,

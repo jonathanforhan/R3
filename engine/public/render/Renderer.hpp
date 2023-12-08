@@ -13,7 +13,7 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
-// #include "render/IndexBuffer.hpp"
+#include "render/IndexBuffer.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
@@ -53,6 +53,7 @@ private:
 
     // TODO
     std::vector<VertexBuffer> m_vertexBuffers;
+    std::vector<IndexBuffer<uint16>> m_indexBuffers;
 
     RendererSpecification m_spec;
 };

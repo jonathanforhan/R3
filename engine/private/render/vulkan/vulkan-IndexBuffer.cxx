@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/VertexBuffer.hpp"
+#include "render/IndexBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
@@ -10,36 +10,37 @@
 
 namespace R3 {
 
-void VertexBuffer::create(const VertexBufferSpecification& spec) {
+template <std::integral T>
+void IndexBuffer<T>::create(const IndexBufferSpecification<T>& spec) {
     CHECK(spec.physicalDevice != nullptr);
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.commandPool != nullptr);
     m_spec = spec;
-    m_vertexCount = static_cast<uint32>(spec.vertices.size());
+    m_indexCount = static_cast<uint32>(spec.indices.size());
 
     // staging buffer, CPU writable
     auto [stagingBuffer, stagingMemory] =
         Buffer::allocate(*m_spec.logicalDevice,
                          *m_spec.physicalDevice,
-                         m_spec.vertices.size_bytes(),
+                         m_spec.indices.size_bytes(),
                          uint32(vk::BufferUsageFlagBits::eTransferSrc),
                          uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
 
     // copy data to staging buffer
-    void* data = m_spec.logicalDevice->as<vk::Device>().mapMemory((VkDeviceMemory)stagingMemory, 0, m_vertexCount, {});
+    void* data = m_spec.logicalDevice->as<vk::Device>().mapMemory((VkDeviceMemory)stagingMemory, 0, m_indexCount, {});
 
-    memcpy(data, m_spec.vertices.data(), m_spec.vertices.size_bytes());
+    memcpy(data, m_spec.indices.data(), m_spec.indices.size_bytes());
     m_spec.logicalDevice->as<vk::Device>().unmapMemory((VkDeviceMemory)stagingMemory);
 
     // real buffer, copy staging buffer to this GPU buffer
     auto [buffer, memory] =
         Buffer::allocate(*m_spec.logicalDevice,
                          *m_spec.physicalDevice,
-                         m_spec.vertices.size_bytes(),
-                         uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer),
+                         m_spec.indices.size_bytes(),
+                         uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer),
                          uint32(vk::MemoryPropertyFlagBits::eDeviceLocal));
 
-    Buffer::copy(buffer, stagingBuffer, m_spec.vertices.size_bytes(), *m_spec.logicalDevice, *m_spec.commandPool);
+    Buffer::copy(buffer, stagingBuffer, m_spec.indices.size_bytes(), *m_spec.logicalDevice, *m_spec.commandPool);
     m_spec.logicalDevice->as<vk::Device>().destroyBuffer((VkBuffer)stagingBuffer);
     m_spec.logicalDevice->as<vk::Device>().freeMemory((VkDeviceMemory)stagingMemory);
 
@@ -47,10 +48,14 @@ void VertexBuffer::create(const VertexBufferSpecification& spec) {
     setDeviceMemory(memory);
 }
 
-void VertexBuffer::destroy() {
+template <std::integral T>
+void IndexBuffer<T>::destroy() {
     m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
     m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
 }
+
+template class IndexBuffer<uint32>;
+template class IndexBuffer<uint16>;
 
 } // namespace R3
 

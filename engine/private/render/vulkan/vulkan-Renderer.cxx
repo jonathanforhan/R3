@@ -120,6 +120,7 @@ void Renderer::create(RendererSpecification spec) {
     }
 
     //--- Test
+    #if 0
     Vertex vertices[36];
     Cube(vertices);
 
@@ -131,13 +132,37 @@ void Renderer::create(RendererSpecification spec) {
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
+    #else
+    Vertex vertices[8];
+    uint16 indices[36];
+    IndexedCube(vertices, indices);
+    auto& v = m_vertexBuffers.emplace_back();
+    v.create({
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .commandPool = &m_commandPoolTransient,
+        .vertices = vertices,
+    });
+    auto& i = m_indexBuffers.emplace_back();
+    i.create({
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .commandPool = &m_commandPoolTransient,
+        .indices = indices,
+    });
+    #endif
 }
 
 void Renderer::destroy() {
     vkDeviceWaitIdle(m_logicalDevice.handle<VkDevice>());
 
-    for (auto& vertexBuffer : m_vertexBuffers)
+    for (auto& indexBuffer : m_indexBuffers) {
+        indexBuffer.destroy();
+    }
+
+    for (auto& vertexBuffer : m_vertexBuffers) {
         vertexBuffer.destroy();
+    }
 
     for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
         m_imageAvailable[i].destroy();
@@ -147,9 +172,11 @@ void Renderer::destroy() {
 
     m_commandPool.destroy();
     m_commandPoolTransient.destroy();
+
     for (auto& framebuffer : m_framebuffers) {
         framebuffer.destroy();
     }
+
     m_graphicsPipeline.destroy();
     m_pipelineLayout.destroy();
     m_renderPass.destroy();
@@ -187,7 +214,8 @@ void Renderer::render() {
         {
             commandBuffer.bindPipeline(m_graphicsPipeline);
             commandBuffer.bindVertexBuffers(m_vertexBuffers);
-            commandBuffer.as<vk::CommandBuffer>().draw(36, 1, 0, 0);
+            commandBuffer.bindIndexBuffer(m_indexBuffers.front());
+            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers.front().indexCount(), 1, 0, 0, 0);
         }
         commandBuffer.endRenderPass();
     }
