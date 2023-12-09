@@ -7,11 +7,13 @@
 #include "render/CommandPool.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
+#include "render/PipelineLayout.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
 #include "render/IndexBuffer.hpp"
+#include "render/DescriptorSet.hpp"
 
 namespace R3 {
 
@@ -33,24 +35,43 @@ static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(Command
 
 } // namespace local
 
-void CommandBuffer::create(const CommandBufferSpecification& spec) {
+std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
     CHECK(spec.swapchain != nullptr);
     CHECK(spec.commandPool != nullptr);
-    m_spec = spec;
 
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
-        .commandPool = m_spec.commandPool->handle<VkCommandPool>(),
+        .commandPool = spec.commandPool->handle<VkCommandPool>(),
         .level = vk::CommandBufferLevel::ePrimary,
-        .commandBufferCount = 1,
+        .commandBufferCount = spec.commandBufferCount,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo).front());
+    auto allocatedCommandBuffers =
+        spec.logicalDevice->as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo);
+    CHECK(allocatedCommandBuffers.size() == spec.commandBufferCount);
+
+    std::vector<CommandBuffer> commandBuffers(spec.commandBufferCount);
+
+    for (usize i = 0; i < commandBuffers.size(); i++) {
+        commandBuffers[i].m_spec = spec;
+        commandBuffers[i].setHandle(allocatedCommandBuffers[i]);
+    }
+
+    return commandBuffers;
 }
 
-void CommandBuffer::destroy() {
+void CommandBuffer::free(std::vector<CommandBuffer>& commandBuffers) {
+    std::vector<vk::CommandBuffer> buffers;
+    for (const auto& commandBuffer : commandBuffers) {
+        buffers.push_back(commandBuffer.as<vk::CommandBuffer>());
+    }
+    auto& spec = commandBuffers.front().m_spec;
+    spec.logicalDevice->as<vk::Device>().freeCommandBuffers(spec.commandPool->as<vk::CommandPool>(), buffers);
+}
+
+void CommandBuffer::free() {
     m_spec.logicalDevice->as<vk::Device>().freeCommandBuffers(m_spec.commandPool->as<vk::CommandPool>(),
                                                               {as<vk::CommandBuffer>()});
 }
@@ -118,7 +139,7 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
     as<vk::CommandBuffer>().setScissor(0, {scissor});
 }
 
-void CommandBuffer::bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) const {
+void CommandBuffer::bindVertexBuffers(std::span<const VertexBuffer> vertexBuffers) const {
     std::vector<vk::Buffer> buffers(vertexBuffers.size());
 
     for (uint32 i = 0; i < vertexBuffers.size(); i++) {
@@ -134,6 +155,12 @@ void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) cons
 
 void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const {
     as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), {0}, vk::IndexType::eUint32);
+}
+
+void CommandBuffer::bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSet) const {
+    vk::DescriptorSet descriptors[]{descriptorSet.as<vk::DescriptorSet>()};
+    as<vk::CommandBuffer>().bindDescriptorSets(
+        vk::PipelineBindPoint::eGraphics, pipelineLayout.as<vk::PipelineLayout>(), 0, descriptors, {});
 }
 
 } // namespace R3

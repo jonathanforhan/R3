@@ -1,4 +1,5 @@
 #pragma once
+
 #include <concepts>
 #include "api/Types.hpp"
 
@@ -14,6 +15,9 @@ class Swapchain;
 class Image;
 class ImageView;
 class RenderPass;
+class DescriptorPool;
+class DescriptorSetLayout;
+class DescriptorSet;
 class PipelineLayout;
 class GraphicsPipeline;
 class Shader;
@@ -27,5 +31,7 @@ class Buffer;
 class VertexBuffer;
 template <std::integral T>
 class IndexBuffer;
+struct UniformBufferObject;
+class UniformBuffer;
 
 } // namespace R3

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "api/Types.hpp"
 #include "render/DeviceMemory.hpp"
 #include "render/RenderFwd.hpp"
 

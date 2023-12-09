@@ -6,6 +6,8 @@
 
 namespace R3 {
 
+constexpr auto MAX_FRAMES_IN_FLIGHT = 3;
+
 enum Format {
     R3_FORMAT_UNDEFINED = 0,
     R3_FORMAT_R4G4_UNORM_PACK8 = 1,

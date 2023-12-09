@@ -1,4 +1,5 @@
 #pragma once
+
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 

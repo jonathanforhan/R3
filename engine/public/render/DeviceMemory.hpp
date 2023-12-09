@@ -44,6 +44,7 @@ protected:
     constexpr T deviceMemoryAs() {
         return T(reinterpret_cast<T::NativeType>(m_deviceMemory));
     }
+
     template <typename T>
     constexpr T deviceMemoryAs() const {
         return T(reinterpret_cast<const T::NativeType>(m_deviceMemory));
@@ -53,6 +54,7 @@ protected:
     constexpr T deviceMemoryAs() {
         return T(m_deviceMemory);
     }
+
     template <typename T>
     constexpr T deviceMemoryAs() const {
         return T(m_deviceMemory);

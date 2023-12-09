@@ -1,7 +1,7 @@
 #pragma once
 
+#include <span>
 #include <vector>
-#include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -18,12 +18,14 @@ struct CommandBufferSpecification {
     const LogicalDevice* logicalDevice;
     const Swapchain* swapchain;
     const CommandPool* commandPool;
+    uint32 commandBufferCount;
 };
 
 class CommandBuffer : public NativeRenderObject {
 public:
-    void create(const CommandBufferSpecification& spec);
-    void destroy();
+    static std::vector<CommandBuffer> allocate(const CommandBufferSpecification& spec);
+    static void free(std::vector<CommandBuffer>& commandBuffers);
+    void free();
 
     void resetCommandBuffer() const;
     void beginCommandBuffer(CommandBufferFlags flags = {}) const;
@@ -31,9 +33,10 @@ public:
     void beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const;
     void endRenderPass() const;
     void bindPipeline(const GraphicsPipeline& graphicsPipeline) const;
-    void bindVertexBuffers(const std::vector<VertexBuffer>& vertexBuffers) const;
+    void bindVertexBuffers(std::span<const VertexBuffer> vertexBuffers) const;
     void bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const;
     void bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const;
+    void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;
 
 private:
     CommandBufferSpecification m_spec;

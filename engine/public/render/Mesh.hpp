@@ -1,7 +1,7 @@
 #pragma once
+
 #include <span>
 #include <vector>
-#include "api/Types.hpp"
 #include "render/Vertex.hpp"
 
 namespace R3 {

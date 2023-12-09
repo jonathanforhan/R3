@@ -2,7 +2,6 @@
 
 #include <span>
 #include "render/Buffer.hpp"
-#include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
 namespace R3 {
@@ -27,5 +26,8 @@ private:
     IndexBufferSpecification<T> m_spec;
     uint32 m_indexCount = 0;
 };
-    
+
+extern template class IndexBuffer<uint32>;
+extern template class IndexBuffer<uint16>;
+
 } // namespace R3

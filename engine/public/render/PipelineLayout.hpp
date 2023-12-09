@@ -7,6 +7,7 @@ namespace R3 {
 
 struct PipelineLayoutSpecification {
     const LogicalDevice* logicalDevice;
+    const DescriptorSetLayout* descriptorSetLayout;
 };
 
 class PipelineLayout : public NativeRenderObject {

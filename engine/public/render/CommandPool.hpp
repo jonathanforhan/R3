@@ -17,7 +17,7 @@ struct CommandPoolSpecification {
     const LogicalDevice* logicalDevice;
     const Swapchain* swapchain;
     CommandPoolFlags flags;
-    usize commandBufferCount;
+    uint32 commandBufferCount;
 };
 
 class CommandPool : public NativeRenderObject {

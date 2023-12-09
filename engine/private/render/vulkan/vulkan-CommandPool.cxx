@@ -40,20 +40,16 @@ void CommandPool::create(const CommandPoolSpecification& spec) {
 
     setHandle(m_spec.logicalDevice->as<vk::Device>().createCommandPool(commandPoolCreateInfo));
 
-    m_commandBuffers.resize(m_spec.commandBufferCount);
-    for (auto& commandBuffer : m_commandBuffers) {
-        commandBuffer.create({
-            .logicalDevice = m_spec.logicalDevice,
-            .swapchain = m_spec.swapchain,
-            .commandPool = this,
-        });
-    }
+    m_commandBuffers = CommandBuffer::allocate({
+        .logicalDevice = m_spec.logicalDevice,
+        .swapchain = m_spec.swapchain,
+        .commandPool = this,
+        .commandBufferCount = m_spec.commandBufferCount,
+    });
 }
 
 void CommandPool::destroy() {
-    for (auto& commandBuffer : m_commandBuffers) {
-        commandBuffer.destroy();
-    }
+    CommandBuffer::free(m_commandBuffers);
     m_spec.logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
 }
 

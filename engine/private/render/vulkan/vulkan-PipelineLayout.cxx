@@ -4,20 +4,26 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
+#include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 void PipelineLayout::create(const PipelineLayoutSpecification& spec) {
     CHECK(spec.logicalDevice != nullptr);
+    CHECK(spec.descriptorSetLayout != nullptr);
     m_spec = spec;
+
+    vk::DescriptorSetLayout descriptorSetLayouts[] = {
+        m_spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
+    };
 
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         .sType = vk::StructureType::ePipelineLayoutCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .setLayoutCount = 0,
-        .pSetLayouts = nullptr,
+        .setLayoutCount = 1,
+        .pSetLayouts = descriptorSetLayouts,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges = nullptr,
     };

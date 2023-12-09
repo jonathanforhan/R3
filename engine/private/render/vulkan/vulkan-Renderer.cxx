@@ -1,14 +1,19 @@
 #if R3_VULKAN
 
 #include "render/Renderer.hpp"
+
+#include <chrono>
 // clang-format off
-#include "vulkan/vulkan.hpp"
-#include "GLFW/glfw3.h"
+#include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
 // clang-format on
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "core/BasicGeometry.hpp"
+#include "render/UniformBufferObject.hpp"
 
 namespace R3 {
 
@@ -72,9 +77,22 @@ void Renderer::create(RendererSpecification spec) {
         .swapchain = &m_swapchain,
     });
 
+    //--- DescriptorSetLayout
+    m_descriptorSetLayout.create({
+        .logicalDevice = &m_logicalDevice,
+    });
+
+    //--- DescriptorPool
+    m_descriptorPool.create({
+        .logicalDevice = &m_logicalDevice,
+        .descriptorSetLayout = &m_descriptorSetLayout,
+        .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+    });
+
     //--- Pipeline Layout
     m_pipelineLayout.create({
         .logicalDevice = &m_logicalDevice,
+        .descriptorSetLayout = &m_descriptorSetLayout,
     });
 
     //--- Graphics Pipeline
@@ -103,7 +121,7 @@ void Renderer::create(RendererSpecification spec) {
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .flags = CommandPoolFlags::Reset,
-        .commandBufferCount = detail::MAX_FRAMES_IN_FLIGHT,
+        .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
     m_commandPoolTransient.create({
         .logicalDevice = &m_logicalDevice,
@@ -113,14 +131,14 @@ void Renderer::create(RendererSpecification spec) {
     });
 
     //--- Synchronization
-    for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_imageAvailable[i].create({.logicalDevice = &m_logicalDevice});
         m_renderFinished[i].create({.logicalDevice = &m_logicalDevice});
         m_inFlight[i].create({.logicalDevice = &m_logicalDevice});
     }
 
     //--- Test
-    #if 0
+#if 0
     Vertex vertices[36];
     Cube(vertices);
 
@@ -132,10 +150,14 @@ void Renderer::create(RendererSpecification spec) {
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
-    #else
+#else
     Vertex vertices[8];
     uint16 indices[36];
     IndexedCube(vertices, indices);
+    uint32 indices32[36];
+    for (uint32 i = 0; i < 36; i++)
+        indices32[i] = indices[i];
+
     auto& v = m_vertexBuffers.emplace_back();
     v.create({
         .physicalDevice = &m_physicalDevice,
@@ -148,13 +170,27 @@ void Renderer::create(RendererSpecification spec) {
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
-        .indices = indices,
+        .indices = indices32,
     });
-    #endif
+#endif
+
+    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    for (auto& uniformBuffer : m_uniformBuffers) {
+        uniformBuffer.create({
+            .physicalDevice = &m_physicalDevice,
+            .logicalDevice = &m_logicalDevice,
+            .bufferSize = sizeof(UniformBufferObject),
+        });
+    }
+
+    auto& descriptorSets = m_descriptorPool.descriptorSets();
+    for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
+        descriptorSets[i].bindUniform(m_uniformBuffers[i], 0);
+    }
 }
 
 void Renderer::destroy() {
-    vkDeviceWaitIdle(m_logicalDevice.handle<VkDevice>());
+    m_logicalDevice.as<vk::Device>().waitIdle();
 
     for (auto& indexBuffer : m_indexBuffers) {
         indexBuffer.destroy();
@@ -164,7 +200,11 @@ void Renderer::destroy() {
         vertexBuffer.destroy();
     }
 
-    for (uint32 i = 0; i < detail::MAX_FRAMES_IN_FLIGHT; i++) {
+    for (auto& uniformBuffer : m_uniformBuffers) {
+        uniformBuffer.destroy();
+    }
+
+    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_imageAvailable[i].destroy();
         m_renderFinished[i].destroy();
         m_inFlight[i].destroy();
@@ -179,6 +219,8 @@ void Renderer::destroy() {
 
     m_graphicsPipeline.destroy();
     m_pipelineLayout.destroy();
+    m_descriptorSetLayout.destroy();
+    m_descriptorPool.destroy();
     m_renderPass.destroy();
     m_swapchain.destroy();
     m_logicalDevice.destroy();
@@ -215,11 +257,24 @@ void Renderer::render() {
             commandBuffer.bindPipeline(m_graphicsPipeline);
             commandBuffer.bindVertexBuffers(m_vertexBuffers);
             commandBuffer.bindIndexBuffer(m_indexBuffers.front());
+            commandBuffer.bindDescriptorSet(m_pipelineLayout, m_descriptorPool.descriptorSet(m_currentFrame));
             commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers.front().indexCount(), 1, 0, 0, 0);
         }
         commandBuffer.endRenderPass();
     }
     commandBuffer.endCommandBuffer();
+
+#if 1
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.projection =
+        glm::perspective(glm::radians(45.0f), m_swapchain.extent().x / (float)m_swapchain.extent().y, 0.1f, 10.0f);
+    m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
+#endif
 
     vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
     vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
@@ -263,7 +318,7 @@ void Renderer::render() {
         }
     }
 
-    m_currentFrame = (m_currentFrame + 1) % detail::MAX_FRAMES_IN_FLIGHT;
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 } // namespace R3
