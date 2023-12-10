@@ -17,6 +17,7 @@
 #include "render/Semaphore.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
+#include "render/TextureBuffer.hpp"
 #include "render/UniformBuffer.hpp"
 #include "render/VertexBuffer.hpp"
 #include "render/Window.hpp"
@@ -63,6 +64,7 @@ private:
     std::vector<VertexBuffer> m_vertexBuffers;
     std::vector<IndexBuffer<uint32>> m_indexBuffers;
     std::vector<UniformBuffer> m_uniformBuffers;
+    TextureBuffer m_textureBuffer;
 
     RendererSpecification m_spec;
 };

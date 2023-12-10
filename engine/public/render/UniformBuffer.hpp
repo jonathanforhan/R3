@@ -1,6 +1,5 @@
 #pragma once
 
-#include "render/NativeRenderObject.hpp"
 #include "render/Buffer.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -20,7 +19,7 @@ public:
     UniformBuffer& operator=(UniformBuffer&&) noexcept = default;
     ~UniformBuffer();
 
-    void update(Ref<void> buffer, usize size);
+    void update(void* buffer, usize size);
 
 private:
     UniformBufferSpecification m_spec;

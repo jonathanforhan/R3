@@ -52,7 +52,7 @@ Instance::Instance(const InstanceSpecification& spec)
     vk::ApplicationInfo applicationInfo = {
         .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,
-        .pApplicationName = m_spec.applicationName,
+        .pApplicationName = m_spec.applicationName.data(),
         .applicationVersion = R3_VK_VERSION,
         .pEngineName = "R3",
         .engineVersion = R3_VK_VERSION,

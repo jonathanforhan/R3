@@ -172,6 +172,7 @@ Renderer::Renderer(RendererSpecification spec)
     });
 #endif
 
+    //--- Uniforms
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& uniformBuffer : m_uniformBuffers) {
         uniformBuffer = UniformBuffer({
@@ -185,6 +186,14 @@ Renderer::Renderer(RendererSpecification spec)
     for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
         descriptorSets[i].bindUniform(m_uniformBuffers[i], 0);
     }
+
+    //--- Texture
+    m_textureBuffer = TextureBuffer(TextureBufferSpecification{
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .commandPool = &m_commandPoolTransient,
+        .path = "textures/container.jpg",
+    });
 }
 
 void Renderer::render() {

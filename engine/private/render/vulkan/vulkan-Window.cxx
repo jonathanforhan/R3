@@ -42,7 +42,7 @@ Window::Window(const WindowSpecification& spec)
     glfwSwapInterval(GLFW_TRUE);
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
-    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
+    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int, int) {
         Window* self = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
         self->setShouldResize(true);
     });

@@ -32,5 +32,6 @@ template <std::integral T>
 class IndexBuffer;
 struct UniformBufferObject;
 class UniformBuffer;
+class TextureBuffer;
 
 } // namespace R3

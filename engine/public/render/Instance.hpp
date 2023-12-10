@@ -1,6 +1,7 @@
 #pragma once
 
 #include <span>
+#include <string_view>
 #include <vector>
 #include "render/NativeRenderObject.hpp"
 
@@ -10,7 +11,7 @@ namespace R3 {
 
 /// @brief Instance Specification
 struct InstanceSpecification {
-    const char* applicationName;               ///< @brief Name of application
+    std::string_view applicationName;          ///< @brief Name of application
     std::vector<const char*> extensions;       ///< @brief Renderer extensions
     std::vector<const char*> validationLayers; ///< @brief Renderer validation layers
 };

@@ -82,33 +82,12 @@ public:
         return m_ptr;
     }
 
-    constexpr auto operator<=>(const Ref<T>&) const = default;
-
     constexpr bool operator==(void* vp) const {
         return m_ptr == vp;
     }
 
-    constexpr T* operator+(int i) const R3_NOEXCEPT { return m_ptr + i; }
-    constexpr T* operator-(int i) const R3_NOEXCEPT { return m_ptr - i; }
-    constexpr void operator+=(int i) R3_NOEXCEPT { return m_ptr += i; }
-    constexpr void operator-=(int i) R3_NOEXCEPT { return m_ptr -= i; }
-    constexpr auto& operator++() R3_NOEXCEPT {
-        m_ptr++;
-        return m_ptr;
-    }
-    constexpr auto operator++(int) R3_NOEXCEPT {
-        auto tmp = m_ptr;
-        (*this)++;
-        return tmp;
-    }
-    constexpr auto& operator--() R3_NOEXCEPT {
-        m_ptr--;
-        return m_ptr;
-    }
-    constexpr auto operator--(int) R3_NOEXCEPT {
-        auto tmp = m_ptr;
-        (*this)--;
-        return tmp;
+    constexpr bool operator!=(void* vp) const {
+        return m_ptr != vp;
     }
 
     constexpr T* get() {

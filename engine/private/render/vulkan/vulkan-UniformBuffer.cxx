@@ -11,12 +11,15 @@ namespace R3 {
 
 UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
     : m_spec(spec) {
-    auto [buffer, memory] =
-        Buffer::allocate(*m_spec.logicalDevice,
-                         *m_spec.physicalDevice,
-                         m_spec.bufferSize,
-                         uint32(vk::BufferUsageFlagBits::eUniformBuffer),
-                         uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent));
+
+    BufferAllocateSpecification bufferAllocateSpecification = {
+        .physicalDevice = *m_spec.physicalDevice,
+        .logicalDevice = *m_spec.logicalDevice,
+        .size = m_spec.bufferSize,
+        .bufferFlags = uint32(vk::BufferUsageFlagBits::eUniformBuffer),
+        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
+    };
+    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // NOTE we DON'T unmap this memory because mapping isn't free and we write to it every frame
     m_mappedMemory = m_spec.logicalDevice->as<vk::Device>().mapMemory((VkDeviceMemory)memory, 0, m_spec.bufferSize, {});
@@ -32,7 +35,8 @@ UniformBuffer::~UniformBuffer() {
     }
 }
 
-void UniformBuffer::update(Ref<void> buffer, usize size) {
+void UniformBuffer::update(void* buffer, usize size) {
+    CHECK(buffer != nullptr);
     CHECK(size <= m_spec.bufferSize);
     memcpy(m_mappedMemory, buffer, size);
 }

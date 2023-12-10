@@ -17,8 +17,10 @@ public:
     NativeRenderObject(NativeRenderObject&&) R3_NOEXCEPT = default;
     NativeRenderObject& operator=(NativeRenderObject&&) R3_NOEXCEPT = default;
 
-    /// @brief Opaque handle type will be converted to API specific handle when queried
+    /// @brief Opaque Handle type will be converted to API specific Handle when queried
     using Handle = void*;
+    using HandleRef = Ref<std::remove_pointer_t<Handle>>;
+    using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>;
 
     /// @brief Query is handle is null
     /// @return true if not null
@@ -73,7 +75,7 @@ protected:
     void setHandle(Handle handle) { m_handle = handle; }
 
 private:
-    Ref<std::remove_pointer_t<Handle>> m_handle;
+    HandleRef m_handle;
 };
 
 } // namespace R3

@@ -132,14 +132,17 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         .swapchain = this,
     });
 
+    m_imageViews.clear();
+    framebuffers.clear();
+
     for (usize i = 0; i < m_images.size(); i++) {
-        m_imageViews[i] = ImageView({
+        m_imageViews.emplace_back(ImageViewSpecification{
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .image = &m_images[i],
         });
 
-        framebuffers[i] = Framebuffer({
+        framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .imageView = &m_imageViews[i],

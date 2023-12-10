@@ -72,7 +72,7 @@ protected:
 
 private:
     // points to device (GPU) memory allocated for buffer
-    Ref<std::remove_pointer_t<Handle>> m_deviceMemory;
+    HandleRef m_deviceMemory;
 };
 
 } // namespace R3

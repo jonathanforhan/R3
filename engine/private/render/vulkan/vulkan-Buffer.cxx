@@ -4,60 +4,51 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
+#include "render/CommandPool.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "render/CommandPool.hpp"
 
 namespace R3 {
 
-[[nodiscard]] std::tuple<Buffer::Handle, Buffer::Handle> Buffer::allocate(const LogicalDevice& logicalDevice,
-                                                                          const PhysicalDevice& physicalDevice,
-                                                                          usize size,
-                                                                          uint64 bufferFlags,
-                                                                          uint64 memoryFlags) {
+std::tuple<Buffer::Handle, DeviceMemory::Handle> Buffer::allocate(const BufferAllocateSpecification& spec) {
     uint32 indices[]{
-        logicalDevice.graphicsQueue().index(),
-        logicalDevice.presentationQueue().index(),
+        spec.logicalDevice.graphicsQueue().index(),
+        spec.logicalDevice.presentationQueue().index(),
     };
 
     vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .size = size,
-        .usage = (vk::BufferUsageFlags)static_cast<uint32>(bufferFlags),
+        .size = spec.size,
+        .usage = (vk::BufferUsageFlags) static_cast<uint32>(spec.bufferFlags),
         .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,
     };
-    VkBuffer buffer = logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
+    VkBuffer buffer = spec.logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
 
-    auto memoryRequirements = logicalDevice.as<vk::Device>().getBufferMemoryRequirements(buffer);
+    auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getBufferMemoryRequirements(buffer);
 
     vk::MemoryAllocateInfo memoryAllocateInfo = {
         .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
-        .memoryTypeIndex = physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)memoryFlags),
+        .memoryTypeIndex =
+            spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
     };
-    VkDeviceMemory memory = logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
+    VkDeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
-    logicalDevice.as<vk::Device>().bindBufferMemory(buffer, memory, 0);
+    spec.logicalDevice.as<vk::Device>().bindBufferMemory(buffer, memory, 0);
 
     return {buffer, memory};
 }
 
-void Buffer::copy(Handle buffer,
-                  const Handle stagingBuffer,
-                  usize size,
-                  const LogicalDevice& logicalDevice,
-                  const CommandPool& commandPool) {
-    CHECK(buffer != NULL);
-    CHECK(stagingBuffer != NULL);
-
-    const auto& commandBuffer = commandPool.commandBuffers().front();
+void Buffer::copy(const BufferCopySpecification& spec) {
+    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
     commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
-    commandBuffer.as<vk::CommandBuffer>().copyBuffer((VkBuffer)stagingBuffer, (VkBuffer)buffer, {{.size = size}});
+    commandBuffer.as<vk::CommandBuffer>().copyBuffer(
+        (VkBuffer)spec.stagingBuffer.get(), (VkBuffer)spec.buffer.get(), {{.size = spec.size}});
     commandBuffer.endCommandBuffer();
 
     vk::CommandBuffer buffers[] = {commandBuffer.as<vk::CommandBuffer>()};
@@ -67,8 +58,8 @@ void Buffer::copy(Handle buffer,
         .pCommandBuffers = buffers,
     };
 
-    logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo);
-    logicalDevice.graphicsQueue().as<vk::Queue>().waitIdle();
+    spec.logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo);
+    spec.logicalDevice.graphicsQueue().as<vk::Queue>().waitIdle();
 }
 
 } // namespace R3
