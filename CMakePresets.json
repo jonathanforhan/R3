@@ -12,10 +12,6 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
-      "cacheVariables": {
-        "CMAKE_C_COMPILER": "cl.exe",
-        "CMAKE_CXX_COMPILER": "cl.exe"
-      },
       "architecture": {
         "value": "x64",
         "strategy": "external"
@@ -33,8 +29,8 @@
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "installDir": "${sourceDir}/out/install/${presetName}",
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "cc",
-        "CMAKE_CXX_COMPILER": "c++"
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
       },
       "architecture": {
         "value": "x64",
@@ -47,15 +43,39 @@
       }
     },
     {
+      "name": "msvc-base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      }
+    },
+    {
+      "name": "gcc-base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc.exe",
+        "CMAKE_CXX_COMPILER": "g++.exe"
+      }
+    },
+    {
+      "name": "clang-base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang.exe",
+        "CMAKE_CXX_COMPILER": "clang++.exe"
+      }
+    },
+    {
       "name": "debug-base",
       "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "R3_BUILD_DEBUG": true,
         "R3_LOGGING_ENABLED": true,
-        "R3_LOG_VERBOSE":  true,
-        "R3_LOG_INFO":  true,
-        "R3_LOG_WARNING":  true,
+        "R3_LOG_VERBOSE": true,
+        "R3_LOG_INFO": true,
+        "R3_LOG_WARNING": true,
         "R3_LOG_ERROR": true,
         "R3_BUILD_TESTS": true
       }
@@ -68,10 +88,10 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "R3_BUILD_RELEASE": true,
         "R3_LOGGING_ENABLED": true,
-        "R3_LOG_VERBOSE":  true,
-        "R3_LOG_INFO":  true,
-        "R3_LOG_WARNING":  true,
-        "R3_LOG_ERROR":  true,
+        "R3_LOG_VERBOSE": true,
+        "R3_LOG_INFO": true,
+        "R3_LOG_WARNING": true,
+        "R3_LOG_ERROR": true,
         "R3_BUILD_TESTS": true
       }
     },
@@ -83,83 +103,161 @@
         "CMAKE_BUILD_TYPE": "Release",
         "R3_BUILD_DIST": true,
         "R3_LOGGING_ENABLED": false,
-        "R3_LOG_VERBOSE":  false,
-        "R3_LOG_INFO":  false,
-        "R3_LOG_WARNING":  false,
-        "R3_LOG_ERROR":  false,
+        "R3_LOG_VERBOSE": false,
+        "R3_LOG_INFO": false,
+        "R3_LOG_WARNING": false,
+        "R3_LOG_ERROR": false,
         "R3_BUILD_TESTS": true
       }
     },
     {
-      "name": "Windows-Vulkan-Debug",
-      "displayName": "Windows Vulkan Debug",
-      "inherits": [ "windows-base", "debug-base" ],
+      "name": "Windows-Vulkan-Debug-MSVC",
+      "inherits": [ "windows-base", "debug-base", "msvc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Windows-Vulkan-Release",
-      "displayName": "Windows Vulkan Release",
-      "inherits": [ "windows-base", "release-base" ],
+      "name": "Windows-Vulkan-Release-MSVC",
+      "inherits": [ "windows-base", "release-base", "msvc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Windows-Vulkan-Dist",
-      "displayName": "Windows Vulkan Dist",
-      "inherits": [ "windows-base", "dist-base" ],
+      "name": "Windows-Vulkan-Dist-MSVC",
+      "inherits": [ "windows-base", "dist-base", "msvc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Windows-OpenGL-Debug",
-      "displayName": "Windows OpenGL Debug",
-      "inherits": [ "windows-base", "debug-base" ],
+      "name": "Windows-OpenGL-Debug-MSVC",
+      "inherits": [ "windows-base", "debug-base", "msvc-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     },
     {
-      "name": "Windows-OpenGL-Release",
-      "displayName": "Windows OpenGL Release",
-      "inherits": [ "windows-base", "release-base" ],
+      "name": "Windows-OpenGL-Release-MSVC",
+      "inherits": [ "windows-base", "release-base", "msvc-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     },
     {
-      "name": "Windows-OpenGL-Dist",
-      "displayName": "Windows OpenGL Dist",
-      "inherits": [ "windows-base", "dist-base" ],
+      "name": "Windows-OpenGL-Dist-MSVC",
+      "inherits": [ "windows-base", "dist-base", "msvc-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     },
     {
-      "name": "Linux-Vulkan-Debug",
-      "displayName": "Linux Vulkan Debug",
-      "inherits": [ "linux-base", "debug-base" ],
+      "name": "Windows-Vulkan-Debug-GCC",
+      "inherits": [ "windows-base", "debug-base", "gcc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Linux-Vulkan-Release",
-      "displayName": "Linux Vulkan Release",
-      "inherits": [ "linux-base", "release-base" ],
+      "name": "Windows-Vulkan-Release-GCC",
+      "inherits": [ "windows-base", "release-base", "gcc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Linux-Vulkan-Dist",
-      "displayName": "Linux Vulkan Dist",
-      "inherits": [ "linux-base", "dist-base" ],
+      "name": "Windows-Vulkan-Dist-GCC",
+      "inherits": [ "windows-base", "dist-base", "gcc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "Linux-OpenGL-Debug",
-      "displayName": "Linux OpenGL Debug",
-      "inherits": [ "linux-base", "debug-base" ],
+      "name": "Windows-OpenGL-Debug-GCC",
+      "inherits": [ "windows-base", "debug-base", "gcc-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     },
     {
-      "name": "Linux-OpenGL-Release",
-      "displayName": "Linux OpenGL Release",
-      "inherits": [ "linux-base", "release-base" ],
+      "name": "Windows-OpenGL-Release-GCC",
+      "inherits": [ "windows-base", "release-base", "gcc-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     },
     {
-      "name": "Linux-OpenGL-Dist",
-      "displayName": "Linux OpenGL Dist",
-      "inherits": [ "linux-base", "dist-base" ],
+      "name": "Windows-OpenGL-Dist-GCC",
+      "inherits": [ "windows-base", "dist-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Windows-Vulkan-Debug-Clang",
+      "inherits": [ "windows-base", "debug-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Windows-Vulkan-Release-Clang",
+      "inherits": [ "windows-base", "release-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Windows-Vulkan-Dist-Clang",
+      "inherits": [ "windows-base", "dist-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Windows-OpenGL-Debug-Clang",
+      "inherits": [ "windows-base", "debug-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Windows-OpenGL-Release-Clang",
+      "inherits": [ "windows-base", "release-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Windows-OpenGL-Dist-Clang",
+      "inherits": [ "windows-base", "dist-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-Vulkan-Debug-GCC",
+      "inherits": [ "linux-base", "debug-base", "gcc-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-Vulkan-Release-GCC",
+      "inherits": [ "linux-base", "release-base", "gcc-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-Vulkan-Dist-GCC",
+      "inherits": [ "linux-base", "dist-base", "gcc-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-OpenGL-Debug-GCC",
+      "inherits": [ "linux-base", "debug-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-OpenGL-Release-GCC",
+      "inherits": [ "linux-base", "release-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-OpenGL-Dist-GCC",
+      "inherits": [ "linux-base", "dist-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-Vulkan-Debug-Clang",
+      "inherits": [ "linux-base", "debug-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-Vulkan-Release-Clang",
+      "inherits": [ "linux-base", "release-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-Vulkan-Dist-Clang",
+      "inherits": [ "linux-base", "dist-base", "clang-base" ],
+      "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "Linux-OpenGL-Debug-Clang",
+      "inherits": [ "linux-base", "debug-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-OpenGL-Release-Clang",
+      "inherits": [ "linux-base", "release-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Linux-OpenGL-Dist-Clang",
+      "inherits": [ "linux-base", "dist-base", "clang-base" ],
       "cacheVariables": { "R3_OPENGL": true }
     }
   ]
