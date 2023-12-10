@@ -14,11 +14,8 @@
 
 namespace R3 {
 
-void PhysicalDevice::select(const PhysicalDeviceSpecification& spec) {
-    CHECK(spec.instance != nullptr);
-    CHECK(spec.surface != nullptr);
-    m_spec = spec;
-
+PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
+    : m_spec(spec) {
     std::vector<vk::PhysicalDevice> physicalDevices = m_spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
 
     int32 bestScore = INT32_MIN;
@@ -30,7 +27,7 @@ void PhysicalDevice::select(const PhysicalDeviceSpecification& spec) {
         }
     }
 
-    ENSURE(handle() != nullptr && bestScore >= 0);
+    ENSURE(validHandle() && bestScore >= 0);
 }
 
 int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
@@ -81,7 +78,7 @@ uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) 
 bool PhysicalDevice::checkExtensionSupport(Handle deviceHandle) const {
     auto deviceExtensions = vk::PhysicalDevice((VkPhysicalDevice)deviceHandle).enumerateDeviceExtensionProperties();
 
-    for (const auto& requiredExtension : extensions()) {
+    for (const auto* requiredExtension : extensions()) {
         auto it = std::ranges::find_if(deviceExtensions, [=](VkExtensionProperties& extension) -> bool {
             return strcmp(requiredExtension, extension.extensionName) == 0;
         });

@@ -8,17 +8,20 @@ namespace R3 {
 
 template <std::integral T>
 struct IndexBufferSpecification {
-    const PhysicalDevice* physicalDevice;
-    const LogicalDevice* logicalDevice;
-    const CommandPool* commandPool;
+    Ref<const PhysicalDevice> physicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const CommandPool> commandPool;
     std::span<T> indices;
 };
 
 template <std::integral T>
 class IndexBuffer : public Buffer {
 public:
-    void create(const IndexBufferSpecification<T>& spec);
-    void destroy();
+    IndexBuffer() = default;
+    IndexBuffer(const IndexBufferSpecification<T>& spec);
+    IndexBuffer(IndexBuffer&&) noexcept = default;
+    IndexBuffer& operator=(IndexBuffer&&) noexcept = default;
+    ~IndexBuffer();
 
     uint32 indexCount() const { return m_indexCount; }
 

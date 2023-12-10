@@ -6,16 +6,19 @@
 namespace R3 {
 
 struct FramebufferSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
-    const ImageView* imageView;
-    const RenderPass* renderPass;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
+    Ref<const ImageView> imageView;
+    Ref<const RenderPass> renderPass;
 };
 
 class Framebuffer : public NativeRenderObject {
 public:
-    void create(const FramebufferSpecification& spec);
-    void destroy();
+    Framebuffer() = default;
+    Framebuffer(const FramebufferSpecification& spec);
+    Framebuffer(Framebuffer&&) noexcept = default;
+    Framebuffer& operator=(Framebuffer&&) noexcept = default;
+    ~Framebuffer();
 
 private:
     FramebufferSpecification m_spec;

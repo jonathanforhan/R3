@@ -13,19 +13,19 @@
 
 namespace R3 {
 
-void Surface::create(const SurfaceSpecification& spec) {
-    CHECK(spec.instance != nullptr);
-    CHECK(spec.window != nullptr);
-    m_spec = spec;
-
-    ENSURE(glfwCreateWindowSurface(m_spec.instance->handle<VkInstance>(),
-                                   m_spec.window->handle<GLFWwindow*>(),
-                                   nullptr,
-                                   handlePtr<VkSurfaceKHR*>()) == VK_SUCCESS);
+Surface::Surface(const SurfaceSpecification& spec)
+    : m_spec(spec) {
+    VkSurfaceKHR surface;
+    auto r = glfwCreateWindowSurface(
+        m_spec.instance->handle<VkInstance>(), m_spec.window->handle<GLFWwindow*>(), nullptr, &surface);
+    ENSURE(r == VK_SUCCESS);
+    setHandle(surface);
 }
 
-void Surface::destroy() {
-    m_spec.instance->as<vk::Instance>().destroySurfaceKHR(as<vk::SurfaceKHR>());
+Surface::~Surface() {
+    if (validHandle()) {
+        m_spec.instance->as<vk::Instance>().destroySurfaceKHR(as<vk::SurfaceKHR>());
+    }
 }
 
 } // namespace R3

@@ -9,10 +9,8 @@
 
 namespace R3 {
 
-void Shader::create(const ShaderSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    m_spec = spec;
-
+Shader::Shader(const ShaderSpecification& spec)
+    : m_spec(spec) {
     std::ifstream ifs(m_spec.path.data(), std::ios::ate | std::ios::binary);
     CHECK(ifs.is_open());
 
@@ -32,8 +30,10 @@ void Shader::create(const ShaderSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createShaderModule(shaderModuleCreateInfo));
 }
 
-void Shader::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyShaderModule(as<vk::ShaderModule>());
+Shader::~Shader() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyShaderModule(as<vk::ShaderModule>());
+    }
 }
 
 } // namespace R3

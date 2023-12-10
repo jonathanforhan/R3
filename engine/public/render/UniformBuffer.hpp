@@ -7,17 +7,20 @@
 namespace R3 {
 
 struct UniformBufferSpecification {
-    const PhysicalDevice* physicalDevice;
-    const LogicalDevice* logicalDevice;
+    Ref<const PhysicalDevice> physicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
     usize bufferSize;
 };
 
 class UniformBuffer : public Buffer {
 public:
-    void create(const UniformBufferSpecification& spec);
-    void destroy();
+    UniformBuffer() = default;
+    UniformBuffer(const UniformBufferSpecification& spec);
+    UniformBuffer(UniformBuffer&&) noexcept = default;
+    UniformBuffer& operator=(UniformBuffer&&) noexcept = default;
+    ~UniformBuffer();
 
-    void update(void* buffer, usize size);
+    void update(Ref<void> buffer, usize size);
 
 private:
     UniformBufferSpecification m_spec;

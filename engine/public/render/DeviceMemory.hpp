@@ -11,13 +11,22 @@ namespace R3 {
 class DeviceMemory : public NativeRenderObject {
 protected:
     DeviceMemory() = default;
+    DeviceMemory(const DeviceMemory&) = delete;
+    DeviceMemory& operator=(const DeviceMemory&) = delete;
+
+    DeviceMemory(DeviceMemory&& src) R3_NOEXCEPT = default;
+    DeviceMemory& operator=(DeviceMemory&& src) R3_NOEXCEPT = default;
+
+    /// @brief Query is device memory is null
+    /// @return true if null
+    [[nodiscard]] bool validDeviceMemory() const { return m_deviceMemory != nullptr; }
 
     /// @brief Retrieve opaque buffer handle
     /// @tparam T cast to T type
     /// @return buffer handle
     template <typename T>
     T deviceMemory() {
-        return reinterpret_cast<T>(m_deviceMemory);
+        return reinterpret_cast<T>(m_deviceMemory.get());
     }
 
     /// @brief Retrieve opaque buffer const handle
@@ -25,15 +34,7 @@ protected:
     /// @return buffer handle
     template <typename T>
     T deviceMemory() const {
-        return reinterpret_cast<T>(m_deviceMemory);
-    }
-
-    /// @brief Retrieve opaque buffer handle pointer
-    /// @tparam T cast to T type
-    /// @return buffer handle pointer
-    template <typename T>
-    T deviceMemoryPtr() {
-        return reinterpret_cast<T>(&m_deviceMemory);
+        return reinterpret_cast<T>(m_deviceMemory.get());
     }
 
     /// @brief Return buffer as a new type, used for C -> C++ bindings
@@ -42,22 +43,26 @@ protected:
 #if R3_VULKAN
     template <typename T>
     constexpr T deviceMemoryAs() {
-        return T(reinterpret_cast<T::NativeType>(m_deviceMemory));
+        CHECK(validDeviceMemory());
+        return T(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
     }
 
     template <typename T>
     constexpr T deviceMemoryAs() const {
-        return T(reinterpret_cast<const T::NativeType>(m_deviceMemory));
+        CHECK(validDeviceMemory());
+        return T(reinterpret_cast<const T::NativeType>(m_deviceMemory.get()));
     }
 #else
     template <typename T>
     constexpr T deviceMemoryAs() {
-        return T(m_deviceMemory);
+        CHECK(validDeviceMemory());
+        return T(*m_deviceMemory);
     }
 
     template <typename T>
     constexpr T deviceMemoryAs() const {
-        return T(m_deviceMemory);
+        CHECK(validDeviceMemory());
+        return T(*m_deviceMemory);
     }
 #endif
 
@@ -67,7 +72,7 @@ protected:
 
 private:
     // points to device (GPU) memory allocated for buffer
-    Handle m_deviceMemory;
+    Ref<std::remove_pointer_t<Handle>> m_deviceMemory;
 };
 
 } // namespace R3

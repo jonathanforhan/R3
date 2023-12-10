@@ -6,13 +6,16 @@
 namespace R3 {
 
 struct FenceSpecification {
-    const LogicalDevice* logicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
 };
 
 class Fence : public NativeRenderObject {
 public:
-    void create(const FenceSpecification& spec);
-    void destroy();
+    Fence() = default;
+    Fence(const FenceSpecification& spec);
+    Fence(Fence&&) noexcept = default;
+    Fence& operator=(Fence&&) noexcept = default;
+    ~Fence();
 
 private:
     FenceSpecification m_spec;

@@ -18,12 +18,8 @@
 
 namespace R3 {
 
-void Swapchain::create(const SwapchainSpecification& spec) {
-    CHECK(spec.physicalDevice != nullptr);
-    CHECK(spec.surface != nullptr);
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.window != nullptr);
-    m_spec = spec;
+Swapchain::Swapchain(const SwapchainSpecification& spec)
+    : m_spec(spec) {
 
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
         m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
@@ -73,7 +69,7 @@ void Swapchain::create(const SwapchainSpecification& spec) {
 
     m_imageViews.resize(m_images.size());
     for (usize i = 0; i < m_images.size(); i++) {
-        m_imageViews[i].create({
+        m_imageViews[i] = ImageView({
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .image = &m_images[i],
@@ -137,15 +133,13 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
     });
 
     for (usize i = 0; i < m_images.size(); i++) {
-        m_imageViews[i].destroy();
-        m_imageViews[i].create({
+        m_imageViews[i] = ImageView({
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .image = &m_images[i],
         });
 
-        framebuffers[i].destroy();
-        framebuffers[i].create({
+        framebuffers[i] = Framebuffer({
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .imageView = &m_imageViews[i],
@@ -154,11 +148,10 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
     }
 }
 
-void Swapchain::destroy() {
-    for (auto& imageView : m_imageViews) {
-        imageView.destroy();
+Swapchain::~Swapchain() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(as<vk::SwapchainKHR>());
     }
-    m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(as<vk::SwapchainKHR>());
 }
 
 } // namespace R3

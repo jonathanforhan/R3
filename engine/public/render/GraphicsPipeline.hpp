@@ -1,4 +1,5 @@
 #pragma once
+
 #include <string_view>
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -7,18 +8,21 @@
 namespace R3 {
 
 struct GraphicsPipelineSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
-    const RenderPass* renderPass;
-    const PipelineLayout* pipelineLayout;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
+    Ref<const RenderPass> renderPass;
+    Ref<const PipelineLayout> pipelineLayout;
     std::string_view vertexShaderPath;
     std::string_view fragmentShaderPath;
 };
 
 class GraphicsPipeline : public NativeRenderObject {
 public:
-    void create(const GraphicsPipelineSpecification& spec);
-    void destroy();
+    GraphicsPipeline() = default;
+    GraphicsPipeline(const GraphicsPipelineSpecification& spec);
+    GraphicsPipeline(GraphicsPipeline&&) noexcept = default;
+    GraphicsPipeline& operator=(GraphicsPipeline&&) noexcept = default;
+    ~GraphicsPipeline();
 
 private:
     GraphicsPipelineSpecification m_spec;

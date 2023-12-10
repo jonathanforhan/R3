@@ -1,6 +1,8 @@
 #pragma once
 
+#include <span>
 #include <vector>
+#include "api/Types.hpp"
 #include "render/CommandBuffer.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -14,19 +16,22 @@ enum class CommandPoolFlags {
 };
 
 struct CommandPoolSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
     CommandPoolFlags flags;
     uint32 commandBufferCount;
 };
 
 class CommandPool : public NativeRenderObject {
 public:
-    void create(const CommandPoolSpecification& spec);
-    void destroy();
+    CommandPool() = default;
+    CommandPool(const CommandPoolSpecification& spec);
+    CommandPool(CommandPool&&) noexcept = default;
+    CommandPool& operator=(CommandPool&&) noexcept = default;
+    ~CommandPool();
 
-    std::vector<CommandBuffer>& commandBuffers() { return m_commandBuffers; }
-    const std::vector<CommandBuffer>& commandBuffers() const { return m_commandBuffers; }
+    std::span<CommandBuffer> commandBuffers() { return m_commandBuffers; }
+    std::span<const CommandBuffer> commandBuffers() const { return m_commandBuffers; }
 
 private:
     CommandPoolSpecification m_spec;

@@ -9,11 +9,8 @@
 
 namespace R3 {
 
-void DescriptorPool::create(const DescriptorPoolSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.descriptorSetLayout != nullptr);
-    m_spec = spec;
-
+DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
+    : m_spec(spec) {
     vk::DescriptorPoolSize descriptorPoolSize = {
         .type = vk::DescriptorType::eUniformBuffer,
         .descriptorCount = m_spec.descriptorSetCount,
@@ -38,9 +35,10 @@ void DescriptorPool::create(const DescriptorPoolSpecification& spec) {
     });
 }
 
-void DescriptorPool::destroy() {
-    DescriptorSet::free(m_descriptorSets);
-    m_spec.logicalDevice->as<vk::Device>().destroyDescriptorPool(as<vk::DescriptorPool>());
+DescriptorPool::~DescriptorPool() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorPool(as<vk::DescriptorPool>());
+    }
 }
 
 } // namespace R3

@@ -10,11 +10,8 @@
 
 namespace R3 {
 
-void ImageView::create(const ImageViewSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    CHECK(spec.image != nullptr);
-    m_spec = spec;
+ImageView::ImageView(const ImageViewSpecification& spec)
+    : m_spec(spec) {
 
     vk::ImageViewCreateInfo imageViewCreateInfo = {
         .sType = vk::StructureType::eImageViewCreateInfo,
@@ -43,8 +40,10 @@ void ImageView::create(const ImageViewSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createImageView(imageViewCreateInfo));
 }
 
-void ImageView::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyImageView(as<vk::ImageView>());
+ImageView::~ImageView() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyImageView(as<vk::ImageView>());
+    }
 }
 
 } // namespace R3

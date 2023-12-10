@@ -10,10 +10,8 @@
 
 namespace R3 {
 
-void RenderPass::create(const RenderPassSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    m_spec = spec;
+RenderPass::RenderPass(const RenderPassSpecification& spec)
+    : m_spec(spec) {
 
     vk::AttachmentDescription colorAttachment = {
         .flags = {},
@@ -70,8 +68,10 @@ void RenderPass::create(const RenderPassSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
 }
 
-void RenderPass::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyRenderPass(as<vk::RenderPass>());
+RenderPass::~RenderPass() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyRenderPass(as<vk::RenderPass>());
+    }
 }
 
 } // namespace R3

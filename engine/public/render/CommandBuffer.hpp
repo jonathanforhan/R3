@@ -2,6 +2,7 @@
 
 #include <span>
 #include <vector>
+#include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -15,9 +16,9 @@ enum class CommandBufferFlags {
 };
 
 struct CommandBufferSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
-    const CommandPool* commandPool;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
+    Ref<const CommandPool> commandPool;
     uint32 commandBufferCount;
 };
 

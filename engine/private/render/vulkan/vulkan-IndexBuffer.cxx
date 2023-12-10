@@ -11,12 +11,9 @@
 namespace R3 {
 
 template <std::integral T>
-void IndexBuffer<T>::create(const IndexBufferSpecification<T>& spec) {
-    CHECK(spec.physicalDevice != nullptr);
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.commandPool != nullptr);
-    m_spec = spec;
-    m_indexCount = static_cast<uint32>(spec.indices.size());
+IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
+    : m_spec(spec),
+      m_indexCount(static_cast<uint32>(spec.indices.size())) {
 
     // staging buffer, CPU writable
     auto [stagingBuffer, stagingMemory] =
@@ -49,9 +46,11 @@ void IndexBuffer<T>::create(const IndexBufferSpecification<T>& spec) {
 }
 
 template <std::integral T>
-void IndexBuffer<T>::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
-    m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+IndexBuffer<T>::~IndexBuffer() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+    }
 }
 
 template class IndexBuffer<uint32>;

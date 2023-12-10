@@ -14,6 +14,7 @@ namespace R3 {
 
 namespace local {
 
+#if R3_VALIDATION_LAYERS_ENABLED
 static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                                                               VkDebugUtilsMessageTypeFlagsEXT messageType,
                                                               const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
@@ -41,11 +42,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
     return VK_FALSE;
 }
+#endif // R3_VALIDATION_LAYERS
 
 } // namespace local
 
-void Instance::create(const InstanceSpecification& spec) {
-    m_spec = spec;
+Instance::Instance(const InstanceSpecification& spec)
+    : m_spec(spec) {
 
     vk::ApplicationInfo applicationInfo = {
         .sType = vk::StructureType::eApplicationInfo,
@@ -69,7 +71,7 @@ void Instance::create(const InstanceSpecification& spec) {
             vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose | vk::DebugUtilsMessageSeverityFlagBitsEXT::eInfo |
             vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
         .messageType =
-#if R3_LOG_EXTENDED_RENDER_INFO
+#if R3_LOG_GENERAL_RENDER_INFO
             vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral |
 #endif
             vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
@@ -102,11 +104,13 @@ void Instance::create(const InstanceSpecification& spec) {
     setHandle(vk::createInstance(instanceCreateInfo));
 }
 
-void Instance::destroy() {
-    as<vk::Instance>().destroy();
+Instance::~Instance() {
+    if (validHandle()) {
+        as<vk::Instance>().destroy();
+    }
 }
 
-bool Instance::checkExtensionSupport(const std::vector<const char*>& requiredExtensions) const {
+bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) const {
     std::vector<vk::ExtensionProperties> instanceExtensions = vk::enumerateInstanceExtensionProperties();
 
     for (const auto& requiredExtension : requiredExtensions) {
@@ -122,7 +126,7 @@ bool Instance::checkExtensionSupport(const std::vector<const char*>& requiredExt
     return true;
 }
 
-bool Instance::checkValidationLayerSupport(const std::vector<const char*>& requiredValidationLayers) const {
+bool Instance::checkValidationLayerSupport(std::span<const char*> requiredValidationLayers) const {
     std::vector<vk::LayerProperties> validationLayers = vk::enumerateInstanceLayerProperties();
 
     for (const char* requiredValidationLayer : requiredValidationLayers) {

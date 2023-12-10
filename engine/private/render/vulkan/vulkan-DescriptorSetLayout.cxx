@@ -7,9 +7,8 @@
 
 namespace R3 {
 
-void DescriptorSetLayout::create(const DescriptorSetLayoutSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    m_spec = spec;
+DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
+    : m_spec(spec) {
 
     vk::DescriptorSetLayoutBinding descriptorSetLayoutBinding = {
         .binding = 0,
@@ -30,8 +29,10 @@ void DescriptorSetLayout::create(const DescriptorSetLayoutSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
 }
 
-void DescriptorSetLayout::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyDescriptorSetLayout(as<vk::DescriptorSetLayout>());
+DescriptorSetLayout::~DescriptorSetLayout() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorSetLayout(as<vk::DescriptorSetLayout>());
+    }
 }
 
 } // namespace R3

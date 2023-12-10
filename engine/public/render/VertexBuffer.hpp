@@ -8,16 +8,19 @@
 namespace R3 {
 
 struct VertexBufferSpecification {
-    const PhysicalDevice* physicalDevice;
-    const LogicalDevice* logicalDevice;
-    const CommandPool* commandPool;
-    std::span<Vertex> vertices;
+    Ref<const PhysicalDevice> physicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const CommandPool> commandPool;
+    std::span<const Vertex> vertices;
 };
 
 class VertexBuffer : public Buffer {
 public:
-    void create(const VertexBufferSpecification& spec);
-    void destroy();
+    VertexBuffer() = default;
+    VertexBuffer(const VertexBufferSpecification& spec);
+    VertexBuffer(VertexBuffer&&) noexcept = default;
+    VertexBuffer& operator=(VertexBuffer&&) noexcept = default;
+    ~VertexBuffer();
 
     uint32 vertexCount() const { return m_vertexCount; }
 

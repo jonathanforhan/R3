@@ -13,8 +13,9 @@ struct WindowSpecification {
 /// @brief Window class to abstract window operations
 class Window : public NativeRenderObject {
 public:
-    void create(const WindowSpecification& spec);
-    void destroy();
+    Window() = default;
+    Window(const WindowSpecification& spec);
+    ~Window();
 
     /// @brief Present Window
     void show();

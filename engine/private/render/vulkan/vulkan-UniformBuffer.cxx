@@ -9,12 +9,8 @@
 
 namespace R3 {
 
-void UniformBuffer::create(const UniformBufferSpecification& spec) {
-    CHECK(spec.physicalDevice != nullptr);
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.bufferSize != 0);
-    m_spec = spec;
-
+UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
+    : m_spec(spec) {
     auto [buffer, memory] =
         Buffer::allocate(*m_spec.logicalDevice,
                          *m_spec.physicalDevice,
@@ -28,16 +24,17 @@ void UniformBuffer::create(const UniformBufferSpecification& spec) {
     setDeviceMemory(memory);
 }
 
-void UniformBuffer::update(void* buffer, usize size) {
-    CHECK(buffer != nullptr);
-    CHECK(size <= m_spec.bufferSize);
-    memcpy(m_mappedMemory, buffer, size);
+UniformBuffer::~UniformBuffer() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().unmapMemory(deviceMemoryAs<vk::DeviceMemory>());
+        m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+    }
 }
 
-void UniformBuffer::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().unmapMemory(deviceMemoryAs<vk::DeviceMemory>());
-    m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
-    m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+void UniformBuffer::update(Ref<void> buffer, usize size) {
+    CHECK(size <= m_spec.bufferSize);
+    memcpy(m_mappedMemory, buffer, size);
 }
 
 } // namespace R3

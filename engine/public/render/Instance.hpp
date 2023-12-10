@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 #include "render/NativeRenderObject.hpp"
 
@@ -17,16 +18,15 @@ struct InstanceSpecification {
 /// @brief Many graphics APIs have a concept of instance, or per-application state, this wraps those instances
 class Instance : public NativeRenderObject {
 public:
-    /// @brief Create Instance, this is where instance extensions and validation is setup
-    /// @param spec
-    void create(const InstanceSpecification& spec);
-
-    /// @brief Free Instance
-    void destroy();
+    Instance() = default;
+    Instance(const InstanceSpecification& spec);
+    Instance(Instance&&) noexcept = default;
+    Instance& operator=(Instance&&) noexcept = default;
+    ~Instance();
 
 private:
-    bool checkExtensionSupport(const std::vector<const char*>& requiredExtensions) const;
-    bool checkValidationLayerSupport(const std::vector<const char*>& requiredValidationLayers) const;
+    bool checkExtensionSupport(std::span<const char*> requiredExtensions) const;
+    bool checkValidationLayerSupport(std::span<const char*> requiredValidationLayers) const;
 
 private:
     InstanceSpecification m_spec;

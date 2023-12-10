@@ -12,11 +12,8 @@
 
 namespace R3 {
 
-void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
-    CHECK(spec.instance != nullptr);
-    CHECK(spec.surface != nullptr);
-    CHECK(spec.physicalDevice != nullptr);
-    m_spec = spec;
+LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
+    : m_spec(spec) {
 
     auto queueFamilyIndices = QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
     CHECK(queueFamilyIndices.isValid());
@@ -42,7 +39,7 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
 
     vk::PhysicalDeviceFeatures physicalDeviceFeatures = {};
 
-    const std::vector<const char*>& deviceExtensions = m_spec.physicalDevice->extensions();
+    std::span<const char* const> deviceExtensions = m_spec.physicalDevice->extensions();
 
     vk::DeviceCreateInfo logicalDeviceCreateInfo = {
         .sType = vk::StructureType::eDeviceCreateInfo,
@@ -71,8 +68,10 @@ void LogicalDevice::create(const LogicalDeviceSpecification& spec) {
     });
 }
 
-void LogicalDevice::destroy() {
-    as<vk::Device>().destroy();
+LogicalDevice::~LogicalDevice() {
+    if (validHandle()) {
+        as<vk::Device>().destroy();
+    }
 }
 
 } // namespace R3

@@ -10,10 +10,6 @@
 namespace R3 {
 
 std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-
-
     std::vector<vk::Image> swapchainImages =
         spec.logicalDevice->as<vk::Device>().getSwapchainImagesKHR(spec.swapchain->as<vk::SwapchainKHR>());
 

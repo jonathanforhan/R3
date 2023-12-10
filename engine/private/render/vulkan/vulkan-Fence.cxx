@@ -8,9 +8,8 @@
 
 namespace R3 {
 
-void Fence::create(const FenceSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    m_spec = spec;
+Fence::Fence(const FenceSpecification& spec)
+    : m_spec(spec) {
 
     vk::FenceCreateInfo fenceCreateInfo = {
         .sType = vk::StructureType::eFenceCreateInfo,
@@ -21,8 +20,10 @@ void Fence::create(const FenceSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createFence(fenceCreateInfo));
 }
 
-void Fence::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyFence(as<vk::Fence>());
+Fence::~Fence() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyFence(as<vk::Fence>());
+    }
 }
 
 } // namespace R3

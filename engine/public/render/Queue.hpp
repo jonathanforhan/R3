@@ -1,5 +1,6 @@
 #pragma once
 
+#include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -35,9 +36,9 @@ public:
 
 /// @brief Queue Specification
 struct QueueSpecification {
-    const LogicalDevice* logicalDevice; ///< @brief Valid non-null LogicalDevice
-    QueueType queueType;                ///< @brief type of queue to create
-    uint32 queueIndex;                  ///< Index of queue as gotten through QueueFamilyIndices::query(...);
+    Ref<const LogicalDevice> logicalDevice; ///< @brief Valid non-null LogicalDevice
+    QueueType queueType;                    ///< @brief type of queue to create
+    uint32 queueIndex;                      ///< Index of queue as gotten through QueueFamilyIndices::query(...);
 };
 
 /// @brief Device Queue, lives of the hardware

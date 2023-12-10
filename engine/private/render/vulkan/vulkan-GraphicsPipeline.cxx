@@ -13,19 +13,15 @@
 
 namespace R3 {
 
-void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    CHECK(spec.renderPass != nullptr);
-    CHECK(spec.pipelineLayout != nullptr);
-    m_spec = spec;
+GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
+    : m_spec(spec) {
 
-    m_vertexShader.create({
+    m_vertexShader = Shader({
         .logicalDevice = m_spec.logicalDevice,
         .path = m_spec.vertexShaderPath
     });
 
-    m_fragmentShader.create({
+    m_fragmentShader = Shader({
         .logicalDevice = m_spec.logicalDevice,
         .path = m_spec.fragmentShaderPath
     });
@@ -267,10 +263,10 @@ void GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
     setHandle(r.value);
 }
 
-void GraphicsPipeline::destroy() {
-    m_vertexShader.destroy();
-    m_fragmentShader.destroy();
-    m_spec.logicalDevice->as<vk::Device>().destroyPipeline(as<vk::Pipeline>());
+GraphicsPipeline::~GraphicsPipeline() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyPipeline(as<vk::Pipeline>());
+    }
 }
 
 } // namespace R3

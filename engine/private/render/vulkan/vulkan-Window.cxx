@@ -13,9 +13,8 @@
 
 namespace R3 {
 
-void Window::create(const WindowSpecification& spec) {
-    m_spec = spec;
-
+Window::Window(const WindowSpecification& spec)
+    : m_spec(spec) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -49,7 +48,7 @@ void Window::create(const WindowSpecification& spec) {
     });
 }
 
-void Window::destroy() {
+Window::~Window() {
     glfwDestroyWindow(handle<GLFWwindow*>());
     glfwTerminate();
 }

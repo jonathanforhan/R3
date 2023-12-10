@@ -6,14 +6,17 @@
 namespace R3 {
 
 struct PipelineLayoutSpecification {
-    const LogicalDevice* logicalDevice;
-    const DescriptorSetLayout* descriptorSetLayout;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const DescriptorSetLayout> descriptorSetLayout;
 };
 
 class PipelineLayout : public NativeRenderObject {
 public:
-    void create(const PipelineLayoutSpecification& spec);
-    void destroy();
+    PipelineLayout() = default;
+    PipelineLayout(const PipelineLayoutSpecification& spec);
+    PipelineLayout(PipelineLayout&&) noexcept = default;
+    PipelineLayout& operator=(PipelineLayout&&) noexcept = default;
+    ~PipelineLayout();
 
 private:
     PipelineLayoutSpecification m_spec;

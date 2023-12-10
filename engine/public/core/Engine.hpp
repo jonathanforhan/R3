@@ -13,9 +13,9 @@ private:
 
 public:
     Engine(const Engine&) = delete;
-    void operator=(const Engine&) = delete;
-
-    ~Engine();
+    Engine(Engine&&) = delete;
+    Engine& operator=(const Engine&) = delete;
+    Engine& operator=(Engine&&) = delete;
 
     /// @brief Add scene to scene-map by name
     /// @param name name of scene

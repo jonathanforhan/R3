@@ -24,15 +24,20 @@
 namespace R3 {
 
 struct RendererSpecification {
-    Window* window;
+    Window& window;
 };
 
 class Renderer {
 public:
-    void create(RendererSpecification spec);
-    void destroy();
+    Renderer() = default;
+    Renderer(RendererSpecification spec);
+    Renderer(const Renderer&) = delete;
+    Renderer(Renderer&&) noexcept = default;
+    Renderer& operator=(const Renderer&) = delete;
+    Renderer& operator=(Renderer&&) noexcept = default;
 
     void render();
+    void waitIdle() const;
 
 private:
     Instance m_instance;

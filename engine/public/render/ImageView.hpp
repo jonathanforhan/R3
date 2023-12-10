@@ -7,15 +7,18 @@
 namespace R3 {
 
 struct ImageViewSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
-    const Image* image;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
+    Ref<const Image> image;
 };
 
 class ImageView : public NativeRenderObject {
 public:
-    void create(const ImageViewSpecification& spec);
-    void destroy();
+    ImageView() = default;
+    ImageView(const ImageViewSpecification& spec);
+    ImageView(ImageView&&) noexcept = default;
+    ImageView& operator=(ImageView&&) noexcept = default;
+    ~ImageView();
 
 private:
     ImageViewSpecification m_spec;

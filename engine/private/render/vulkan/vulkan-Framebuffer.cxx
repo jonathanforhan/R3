@@ -11,12 +11,8 @@
 
 namespace R3 {
 
-void Framebuffer::create(const FramebufferSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    CHECK(spec.imageView != nullptr);
-    CHECK(spec.renderPass != nullptr);
-    m_spec = spec;
+Framebuffer::Framebuffer(const FramebufferSpecification& spec)
+    : m_spec(spec) {
 
     vk::ImageView imageView = m_spec.imageView->handle<VkImageView>();
     vk::ImageView attachments[] = {
@@ -38,8 +34,10 @@ void Framebuffer::create(const FramebufferSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createFramebuffer(framebufferCreateInfo));
 }
 
-void Framebuffer::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyFramebuffer(as<vk::Framebuffer>());
+Framebuffer::~Framebuffer() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyFramebuffer(as<vk::Framebuffer>());
+    }
 }
 
 } // namespace R3

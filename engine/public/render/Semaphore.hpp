@@ -6,13 +6,16 @@
 namespace R3 {
     
 struct SemaphoreSpecification {
-    const LogicalDevice* logicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
 };
 
 class Semaphore : public NativeRenderObject {
 public:
-    void create(const SemaphoreSpecification& spec);
-    void destroy();
+    Semaphore() = default;
+    Semaphore(const SemaphoreSpecification& spec);
+    Semaphore(Semaphore&&) noexcept = default;
+    Semaphore& operator=(Semaphore&&) noexcept = default;
+    ~Semaphore();
 
 private:
     SemaphoreSpecification m_spec;

@@ -13,10 +13,6 @@
 namespace R3 {
 
 std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.descriptorPool != nullptr);
-    CHECK(spec.descriptorSetLayout != nullptr);
-
     std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(spec.descriptorSetCount,
                                                               spec.descriptorSetLayout->as<vk::DescriptorSetLayout>());
 
@@ -42,7 +38,7 @@ std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecificat
     return descriptorSets;
 }
 
-void DescriptorSet::free(std::vector<DescriptorSet>& descriptorSets) {
+void DescriptorSet::free(const std::span<DescriptorSet> descriptorSets) {
     std::vector<vk::DescriptorSet> sets;
     for (const auto& descriptorSet : descriptorSets) {
         sets.push_back(descriptorSet.as<vk::DescriptorSet>());

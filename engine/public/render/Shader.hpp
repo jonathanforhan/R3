@@ -17,14 +17,17 @@ enum class ShaderType {
 };
 
 struct ShaderSpecification {
-    const LogicalDevice* logicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
     std::string_view path;
 };
 
 class Shader : public NativeRenderObject {
 public:
-    void create(const ShaderSpecification& spec);
-    void destroy();
+    Shader() = default;
+    Shader(const ShaderSpecification& spec);
+    Shader(Shader&&) noexcept = default;
+    Shader& operator=(Shader&&) noexcept = default;
+    ~Shader();
 
 private:
     ShaderSpecification m_spec;

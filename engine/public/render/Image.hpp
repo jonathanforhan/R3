@@ -1,4 +1,5 @@
 #pragma once
+
 #include <vector>
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -6,8 +7,8 @@
 namespace R3 {
 
 struct ImageSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
 };
 
 class Image : public NativeRenderObject {

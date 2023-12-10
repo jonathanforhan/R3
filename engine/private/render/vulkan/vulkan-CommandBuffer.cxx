@@ -36,10 +36,6 @@ static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(Command
 } // namespace local
 
 std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    CHECK(spec.commandPool != nullptr);
-
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,

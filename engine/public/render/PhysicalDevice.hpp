@@ -1,6 +1,8 @@
 #pragma once
 
+#include <span>
 #include <vector>
+#include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -8,18 +10,18 @@ namespace R3 {
 
 /// @brief Physical Device Specification
 struct PhysicalDeviceSpecification {
-    const Instance* instance;            ///< @brief Valid non-null Instance
-    const Surface* surface;              ///< @brief Valid non-null Surface
+    Ref<const Instance> instance;        ///< @brief Valid non-null Instance
+    Ref<const Surface> surface;          ///< @brief Valid non-null Surface
     std::vector<const char*> extensions; ///< @brief GPU extensions
 };
 
 /// @brief Abstraction over API specific representation of Hardware/GPU
 class PhysicalDevice : public NativeRenderObject {
 public:
-    /// @brief Select the optimal physical device to use for rendering
-    /// @param spec
-    void select(const PhysicalDeviceSpecification& spec);
-
+    PhysicalDevice() = default;
+    PhysicalDevice(const PhysicalDeviceSpecification& spec);
+    PhysicalDevice(PhysicalDevice&&) noexcept = default;
+    PhysicalDevice& operator=(PhysicalDevice&&) noexcept = default;
 
     /// @brief Query the PhysicalDevice memory properties to find memory type
     /// this is a Vulkanism and may well be noops in other APIs
@@ -30,7 +32,7 @@ public:
 
     /// @brief Query GPU Extensions
     /// @return extensions
-    const std::vector<const char*>& extensions() const { return m_spec.extensions; }
+    std::span<const char* const> extensions() const { return m_spec.extensions; }
 
 private:
     // ranks GPU based on several factor to determine best fit

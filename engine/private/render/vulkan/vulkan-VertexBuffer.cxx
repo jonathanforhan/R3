@@ -10,11 +10,8 @@
 
 namespace R3 {
 
-void VertexBuffer::create(const VertexBufferSpecification& spec) {
-    CHECK(spec.physicalDevice != nullptr);
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.commandPool != nullptr);
-    m_spec = spec;
+VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
+    : m_spec(spec) {
     m_vertexCount = static_cast<uint32>(spec.vertices.size());
 
     // staging buffer, CPU writable
@@ -47,9 +44,11 @@ void VertexBuffer::create(const VertexBufferSpecification& spec) {
     setDeviceMemory(memory);
 }
 
-void VertexBuffer::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
-    m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+VertexBuffer::~VertexBuffer() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+    }
 }
 
 } // namespace R3

@@ -4,22 +4,9 @@
 namespace R3 {
 
 Engine::Engine()
-    : m_window(),
-      m_renderer(),
-      m_activeScene(nullptr) {
-    m_window.create({
-        .title = "R3",
-    });
-
-    m_renderer.create({
-        .window = &m_window,
-    });
-}
-
-Engine::~Engine() {
-    m_renderer.destroy();
-    m_window.destroy();
-}
+    : m_window({.title = "R3"}),
+      m_renderer({.window = m_window}),
+      m_activeScene(nullptr) {}
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
     auto& engine = Engine::inst();
@@ -65,6 +52,7 @@ void Engine::loop() {
         // engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_window.update();
     }
+    engine.m_renderer.waitIdle();
 }
 
 Engine& Engine::inst() {

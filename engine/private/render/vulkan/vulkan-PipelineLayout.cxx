@@ -9,10 +9,8 @@
 
 namespace R3 {
 
-void PipelineLayout::create(const PipelineLayoutSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.descriptorSetLayout != nullptr);
-    m_spec = spec;
+PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
+    : m_spec(spec) {
 
     vk::DescriptorSetLayout descriptorSetLayouts[] = {
         m_spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
@@ -31,8 +29,10 @@ void PipelineLayout::create(const PipelineLayoutSpecification& spec) {
     setHandle(m_spec.logicalDevice->as<vk::Device>().createPipelineLayout(pipelineLayoutCreateInfo));
 }
 
-void PipelineLayout::destroy() {
-    m_spec.logicalDevice->as<vk::Device>().destroyPipelineLayout(as<vk::PipelineLayout>());
+PipelineLayout::~PipelineLayout() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyPipelineLayout(as<vk::PipelineLayout>());
+    }
 }
 
 } // namespace R3

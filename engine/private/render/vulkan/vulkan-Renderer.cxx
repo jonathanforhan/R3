@@ -17,10 +17,8 @@
 
 namespace R3 {
 
-void Renderer::create(RendererSpecification spec) {
-    CHECK(spec.window != nullptr);
-    m_spec = spec;
-
+Renderer::Renderer(RendererSpecification spec)
+    : m_spec(spec) {
     //--- Instance Extensions
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -34,20 +32,20 @@ void Renderer::create(RendererSpecification spec) {
 #endif
 
     //--- Instance
-    m_instance.create({
+    m_instance = Instance({
         .applicationName = "R3 Game Engine",
         .extensions = extensions,
         .validationLayers = validationLayers,
     });
 
     //--- Surface
-    m_surface.create({
+    m_surface = Surface({
         .instance = &m_instance,
-        .window = m_spec.window,
+        .window = &m_spec.window,
     });
 
     //--- Physical Device
-    m_physicalDevice.select({
+    m_physicalDevice = PhysicalDevice({
         .instance = &m_instance,
         .surface = &m_surface,
         .extensions =
@@ -57,46 +55,46 @@ void Renderer::create(RendererSpecification spec) {
     });
 
     //--- Logical Device and Queues
-    m_logicalDevice.create({
+    m_logicalDevice = LogicalDevice({
         .instance = &m_instance,
         .surface = &m_surface,
         .physicalDevice = &m_physicalDevice,
     });
 
     //--- Swapchain
-    m_swapchain.create({
+    m_swapchain = Swapchain({
         .physicalDevice = &m_physicalDevice,
         .surface = &m_surface,
         .logicalDevice = &m_logicalDevice,
-        .window = spec.window,
+        .window = &spec.window,
     });
 
     //--- RenderPass
-    m_renderPass.create({
+    m_renderPass = RenderPass({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
     });
 
     //--- DescriptorSetLayout
-    m_descriptorSetLayout.create({
+    m_descriptorSetLayout = DescriptorSetLayout({
         .logicalDevice = &m_logicalDevice,
     });
 
     //--- DescriptorPool
-    m_descriptorPool.create({
+    m_descriptorPool = DescriptorPool({
         .logicalDevice = &m_logicalDevice,
         .descriptorSetLayout = &m_descriptorSetLayout,
         .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
     });
 
     //--- Pipeline Layout
-    m_pipelineLayout.create({
+    m_pipelineLayout = PipelineLayout({
         .logicalDevice = &m_logicalDevice,
         .descriptorSetLayout = &m_descriptorSetLayout,
     });
 
     //--- Graphics Pipeline
-    m_graphicsPipeline.create({
+    m_graphicsPipeline = GraphicsPipeline({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .renderPass = &m_renderPass,
@@ -108,7 +106,7 @@ void Renderer::create(RendererSpecification spec) {
     //--- Framebuffers
     for (const auto& swapchainImageView : m_swapchain.imageViews()) {
         Framebuffer& framebuffer = m_framebuffers.emplace_back();
-        framebuffer.create({
+        framebuffer = Framebuffer({
             .logicalDevice = &m_logicalDevice,
             .swapchain = &m_swapchain,
             .imageView = &swapchainImageView,
@@ -117,13 +115,13 @@ void Renderer::create(RendererSpecification spec) {
     }
 
     //--- CommandPool and CommandBuffer
-    m_commandPool.create({
+    m_commandPool = CommandPool({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .flags = CommandPoolFlags::Reset,
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
-    m_commandPoolTransient.create({
+    m_commandPoolTransient = CommandPool({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .flags = CommandPoolFlags::Reset,
@@ -132,9 +130,9 @@ void Renderer::create(RendererSpecification spec) {
 
     //--- Synchronization
     for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_imageAvailable[i].create({.logicalDevice = &m_logicalDevice});
-        m_renderFinished[i].create({.logicalDevice = &m_logicalDevice});
-        m_inFlight[i].create({.logicalDevice = &m_logicalDevice});
+        m_imageAvailable[i] = Semaphore({.logicalDevice = &m_logicalDevice});
+        m_renderFinished[i] = Semaphore({.logicalDevice = &m_logicalDevice});
+        m_inFlight[i] = Fence({.logicalDevice = &m_logicalDevice});
     }
 
     //--- Test
@@ -158,15 +156,15 @@ void Renderer::create(RendererSpecification spec) {
     for (uint32 i = 0; i < 36; i++)
         indices32[i] = indices[i];
 
-    auto& v = m_vertexBuffers.emplace_back();
-    v.create({
+    auto& vertex = m_vertexBuffers.emplace_back();
+    vertex = VertexBuffer({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
-    auto& i = m_indexBuffers.emplace_back();
-    i.create({
+    auto& index = m_indexBuffers.emplace_back();
+    index = IndexBuffer<uint32>({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
@@ -176,56 +174,17 @@ void Renderer::create(RendererSpecification spec) {
 
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& uniformBuffer : m_uniformBuffers) {
-        uniformBuffer.create({
+        uniformBuffer = UniformBuffer({
             .physicalDevice = &m_physicalDevice,
             .logicalDevice = &m_logicalDevice,
             .bufferSize = sizeof(UniformBufferObject),
         });
     }
 
-    auto& descriptorSets = m_descriptorPool.descriptorSets();
+    auto descriptorSets = m_descriptorPool.descriptorSets();
     for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
         descriptorSets[i].bindUniform(m_uniformBuffers[i], 0);
     }
-}
-
-void Renderer::destroy() {
-    m_logicalDevice.as<vk::Device>().waitIdle();
-
-    for (auto& indexBuffer : m_indexBuffers) {
-        indexBuffer.destroy();
-    }
-
-    for (auto& vertexBuffer : m_vertexBuffers) {
-        vertexBuffer.destroy();
-    }
-
-    for (auto& uniformBuffer : m_uniformBuffers) {
-        uniformBuffer.destroy();
-    }
-
-    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_imageAvailable[i].destroy();
-        m_renderFinished[i].destroy();
-        m_inFlight[i].destroy();
-    }
-
-    m_commandPool.destroy();
-    m_commandPoolTransient.destroy();
-
-    for (auto& framebuffer : m_framebuffers) {
-        framebuffer.destroy();
-    }
-
-    m_graphicsPipeline.destroy();
-    m_pipelineLayout.destroy();
-    m_descriptorSetLayout.destroy();
-    m_descriptorPool.destroy();
-    m_renderPass.destroy();
-    m_swapchain.destroy();
-    m_logicalDevice.destroy();
-    m_surface.destroy();
-    m_instance.destroy();
 }
 
 void Renderer::render() {
@@ -310,8 +269,8 @@ void Renderer::render() {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (...) {
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-            m_spec.window->shouldResize()) {
-            m_spec.window->setShouldResize(false);
+            m_spec.window.shouldResize()) {
+            m_spec.window.setShouldResize(false);
             m_swapchain.recreate(m_framebuffers, m_renderPass);
         } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
@@ -319,6 +278,10 @@ void Renderer::render() {
     }
 
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Renderer::waitIdle() const {
+    m_logicalDevice.as<vk::Device>().waitIdle();
 }
 
 } // namespace R3

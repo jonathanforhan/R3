@@ -6,14 +6,17 @@
 namespace R3 {
 
 struct RenderPassSpecification {
-    const LogicalDevice* logicalDevice;
-    const Swapchain* swapchain;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const Swapchain> swapchain;
 };
 
 class RenderPass : public NativeRenderObject {
 public:
-    void create(const RenderPassSpecification& spec);
-    void destroy();
+    RenderPass() = default;
+    RenderPass(const RenderPassSpecification& spec);
+    RenderPass(RenderPass&&) noexcept = default;
+    RenderPass& operator=(RenderPass&&) noexcept = default;
+    ~RenderPass();
 
 private:
     RenderPassSpecification m_spec;

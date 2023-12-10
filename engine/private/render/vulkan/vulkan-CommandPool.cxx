@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
+#include "api/Log.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
@@ -26,10 +27,8 @@ static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoo
 
 } // namespace local
 
-void CommandPool::create(const CommandPoolSpecification& spec) {
-    CHECK(spec.logicalDevice != nullptr);
-    CHECK(spec.swapchain != nullptr);
-    m_spec = spec;
+CommandPool::CommandPool(const CommandPoolSpecification& spec)
+    : m_spec(spec) {
 
     vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
@@ -48,9 +47,10 @@ void CommandPool::create(const CommandPoolSpecification& spec) {
     });
 }
 
-void CommandPool::destroy() {
-    CommandBuffer::free(m_commandBuffers);
-    m_spec.logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
+CommandPool::~CommandPool() {
+    if (validHandle()) {
+        m_spec.logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
+    }
 }
 
 } // namespace R3

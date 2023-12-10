@@ -5,9 +5,9 @@
 namespace R3 {
 
 struct UniformBufferObject {
-    mat4 model;
-    mat4 view;
-    mat4 projection;
+    alignas(16) mat4 model;
+    alignas(16) mat4 view;
+    alignas(16) mat4 projection;
 };
 
 } // namespace R3
