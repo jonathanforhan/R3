@@ -22,9 +22,11 @@ UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
     auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // NOTE we DON'T unmap this memory because mapping isn't free and we write to it every frame
-    m_mappedMemory = m_spec.logicalDevice->as<vk::Device>().mapMemory((VkDeviceMemory)memory, 0, m_spec.bufferSize, {});
-    setHandle(buffer);
-    setDeviceMemory(memory);
+    m_mappedMemory =
+        m_spec.logicalDevice->as<vk::Device>().mapMemory(memory.as<vk::DeviceMemory>(), 0, m_spec.bufferSize, {});
+
+    setHandle(buffer.handle());
+    setDeviceMemory(memory.handle());
 }
 
 UniformBuffer::~UniformBuffer() {

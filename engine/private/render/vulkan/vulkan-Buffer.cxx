@@ -10,7 +10,7 @@
 
 namespace R3 {
 
-std::tuple<Buffer::Handle, DeviceMemory::Handle> Buffer::allocate(const BufferAllocateSpecification& spec) {
+std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const BufferAllocateSpecification& spec) {
     uint32 indices[]{
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
@@ -26,7 +26,7 @@ std::tuple<Buffer::Handle, DeviceMemory::Handle> Buffer::allocate(const BufferAl
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,
     };
-    VkBuffer buffer = spec.logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
+    auto buffer = spec.logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
 
     auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getBufferMemoryRequirements(buffer);
 
@@ -37,18 +37,18 @@ std::tuple<Buffer::Handle, DeviceMemory::Handle> Buffer::allocate(const BufferAl
         .memoryTypeIndex =
             spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
     };
-    VkDeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
+    auto memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
     spec.logicalDevice.as<vk::Device>().bindBufferMemory(buffer, memory, 0);
 
-    return {buffer, memory};
+    return {static_cast<VkBuffer>(buffer), static_cast<VkDeviceMemory>(memory)};
 }
 
 void Buffer::copy(const BufferCopySpecification& spec) {
     const auto& commandBuffer = spec.commandPool.commandBuffers().front();
     commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
     commandBuffer.as<vk::CommandBuffer>().copyBuffer(
-        (VkBuffer)spec.stagingBuffer.get(), (VkBuffer)spec.buffer.get(), {{.size = spec.size}});
+        spec.stagingBuffer.as<vk::Buffer>(), spec.buffer.as<vk::Buffer>(), {{.size = spec.size}});
     commandBuffer.endCommandBuffer();
 
     vk::CommandBuffer buffers[] = {commandBuffer.as<vk::CommandBuffer>()};

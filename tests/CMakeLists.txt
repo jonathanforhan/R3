@@ -20,10 +20,13 @@ function(TEST_PROJECT)
 	add_dependencies(${DIRNAME} COMPILE_SHADERS)
 endfunction()
 
+#[[
 file(GLOB SUBDIRS LIST_DIRECTORIES true "*")
 foreach (DIR ${SUBDIRS})
 	if (IS_DIRECTORY ${DIR})
 		add_subdirectory(${DIR})
 	endif ()
 endforeach ()
+]]
 
+add_subdirectory(vulkan)

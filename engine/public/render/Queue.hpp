@@ -30,8 +30,7 @@ public:
     /// @param physicalDeviceHandle Valid non-null handle to Physical Device
     /// @param surfaceHandle Valid non-null handle to Surface
     /// @return QueueFamilyIndices
-    static QueueFamilyIndices query(NativeRenderObject::Handle physicalDeviceHandle,
-                                    NativeRenderObject::Handle surfaceHandle);
+    static QueueFamilyIndices query(NativeRenderObject&& physicalDeviceHandle, NativeRenderObject&& surfaceHandle);
 };
 
 /// @brief Queue Specification

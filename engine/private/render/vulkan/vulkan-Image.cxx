@@ -25,7 +25,7 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
     return images;
 }
 
-std::tuple<Image::Handle, DeviceMemory::Handle> Image::allocate(const ImageAllocateSpecification& spec) {
+std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAllocateSpecification& spec) {
     uint32 indices[]{
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
@@ -54,7 +54,7 @@ std::tuple<Image::Handle, DeviceMemory::Handle> Image::allocate(const ImageAlloc
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    VkImage image = spec.logicalDevice.as<vk::Device>().createImage(imageCreateInfo);
+    vk::Image image = spec.logicalDevice.as<vk::Device>().createImage(imageCreateInfo);
 
     auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getImageMemoryRequirements(image);
 
@@ -65,11 +65,11 @@ std::tuple<Image::Handle, DeviceMemory::Handle> Image::allocate(const ImageAlloc
         .memoryTypeIndex =
             spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
     };
-    VkDeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
+    vk::DeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
     spec.logicalDevice.as<vk::Device>().bindImageMemory(image, memory, 0);
 
-    return {image, memory};
+    return {static_cast<VkImage>(image), static_cast<VkDeviceMemory>(memory)};
 }
 
 void Image::copy(const ImageCopySpecification& spec) {
@@ -98,8 +98,10 @@ void Image::copy(const ImageCopySpecification& spec) {
                 },
         };
 
-        commandBuffer.as<vk::CommandBuffer>().copyBufferToImage(
-            (VkBuffer)spec.src.get(), (VkImage)spec.dst.get(), vk::ImageLayout::eTransferDstOptimal, {bufferImageCopy});
+        commandBuffer.as<vk::CommandBuffer>().copyBufferToImage(spec.src.as<vk::Buffer>(),
+                                                                spec.dst.as<vk::Image>(),
+                                                                vk::ImageLayout::eTransferDstOptimal,
+                                                                {bufferImageCopy});
     } else if (spec.copyType == ImageCopyType::Image) {
         vk::ImageCopy imageCopy = {
             .srcSubresource =
@@ -125,9 +127,9 @@ void Image::copy(const ImageCopySpecification& spec) {
                     .depth = 1,
                 },
         };
-        commandBuffer.as<vk::CommandBuffer>().copyImage((VkImage)spec.src.get(),
+        commandBuffer.as<vk::CommandBuffer>().copyImage(spec.src.as<vk::Image>(),
                                                         vk::ImageLayout::eTransferSrcOptimal,
-                                                        (VkImage)spec.dst.get(),
+                                                        spec.dst.as<vk::Image>(),
                                                         vk::ImageLayout::eTransferDstOptimal,
                                                         {imageCopy});
     }

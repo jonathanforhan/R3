@@ -1,5 +1,6 @@
 #include "Engine.hpp"
 #include <chrono>
+#include "api/Log.hpp"
 
 namespace R3 {
 
@@ -50,6 +51,7 @@ void Engine::loop() {
         // engine.m_renderer.predraw();
         engine.m_renderer.render();
         // engine.m_activeScene->runSystems(engine.deltaTime());
+        // engine.deltaTime();
         engine.m_window.update();
     }
     engine.m_renderer.waitIdle();
@@ -66,8 +68,13 @@ double Engine::deltaTime() const {
     static auto s_prev = system_clock::now();
     auto now = system_clock::now();
     double dt = duration<double>(now - s_prev).count();
-    // LOG(Verbose, "Delta Time mircoseconds:", duration_cast<microseconds>(now - s_prev).count(), " -- Engine.cpp
-    // line", __LINE__);
+#if 1
+    LOG(Verbose,
+        "Delta Time mircoseconds:",
+        duration_cast<microseconds>(now - s_prev).count(),
+        " -- Engine.cpp line",
+        __LINE__);
+#endif
     s_prev = now;
     return dt;
 }

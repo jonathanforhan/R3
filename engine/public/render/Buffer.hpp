@@ -17,8 +17,8 @@ struct BufferAllocateSpecification {
 struct BufferCopySpecification {
     const LogicalDevice& logicalDevice;
     const CommandPool& commandPool;
-    NativeRenderObject::HandleRef buffer;
-    NativeRenderObject::HandleConstRef stagingBuffer;
+    NativeRenderObject& buffer;
+    const NativeRenderObject& stagingBuffer;
     usize size;
 };
 
@@ -29,7 +29,8 @@ protected:
     /// @brief Allocate a Buffer with given flags
     /// @param spec 
     /// @return tuple<Buffer::Handle, DeviceMemory::Handle>
-    [[nodiscard]] static std::tuple<Handle, Handle> allocate(const BufferAllocateSpecification& spec);
+    [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
+        const BufferAllocateSpecification& spec);
 
     /// @brief Copy stagingBuffer to buffer
     /// @param spec 

@@ -30,15 +30,12 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     ENSURE(validHandle() && bestScore >= 0);
 }
 
-int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
-    VkPhysicalDevice physicalDevice = (VkPhysicalDevice)deviceHandle;
-    VkSurfaceKHR surface = m_spec.surface->handle<VkSurfaceKHR>();
+int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) const {
+    vk::PhysicalDevice physicalDevice = deviceHandle.as<vk::PhysicalDevice>();
+    auto surface = m_spec.surface->as<vk::SurfaceKHR>();
 
-    VkPhysicalDeviceProperties physicalDeviceProperties;
-    vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
-
-    VkPhysicalDeviceFeatures physicalDeviceFeatures;
-    vkGetPhysicalDeviceFeatures(physicalDevice, &physicalDeviceFeatures);
+    auto physicalDeviceProperties = physicalDevice.getProperties();
+    auto physicalDeviceFeatures = physicalDevice.getFeatures();
 
     int32 deviceScore = 0;
 
@@ -57,7 +54,7 @@ int32 PhysicalDevice::evaluateDevice(Handle deviceHandle) const {
     if (deviceQueueIndices.presentation != deviceQueueIndices.graphics)
         deviceScore -= 10;
 
-    if (physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+    if (physicalDeviceProperties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
         deviceScore += 100;
 
     return deviceScore;
@@ -75,8 +72,8 @@ uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) 
     ENSURE(false); /* unable to find suitable memory type */
 }
 
-bool PhysicalDevice::checkExtensionSupport(Handle deviceHandle) const {
-    auto deviceExtensions = vk::PhysicalDevice((VkPhysicalDevice)deviceHandle).enumerateDeviceExtensionProperties();
+bool PhysicalDevice::checkExtensionSupport(const NativeRenderObject& deviceHandle) const {
+    auto deviceExtensions = deviceHandle.as<vk::PhysicalDevice>().enumerateDeviceExtensionProperties();
 
     for (const auto* requiredExtension : extensions()) {
         auto it = std::ranges::find_if(deviceExtensions, [=](VkExtensionProperties& extension) -> bool {

@@ -17,7 +17,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
         .sType = vk::StructureType::eImageViewCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .image = m_spec.image->handle<VkImage>(),
+        .image = m_spec.image->as<vk::Image>(),
         .viewType = vk::ImageViewType::e2D,
         .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
         .components =

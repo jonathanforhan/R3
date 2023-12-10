@@ -46,7 +46,7 @@ public:
         return *this;
     }
 
-    Ref& operator=(T* ptr) R3_NOEXCEPT {
+    Ref& operator=(auto* ptr) R3_NOEXCEPT {
         CHECK(ptr != nullptr);
         m_ptr = ptr;
         return *this;
@@ -82,12 +82,12 @@ public:
         return m_ptr;
     }
 
-    constexpr bool operator==(void* vp) const {
-        return m_ptr == vp;
+    constexpr bool operator==(auto p) const {
+        return m_ptr == p;
     }
 
-    constexpr bool operator!=(void* vp) const {
-        return m_ptr != vp;
+    constexpr bool operator!=(auto p) const {
+        return m_ptr != p;
     }
 
     constexpr T* get() {

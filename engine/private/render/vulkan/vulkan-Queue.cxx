@@ -8,12 +8,10 @@
 
 namespace R3 {
 
-QueueFamilyIndices QueueFamilyIndices::query(NativeRenderObject::Handle physicalDeviceHandle,
-                                             NativeRenderObject::Handle surfaceHandle) {
-    CHECK(physicalDeviceHandle != nullptr);
-    CHECK(surfaceHandle != nullptr);
-    vk::PhysicalDevice physicalDevice = (VkPhysicalDevice)physicalDeviceHandle;
-    vk::SurfaceKHR surface = (VkSurfaceKHR)surfaceHandle;
+QueueFamilyIndices QueueFamilyIndices::query(NativeRenderObject&& physicalDeviceHandle,
+                                             NativeRenderObject&& surfaceHandle) {
+    vk::PhysicalDevice physicalDevice = physicalDeviceHandle.as<vk::PhysicalDevice>();
+    vk::SurfaceKHR surface = surfaceHandle.as<vk::SurfaceKHR>();
 
     auto queueFamilies = physicalDevice.getQueueFamilyProperties();
     QueueFamilyIndices queueFamilyIndices;

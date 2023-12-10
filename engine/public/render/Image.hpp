@@ -32,8 +32,8 @@ enum class ImageCopyType {
 struct ImageCopySpecification {
     const LogicalDevice& logicalDevice;
     const CommandPool& commandPool;
-    NativeRenderObject::HandleRef dst;
-    NativeRenderObject::HandleConstRef src;
+    NativeRenderObject& dst;
+    const NativeRenderObject& src;
     usize size;
     uint32 width;
     uint32 height;
@@ -47,7 +47,8 @@ public:
     /// @brief Allocate a Image with given flags
     /// @param spec 
     /// @return tuple<Image::Handle, DeviceMemory::Handle>
-    [[nodiscard]] static std::tuple<Handle, Handle> allocate(const ImageAllocateSpecification& spec);
+    [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
+        const ImageAllocateSpecification& spec);
 
     static void copy(const ImageCopySpecification& spec);
 };

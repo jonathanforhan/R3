@@ -68,7 +68,14 @@ protected:
 
     /// @brief Set Buffer handle
     /// @param bufferHandle 
-    void setDeviceMemory(Handle bufferHandle) { m_deviceMemory = bufferHandle; }
+    template <typename T = Handle>
+    void setDeviceMemory(const T& bufferHandle) {
+        if constexpr (IsWrapper<T>) {
+            m_deviceMemory = reinterpret_cast<Handle>(static_cast<T::NativeType>(bufferHandle));
+        } else {
+            m_deviceMemory = reinterpret_cast<Handle>(bufferHandle);
+        }
+    }
 
 private:
     // points to device (GPU) memory allocated for buffer

@@ -39,7 +39,7 @@ std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecificat
     vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
-        .commandPool = spec.commandPool->handle<VkCommandPool>(),
+        .commandPool = spec.commandPool->as<vk::CommandPool>(),
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = spec.commandBufferCount,
     };
@@ -97,8 +97,8 @@ void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuf
     vk::RenderPassBeginInfo renderPassBeginInfo = {
         .sType = vk::StructureType::eRenderPassBeginInfo,
         .pNext = nullptr,
-        .renderPass = renderPass.handle<VkRenderPass>(),
-        .framebuffer = framebuffer.handle<VkFramebuffer>(),
+        .renderPass = renderPass.as<vk::RenderPass>(),
+        .framebuffer = framebuffer.as<vk::Framebuffer>(),
         .renderArea =
             {
                 .offset = {0, 0},

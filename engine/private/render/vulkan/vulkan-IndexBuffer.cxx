@@ -14,7 +14,6 @@ template <std::integral T>
 IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
     : m_spec(spec),
       m_indexCount(static_cast<uint32>(spec.indices.size())) {
-
     // staging buffer, CPU writable
     BufferAllocateSpecification stagingAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
@@ -26,9 +25,10 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
     auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
 
     // copy data to staging buffer
-    void* data = m_spec.logicalDevice->as<vk::Device>().mapMemory((VkDeviceMemory)stagingMemory, 0, m_indexCount, {});
+    void* data = m_spec.logicalDevice->template as<vk::Device>().mapMemory(
+        stagingMemory.as<vk::DeviceMemory>(), 0, m_indexCount, {});
     memcpy(data, m_spec.indices.data(), m_spec.indices.size_bytes());
-    m_spec.logicalDevice->as<vk::Device>().unmapMemory((VkDeviceMemory)stagingMemory);
+    m_spec.logicalDevice->template as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
 
     // real buffer, copy staging buffer to this GPU buffer
     BufferAllocateSpecification bufferAllocateSpecification = {
@@ -49,18 +49,18 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
     };
     Buffer::copy(bufferCopySpecification);
 
-    m_spec.logicalDevice->as<vk::Device>().destroyBuffer((VkBuffer)stagingBuffer);
-    m_spec.logicalDevice->as<vk::Device>().freeMemory((VkDeviceMemory)stagingMemory);
+    m_spec.logicalDevice->template as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
+    m_spec.logicalDevice->template as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
 
-    setHandle(buffer);
-    setDeviceMemory(memory);
+    setHandle(buffer.handle());
+    setDeviceMemory(memory.handle());
 }
 
 template <std::integral T>
 IndexBuffer<T>::~IndexBuffer() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
-        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+        m_spec.logicalDevice->template as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+        m_spec.logicalDevice->template as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
     }
 }
 

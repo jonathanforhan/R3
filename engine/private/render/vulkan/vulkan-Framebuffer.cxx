@@ -14,7 +14,7 @@ namespace R3 {
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_spec(spec) {
 
-    vk::ImageView imageView = m_spec.imageView->handle<VkImageView>();
+    vk::ImageView imageView = m_spec.imageView->as<vk::ImageView>();
     vk::ImageView attachments[] = {
         imageView,
     };

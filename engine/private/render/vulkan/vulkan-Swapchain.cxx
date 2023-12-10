@@ -22,7 +22,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     : m_spec(spec) {
 
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-        m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
+        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
 
     auto format = swapchainSupportDetails.optimalSurfaceFormat();
     m_surfaceFormat = std::get<0>(format);
@@ -43,7 +43,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
-        .surface = m_spec.surface->handle<VkSurfaceKHR>(),
+        .surface = m_spec.surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
         .imageFormat = (vk::Format)m_surfaceFormat,
         .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
@@ -82,14 +82,14 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
 
     // query
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-        m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
+        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent2D.x == 0 || m_extent2D.y == 0) {
         glfwWaitEvents();
         swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-            m_spec.physicalDevice->handle<VkPhysicalDevice>(), m_spec.surface->handle<VkSurfaceKHR>());
+            m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
     
@@ -106,7 +106,7 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
-        .surface = m_spec.surface->handle<VkSurfaceKHR>(),
+        .surface = m_spec.surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
         .imageFormat = (vk::Format)m_surfaceFormat,
         .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,

@@ -95,11 +95,6 @@ public:
     template <typename T, typename... Other>
     usize remove();
 
-    /// @brief Removes all invalid Entities from the Entity Registry
-    /// @tparam ...T Entities to remove
-    template <typename... T>
-    static void compact();
-
     /// @brief Get a component or components for an entities
     /// @tparam ...T component types
     /// @return reference or tuple of returned components
@@ -181,11 +176,6 @@ inline T& Entity::replace(Args&&... args) {
 template <typename T, typename... Other>
 inline usize Entity::remove() {
     return m_parentScene->m_registry.remove<T, Other...>(m_id);
-}
-
-template <typename... T>
-inline void Entity::compact() {
-    m_parentScene->m_registry.compact<T...>(m_id);
 }
 
 template <typename... T>

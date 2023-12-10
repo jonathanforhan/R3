@@ -1,26 +1,40 @@
 #pragma once
 #include "api/Ref.hpp"
+#include <concepts>
 
 namespace R3 {
+
+template <typename T>
+concept IsWrapper = requires { typename T::NativeType; };
 
 /// @brief R3 Renderer uses opaque handles to wrap all implementation specific handles
 /// for example a VkInstance will be wrapped in a NativeRenderObject:Instance
 /// @note NativeRenderObject does not handle clean up in anyway as it does not know implementation details
 class NativeRenderObject {
+public:
+    /// @brief Opaque Handle type will be converted to API specific Handle when queried
+    using Handle = void*;
+    using HandleRef = Ref<std::remove_pointer_t<Handle>>;
+    using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>;
+
 protected:
     NativeRenderObject() = default;
 
 public:
+    template <typename T = Handle>
+    NativeRenderObject(const T& handle) {
+        if constexpr (IsWrapper<T>) {
+            m_handle = reinterpret_cast<Handle>(static_cast<T::NativeType>(handle));
+        } else {
+            m_handle = reinterpret_cast<Handle>(handle);
+        }
+    }
+
     NativeRenderObject(const NativeRenderObject&) = delete;
     NativeRenderObject& operator=(const NativeRenderObject&) = delete;
 
     NativeRenderObject(NativeRenderObject&&) R3_NOEXCEPT = default;
     NativeRenderObject& operator=(NativeRenderObject&&) R3_NOEXCEPT = default;
-
-    /// @brief Opaque Handle type will be converted to API specific Handle when queried
-    using Handle = void*;
-    using HandleRef = Ref<std::remove_pointer_t<Handle>>;
-    using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>;
 
     /// @brief Query is handle is null
     /// @return true if not null
@@ -72,7 +86,14 @@ public:
 protected:
     /// @brief Set handle
     /// @param handle 
-    void setHandle(Handle handle) { m_handle = handle; }
+    template <typename T = Handle>
+    void setHandle(const T& handle) {
+        if constexpr (IsWrapper<T>) {
+            m_handle = reinterpret_cast<Handle>(static_cast<T::NativeType>(handle));
+        } else {
+            m_handle = reinterpret_cast<Handle>(handle);
+        }
+    }
 
 private:
     HandleRef m_handle;

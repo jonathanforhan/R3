@@ -47,7 +47,7 @@ public:
 
     /// @brief Get the glTF resource path used for the ModelComponent
     /// @return filepath
-    const std::string& path() const { return m_directory + m_file; }
+    [[nodiscard]] std::string path() const { return m_directory + m_file; }
 
 public:
     mat4 transform{1.0f};          ///< @brief ModelComponent Transform Matrix as used by shader

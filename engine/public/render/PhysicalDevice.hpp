@@ -36,10 +36,10 @@ public:
 
 private:
     // ranks GPU based on several factor to determine best fit
-    int32 evaluateDevice(Handle deviceHandle) const;
+    int32 evaluateDevice(const NativeRenderObject& deviceHandle) const;
 
     // Ensures all required extensions from PhysicalDeviceSpecification are present on specified device
-    bool checkExtensionSupport(Handle deviceHandle) const;
+    bool checkExtensionSupport(const NativeRenderObject& deviceHandle) const;
 
 private:
     PhysicalDeviceSpecification m_spec;
