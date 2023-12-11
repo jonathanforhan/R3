@@ -19,13 +19,13 @@ protected:
 
     /// @brief Query is device memory is null
     /// @return true if null
-    [[nodiscard]] bool validDeviceMemory() const { return m_deviceMemory != nullptr; }
+    [[nodiscard]] constexpr bool validDeviceMemory() const { return m_deviceMemory != nullptr; }
 
     /// @brief Retrieve opaque buffer handle
     /// @tparam T cast to T type
     /// @return buffer handle
     template <typename T>
-    T deviceMemory() {
+    constexpr T deviceMemory() {
         return reinterpret_cast<T>(m_deviceMemory.get());
     }
 
@@ -33,43 +33,35 @@ protected:
     /// @tparam T cast to T type
     /// @return buffer handle
     template <typename T>
-    T deviceMemory() const {
+    constexpr T deviceMemory() const {
         return reinterpret_cast<T>(m_deviceMemory.get());
     }
 
     /// @brief Return buffer as a new type, used for C -> C++ bindings
     /// @tparam T cast to T type
     /// @return Type T Object from Buffer::Handle
-#if R3_VULKAN
     template <typename T>
     constexpr T deviceMemoryAs() {
-        CHECK(validDeviceMemory());
-        return T(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
+        if constexpr (IsWrapper<T>) {
+            return static_cast<T>(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
+        } else {
+            return static_cast<T>(m_deviceMemory.get());
+        }
     }
 
     template <typename T>
     constexpr T deviceMemoryAs() const {
-        CHECK(validDeviceMemory());
-        return T(reinterpret_cast<const T::NativeType>(m_deviceMemory.get()));
+        if constexpr (IsWrapper<T>) {
+            return static_cast<T>(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
+        } else {
+            return static_cast<T>(m_deviceMemory.get());
+        }
     }
-#else
-    template <typename T>
-    constexpr T deviceMemoryAs() {
-        CHECK(validDeviceMemory());
-        return T(*m_deviceMemory);
-    }
-
-    template <typename T>
-    constexpr T deviceMemoryAs() const {
-        CHECK(validDeviceMemory());
-        return T(*m_deviceMemory);
-    }
-#endif
 
     /// @brief Set Buffer handle
     /// @param bufferHandle 
     template <typename T = Handle>
-    void setDeviceMemory(const T& bufferHandle) {
+    constexpr void setDeviceMemory(const T& bufferHandle) {
         if constexpr (IsWrapper<T>) {
             m_deviceMemory = reinterpret_cast<Handle>(static_cast<T::NativeType>(bufferHandle));
         } else {

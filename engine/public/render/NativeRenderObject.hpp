@@ -38,7 +38,7 @@ public:
 
     /// @brief Query is handle is null
     /// @return true if not null
-    [[nodiscard]] bool validHandle() const { return m_handle != nullptr; }
+    [[nodiscard]] constexpr bool validHandle() const { return m_handle != nullptr; }
 
     /// @brief Retrieve opaque handle
     /// @tparam T cast to T type
@@ -63,9 +63,9 @@ public:
     constexpr T as() {
         CHECK(validHandle());
         if constexpr (IsWrapper<T>) {
-            return T(reinterpret_cast<T::NativeType>(m_handle.get()));
+            return static_cast<T>(reinterpret_cast<T::NativeType>(m_handle.get()));
         } else {
-            return T(m_handle.get());
+            return static_cast<T>(m_handle.get());
         }
     }
 
@@ -73,9 +73,9 @@ public:
     constexpr T as() const {
         CHECK(validHandle());
         if constexpr (IsWrapper<T>) {
-            return T(reinterpret_cast<T::NativeType>(m_handle.get()));
+            return static_cast<T>(reinterpret_cast<T::NativeType>(m_handle.get()));
         } else {
-            return T(m_handle.get());
+            return static_cast<T>(m_handle.get());
         }
     }
 
@@ -83,7 +83,7 @@ protected:
     /// @brief Set handle
     /// @param handle 
     template <typename T = Handle>
-    void setHandle(const T& handle) {
+    constexpr void setHandle(const T& handle) {
         if constexpr (IsWrapper<T>) {
             m_handle = reinterpret_cast<Handle>(static_cast<T::NativeType>(handle));
         } else {

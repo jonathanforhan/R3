@@ -225,11 +225,14 @@ void Renderer::render() {
 
     if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
-            m_swapchain.recreate(m_framebuffers, m_renderPass);
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
         }
+    } else if (m_spec.window.shouldResize()) {
+        m_spec.window.setShouldResize(false);
+        m_swapchain.recreate(m_framebuffers, m_renderPass);
+        return;
     }
 
     m_logicalDevice.as<vk::Device>().resetFences(fences);
@@ -295,11 +298,7 @@ void Renderer::render() {
     try {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (...) {
-        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-            m_spec.window.shouldResize()) {
-            m_spec.window.setShouldResize(false);
-            m_swapchain.recreate(m_framebuffers, m_renderPass);
-        } else if (result != vk::Result::eSuboptimalKHR) {
+        if ((result != vk::Result::eErrorOutOfDateKHR && result != vk::Result::eSuboptimalKHR)) {
             ENSURE(false);
         }
     }

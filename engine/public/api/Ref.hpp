@@ -52,12 +52,12 @@ public:
         return *this;
     }
 
-    operator T*() R3_NOEXCEPT {
+    constexpr operator T*() R3_NOEXCEPT {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }
 
-    operator T*() const R3_NOEXCEPT {
+    constexpr operator T*() const R3_NOEXCEPT {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }

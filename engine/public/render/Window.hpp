@@ -70,7 +70,7 @@ public:
 private:
     WindowSpecification m_spec;
 
-    bool m_shouldResize = false;
+    std::atomic_bool m_shouldResize = false;
 };
 
 } // namespace R3

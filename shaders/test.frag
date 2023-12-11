@@ -8,5 +8,5 @@ layout (location = 1) in vec2 v_TexCoords;
 layout (location = 0) out vec4 f_Color;
 
 void main() {
-    f_Color = vec4(v_Color * texture(u_TexSampler, v_TexCoords).rgb, 1.0);
+    f_Color = texture(u_TexSampler, v_TexCoords);
 }
