@@ -43,13 +43,16 @@ int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) con
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(physicalDevice, surface);
 
     if (!deviceQueueIndices.isValid())
-        deviceScore -= 10000;
+        deviceScore -= 1000;
 
     if (!checkExtensionSupport(deviceHandle))
-        deviceScore -= 10000;
+        deviceScore -= 1000;
 
     if (!swapchainSupportDetails.isValid())
-        deviceScore -= 10000;
+        deviceScore -= 1000;
+
+    if (!physicalDeviceFeatures.samplerAnisotropy)
+        deviceScore -= 1000;
 
     if (deviceQueueIndices.presentation != deviceQueueIndices.graphics)
         deviceScore -= 10;

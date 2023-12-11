@@ -28,11 +28,6 @@ public:
     /// @param shader shader used by model
     ModelComponent(const std::string& path, Shader& shader);
 
-    ModelComponent(const ModelComponent&) = delete;        ///< @brief non-copyable
-    ModelComponent(ModelComponent&&) = default;            ///< @brief moveable
-    void operator=(const ModelComponent&) = delete;        ///< @brief non-copyable
-    ModelComponent& operator=(ModelComponent&&) = default; ///< @brief moveable
-
     /// @brief Get the Model mesh list
     /// @return meshes
     std::vector<Mesh>& meshes() { return m_meshes; }

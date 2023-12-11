@@ -38,6 +38,7 @@ public:
     void bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const;
     void bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const;
     void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;
+    void oneTimeSubmit() const;
 
 private:
     CommandBufferSpecification m_spec;

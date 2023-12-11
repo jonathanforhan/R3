@@ -30,12 +30,7 @@ struct RendererSpecification {
 
 class Renderer {
 public:
-    Renderer() = default;
     Renderer(RendererSpecification spec);
-    Renderer(const Renderer&) = delete;
-    Renderer(Renderer&&) noexcept = default;
-    Renderer& operator=(const Renderer&) = delete;
-    Renderer& operator=(Renderer&&) noexcept = default;
 
     void render();
     void waitIdle() const;

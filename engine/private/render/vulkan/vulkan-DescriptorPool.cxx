@@ -11,9 +11,19 @@ namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     : m_spec(spec) {
-    vk::DescriptorPoolSize descriptorPoolSize = {
+    vk::DescriptorPoolSize uboDescriptorPoolSize = {
         .type = vk::DescriptorType::eUniformBuffer,
         .descriptorCount = m_spec.descriptorSetCount,
+    };
+
+    vk::DescriptorPoolSize samplerDescriptorPoolSize = {
+        .type = vk::DescriptorType::eCombinedImageSampler,
+        .descriptorCount = m_spec.descriptorSetCount,
+    };
+
+    vk::DescriptorPoolSize poolSizes[2]{
+        uboDescriptorPoolSize,
+        samplerDescriptorPoolSize,
     };
     
     vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = {
@@ -21,8 +31,8 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
         .pNext = nullptr,
         .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = m_spec.descriptorSetCount,
-        .poolSizeCount = 1,
-        .pPoolSizes = &descriptorPoolSize,
+        .poolSizeCount = 2,
+        .pPoolSizes = poolSizes,
     };
 
     setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));

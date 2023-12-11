@@ -146,17 +146,28 @@ void CommandBuffer::bindVertexBuffers(std::span<const VertexBuffer> vertexBuffer
 }
 
 void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const {
-    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), {0}, vk::IndexType::eUint16);
+    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), 0, vk::IndexType::eUint16);
 }
 
 void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const {
-    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), {0}, vk::IndexType::eUint32);
+    as<vk::CommandBuffer>().bindIndexBuffer(indexBuffer.as<vk::Buffer>(), 0, vk::IndexType::eUint32);
 }
 
 void CommandBuffer::bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSet) const {
     vk::DescriptorSet descriptors[]{descriptorSet.as<vk::DescriptorSet>()};
     as<vk::CommandBuffer>().bindDescriptorSets(
         vk::PipelineBindPoint::eGraphics, pipelineLayout.as<vk::PipelineLayout>(), 0, descriptors, {});
+}
+
+void CommandBuffer::oneTimeSubmit() const {
+    auto vkCommandBuffer = as<vk::CommandBuffer>();
+    auto submitInfo = vk::SubmitInfo{
+        .sType = vk::StructureType::eSubmitInfo,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &vkCommandBuffer,
+    };
+    m_spec.logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
+    m_spec.logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
 }
 
 } // namespace R3

@@ -10,34 +10,34 @@
 #if R3_LOGGING_ENABLED
 namespace R3::detail::logging {
 /// @private
-inline void _LOG() {
-    std::cout << std::endl;
+inline void log() {
+    std::cout << '\n';
 }
 template <typename T, typename... Args>
 /// @private
-inline void _LOG(T x, Args&&... args) {
+inline void log(T x, Args&&... args) {
     std::cout << x << ' ';
-    _LOG(args...);
+    ::R3::detail::logging::log(args...);
 }
 } // namespace R3::detail::logging
 
 #if R3_LOG_VERBOSE
-#define R3_LOG_Verbose(...) ::R3::detail::logging::_LOG(__VA_ARGS__)
+#define R3_LOG_Verbose(...) ::R3::detail::logging::log(__VA_ARGS__)
 #else
 #define R3_LOG_Verbose(...) void(0)
 #endif
 #if R3_LOG_INFO
-#define R3_LOG_Info(...) ::R3::detail::logging::_LOG(__VA_ARGS__)
+#define R3_LOG_Info(...) ::R3::detail::logging::log(__VA_ARGS__)
 #else
 #define R3_LOG_Info(...) void(0)
 #endif
 #if R3_LOG_WARNING
-#define R3_LOG_Warning(...) ::R3::detail::logging::_LOG(__VA_ARGS__)
+#define R3_LOG_Warning(...) ::R3::detail::logging::log(__VA_ARGS__)
 #else
 #define R3_LOG_Warning(...) void(0)
 #endif
 #if R3_LOG_ERROR
-#define R3_LOG_Error(...) ::R3::detail::logging::_LOG(__VA_ARGS__)
+#define R3_LOG_Error(...) ::R3::detail::logging::log(__VA_ARGS__)
 #else
 #define R3_LOG_Error(...) void(0)
 #endif

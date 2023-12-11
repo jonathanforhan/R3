@@ -37,7 +37,9 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
         });
     }
 
-    vk::PhysicalDeviceFeatures physicalDeviceFeatures = {};
+    vk::PhysicalDeviceFeatures physicalDeviceFeatures = {
+        .samplerAnisotropy = vk::True,
+    };
 
     std::span<const char* const> deviceExtensions = m_spec.physicalDevice->extensions();
 

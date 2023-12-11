@@ -106,12 +106,12 @@ void Image::copy(const ImageCopySpecification& spec) {
         vk::ImageCopy imageCopy = {
             .srcSubresource =
                 {
-                    .aspectMask = vk::ImageAspectFlagBits::eNone,
+                    .aspectMask = vk::ImageAspectFlagBits::eColor,
                     .mipLevel = 0,
                     .baseArrayLayer = 0,
                     .layerCount = 1,
                 },
-            .srcOffset = 0,
+            .srcOffset = {0},
             .dstSubresource =
                 {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,
@@ -119,7 +119,7 @@ void Image::copy(const ImageCopySpecification& spec) {
                     .baseArrayLayer = 0,
                     .layerCount = 1,
                 },
-            .dstOffset = 0,
+            .dstOffset = {0},
             .extent =
                 {
                     .width = spec.width,
@@ -135,6 +135,7 @@ void Image::copy(const ImageCopySpecification& spec) {
     }
 
     commandBuffer.endCommandBuffer();
+    commandBuffer.oneTimeSubmit();
 }
 
 } // namespace R3

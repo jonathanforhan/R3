@@ -15,13 +15,30 @@ struct DescriptorSetSpecification {
     uint32 descriptorSetCount;
 };
 
+struct UniformDescriptor {
+    const UniformBuffer& uniform;
+    uint32 binding;
+    usize offset;
+    usize range;
+};
+
+struct TextureDescriptor {
+    const TextureBuffer& texture;
+    uint32 binding;
+};
+
+struct DescriptorSetBindingSpecification {
+    std::initializer_list<const UniformDescriptor> uniformDescriptors;
+    std::initializer_list<const TextureDescriptor> textureDescriptors;
+};
+
 class DescriptorSet : public NativeRenderObject {
 public:
     static std::vector<DescriptorSet> allocate(const DescriptorSetSpecification& spec);
     static void free(const std::span<DescriptorSet> descriptorSets);
     void free();
 
-    void bindUniform(const UniformBuffer& uniform, uint32 binding, usize offset = 0, usize range = 0);
+    void bindResources(const DescriptorSetBindingSpecification& spec);
 
 private:
     DescriptorSetSpecification m_spec;

@@ -42,6 +42,8 @@ struct ImageCopySpecification {
 
 class Image : public NativeRenderObject {
 public:
+    Image() = default;
+    explicit Image(const NativeRenderObject& nativeRenderObject) { setHandle(nativeRenderObject.handle()); }
     static std::vector<Image> acquireImages(const ImageSpecification& spec);
 
     /// @brief Allocate a Image with given flags

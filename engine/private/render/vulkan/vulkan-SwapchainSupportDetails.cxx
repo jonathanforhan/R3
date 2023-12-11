@@ -17,7 +17,7 @@ SwapchainSupportDetails SwapchainSupportDetails::query(vk::PhysicalDevice physic
 
 std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() const {
     for (const auto& surfaceFormat : surfaceFormats) {
-        if (surfaceFormat.format == vk::Format::eB8G8R8A8Srgb &&
+        if (surfaceFormat.format == vk::Format::eR8G8B8A8Srgb &&
             surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             return {
                 (Format)surfaceFormat.format,

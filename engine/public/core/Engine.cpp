@@ -68,7 +68,7 @@ double Engine::deltaTime() const {
     static auto s_prev = system_clock::now();
     auto now = system_clock::now();
     double dt = duration<double>(now - s_prev).count();
-#if 1
+#if false
     LOG(Verbose,
         "Delta Time mircoseconds:",
         duration_cast<microseconds>(now - s_prev).count(),

@@ -33,5 +33,6 @@ class IndexBuffer;
 struct UniformBufferObject;
 class UniformBuffer;
 class TextureBuffer;
+class Sampler;
 
 } // namespace R3

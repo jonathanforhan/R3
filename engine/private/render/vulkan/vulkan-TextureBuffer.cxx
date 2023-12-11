@@ -9,6 +9,8 @@
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/CommandPool.hpp"
+#include "render/Swapchain.hpp"
+#include "render/Queue.hpp"
 
 namespace R3 {
 
@@ -96,6 +98,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
                                                           {},
                                                           {imageMemoryBarrier});
     commandBuffer.endCommandBuffer();
+    commandBuffer.oneTimeSubmit();
 
     ImageCopySpecification imageCopySpecification = {
         .logicalDevice = *m_spec.logicalDevice,
@@ -122,12 +125,25 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
                                                           {},
                                                           {imageMemoryBarrier});
     commandBuffer.endCommandBuffer();
+    commandBuffer.oneTimeSubmit();
 
     m_spec.logicalDevice->as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
     m_spec.logicalDevice->as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
 
     setHandle(image.handle());
     setDeviceMemory(memory.handle());
+
+    Image img(handle());
+    m_imageView = ImageView(ImageViewSpecification{
+        .logicalDevice = m_spec.logicalDevice,
+        .swapchain = m_spec.swapchain,
+        .image = &img,
+    });
+
+    m_sampler = Sampler(SamplerSpecification{
+        .physicalDevice = m_spec.physicalDevice,
+        .logicalDevice = m_spec.logicalDevice,
+    });
 }
 
 TextureBuffer::~TextureBuffer() {

@@ -20,7 +20,6 @@ namespace R3 {
 
 Swapchain::Swapchain(const SwapchainSpecification& spec)
     : m_spec(spec) {
-
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
         m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
 
@@ -92,7 +91,7 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
             m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
-    
+
     uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
         m_spec.logicalDevice->presentationQueue().index(),

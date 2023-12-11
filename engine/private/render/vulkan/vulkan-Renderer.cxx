@@ -136,17 +136,25 @@ Renderer::Renderer(RendererSpecification spec)
     }
 
     //--- Test
-#if 0
-    Vertex vertices[36];
-    Cube(vertices);
+#if 1
+    Vertex vertices[4];
+    uint32 indices[6];
+    Plane(vertices, indices);
 
-        // Vertex Buffer
-    auto& vbuf = m_vertexBuffers.emplace_back();
-    vbuf.create({
+    auto& vertex = m_vertexBuffers.emplace_back();
+    vertex = VertexBuffer({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
+    });
+
+    auto& index = m_indexBuffers.emplace_back();
+    index = IndexBuffer<uint32>({
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .commandPool = &m_commandPoolTransient,
+        .indices = indices,
     });
 #else
     Vertex vertices[8];
@@ -182,18 +190,28 @@ Renderer::Renderer(RendererSpecification spec)
         });
     }
 
-    auto descriptorSets = m_descriptorPool.descriptorSets();
-    for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
-        descriptorSets[i].bindUniform(m_uniformBuffers[i], 0);
-    }
-
     //--- Texture
     m_textureBuffer = TextureBuffer(TextureBufferSpecification{
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
         .commandPool = &m_commandPoolTransient,
         .path = "textures/container.jpg",
     });
+
+    auto descriptorSets = m_descriptorPool.descriptorSets();
+    for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
+        descriptorSets[i].bindResources({
+            .uniformDescriptors = {{
+                .uniform = m_uniformBuffers[i],
+                .binding = 0,
+            }},
+            .textureDescriptors = {{
+                .texture = m_textureBuffer,
+                .binding = 1,
+            }},
+        });
+    }
 }
 
 void Renderer::render() {
@@ -239,8 +257,8 @@ void Renderer::render() {
     UniformBufferObject ubo{};
     ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.projection =
-        glm::perspective(glm::radians(45.0f), m_swapchain.extent().x / (float)m_swapchain.extent().y, 0.1f, 10.0f);
+    ubo.projection = glm::perspective(
+        glm::radians(45.0f), (float)m_swapchain.extent().x / (float)m_swapchain.extent().y, 0.1f, 100.0f);
     m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
 #endif
 
