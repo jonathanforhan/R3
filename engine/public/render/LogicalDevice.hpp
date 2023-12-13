@@ -8,12 +8,12 @@ namespace R3 {
 
 /// @brief Logical Device Specification
 struct LogicalDeviceSpecification {
-    Ref<const Instance> instance;             ///< @brief Valid non-null Instance
-    Ref<const Surface> surface;               ///< @brief Valid non-null Surface
-    Ref<const PhysicalDevice> physicalDevice; ///< @brief Valid non-null PhysicalDevice
+    Ref<const Instance> instance;             ///< @brief Valid Instance
+    Ref<const Surface> surface;               ///< @brief Valid Surface
+    Ref<const PhysicalDevice> physicalDevice; ///< @brief Valid PhysicalDevice
 };
 
-/// @brief LogicalDevice Represents the Application view of the underlaying hardware
+/// @brief LogicalDevice represents the application view of the underlaying hardware
 /// The logical device is used for most operations including creating the components
 /// of the renderer and mapping memory
 class LogicalDevice : public NativeRenderObject {

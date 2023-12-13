@@ -3,7 +3,7 @@
 #include "render/Surface.hpp"
 
 // clang-format off
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 // clang-format on
 #include "api/Check.hpp"
@@ -15,16 +15,16 @@ namespace R3 {
 
 Surface::Surface(const SurfaceSpecification& spec)
     : m_spec(spec) {
-    VkSurfaceKHR surface;
-    auto r = glfwCreateWindowSurface(
-        m_spec.instance->handle<VkInstance>(), m_spec.window->handle<GLFWwindow*>(), nullptr, &surface);
-    ENSURE(r == VK_SUCCESS);
-    setHandle(surface);
+    VkSurfaceKHR tmp;
+    VkResult result =
+        glfwCreateWindowSurface(m_spec.instance->as<VkInstance>(), m_spec.window->as<GLFWwindow*>(), nullptr, &tmp);
+    ENSURE(result == VK_SUCCESS);
+    setHandle(tmp);
 }
 
 Surface::~Surface() {
     if (validHandle()) {
-        m_spec.instance->as<vk::Instance>().destroySurfaceKHR(as<vk::SurfaceKHR>());
+        vkDestroySurfaceKHR(m_spec.instance->as<VkInstance>(), as<VkSurfaceKHR>(), nullptr);
     }
 }
 

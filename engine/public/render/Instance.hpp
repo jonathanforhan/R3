@@ -20,9 +20,15 @@ struct InstanceSpecification {
 class Instance : public NativeRenderObject {
 public:
     Instance() = default;
+
+    /// @brief Initialize instance from spec
+    /// @param spec 
     Instance(const InstanceSpecification& spec);
+
     Instance(Instance&&) noexcept = default;
     Instance& operator=(Instance&&) noexcept = default;
+
+    /// @brief free instance
     ~Instance();
 
 private:

@@ -2,24 +2,23 @@
 
 #include "render/CommandPool.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
-#include "api/Log.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 namespace local {
 
-static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolFlags flags) {
+static constexpr VkCommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolFlags flags) {
     switch (flags) {
         case CommandPoolFlags::Protected:
-            return vk::CommandPoolCreateFlagBits::eProtected;
+            return VK_COMMAND_POOL_CREATE_PROTECTED_BIT;
         case CommandPoolFlags::Reset:
-            return vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+            return VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
         case CommandPoolFlags::Transient:
-            return vk::CommandPoolCreateFlagBits::eTransient;
+            return VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         default:
             ENSURE(false);
     }
@@ -30,14 +29,17 @@ static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoo
 CommandPool::CommandPool(const CommandPoolSpecification& spec)
     : m_spec(spec) {
 
-    vk::CommandPoolCreateInfo commandPoolCreateInfo = {
-        .sType = vk::StructureType::eCommandPoolCreateInfo,
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = local::CommandPoolFlagsToVkFlags(m_spec.flags),
         .queueFamilyIndex = m_spec.logicalDevice->graphicsQueue().index(),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createCommandPool(commandPoolCreateInfo));
+    VkCommandPool tmp;
+    VkResult result = vkCreateCommandPool(m_spec.logicalDevice->as<VkDevice>(), &commandPoolCreateInfo, nullptr, &tmp);
+    ENSURE(result == VK_SUCCESS);
+    setHandle(tmp);
 
     m_commandBuffers = CommandBuffer::allocate({
         .logicalDevice = m_spec.logicalDevice,
@@ -49,7 +51,7 @@ CommandPool::CommandPool(const CommandPoolSpecification& spec)
 
 CommandPool::~CommandPool() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
+        vkDestroyCommandPool(m_spec.logicalDevice->as<VkDevice>(), as<VkCommandPool>(), nullptr);
     }
 }
 

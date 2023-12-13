@@ -1,20 +1,27 @@
 #pragma once
 
+#include <atomic>
 #include <string_view>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 
 namespace R3 {
 
+/// @brief Specification for Window creation
 struct WindowSpecification {
-    std::string_view title;
+    std::string_view title; ///< @brief Title shown on windowed bar
 };
 
 /// @brief Window class to abstract window operations
 class Window : public NativeRenderObject {
 public:
     Window() = default;
+
+    /// @brief Create Window from spec
+    /// @param spec 
     Window(const WindowSpecification& spec);
+
+    /// @brief free Window
     ~Window();
 
     /// @brief Present Window
@@ -37,8 +44,8 @@ public:
     std::tuple<int32, int32> size() const;
 
     /// @brief Query the Window size
-    /// @param width return the window width in pixels
-    /// @param height return the window height in pixels
+    /// @param[out] width return the window width in pixels
+    /// @param[out] height return the window height in pixels
     void size(int32& width, int32& height) const;
 
     /// @brief Query the aspect ratio of the application window
@@ -70,7 +77,7 @@ public:
 private:
     WindowSpecification m_spec;
 
-    std::atomic_bool m_shouldResize = false;
+    bool m_shouldResize = false;
 };
 
 } // namespace R3

@@ -53,7 +53,7 @@ private:
     Format m_surfaceFormat = R3_FORMAT_UNDEFINED;
     ColorSpace m_colorSpace = R3_COLOR_SPACE_SRGB_NONLINEAR;
     PresentMode m_presentMode = R3_PRESENT_MODE_FIFO;
-    uvec2 m_extent2D = uvec2{0U, 0U};
+    uvec2 m_extent2D;
     uint32 m_imageCount = 0;
 
     std::vector<Image> m_images;

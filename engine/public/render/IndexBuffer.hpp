@@ -11,7 +11,7 @@ struct IndexBufferSpecification {
     Ref<const PhysicalDevice> physicalDevice;
     Ref<const LogicalDevice> logicalDevice;
     Ref<const CommandPool> commandPool;
-    std::span<T> indices;
+    std::span<const T> indices;
 };
 
 template <std::integral T>

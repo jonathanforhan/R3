@@ -2,7 +2,6 @@
 
 #include "render/Window.hpp"
 // clang-format off
-#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on

@@ -1,9 +1,8 @@
 #if R3_VULKAN
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include "api/Check.hpp"
-#include "api/Todo.hpp"
-#include "api/Log.hpp"
+#include "api/Ensure.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 
@@ -11,41 +10,46 @@ namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
     : m_spec(spec) {
-    vk::DescriptorSetLayoutBinding uboDescriptorSetLayoutBinding = {
+    VkDescriptorSetLayoutBinding uboDescriptorSetLayoutBinding = {
         .binding = 0,
-        .descriptorType = vk::DescriptorType::eUniformBuffer,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = 1,
-        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
         .pImmutableSamplers = nullptr,
     };
 
-    vk::DescriptorSetLayoutBinding samplerDescriptorSetLayoutBinding = {
+    VkDescriptorSetLayoutBinding samplerDescriptorSetLayoutBinding = {
         .binding = 1,
-        .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+        .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptorCount = 1,
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
         .pImmutableSamplers = nullptr,
     };
 
-    vk::DescriptorSetLayoutBinding bindings[2]{
+    VkDescriptorSetLayoutBinding bindings[2]{
         uboDescriptorSetLayoutBinding,
         samplerDescriptorSetLayoutBinding,
     };
 
-    vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
-        .sType = vk::StructureType::eDescriptorSetLayoutCreateInfo,
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},
         .bindingCount = 2,
         .pBindings = bindings,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
+    VkDescriptorSetLayout tmp;
+    VkResult result = vkCreateDescriptorSetLayout(
+        m_spec.logicalDevice->as<VkDevice>(), &descriptorSetLayoutCreateInfo, nullptr, &tmp);
+    ENSURE(result == VK_SUCCESS);
+
+    setHandle(tmp);
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorSetLayout(as<vk::DescriptorSetLayout>());
+        vkDestroyDescriptorSetLayout(m_spec.logicalDevice->as<VkDevice>(), as<VkDescriptorSetLayout>(), nullptr);
     }
 }
 

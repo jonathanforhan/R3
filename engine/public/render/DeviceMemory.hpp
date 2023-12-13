@@ -21,14 +21,6 @@ protected:
     /// @return true if null
     [[nodiscard]] constexpr bool validDeviceMemory() const { return m_deviceMemory != nullptr; }
 
-    /// @brief Retrieve opaque buffer handle
-    /// @tparam T cast to T type
-    /// @return buffer handle
-    template <typename T>
-    constexpr T deviceMemory() {
-        return reinterpret_cast<T>(m_deviceMemory.get());
-    }
-
     /// @brief Retrieve opaque buffer const handle
     /// @tparam T cast to T type
     /// @return buffer handle
@@ -40,15 +32,6 @@ protected:
     /// @brief Return buffer as a new type, used for C -> C++ bindings
     /// @tparam T cast to T type
     /// @return Type T Object from Buffer::Handle
-    template <typename T>
-    constexpr T deviceMemoryAs() {
-        if constexpr (IsWrapper<T>) {
-            return static_cast<T>(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
-        } else {
-            return static_cast<T>(m_deviceMemory.get());
-        }
-    }
-
     template <typename T>
     constexpr T deviceMemoryAs() const {
         if constexpr (IsWrapper<T>) {

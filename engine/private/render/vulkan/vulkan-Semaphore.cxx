@@ -2,26 +2,30 @@
 
 #include "render/Semaphore.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 Semaphore::Semaphore(const SemaphoreSpecification& spec)
     : m_spec(spec) {
-    vk::SemaphoreCreateInfo semaphoreCreateInfo = {
-        .sType = vk::StructureType::eSemaphoreCreateInfo,
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createSemaphore(semaphoreCreateInfo));
+    VkSemaphore tmp;
+    VkResult result = vkCreateSemaphore(m_spec.logicalDevice->as<VkDevice>(), &semaphoreCreateInfo, nullptr, &tmp);
+    ENSURE(result == VK_SUCCESS);
+    setHandle(tmp);
 }
 
 Semaphore::~Semaphore() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroySemaphore(as<vk::Semaphore>());
+        vkDestroySemaphore(m_spec.logicalDevice->as<VkDevice>(), as<VkSemaphore>(), nullptr);
     }
 }
 

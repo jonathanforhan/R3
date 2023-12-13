@@ -136,49 +136,49 @@ Renderer::Renderer(RendererSpecification spec)
     }
 
     //--- Test
-#if 1
     Vertex vertices[4];
     uint32 indices[6];
     Plane(vertices, indices);
 
-    auto& vertex = m_vertexBuffers.emplace_back();
-    vertex = VertexBuffer({
+    auto& vertex0 = m_vertexBuffers.emplace_back();
+    vertex0 = VertexBuffer({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
-
-    auto& index = m_indexBuffers.emplace_back();
-    index = IndexBuffer<uint32>({
+    auto& index0 = m_indexBuffers.emplace_back();
+    index0 = IndexBuffer<uint32>({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .indices = indices,
     });
-#else
-    Vertex vertices[8];
-    uint16 indices[36];
-    IndexedCube(vertices, indices);
-    uint32 indices32[36];
-    for (uint32 i = 0; i < 36; i++)
-        indices32[i] = indices[i];
 
-    auto& vertex = m_vertexBuffers.emplace_back();
-    vertex = VertexBuffer({
+    #if 0
+    for (auto& vertex : vertices) {
+        vertex.position.y += 1;
+    }
+
+    for (auto& index : indices) {
+        index += 4;
+    }
+
+    auto& vertex1 = m_vertexBuffers.emplace_back();
+    vertex1 = VertexBuffer({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
-    auto& index = m_indexBuffers.emplace_back();
-    index = IndexBuffer<uint32>({
+    auto& index1 = m_indexBuffers.emplace_back();
+    index1 = IndexBuffer<uint32>({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
-        .indices = indices32,
+        .indices = indices,
     });
-#endif
+    #endif
 
     //--- Uniforms
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -216,7 +216,7 @@ Renderer::Renderer(RendererSpecification spec)
 
 void Renderer::render() {
     const vk::Fence fences[]{m_inFlight[m_currentFrame].as<vk::Fence>()};
-    (void)m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::True, UINT64_MAX);
+    (void)m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::False, UINT64_MAX);
 
     auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
     auto [result, value] =
@@ -225,19 +225,17 @@ void Renderer::render() {
 
     if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
+            m_spec.window.setShouldResize(false);
+            m_swapchain.recreate(m_framebuffers, m_renderPass);
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
         }
-    } else if (m_spec.window.shouldResize()) {
-        m_spec.window.setShouldResize(false);
-        m_swapchain.recreate(m_framebuffers, m_renderPass);
-        return;
     }
 
     m_logicalDevice.as<vk::Device>().resetFences(fences);
 
-    CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
+    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     {
@@ -245,7 +243,9 @@ void Renderer::render() {
         {
             commandBuffer.bindPipeline(m_graphicsPipeline);
             commandBuffer.bindVertexBuffers(m_vertexBuffers);
-            commandBuffer.bindIndexBuffer(m_indexBuffers.front());
+            for (const auto& indexBuffer : m_indexBuffers) {
+                commandBuffer.bindIndexBuffer(indexBuffer);
+            }
             commandBuffer.bindDescriptorSet(m_pipelineLayout, m_descriptorPool.descriptorSet(m_currentFrame));
             commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers.front().indexCount(), 1, 0, 0, 0);
         }
@@ -265,11 +265,11 @@ void Renderer::render() {
     m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
 #endif
 
-    vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
-    vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
-    vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-    vk::CommandBuffer commandBuffers[] = {commandBuffer.as<vk::CommandBuffer>()};
-    vk::SubmitInfo submitInfo = {
+    const vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
+    const vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
+    const vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    const vk::CommandBuffer commandBuffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+    const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
@@ -280,11 +280,10 @@ void Renderer::render() {
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = singalSemaphores,
     };
-
     m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, m_inFlight[m_currentFrame].as<vk::Fence>());
 
-    vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
-    vk::PresentInfoKHR presentInfo = {
+    const vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
+    const vk::PresentInfoKHR presentInfo = {
         .sType = vk::StructureType::ePresentInfoKHR,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
@@ -298,7 +297,11 @@ void Renderer::render() {
     try {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (...) {
-        if ((result != vk::Result::eErrorOutOfDateKHR && result != vk::Result::eSuboptimalKHR)) {
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
+            m_spec.window.shouldResize()) {
+            m_spec.window.setShouldResize(false);
+            m_swapchain.recreate(m_framebuffers, m_renderPass);
+        } else {
             ENSURE(false);
         }
     }

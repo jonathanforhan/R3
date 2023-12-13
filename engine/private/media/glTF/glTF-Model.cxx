@@ -559,7 +559,7 @@ void Model::populateMeshes() {
             // targets
             if (itPrimitive.HasMember("targets")) {
                 for (auto& itTarget : itPrimitive["targets"].GetArray())
-                    primitive.targets.emplace_back(std::move(itTarget.GetObject()));
+                    primitive.targets.emplace_back(itTarget.GetObject());
             }
 
             // extensions

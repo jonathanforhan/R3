@@ -2,9 +2,11 @@
 
 #include "render/Shader.hpp"
 
-#include <vulkan/vulkan.hpp>
+#include <vulkan/vulkan.h>
 #include <fstream>
+#include <vector>
 #include "api/Check.hpp"
+#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
@@ -19,20 +21,24 @@ Shader::Shader(const ShaderSpecification& spec)
     ifs.read(bytes.data(), bytes.size());
     ifs.close();
 
-    vk::ShaderModuleCreateInfo shaderModuleCreateInfo = {
-        .sType = vk::StructureType::eShaderModuleCreateInfo,
+    VkShaderModuleCreateInfo shaderModuleCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},
         .codeSize = static_cast<uint32>(bytes.size()),
         .pCode = reinterpret_cast<const uint32*>(bytes.data()),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createShaderModule(shaderModuleCreateInfo));
+    VkShaderModule tmp;
+    VkResult result =
+        vkCreateShaderModule(m_spec.logicalDevice->as<VkDevice>(), &shaderModuleCreateInfo, nullptr, &tmp);
+    ENSURE(result == VK_SUCCESS);
+    setHandle(tmp);
 }
 
 Shader::~Shader() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyShaderModule(as<vk::ShaderModule>());
+        vkDestroyShaderModule(m_spec.logicalDevice->as<VkDevice>(), as<VkShaderModule>(), nullptr);
     }
 }
 

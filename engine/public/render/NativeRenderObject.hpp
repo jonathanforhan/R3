@@ -44,14 +44,6 @@ public:
     /// @tparam T cast to T type
     /// @return Handle
     template <typename T = Handle>
-    constexpr T handle() {
-        return reinterpret_cast<T>(m_handle.get());
-    }
-
-    /// @brief Retrieve opaque const handle
-    /// @tparam T cast to T type
-    /// @return Handle
-    template <typename T = Handle>
     constexpr T handle() const {
         return reinterpret_cast<T>(m_handle.get());
     }
@@ -59,16 +51,6 @@ public:
     /// @brief Return handle as a new type, used for C -> C++ bindings
     /// @tparam T cast to T type
     /// @return Type T Object from Handle
-    template <typename T>
-    constexpr T as() {
-        CHECK(validHandle());
-        if constexpr (IsWrapper<T>) {
-            return static_cast<T>(reinterpret_cast<T::NativeType>(m_handle.get()));
-        } else {
-            return static_cast<T>(m_handle.get());
-        }
-    }
-
     template <typename T>
     constexpr T as() const {
         CHECK(validHandle());

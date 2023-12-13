@@ -6,9 +6,7 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
-#include <vector>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
@@ -80,15 +78,15 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
     CHECK(framebuffers.size() == m_imageViews.size());
 
     // query
-    int width, height;
-    glfwGetFramebufferSize(m_spec.window->handle<GLFWwindow*>(), &width, &height);
+    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
+    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
-    while (width == 0 || height == 0) {
+    while (m_extent2D.x == 0 || m_extent2D.y == 0) {
         glfwWaitEvents();
-        glfwGetFramebufferSize(m_spec.window->handle<GLFWwindow*>(), &width, &height);
+        m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
-    m_extent2D = {static_cast<uint32>(width), static_cast<uint32>(height)};
 
     uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
@@ -113,7 +111,7 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         .imageSharingMode = sameQueueFamily ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
         .queueFamilyIndexCount = 2,                // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
-        .preTransform = vk::SurfaceTransformFlagBitsKHR::eInherit,
+        .preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity,
         .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
         .presentMode = (vk::PresentModeKHR)m_presentMode,
         .clipped = vk::True,
