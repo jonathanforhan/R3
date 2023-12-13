@@ -12,14 +12,14 @@ namespace R3 {
 UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
     : m_spec(spec) {
 
-    BufferAllocateSpecification bufferAllocateSpecification = {
+    const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = m_spec.bufferSize,
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eUniformBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
+    const auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // NOTE we DON'T unmap this memory because mapping isn't free and we write to it every frame
     m_mappedMemory =

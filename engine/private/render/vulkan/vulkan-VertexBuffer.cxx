@@ -14,14 +14,14 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
     : m_spec(spec),
       m_vertexCount(static_cast<uint32>(spec.vertices.size())) {
     // staging buffer, CPU writable
-    BufferAllocateSpecification stagingAllocateSpecification = {
+    const BufferAllocateSpecification stagingAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = m_spec.vertices.size_bytes(),
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
+    const auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
 
     // copy data to staging buffer
     void* data =
@@ -30,7 +30,7 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
     m_spec.logicalDevice->as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
 
     // real buffer, copy staging buffer to this GPU buffer
-    BufferAllocateSpecification bufferAllocateSpecification = {
+    const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = m_spec.vertices.size_bytes(),
@@ -40,7 +40,7 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
     auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy staging -> buffer
-    BufferCopySpecification bufferCopySpecification = {
+    const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_spec.logicalDevice,
         .commandPool = *m_spec.commandPool,
         .buffer = buffer,

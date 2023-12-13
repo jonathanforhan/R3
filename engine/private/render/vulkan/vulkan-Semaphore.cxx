@@ -11,7 +11,7 @@ namespace R3 {
 
 Semaphore::Semaphore(const SemaphoreSpecification& spec)
     : m_spec(spec) {
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {
+    const VkSemaphoreCreateInfo semaphoreCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

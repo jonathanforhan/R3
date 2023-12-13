@@ -29,7 +29,7 @@ static constexpr VkCommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolF
 CommandPool::CommandPool(const CommandPoolSpecification& spec)
     : m_spec(spec) {
 
-    VkCommandPoolCreateInfo commandPoolCreateInfo = {
+    const VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = local::CommandPoolFlagsToVkFlags(m_spec.flags),

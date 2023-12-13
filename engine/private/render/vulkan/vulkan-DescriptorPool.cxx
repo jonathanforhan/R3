@@ -12,22 +12,22 @@ namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     : m_spec(spec) {
-    VkDescriptorPoolSize uboDescriptorPoolSize = {
+    const VkDescriptorPoolSize uboDescriptorPoolSize = {
         .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = m_spec.descriptorSetCount,
     };
 
-    VkDescriptorPoolSize samplerDescriptorPoolSize = {
+    const VkDescriptorPoolSize samplerDescriptorPoolSize = {
         .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptorCount = m_spec.descriptorSetCount,
     };
 
-    VkDescriptorPoolSize poolSizes[2]{
+    const VkDescriptorPoolSize poolSizes[2]{
         uboDescriptorPoolSize,
         samplerDescriptorPoolSize,
     };
     
-    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
+    const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,

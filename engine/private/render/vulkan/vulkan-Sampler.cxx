@@ -14,7 +14,7 @@ Sampler::Sampler(const SamplerSpecification& spec)
     VkPhysicalDeviceProperties props;
     vkGetPhysicalDeviceProperties(m_spec.physicalDevice->as<VkPhysicalDevice>(), &props);
 
-    VkSamplerCreateInfo samplerCreateInfo = {
+    const VkSamplerCreateInfo samplerCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

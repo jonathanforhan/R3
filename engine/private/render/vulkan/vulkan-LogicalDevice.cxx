@@ -15,17 +15,17 @@ namespace R3 {
 LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
     : m_spec(spec) {
 
-    auto queueFamilyIndices = QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
+    const auto queueFamilyIndices = QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
     CHECK(queueFamilyIndices.isValid());
 
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<int32> uniqueQueueIndices = {
+    const std::set<int32> uniqueQueueIndices = {
         queueFamilyIndices.graphics,
         queueFamilyIndices.presentation,
     };
 
     float queuePriority = 1.0f;
 
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     for (uint32 index : uniqueQueueIndices) {
         queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
             .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -37,13 +37,13 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
         });
     }
 
-    VkPhysicalDeviceFeatures physicalDeviceFeatures = {
+    const VkPhysicalDeviceFeatures physicalDeviceFeatures = {
         .samplerAnisotropy = VK_TRUE,
     };
 
-    std::span<const char* const> deviceExtensions = m_spec.physicalDevice->extensions();
+    const std::span<const char* const> deviceExtensions = m_spec.physicalDevice->extensions();
 
-    VkDeviceCreateInfo logicalDeviceCreateInfo = {
+    const VkDeviceCreateInfo logicalDeviceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

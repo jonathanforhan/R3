@@ -15,12 +15,12 @@ namespace R3 {
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_spec(spec) {
 
-    VkImageView imageView = m_spec.imageView->as<VkImageView>();
-    VkImageView attachments[] = {
+    const VkImageView imageView = m_spec.imageView->as<VkImageView>();
+    const VkImageView attachments[] = {
         imageView,
     };
 
-    VkFramebufferCreateInfo framebufferCreateInfo = {
+    const VkFramebufferCreateInfo framebufferCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

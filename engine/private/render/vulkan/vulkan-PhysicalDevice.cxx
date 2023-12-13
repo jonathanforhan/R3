@@ -2,8 +2,8 @@
 
 #include "render/PhysicalDevice.hpp"
 
-#include <vulkan/vulkan.hpp>
 #include <cstring>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
@@ -16,7 +16,8 @@ namespace R3 {
 
 PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     : m_spec(spec) {
-    std::vector<vk::PhysicalDevice> physicalDevices = m_spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
+    const std::vector<vk::PhysicalDevice> physicalDevices =
+        m_spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
 
     int32 bestScore = INT32_MIN;
     for (vk::PhysicalDevice physicalDevice : physicalDevices) {
@@ -31,16 +32,16 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
 }
 
 int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) const {
-    vk::PhysicalDevice physicalDevice = deviceHandle.as<vk::PhysicalDevice>();
-    auto surface = m_spec.surface->as<vk::SurfaceKHR>();
+    const vk::PhysicalDevice physicalDevice = deviceHandle.as<vk::PhysicalDevice>();
+    const auto surface = m_spec.surface->as<vk::SurfaceKHR>();
 
-    auto physicalDeviceProperties = physicalDevice.getProperties();
-    auto physicalDeviceFeatures = physicalDevice.getFeatures();
+    const auto physicalDeviceProperties = physicalDevice.getProperties();
+    const auto physicalDeviceFeatures = physicalDevice.getFeatures();
 
     int32 deviceScore = 0;
 
-    auto deviceQueueIndices = QueueFamilyIndices::query(physicalDevice, surface);
-    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(physicalDevice, surface);
+    const auto deviceQueueIndices = QueueFamilyIndices::query(physicalDevice, surface);
+    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(physicalDevice, surface);
 
     if (!deviceQueueIndices.isValid())
         deviceScore -= 1000;
@@ -64,8 +65,8 @@ int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) con
 }
 
 uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const {
-    vk::PhysicalDeviceMemoryProperties memoryProperties = as<vk::PhysicalDevice>().getMemoryProperties();
-    vk::MemoryPropertyFlags flags((uint32)propertyFlags);
+    const vk::PhysicalDeviceMemoryProperties memoryProperties = as<vk::PhysicalDevice>().getMemoryProperties();
+    const vk::MemoryPropertyFlags flags((uint32)propertyFlags);
 
     for (uint32 i = 0; i < memoryProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & flags) == flags)

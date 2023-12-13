@@ -49,7 +49,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 Instance::Instance(const InstanceSpecification& spec)
     : m_spec(spec) {
 
-    vk::ApplicationInfo applicationInfo = {
+    const vk::ApplicationInfo applicationInfo = {
         .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,
         .pApplicationName = m_spec.applicationName.data(),
@@ -63,7 +63,7 @@ Instance::Instance(const InstanceSpecification& spec)
     CHECK(checkValidationLayerSupport(m_spec.validationLayers));
 
 #if R3_VALIDATION_LAYERS_ENABLED
-    vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {
+    const vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {
         .sType = vk::StructureType::eDebugUtilsMessengerCreateInfoEXT,
         .pNext = nullptr,
         .flags = {},
@@ -79,7 +79,7 @@ Instance::Instance(const InstanceSpecification& spec)
         .pUserData = nullptr,
     };
 
-    vk::InstanceCreateInfo instanceCreateInfo = {
+    const vk::InstanceCreateInfo instanceCreateInfo = {
         .sType = vk::StructureType::eInstanceCreateInfo,
         .pNext = &debugMessengerCreateInfo,
         .flags = {},
@@ -90,7 +90,7 @@ Instance::Instance(const InstanceSpecification& spec)
         .ppEnabledExtensionNames = m_spec.extensions.data(),
     };
 #else
-    vk::InstanceCreateInfo instanceCreateInfo = {
+    const vk::InstanceCreateInfo instanceCreateInfo = {
         .sType = vk::StructureType::eInstanceCreateInfo,
         .pNext = nullptr,
         .flags = {},

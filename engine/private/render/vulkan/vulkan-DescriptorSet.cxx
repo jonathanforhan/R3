@@ -14,10 +14,10 @@
 namespace R3 {
 
 std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecification& spec) {
-    std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(spec.descriptorSetCount,
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(spec.descriptorSetCount,
                                                               spec.descriptorSetLayout->as<vk::DescriptorSetLayout>());
 
-    vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo = {
+    const vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         .sType = vk::StructureType::eDescriptorSetAllocateInfo,
         .pNext = nullptr,
         .descriptorPool = spec.descriptorPool->as<vk::DescriptorPool>(),
@@ -25,7 +25,7 @@ std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecificat
         .pSetLayouts = descriptorSetLayouts.data(),
     };
 
-    auto allocatedDescriptorSets =
+    const auto allocatedDescriptorSets =
         spec.logicalDevice->as<vk::Device>().allocateDescriptorSets(descriptorSetAllocateInfo);
     CHECK(allocatedDescriptorSets.size() == spec.descriptorSetCount);
 
@@ -44,7 +44,7 @@ void DescriptorSet::free(const std::span<DescriptorSet> descriptorSets) {
     for (const auto& descriptorSet : descriptorSets) {
         sets.push_back(descriptorSet.as<vk::DescriptorSet>());
     }
-    auto& spec = descriptorSets.front().m_spec;
+    const auto& spec = descriptorSets.front().m_spec;
     spec.logicalDevice->as<vk::Device>().freeDescriptorSets(spec.descriptorPool->as<vk::DescriptorPool>(), sets);
 }
 
@@ -63,7 +63,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
-        auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
+        const auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
             .buffer = it.uniform.as<vk::Buffer>(),
             .offset = it.offset,
             .range = it.range ?  it.range : vk::WholeSize,

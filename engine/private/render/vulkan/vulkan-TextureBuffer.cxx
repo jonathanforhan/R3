@@ -18,19 +18,19 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     : m_spec(spec) {
 
     int32 w, h, channels;
-    uint8* bytes = stbi_load(m_spec.path.data(), &w, &h, &channels, 0);
+    const uint8* bytes = stbi_load(m_spec.path.data(), &w, &h, &channels, 0);
     CHECK(bytes != nullptr);
-    usize imageSize = w * h * 4;
+    const usize imageSize = w * h * 4;
 
     // staging buffer for wriring
-    BufferAllocateSpecification bufferAllocateSpecification = {
+    const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = imageSize,
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    auto [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
+    const auto [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy image data to buffer
     void* data =
@@ -44,7 +44,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
             for (uint32 i = 0, j = 0; i < rgbSize; i += 3, j++) {
                 // we overide the alpha channel with opaque mask 0xFF
-                rgba[j] = (*(reinterpret_cast<uint32*>(&bytes[i])) | OPAQUE_MASK);
+                rgba[j] = (*(reinterpret_cast<const uint32*>(&bytes[i])) | OPAQUE_MASK);
             }
         }
         // has Alpha Channel
@@ -53,10 +53,10 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         }
     }
     m_spec.logicalDevice->as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
-    stbi_image_free(bytes);
+    stbi_image_free((void*)bytes);
 
     // real image we use to store data
-    ImageAllocateSpecification imageAllocateSpecification = {
+    const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = imageSize,
@@ -69,7 +69,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     auto [image, memory] = Image::allocate(imageAllocateSpecification);
 
 
-    auto& commandBuffer = m_spec.commandPool->commandBuffers().front();
+    const auto& commandBuffer = m_spec.commandPool->commandBuffers().front();
 
     vk::ImageMemoryBarrier imageMemoryBarrier = {
         .sType = vk::StructureType::eImageMemoryBarrier,
@@ -100,7 +100,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     commandBuffer.endCommandBuffer();
     commandBuffer.oneTimeSubmit();
 
-    ImageCopySpecification imageCopySpecification = {
+    const ImageCopySpecification imageCopySpecification = {
         .logicalDevice = *m_spec.logicalDevice,
         .commandPool = *m_spec.commandPool,
         .dst = image,
@@ -133,7 +133,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     setHandle(image.handle());
     setDeviceMemory(memory.handle());
 
-    Image img(handle());
+    const Image img(handle());
     m_imageView = ImageView(ImageViewSpecification{
         .logicalDevice = m_spec.logicalDevice,
         .swapchain = m_spec.swapchain,

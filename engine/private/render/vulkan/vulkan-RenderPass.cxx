@@ -13,7 +13,7 @@ namespace R3 {
 RenderPass::RenderPass(const RenderPassSpecification& spec)
     : m_spec(spec) {
 
-    vk::AttachmentDescription colorAttachment = {
+    const vk::AttachmentDescription colorAttachment = {
         .flags = {},
         .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
         .samples = vk::SampleCountFlagBits::e1,
@@ -25,12 +25,12 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .finalLayout = vk::ImageLayout::ePresentSrcKHR,
     };
 
-    vk::AttachmentReference colorAttachmentReference = {
+    const vk::AttachmentReference colorAttachmentReference = {
         .attachment = 0,
         .layout = vk::ImageLayout::eColorAttachmentOptimal,
     };
 
-    vk::SubpassDescription subpassDescription = {
+    const vk::SubpassDescription subpassDescription = {
         .flags = {},
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics,
         .inputAttachmentCount = 0,
@@ -43,7 +43,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .pPreserveAttachments = nullptr,
     };
 
-    vk::SubpassDependency subpassDependency = {
+    const vk::SubpassDependency subpassDependency = {
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
         .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
@@ -53,7 +53,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyFlags = {},
     };
 
-    vk::RenderPassCreateInfo renderPassCreateInfo = {
+    const vk::RenderPassCreateInfo renderPassCreateInfo = {
         .sType = vk::StructureType::eRenderPassCreateInfo,
         .pNext = nullptr,
         .flags = {},

@@ -36,7 +36,7 @@ static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(Command
 } // namespace local
 
 std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecification& spec) {
-    vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
+    const vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
         .commandPool = spec.commandPool->as<vk::CommandPool>(),
@@ -44,7 +44,7 @@ std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecificat
         .commandBufferCount = spec.commandBufferCount,
     };
 
-    auto allocatedCommandBuffers =
+    const auto allocatedCommandBuffers =
         spec.logicalDevice->as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo);
     CHECK(allocatedCommandBuffers.size() == spec.commandBufferCount);
 
@@ -63,7 +63,7 @@ void CommandBuffer::free(std::vector<CommandBuffer>& commandBuffers) {
     for (const auto& commandBuffer : commandBuffers) {
         buffers.push_back(commandBuffer.as<vk::CommandBuffer>());
     }
-    auto& spec = commandBuffers.front().m_spec;
+    const auto& spec = commandBuffers.front().m_spec;
     spec.logicalDevice->as<vk::Device>().freeCommandBuffers(spec.commandPool->as<vk::CommandPool>(), buffers);
 }
 
@@ -77,7 +77,7 @@ void CommandBuffer::resetCommandBuffer() const {
 }
 
 void CommandBuffer::beginCommandBuffer(CommandBufferFlags flags) const {
-    vk::CommandBufferBeginInfo commandBufferBeginInfo = {
+    const vk::CommandBufferBeginInfo commandBufferBeginInfo = {
         .sType = vk::StructureType::eCommandBufferBeginInfo,
         .pNext = nullptr,
         .flags = local::CommandBufferFlagsToVkFlags(flags),
@@ -92,9 +92,9 @@ void CommandBuffer::endCommandBuffer() const {
 }
 
 void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const {
-    vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+    const vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
-    vk::RenderPassBeginInfo renderPassBeginInfo = {
+    const vk::RenderPassBeginInfo renderPassBeginInfo = {
         .sType = vk::StructureType::eRenderPassBeginInfo,
         .pNext = nullptr,
         .renderPass = renderPass.as<vk::RenderPass>(),
@@ -118,7 +118,7 @@ void CommandBuffer::endRenderPass() const {
 void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const {
     as<vk::CommandBuffer>().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.as<vk::Pipeline>());
 
-    vk::Viewport viewport = {
+    const vk::Viewport viewport = {
         .x = 0.0f,
         .y = 0.0f,
         .width = static_cast<float>(m_spec.swapchain->extent().x),
@@ -128,7 +128,7 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
     };
     as<vk::CommandBuffer>().setViewport(0, {viewport});
 
-    vk::Rect2D scissor = {
+    const vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
     };
@@ -160,8 +160,8 @@ void CommandBuffer::bindDescriptorSet(const PipelineLayout& pipelineLayout, cons
 }
 
 void CommandBuffer::oneTimeSubmit() const {
-    auto vkCommandBuffer = as<vk::CommandBuffer>();
-    auto submitInfo = vk::SubmitInfo{
+    const auto vkCommandBuffer = as<vk::CommandBuffer>();
+    const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .commandBufferCount = 1,
         .pCommandBuffers = &vkCommandBuffer,

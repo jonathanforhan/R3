@@ -15,14 +15,14 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
     : m_spec(spec),
       m_indexCount(static_cast<uint32>(spec.indices.size())) {
     // staging buffer, CPU writable
-    BufferAllocateSpecification stagingAllocateSpecification = {
+    const BufferAllocateSpecification stagingAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = m_spec.indices.size_bytes(),
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
+    const auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
 
     // copy data to staging buffer
     void* data = m_spec.logicalDevice->template as<vk::Device>().mapMemory(
@@ -31,16 +31,16 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
     m_spec.logicalDevice->template as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
 
     // real buffer, copy staging buffer to this GPU buffer
-    BufferAllocateSpecification bufferAllocateSpecification = {
+    const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,
         .size = m_spec.indices.size_bytes(),
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
-    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
+    const auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
-    BufferCopySpecification bufferCopySpecification = {
+    const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_spec.logicalDevice,
         .commandPool = *m_spec.commandPool,
         .buffer = buffer,

@@ -13,7 +13,7 @@
 namespace R3 {
 
 std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
-    std::vector<vk::Image> swapchainImages =
+    const std::vector<vk::Image> swapchainImages =
         spec.logicalDevice->as<vk::Device>().getSwapchainImagesKHR(spec.swapchain->as<vk::SwapchainKHR>());
 
     std::vector<Image> images(swapchainImages.size());
@@ -26,12 +26,12 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
 }
 
 std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAllocateSpecification& spec) {
-    uint32 indices[]{
+    const uint32 indices[]{
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
     };
 
-    vk::ImageCreateInfo imageCreateInfo = {
+    const vk::ImageCreateInfo imageCreateInfo = {
         .sType = vk::StructureType::eImageCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -54,18 +54,18 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    vk::Image image = spec.logicalDevice.as<vk::Device>().createImage(imageCreateInfo);
+    const vk::Image image = spec.logicalDevice.as<vk::Device>().createImage(imageCreateInfo);
 
-    auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getImageMemoryRequirements(image);
+    const auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getImageMemoryRequirements(image);
 
-    vk::MemoryAllocateInfo memoryAllocateInfo = {
+    const vk::MemoryAllocateInfo memoryAllocateInfo = {
         .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
         .memoryTypeIndex =
             spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
     };
-    vk::DeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
+    const vk::DeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
     spec.logicalDevice.as<vk::Device>().bindImageMemory(image, memory, 0);
 
@@ -73,12 +73,12 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
 }
 
 void Image::copy(const ImageCopySpecification& spec) {
-    auto& commandBuffer = spec.commandPool.commandBuffers().front();
+    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
 
     commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
 
     if (spec.copyType == ImageCopyType::BufferToImage) {
-        vk::BufferImageCopy bufferImageCopy = {
+        const vk::BufferImageCopy bufferImageCopy = {
             .bufferOffset = 0,
             .bufferRowLength = 0,
             .bufferImageHeight = 0,
@@ -103,7 +103,7 @@ void Image::copy(const ImageCopySpecification& spec) {
                                                                 vk::ImageLayout::eTransferDstOptimal,
                                                                 {bufferImageCopy});
     } else if (spec.copyType == ImageCopyType::Image) {
-        vk::ImageCopy imageCopy = {
+        const vk::ImageCopy imageCopy = {
             .srcSubresource =
                 {
                     .aspectMask = vk::ImageAspectFlagBits::eColor,

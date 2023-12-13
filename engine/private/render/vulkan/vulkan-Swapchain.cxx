@@ -18,10 +18,10 @@ namespace R3 {
 
 Swapchain::Swapchain(const SwapchainSpecification& spec)
     : m_spec(spec) {
-    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
         m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
 
-    auto format = swapchainSupportDetails.optimalSurfaceFormat();
+    const auto format = swapchainSupportDetails.optimalSurfaceFormat();
     m_surfaceFormat = std::get<0>(format);
     m_colorSpace = std::get<1>(format);
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
@@ -30,13 +30,13 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         ? m_imageCount = swapchainSupportDetails.capabilities.maxImageCount
         : m_imageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
 
-    uint32 queueFamilyIndices[] = {
+    const uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
         m_spec.logicalDevice->presentationQueue().index(),
     };
-    bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
+    const bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
-    vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
+    const vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
@@ -78,7 +78,7 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
     CHECK(framebuffers.size() == m_imageViews.size());
 
     // query
-    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
         m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
@@ -88,16 +88,16 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
 
-    uint32 queueFamilyIndices[] = {
+    const uint32 queueFamilyIndices[] = {
         m_spec.logicalDevice->graphicsQueue().index(),
         m_spec.logicalDevice->presentationQueue().index(),
     };
-    bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
+    const bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
     // store old
-    vk::SwapchainKHR oldSwapchain = as<vk::SwapchainKHR>();
+    const vk::SwapchainKHR oldSwapchain = as<vk::SwapchainKHR>();
 
-    vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
+    const vk::SwapchainCreateInfoKHR swapchainCreateInfo = {
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},

@@ -10,7 +10,7 @@ namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
     : m_spec(spec) {
-    VkDescriptorSetLayoutBinding uboDescriptorSetLayoutBinding = {
+    const VkDescriptorSetLayoutBinding uboDescriptorSetLayoutBinding = {
         .binding = 0,
         .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
         .descriptorCount = 1,
@@ -18,7 +18,7 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification&
         .pImmutableSamplers = nullptr,
     };
 
-    VkDescriptorSetLayoutBinding samplerDescriptorSetLayoutBinding = {
+    const VkDescriptorSetLayoutBinding samplerDescriptorSetLayoutBinding = {
         .binding = 1,
         .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .descriptorCount = 1,
@@ -26,12 +26,12 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification&
         .pImmutableSamplers = nullptr,
     };
 
-    VkDescriptorSetLayoutBinding bindings[2]{
+    const VkDescriptorSetLayoutBinding bindings[2]{
         uboDescriptorSetLayoutBinding,
         samplerDescriptorSetLayoutBinding,
     };
 
-    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
+    const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

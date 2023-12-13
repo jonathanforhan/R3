@@ -14,7 +14,7 @@ namespace R3 {
 ImageView::ImageView(const ImageViewSpecification& spec)
     : m_spec(spec) {
 
-    VkImageViewCreateInfo imageViewCreateInfo = {
+    const VkImageViewCreateInfo imageViewCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

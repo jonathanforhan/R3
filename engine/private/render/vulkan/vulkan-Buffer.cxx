@@ -11,12 +11,12 @@
 namespace R3 {
 
 std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const BufferAllocateSpecification& spec) {
-    uint32 indices[]{
+    const uint32 indices[]{
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
     };
 
-    vk::BufferCreateInfo bufferCreateInfo = {
+    const vk::BufferCreateInfo bufferCreateInfo = {
         .sType = vk::StructureType::eBufferCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -26,18 +26,18 @@ std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const Buffer
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,
     };
-    auto buffer = spec.logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
+    const auto buffer = spec.logicalDevice.as<vk::Device>().createBuffer(bufferCreateInfo);
 
-    auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getBufferMemoryRequirements(buffer);
+    const auto memoryRequirements = spec.logicalDevice.as<vk::Device>().getBufferMemoryRequirements(buffer);
 
-    vk::MemoryAllocateInfo memoryAllocateInfo = {
+    const vk::MemoryAllocateInfo memoryAllocateInfo = {
         .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
         .memoryTypeIndex =
             spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
     };
-    auto memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
+    const auto memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
     spec.logicalDevice.as<vk::Device>().bindBufferMemory(buffer, memory, 0);
 
@@ -51,8 +51,8 @@ void Buffer::copy(const BufferCopySpecification& spec) {
         spec.stagingBuffer.as<vk::Buffer>(), spec.buffer.as<vk::Buffer>(), {{.size = spec.size}});
     commandBuffer.endCommandBuffer();
 
-    vk::CommandBuffer buffers[] = {commandBuffer.as<vk::CommandBuffer>()};
-    vk::SubmitInfo submitInfo = {
+    const vk::CommandBuffer buffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+    const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .commandBufferCount = 1,
         .pCommandBuffers = buffers,

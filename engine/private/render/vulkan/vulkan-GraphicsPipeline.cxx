@@ -15,18 +15,11 @@ namespace R3 {
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     : m_spec(spec) {
+    m_vertexShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.vertexShaderPath});
 
-    m_vertexShader = Shader({
-        .logicalDevice = m_spec.logicalDevice,
-        .path = m_spec.vertexShaderPath
-    });
+    m_fragmentShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.fragmentShaderPath});
 
-    m_fragmentShader = Shader({
-        .logicalDevice = m_spec.logicalDevice,
-        .path = m_spec.fragmentShaderPath
-    });
-
-    vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
+    const vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -36,7 +29,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pSpecializationInfo = nullptr,
     };
 
-    vk::PipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = {
+    const vk::PipelineShaderStageCreateInfo fragmentShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -46,18 +39,18 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pSpecializationInfo = nullptr,
     };
 
-    vk::PipelineShaderStageCreateInfo shaderStageCreateInfos[] = {
+    const vk::PipelineShaderStageCreateInfo shaderStageCreateInfos[] = {
         vertexShaderStageCreateInfo,
         fragmentShaderStageCreateInfo,
     };
 
-    vk::VertexInputBindingDescription bindingDescription = {
+    const vk::VertexInputBindingDescription bindingDescription = {
         .binding = 0,
         .stride = sizeof(Vertex),
         .inputRate = vk::VertexInputRate::eVertex,
     };
 
-    vk::VertexInputAttributeDescription attributeDescriptions[] = {
+    const vk::VertexInputAttributeDescription attributeDescriptions[] = {
         {
             .location = 0,
             .binding = 0,
@@ -104,7 +97,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
 #endif
     };
 
-    vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+    const vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -114,7 +107,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pVertexAttributeDescriptions = attributeDescriptions,
     };
 
-    vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
+    const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
         .sType = vk::StructureType::ePipelineInputAssemblyStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -122,26 +115,12 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .primitiveRestartEnable = VK_FALSE,
     };
 
-    vk::Viewport viewport = {
-        .x = 0.0f,
-        .y = 0.0f,
-        .width = static_cast<float>(m_spec.swapchain->extent().x),
-        .height = static_cast<float>(m_spec.swapchain->extent().y),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    };
-
-    vk::Rect2D scissor = {
-        .offset = {0, 0},
-        .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
-    };
-
-    std::vector<vk::DynamicState> dynamicStates = {
+    const std::vector<vk::DynamicState> dynamicStates = {
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,
     };
 
-    vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+    const vk::PipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
         .sType = vk::StructureType::ePipelineDynamicStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -149,21 +128,17 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pDynamicStates = dynamicStates.data(),
     };
 
-    vk::PipelineViewportStateCreateInfo viewportStateCreateInfo = {
+    const vk::PipelineViewportStateCreateInfo viewportStateCreateInfo = {
         .sType = vk::StructureType::ePipelineViewportStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
         .viewportCount = 1,
-    #if STATIC_STATE
-        .pViewports = &viewport,
-    #endif
+        .pViewports = nullptr,
         .scissorCount = 1,
-    #if STATIC_STATE
-        .pScissors = &scissor,
-    #endif
+        .pScissors = nullptr,
     };
 
-    vk::PipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
+    const vk::PipelineRasterizationStateCreateInfo rasterizationStateCreateInfo = {
         .sType = vk::StructureType::ePipelineRasterizationStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -179,7 +154,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .lineWidth = 1.0f,
     };
 
-    vk::PipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
+    const vk::PipelineMultisampleStateCreateInfo multisampleStateCreateInfo = {
         .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -191,24 +166,19 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .alphaToOneEnable = vk::False,
     };
 
-    #if TODO
+#if TODO
     VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {
-        .sType = ,
-        .pNext = ,
-        .flags = ,
-        .depthTestEnable = ,
-        .depthWriteEnable = ,
-        .depthCompareOp = ,
-        .depthBoundsTestEnable = ,
-        .stencilTestEnable = ,
-        .front = ,
-        .back = ,
-        .minDepthBounds = ,
-        .maxDepthBounds = ,
+        .sType =,
+        .pNext =,
+        .flags =,
+        .depthTestEnable =,
+        .depthWriteEnable =,
+        .depthCompareOp =
+            , .depthBoundsTestEnable =, .stencilTestEnable =, .front =, .back =, .minDepthBounds =, .maxDepthBounds =,
     };
-    #endif
+#endif
 
-    vk::PipelineColorBlendAttachmentState colorBlendAttachmentState = {
+    const vk::PipelineColorBlendAttachmentState colorBlendAttachmentState = {
         .blendEnable = vk::False,
         .srcColorBlendFactor = vk::BlendFactor::eOne,
         .dstColorBlendFactor = vk::BlendFactor::eZero,
@@ -220,7 +190,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
     };
 
-    vk::PipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
+    const vk::PipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
         .sType = vk::StructureType::ePipelineColorBlendStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -236,7 +206,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         }},
     };
 
-    vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
+    const vk::GraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
         .sType = vk::StructureType::eGraphicsPipelineCreateInfo,
         .pNext = nullptr,
         .flags = {},
@@ -258,7 +228,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .basePipelineIndex = -1,
     };
 
-    auto r = m_spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+    const auto r = m_spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
     ENSURE(r.result == vk::Result::eSuccess);
     setHandle(r.value);
 }

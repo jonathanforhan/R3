@@ -21,7 +21,7 @@ Shader::Shader(const ShaderSpecification& spec)
     ifs.read(bytes.data(), bytes.size());
     ifs.close();
 
-    VkShaderModuleCreateInfo shaderModuleCreateInfo = {
+    const VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .pNext = nullptr,
         .flags = {},

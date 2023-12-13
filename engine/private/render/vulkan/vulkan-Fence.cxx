@@ -12,7 +12,7 @@ namespace R3 {
 Fence::Fence(const FenceSpecification& spec)
     : m_spec(spec) {
 
-    VkFenceCreateInfo fenceCreateInfo = {
+    const VkFenceCreateInfo fenceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
         .pNext = nullptr,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,

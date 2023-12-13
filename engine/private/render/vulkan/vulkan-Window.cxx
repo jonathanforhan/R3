@@ -28,8 +28,8 @@ Window::Window(const WindowSpecification& spec)
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    int32 w = static_cast<int>(vidmode->width * 0.75);
-    int32 h = static_cast<int>(vidmode->height * 0.75);
+    const int32 w = static_cast<int>(vidmode->width * 0.75);
+    const int32 h = static_cast<int>(vidmode->height * 0.75);
 
     setHandle(glfwCreateWindow(w, h, m_spec.title.data(), nullptr, nullptr));
     if (handle() == nullptr) {
@@ -79,7 +79,7 @@ void Window::size(int32& width, int32& height) const {
 }
 
 float Window::aspectRatio() const {
-    auto [width, height] = size();
+    const auto [width, height] = size();
     return static_cast<float>(width) / static_cast<float>(height);
 }
 
