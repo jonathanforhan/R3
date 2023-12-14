@@ -63,7 +63,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
-        const auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
+        auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
             .buffer = it.uniform.as<vk::Buffer>(),
             .offset = it.offset,
             .range = it.range ?  it.range : vk::WholeSize,

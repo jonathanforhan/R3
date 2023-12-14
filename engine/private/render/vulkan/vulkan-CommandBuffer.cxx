@@ -135,14 +135,8 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
     as<vk::CommandBuffer>().setScissor(0, {scissor});
 }
 
-void CommandBuffer::bindVertexBuffers(std::span<const VertexBuffer> vertexBuffers) const {
-    std::vector<vk::Buffer> buffers(vertexBuffers.size());
-
-    for (uint32 i = 0; i < vertexBuffers.size(); i++) {
-        buffers[i] = vertexBuffers[i].as<vk::Buffer>();
-    }
-
-    as<vk::CommandBuffer>().bindVertexBuffers(0, {buffers}, {0});
+void CommandBuffer::bindVertexBuffer(const VertexBuffer& vertexBuffer) const {
+    as<vk::CommandBuffer>().bindVertexBuffers(0, {vertexBuffer.as<vk::Buffer>()}, {0});
 }
 
 void CommandBuffer::bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const {

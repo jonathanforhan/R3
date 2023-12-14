@@ -2,7 +2,7 @@
 
 #include "render/Sampler.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
@@ -11,39 +11,35 @@ namespace R3 {
 
 Sampler::Sampler(const SamplerSpecification& spec)
     : m_spec(spec) {
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(m_spec.physicalDevice->as<VkPhysicalDevice>(), &props);
+    vk::PhysicalDeviceProperties props = m_spec.physicalDevice->as<vk::PhysicalDevice>().getProperties();
 
-    const VkSamplerCreateInfo samplerCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+    const vk::SamplerCreateInfo samplerCreateInfo = {
+        .sType = vk::StructureType::eSamplerCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .magFilter = VK_FILTER_LINEAR,
-        .minFilter = VK_FILTER_LINEAR,
-        .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .magFilter = vk::Filter::eLinear,
+        .minFilter = vk::Filter::eLinear,
+        .mipmapMode = vk::SamplerMipmapMode::eLinear,
+        .addressModeU = vk::SamplerAddressMode::eRepeat,
+        .addressModeV = vk::SamplerAddressMode::eRepeat,
+        .addressModeW = vk::SamplerAddressMode::eRepeat,
         .mipLodBias = 0.0f,
         .anisotropyEnable = VK_TRUE,
         .maxAnisotropy = props.limits.maxSamplerAnisotropy,
         .compareEnable = VK_FALSE,
-        .compareOp = VK_COMPARE_OP_ALWAYS,
+        .compareOp = vk::CompareOp::eAlways,
         .minLod = 0.0f,
         .maxLod = 0.0f,
-        .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        .borderColor = vk::BorderColor::eIntOpaqueBlack,
         .unnormalizedCoordinates = VK_FALSE,
     };
 
-    VkSampler tmp;
-    VkResult result = vkCreateSampler(m_spec.logicalDevice->as<VkDevice>(), &samplerCreateInfo, nullptr, &tmp);
-    ENSURE(result == VK_SUCCESS);
-    setHandle(tmp);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createSampler(samplerCreateInfo));
 }
 
 Sampler::~Sampler() {
     if (validHandle()) {
-        vkDestroySampler(m_spec.logicalDevice->as<VkDevice>(), as<VkSampler>(), nullptr);
+        m_spec.logicalDevice->as<vk::Device>().destroySampler(as<vk::Sampler>());
     }
 }
 

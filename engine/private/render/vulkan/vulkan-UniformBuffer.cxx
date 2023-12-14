@@ -19,7 +19,7 @@ UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eUniformBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    const auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
+    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // NOTE we DON'T unmap this memory because mapping isn't free and we write to it every frame
     m_mappedMemory =

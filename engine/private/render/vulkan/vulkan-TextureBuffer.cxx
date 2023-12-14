@@ -30,7 +30,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    const auto [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
+    auto [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy image data to buffer
     void* data =

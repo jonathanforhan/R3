@@ -112,7 +112,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pNext = nullptr,
         .flags = {},
         .topology = vk::PrimitiveTopology::eTriangleList,
-        .primitiveRestartEnable = VK_FALSE,
+        .primitiveRestartEnable = vk::False,
     };
 
     const std::vector<vk::DynamicState> dynamicStates = {
@@ -142,12 +142,12 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .sType = vk::StructureType::ePipelineRasterizationStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .depthClampEnable = VK_FALSE,
-        .rasterizerDiscardEnable = VK_FALSE,
+        .depthClampEnable = vk::False,
+        .rasterizerDiscardEnable = vk::False,
         .polygonMode = vk::PolygonMode::eFill,
         .cullMode = vk::CullModeFlagBits::eBack,
         .frontFace = vk::FrontFace::eClockwise,
-        .depthBiasEnable = VK_FALSE,
+        .depthBiasEnable = vk::False,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp = 0.0f,
         .depthBiasSlopeFactor = 0.0f,

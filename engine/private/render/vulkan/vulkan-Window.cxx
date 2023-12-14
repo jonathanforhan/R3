@@ -2,6 +2,7 @@
 
 #include "render/Window.hpp"
 // clang-format off
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
@@ -79,7 +80,7 @@ void Window::size(int32& width, int32& height) const {
 }
 
 float Window::aspectRatio() const {
-    const auto [width, height] = size();
+    auto [width, height] = size();
     return static_cast<float>(width) / static_cast<float>(height);
 }
 

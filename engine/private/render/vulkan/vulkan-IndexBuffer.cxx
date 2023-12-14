@@ -38,7 +38,7 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
-    const auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
+    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_spec.logicalDevice,

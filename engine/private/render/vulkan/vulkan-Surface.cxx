@@ -3,7 +3,7 @@
 #include "render/Surface.hpp"
 
 // clang-format off
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
 #include "api/Check.hpp"
@@ -24,7 +24,7 @@ Surface::Surface(const SurfaceSpecification& spec)
 
 Surface::~Surface() {
     if (validHandle()) {
-        vkDestroySurfaceKHR(m_spec.instance->as<VkInstance>(), as<VkSurfaceKHR>(), nullptr);
+        m_spec.instance->as<vk::Instance>().destroySurfaceKHR(as<VkSurfaceKHR>());
     }
 }
 

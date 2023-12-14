@@ -2,6 +2,7 @@
 
 #include "vulkan-SwapchainSupportDetails.hxx"
 #include <algorithm>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
 

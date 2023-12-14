@@ -34,7 +34,7 @@ public:
     void beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const;
     void endRenderPass() const;
     void bindPipeline(const GraphicsPipeline& graphicsPipeline) const;
-    void bindVertexBuffers(std::span<const VertexBuffer> vertexBuffers) const;
+    void bindVertexBuffer(const VertexBuffer& vertexBuffer) const;
     void bindIndexBuffer(const IndexBuffer<uint16>& indexBuffer) const;
     void bindIndexBuffer(const IndexBuffer<uint32>& indexBuffer) const;
     void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;

@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 #include "api/Check.hpp"
+#include "api/Log.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"

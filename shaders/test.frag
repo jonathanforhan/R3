@@ -9,4 +9,5 @@ layout (location = 0) out vec4 f_Color;
 
 void main() {
     f_Color = texture(u_TexSampler, v_TexCoords);
+    
 }

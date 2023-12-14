@@ -1,8 +1,7 @@
 #if R3_VULKAN
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/DescriptorPool.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
@@ -12,35 +11,31 @@ namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     : m_spec(spec) {
-    const VkDescriptorPoolSize uboDescriptorPoolSize = {
-        .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+    const vk::DescriptorPoolSize uboDescriptorPoolSize = {
+        .type = vk::DescriptorType::eUniformBuffer,
         .descriptorCount = m_spec.descriptorSetCount,
     };
 
-    const VkDescriptorPoolSize samplerDescriptorPoolSize = {
-        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+    const vk::DescriptorPoolSize samplerDescriptorPoolSize = {
+        .type = vk::DescriptorType::eCombinedImageSampler,
         .descriptorCount = m_spec.descriptorSetCount,
     };
 
-    const VkDescriptorPoolSize poolSizes[2]{
+    const vk::DescriptorPoolSize poolSizes[2]{
         uboDescriptorPoolSize,
         samplerDescriptorPoolSize,
     };
-    
-    const VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+
+    const vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = {
+        .sType = vk::StructureType::eDescriptorPoolCreateInfo,
         .pNext = nullptr,
-        .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = m_spec.descriptorSetCount,
         .poolSizeCount = 2,
         .pPoolSizes = poolSizes,
     };
 
-    VkDescriptorPool tmp;
-    VkResult result =
-        vkCreateDescriptorPool(m_spec.logicalDevice->as<VkDevice>(), &descriptorPoolCreateInfo, nullptr, &tmp);
-    ENSURE(result == VK_SUCCESS);
-    setHandle(tmp);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));
 
     m_descriptorSets = DescriptorSet::allocate({
         .logicalDevice = m_spec.logicalDevice,
@@ -52,7 +47,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
 
 DescriptorPool::~DescriptorPool() {
     if (validHandle()) {
-        vkDestroyDescriptorPool(m_spec.logicalDevice->as<VkDevice>(), as<VkDescriptorPool>(), nullptr);
+        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorPool(as<vk::DescriptorPool>());
     }
 }
 

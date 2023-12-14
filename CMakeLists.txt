@@ -57,18 +57,13 @@ execute_process(
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )
 
-file(GLOB SHADERS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/*")
-foreach (SHADER ${SHADERS})
-	get_filename_component(FILENAME ${SHADER} NAME)
-	add_custom_command(
-		COMMAND ${glslc_executable} ${SHADER} -o  "spirv/${FILENAME}.spv"
-		OUTPUT "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv/${FILENAME}.spv"
-		DEPENDS ${SHADER} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
-		COMMENT "Compiling ${FILENAME}"
-	)
-	list(APPEND SPV_SHADERS  "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv/${FILENAME}.spv")
-endforeach ()
-add_custom_target(COMPILE_SHADERS ALL DEPENDS ${SPV_SHADERS})
+add_custom_target(COMPILE_SHADERS ALL COMMAND
+	python
+		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py"
+		"${glslc_executable}"
+		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
+)
 
 add_subdirectory(engine)
 

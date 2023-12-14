@@ -2,29 +2,27 @@
 
 #include "render/Framebuffer.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/ImageView.hpp"
-#include "render/Swapchain.hpp"
-#include "render/RenderPass.hpp"
 #include "render/LogicalDevice.hpp"
+#include "render/RenderPass.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_spec(spec) {
-
-    const VkImageView imageView = m_spec.imageView->as<VkImageView>();
-    const VkImageView attachments[] = {
+    const vk::ImageView imageView = m_spec.imageView->as<vk::ImageView>();
+    const vk::ImageView attachments[] = {
         imageView,
     };
 
-    const VkFramebufferCreateInfo framebufferCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+    const vk::FramebufferCreateInfo framebufferCreateInfo = {
+        .sType = vk::StructureType::eFramebufferCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .renderPass = m_spec.renderPass->as<VkRenderPass>(),
+        .renderPass = m_spec.renderPass->as<vk::RenderPass>(),
         .attachmentCount = 1,
         .pAttachments = attachments,
         .width = m_spec.swapchain->extent().x,
@@ -32,15 +30,12 @@ Framebuffer::Framebuffer(const FramebufferSpecification& spec)
         .layers = 1,
     };
 
-    VkFramebuffer tmp;
-    VkResult result = vkCreateFramebuffer(m_spec.logicalDevice->as<VkDevice>(), &framebufferCreateInfo, nullptr, &tmp);
-    ENSURE(result == VK_SUCCESS);
-    setHandle(tmp);
+    setHandle(m_spec.logicalDevice->as<vk::Device>().createFramebuffer(framebufferCreateInfo));
 }
 
 Framebuffer::~Framebuffer() {
     if (validHandle()) {
-        vkDestroyFramebuffer(m_spec.logicalDevice->as<VkDevice>(), as<VkFramebuffer>(), nullptr);
+        m_spec.logicalDevice->as<vk::Device>().destroyFramebuffer(as<vk::Framebuffer>());
     }
 }
 

@@ -21,7 +21,7 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    const auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
+    auto [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
 
     // copy data to staging buffer
     void* data =

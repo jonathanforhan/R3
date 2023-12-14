@@ -4,6 +4,7 @@
 out/*
 *-build*/
 .cache/*
+.shader.lock.json
 compile_commands.json
 CMakeUserPresets.json
 R3.proj.DotSettings

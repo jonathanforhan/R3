@@ -1,7 +1,5 @@
 #pragma once
 
-#include <concepts>
-
 namespace R3 {
 
 class Window;

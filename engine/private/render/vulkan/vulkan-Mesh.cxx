@@ -2,7 +2,7 @@
 
 #include "render/Mesh.hpp"
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace R3 {
 

@@ -2,10 +2,9 @@
 
 #include "render/LogicalDevice.hpp"
 
-#include <vulkan/vulkan.h>
 #include <set>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/Instance.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/Surface.hpp"
@@ -14,8 +13,8 @@ namespace R3 {
 
 LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
     : m_spec(spec) {
-
-    const auto queueFamilyIndices = QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
+    const auto queueFamilyIndices =
+        QueueFamilyIndices::query(m_spec.physicalDevice->handle(), m_spec.surface->handle());
     CHECK(queueFamilyIndices.isValid());
 
     const std::set<int32> uniqueQueueIndices = {
@@ -25,10 +24,10 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
 
     float queuePriority = 1.0f;
 
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::vector<vk::DeviceQueueCreateInfo> queueCreateInfos;
     for (uint32 index : uniqueQueueIndices) {
-        queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        queueCreateInfos.emplace_back(vk::DeviceQueueCreateInfo{
+            .sType = vk::StructureType::eDeviceQueueCreateInfo,
             .pNext = nullptr,
             .flags = {},
             .queueFamilyIndex = static_cast<uint32>(index),
@@ -37,14 +36,14 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
         });
     }
 
-    const VkPhysicalDeviceFeatures physicalDeviceFeatures = {
-        .samplerAnisotropy = VK_TRUE,
+    const vk::PhysicalDeviceFeatures physicalDeviceFeatures = {
+        .samplerAnisotropy = vk::True,
     };
 
     const std::span<const char* const> deviceExtensions = m_spec.physicalDevice->extensions();
 
-    const VkDeviceCreateInfo logicalDeviceCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+    const vk::DeviceCreateInfo logicalDeviceCreateInfo = {
+        .sType = vk::StructureType::eDeviceCreateInfo,
         .pNext = nullptr,
         .flags = {},
         .queueCreateInfoCount = static_cast<uint32>(queueCreateInfos.size()),
@@ -55,10 +54,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
         .ppEnabledExtensionNames = deviceExtensions.empty() ? nullptr : deviceExtensions.data(),
         .pEnabledFeatures = &physicalDeviceFeatures};
 
-    VkDevice tmp;
-    VkResult result = vkCreateDevice(m_spec.physicalDevice->as<VkPhysicalDevice>(), &logicalDeviceCreateInfo, nullptr, &tmp);
-    ENSURE(result == VK_SUCCESS);
-    setHandle(tmp);
+    setHandle(m_spec.physicalDevice->as<vk::PhysicalDevice>().createDevice(logicalDeviceCreateInfo));
 
     m_graphicsQueue.acquire({
         .logicalDevice = this,
@@ -75,7 +71,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec)
 
 LogicalDevice::~LogicalDevice() {
     if (validHandle()) {
-        vkDestroyDevice(as<VkDevice>(), nullptr);
+        as<vk::Device>().destroy();
     }
 }
 

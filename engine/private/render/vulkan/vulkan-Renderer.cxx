@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
-#include "api/Log.hpp"
 #include "core/BasicGeometry.hpp"
 #include "render/UniformBufferObject.hpp"
 
@@ -155,13 +154,11 @@ Renderer::Renderer(RendererSpecification spec)
         .indices = indices,
     });
 
-    #if 0
-    for (auto& vertex : vertices) {
-        vertex.position.y += 1;
-    }
+    #if 0xDEADBEEF
 
-    for (auto& index : indices) {
-        index += 4;
+    for (auto& vertex : vertices) {
+        vertex.position.y += 1.0f;
+        vertex.position.z += 1.0f;
     }
 
     auto& vertex1 = m_vertexBuffers.emplace_back();
@@ -218,10 +215,10 @@ void Renderer::render() {
     const vk::Fence fences[]{m_inFlight[m_currentFrame].as<vk::Fence>()};
     (void)m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::False, UINT64_MAX);
 
-    auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
+    const auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
     auto [result, value] =
         m_logicalDevice.as<vk::Device>().acquireNextImageKHR(m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, semaphore);
-    uint32 imageIndex = value;
+    const uint32 imageIndex = value;
 
     if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
@@ -235,24 +232,6 @@ void Renderer::render() {
 
     m_logicalDevice.as<vk::Device>().resetFences(fences);
 
-    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
-    commandBuffer.resetCommandBuffer();
-    commandBuffer.beginCommandBuffer();
-    {
-        commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
-        {
-            commandBuffer.bindPipeline(m_graphicsPipeline);
-            commandBuffer.bindVertexBuffers(m_vertexBuffers);
-            for (const auto& indexBuffer : m_indexBuffers) {
-                commandBuffer.bindIndexBuffer(indexBuffer);
-            }
-            commandBuffer.bindDescriptorSet(m_pipelineLayout, m_descriptorPool.descriptorSet(m_currentFrame));
-            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers.front().indexCount(), 1, 0, 0, 0);
-        }
-        commandBuffer.endRenderPass();
-    }
-    commandBuffer.endCommandBuffer();
-
 #if 1
     static auto startTime = std::chrono::high_resolution_clock::now();
     auto currentTime = std::chrono::high_resolution_clock::now();
@@ -264,6 +243,27 @@ void Renderer::render() {
         glm::radians(45.0f), (float)m_swapchain.extent().x / (float)m_swapchain.extent().y, 0.1f, 100.0f);
     m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
 #endif
+
+    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
+    commandBuffer.resetCommandBuffer();
+    commandBuffer.beginCommandBuffer();
+    {
+        commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
+        {
+            commandBuffer.bindPipeline(m_graphicsPipeline);
+            commandBuffer.bindDescriptorSet(m_pipelineLayout, m_descriptorPool.descriptorSet(m_currentFrame));
+
+            commandBuffer.bindVertexBuffer(m_vertexBuffers[1]);
+            commandBuffer.bindIndexBuffer(m_indexBuffers[1]);
+            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers[1].indexCount(), 1, 0, 0, 0);
+
+            commandBuffer.bindVertexBuffer(m_vertexBuffers[0]);
+            commandBuffer.bindIndexBuffer(m_indexBuffers[0]);
+            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers[0].indexCount(), 1, 0, 0, 0);
+        }
+        commandBuffer.endRenderPass();
+    }
+    commandBuffer.endCommandBuffer();
 
     const vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
     const vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
