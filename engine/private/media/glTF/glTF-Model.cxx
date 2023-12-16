@@ -67,7 +67,7 @@ void Model::parseGLB(std::ifstream& ifs) {
 
     auto readBin = [&]() {
         m_buffer.resize(chunkHeader.length);
-        ifs.read(m_buffer.data(), chunkHeader.length);
+        ifs.read((char*)m_buffer.data(), chunkHeader.length);
     };
 
     ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));

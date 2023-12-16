@@ -2,6 +2,7 @@
 
 #include "render/CommandBuffer.hpp"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "render/CommandPool.hpp"
@@ -92,7 +93,10 @@ void CommandBuffer::endCommandBuffer() const {
 }
 
 void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const {
-    const vk::ClearValue clearColor = vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
+    constexpr std::array<vk::ClearValue, 2> clearValues = {
+        vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f),
+        vk::ClearDepthStencilValue(1.0f, 0U),
+    };
 
     const vk::RenderPassBeginInfo renderPassBeginInfo = {
         .sType = vk::StructureType::eRenderPassBeginInfo,
@@ -104,8 +108,8 @@ void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuf
                 .offset = {0, 0},
                 .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
             },
-        .clearValueCount = 1,
-        .pClearValues = &clearColor,
+        .clearValueCount = static_cast<uint32>(clearValues.size()),
+        .pClearValues = clearValues.data(),
     };
 
     as<vk::CommandBuffer>().beginRenderPass(renderPassBeginInfo, vk::SubpassContents::eInline);

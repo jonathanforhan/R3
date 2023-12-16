@@ -6,15 +6,32 @@
 
 namespace R3 {
 
-Mesh::Mesh(std::span<Vertex> vertices, std::span<uint32> indices) {
+Mesh::Mesh(const MeshSpecification& spec)
+    : m_spec(spec) {
+    m_vertexBuffer = VertexBuffer(VertexBufferSpecification{
+        .physicalDevice = m_spec.physicalDevice,
+        .logicalDevice = m_spec.logicalDevice,
+        .commandPool = m_spec.commandPool,
+        .vertices = m_spec.vertices,
+    });
 
+    m_indexBuffer = IndexBuffer<uint32>(IndexBufferSpecification<uint32>{
+        .physicalDevice = m_spec.physicalDevice,
+        .logicalDevice = m_spec.logicalDevice,
+        .commandPool = m_spec.commandPool,
+        .indices = m_spec.indices,
+    });
 }
 
-Mesh::~Mesh() {
+Mesh::~Mesh() {}
 
-}
-
-void Mesh::bind() {
+bool Mesh::removeTextureIndex(uint32 index) {
+    auto it = std::ranges::find(m_textureIndices, index);
+    bool foundIndex = it != m_textureIndices.end();
+    if (foundIndex) {
+        m_textureIndices.erase(it);
+    }
+    return foundIndex;
 }
 
 } // namespace R3

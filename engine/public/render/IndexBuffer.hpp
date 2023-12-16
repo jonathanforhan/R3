@@ -23,7 +23,7 @@ public:
     IndexBuffer& operator=(IndexBuffer&&) noexcept = default;
     ~IndexBuffer();
 
-    uint32 indexCount() const { return m_indexCount; }
+    uint32 count() const { return m_indexCount; }
 
 private:
     IndexBufferSpecification<T> m_spec;

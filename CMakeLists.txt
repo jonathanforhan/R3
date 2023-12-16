@@ -42,10 +42,12 @@ if (R3_VULKAN)
 	find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
 endif ()
 
+#[[
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+]]
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory

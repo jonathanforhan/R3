@@ -2,6 +2,7 @@
 
 #include "render/Framebuffer.hpp"
 
+#include <array>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "render/ImageView.hpp"
@@ -13,9 +14,11 @@ namespace R3 {
 
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_spec(spec) {
-    const vk::ImageView imageView = m_spec.imageView->as<vk::ImageView>();
-    const vk::ImageView attachments[] = {
-        imageView,
+    const vk::ImageView swapchainImageView = m_spec.swapchainImageView->as<vk::ImageView>();
+    const vk::ImageView depthBufferImageView = m_spec.depthBufferImageView->as<vk::ImageView>();
+    const std::array<vk::ImageView, 2> attachments = {
+        swapchainImageView,
+        depthBufferImageView,
     };
 
     const vk::FramebufferCreateInfo framebufferCreateInfo = {
@@ -23,8 +26,8 @@ Framebuffer::Framebuffer(const FramebufferSpecification& spec)
         .pNext = nullptr,
         .flags = {},
         .renderPass = m_spec.renderPass->as<vk::RenderPass>(),
-        .attachmentCount = 1,
-        .pAttachments = attachments,
+        .attachmentCount = static_cast<uint32>(attachments.size()),
+        .pAttachments = attachments.data(),
         .width = m_spec.swapchain->extent().x,
         .height = m_spec.swapchain->extent().y,
         .layers = 1,

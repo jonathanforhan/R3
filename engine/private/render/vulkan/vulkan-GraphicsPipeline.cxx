@@ -15,8 +15,12 @@ namespace R3 {
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     : m_spec(spec) {
-    m_vertexShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.vertexShaderPath});
+    m_layout = PipelineLayout({
+        .logicalDevice = m_spec.logicalDevice,
+        .descriptorSetLayout = m_spec.descriptorSetLayout,
+    });
 
+    m_vertexShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.vertexShaderPath});
     m_fragmentShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.fragmentShaderPath});
 
     const vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
@@ -166,17 +170,20 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .alphaToOneEnable = vk::False,
     };
 
-#if TODO
-    VkPipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {
-        .sType =,
-        .pNext =,
-        .flags =,
-        .depthTestEnable =,
-        .depthWriteEnable =,
-        .depthCompareOp =
-            , .depthBoundsTestEnable =, .stencilTestEnable =, .front =, .back =, .minDepthBounds =, .maxDepthBounds =,
+    vk::PipelineDepthStencilStateCreateInfo depthStencilCreateInfo = {
+        .sType = vk::StructureType::ePipelineDepthStencilStateCreateInfo,
+        .pNext = nullptr,
+        .flags = {},
+        .depthTestEnable = vk::True,
+        .depthWriteEnable = vk::True,
+        .depthCompareOp = vk::CompareOp::eLess,
+        .depthBoundsTestEnable = vk::False,
+        .stencilTestEnable = vk::False,
+        .front = {},
+        .back = {},
+        .minDepthBounds = 0.0f,
+        .maxDepthBounds = 1.0f,
     };
-#endif
 
     const vk::PipelineColorBlendAttachmentState colorBlendAttachmentState = {
         .blendEnable = vk::False,
@@ -218,10 +225,10 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pViewportState = &viewportStateCreateInfo,
         .pRasterizationState = &rasterizationStateCreateInfo,
         .pMultisampleState = &multisampleStateCreateInfo,
-        .pDepthStencilState = nullptr,
+        .pDepthStencilState = &depthStencilCreateInfo,
         .pColorBlendState = &colorBlendStateCreateInfo,
         .pDynamicState = &dynamicStateCreateInfo,
-        .layout = m_spec.pipelineLayout->as<vk::PipelineLayout>(),
+        .layout = m_layout.as<vk::PipelineLayout>(),
         .renderPass = m_spec.renderPass->as<vk::RenderPass>(),
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,

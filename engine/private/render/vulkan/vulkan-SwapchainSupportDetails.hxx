@@ -1,4 +1,5 @@
 #if R3_VULKAN
+#pragma once
 
 // clang-format off
 #include <vulkan/vulkan.hpp>

@@ -7,7 +7,7 @@
 #include "core/BasicGeometry.hpp"
 #include "render/Mesh.hpp"
 #include "render/Shader.hpp"
-#include "render/Texture2D.hpp"
+#include "render/TextureBuffer.hpp"
 
 namespace R3 {
 
@@ -23,22 +23,20 @@ class Model;                 ///< @private
 
 class ModelComponent {
 public:
+    ModelComponent() = default;
+
     /// @brief Construct a ModelComponent and add a ModelSystem to active scene if not present
     /// @param path path to glTF resourse
     /// @param shader shader used by model
-    ModelComponent(const std::string& path, Shader& shader);
+    ModelComponent(const std::string& path);
 
     /// @brief Get the Model mesh list
     /// @return meshes
     std::vector<Mesh>& meshes() { return m_meshes; }
 
-    /// @brief Get the shader refernce used by ModelComponent
-    /// @return shade ref
-    Shader& shader() { return m_shader; };
-
     /// @brief Get the texture data stored in ModelComponent
     /// @return textures
-    std::vector<Texture2D>& textures() { return m_textures; }
+    std::vector<TextureBuffer>& textures() { return m_textures; }
 
     /// @brief Get the glTF resource path used for the ModelComponent
     /// @return filepath
@@ -58,8 +56,7 @@ private:
 
 private:
     std::vector<Mesh> m_meshes;
-    Shader& m_shader;
-    std::vector<Texture2D> m_textures;
+    std::vector<TextureBuffer> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
     std::string m_file;

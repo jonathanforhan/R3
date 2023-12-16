@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
+#include "api/Log.hpp"
 #include "core/BasicGeometry.hpp"
 #include "render/UniformBufferObject.hpp"
 
@@ -70,26 +71,15 @@ Renderer::Renderer(RendererSpecification spec)
 
     //--- RenderPass
     m_renderPass = RenderPass({
+        .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
-    });
-
-    //--- DescriptorSetLayout
-    m_descriptorSetLayout = DescriptorSetLayout({
-        .logicalDevice = &m_logicalDevice,
     });
 
     //--- DescriptorPool
     m_descriptorPool = DescriptorPool({
         .logicalDevice = &m_logicalDevice,
-        .descriptorSetLayout = &m_descriptorSetLayout,
         .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
-    });
-
-    //--- Pipeline Layout
-    m_pipelineLayout = PipelineLayout({
-        .logicalDevice = &m_logicalDevice,
-        .descriptorSetLayout = &m_descriptorSetLayout,
     });
 
     //--- Graphics Pipeline
@@ -97,9 +87,16 @@ Renderer::Renderer(RendererSpecification spec)
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .renderPass = &m_renderPass,
-        .pipelineLayout = &m_pipelineLayout,
+        .descriptorSetLayout = &m_descriptorPool.layout(),
         .vertexShaderPath = "spirv/test.vert.spv",
         .fragmentShaderPath = "spirv/test.frag.spv",
+    });
+
+    //--- DepthBuffer
+    m_depthBuffer = DepthBuffer({
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .swapchain = &m_swapchain,
     });
 
     //--- Framebuffers
@@ -108,7 +105,8 @@ Renderer::Renderer(RendererSpecification spec)
         framebuffer = Framebuffer({
             .logicalDevice = &m_logicalDevice,
             .swapchain = &m_swapchain,
-            .imageView = &swapchainImageView,
+            .swapchainImageView = &swapchainImageView,
+            .depthBufferImageView = &m_depthBuffer.imageView(),
             .renderPass = &m_renderPass,
         });
     }
@@ -154,28 +152,26 @@ Renderer::Renderer(RendererSpecification spec)
         .indices = indices,
     });
 
-    #if 0xDEADBEEF
+#if 0xDEADBEEF
 
     for (auto& vertex : vertices) {
         vertex.position.y += 1.0f;
         vertex.position.z += 1.0f;
     }
 
-    auto& vertex1 = m_vertexBuffers.emplace_back();
-    vertex1 = VertexBuffer({
+    m_vertexBuffers.emplace_back(VertexBufferSpecification{
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .vertices = vertices,
     });
-    auto& index1 = m_indexBuffers.emplace_back();
-    index1 = IndexBuffer<uint32>({
+    m_indexBuffers.emplace_back(IndexBufferSpecification<uint32>{
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .commandPool = &m_commandPoolTransient,
         .indices = indices,
     });
-    #endif
+#endif
 
     //--- Uniforms
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -188,7 +184,7 @@ Renderer::Renderer(RendererSpecification spec)
     }
 
     //--- Texture
-    m_textureBuffer = TextureBuffer(TextureBufferSpecification{
+    m_textureBuffer = TextureBuffer({
         .physicalDevice = &m_physicalDevice,
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
@@ -196,7 +192,7 @@ Renderer::Renderer(RendererSpecification spec)
         .path = "textures/container.jpg",
     });
 
-    auto descriptorSets = m_descriptorPool.descriptorSets();
+    auto& descriptorSets = m_descriptorPool.descriptorSets();
     for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
         descriptorSets[i].bindResources({
             .uniformDescriptors = {{
@@ -220,10 +216,10 @@ void Renderer::render() {
         m_logicalDevice.as<vk::Device>().acquireNextImageKHR(m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, semaphore);
     const uint32 imageIndex = value;
 
-    if (result != vk::Result::eSuccess) {
+    [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
             m_spec.window.setShouldResize(false);
-            m_swapchain.recreate(m_framebuffers, m_renderPass);
+            m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
             ENSURE(false);
@@ -232,18 +228,6 @@ void Renderer::render() {
 
     m_logicalDevice.as<vk::Device>().resetFences(fences);
 
-#if 1
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.projection = glm::perspective(
-        glm::radians(45.0f), (float)m_swapchain.extent().x / (float)m_swapchain.extent().y, 0.1f, 100.0f);
-    m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
-#endif
-
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
@@ -251,19 +235,29 @@ void Renderer::render() {
         commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
         {
             commandBuffer.bindPipeline(m_graphicsPipeline);
-            commandBuffer.bindDescriptorSet(m_pipelineLayout, m_descriptorPool.descriptorSet(m_currentFrame));
+            commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(),
+                                            m_descriptorPool.descriptorSets()[m_currentFrame]);
 
-            commandBuffer.bindVertexBuffer(m_vertexBuffers[1]);
-            commandBuffer.bindIndexBuffer(m_indexBuffers[1]);
-            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers[1].indexCount(), 1, 0, 0, 0);
-
-            commandBuffer.bindVertexBuffer(m_vertexBuffers[0]);
-            commandBuffer.bindIndexBuffer(m_indexBuffers[0]);
-            commandBuffer.as<vk::CommandBuffer>().drawIndexed(m_indexBuffers[0].indexCount(), 1, 0, 0, 0);
+            for (const auto& mesh : _Model.meshes()) {
+                commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
+                commandBuffer.bindIndexBuffer(mesh.indexBuffer());
+                commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
+            }
         }
         commandBuffer.endRenderPass();
     }
     commandBuffer.endCommandBuffer();
+
+#if 1
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.projection = glm::perspective(glm::radians(45.0f), m_spec.window.aspectRatio(), 0.1f, 100.0f);
+    m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
+#endif
 
     const vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
     const vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
@@ -296,13 +290,13 @@ void Renderer::render() {
 
     try {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
-    } catch (...) {
+    } catch (std::exception& e) {
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
             m_spec.window.shouldResize()) {
             m_spec.window.setShouldResize(false);
-            m_swapchain.recreate(m_framebuffers, m_renderPass);
+            m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
         } else {
-            ENSURE(false);
+            LOG(Error, e.what());
         }
     }
 

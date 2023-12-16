@@ -2,8 +2,8 @@
 
 #include "api/Types.hpp"
 #include "render/CommandPool.hpp"
+#include "render/DepthBuffer.hpp"
 #include "render/DescriptorPool.hpp"
-#include "render/DescriptorSetLayout.hpp"
 #include "render/Fence.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
@@ -21,6 +21,7 @@
 #include "render/UniformBuffer.hpp"
 #include "render/VertexBuffer.hpp"
 #include "render/Window.hpp"
+#include "components/ModelComponent.hpp"
 
 namespace R3 {
 
@@ -32,6 +33,11 @@ class Renderer {
 public:
     Renderer(RendererSpecification spec);
 
+    [[nodiscard]] Ref<const PhysicalDevice> physicalDevice() const { return &m_physicalDevice; }
+    [[nodiscard]] Ref<const LogicalDevice> logicalDevice() const { return &m_logicalDevice; }
+    [[nodiscard]] Ref<const Swapchain> swapchain() const { return &m_swapchain; }
+    [[nodiscard]] Ref<const CommandPool> commandPool() const { return &m_commandPool; }
+
     void render();
     void waitIdle() const;
 
@@ -42,9 +48,7 @@ private:
     LogicalDevice m_logicalDevice;
     Swapchain m_swapchain;
     RenderPass m_renderPass;
-    DescriptorSetLayout m_descriptorSetLayout;
     DescriptorPool m_descriptorPool;
-    PipelineLayout m_pipelineLayout;
     GraphicsPipeline m_graphicsPipeline;
     std::vector<Framebuffer> m_framebuffers;
     CommandPool m_commandPool;          // used for the render command buffers
@@ -60,8 +64,12 @@ private:
     std::vector<IndexBuffer<uint32>> m_indexBuffers;
     std::vector<UniformBuffer> m_uniformBuffers;
     TextureBuffer m_textureBuffer;
+    DepthBuffer m_depthBuffer;
 
     RendererSpecification m_spec;
+
+public:
+    ModelComponent _Model;
 };
 
 } // namespace R3

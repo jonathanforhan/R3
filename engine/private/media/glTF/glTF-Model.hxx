@@ -11,7 +11,7 @@ class Model : public Root {
 public:
     explicit Model(std::string_view path);
 
-    auto buffer() const -> const std::vector<char>& { return m_buffer; }
+    const std::vector<uint8>& buffer() const { return m_buffer; }
 
 private:
     void parseGLB(std::ifstream& ifs);
@@ -48,7 +48,7 @@ private:
 
 private:
     rapidjson::Document m_document;
-    std::vector<char> m_buffer;
+    std::vector<uint8> m_buffer;
     std::string m_path;
 };
 

@@ -2,82 +2,43 @@
 
 #include <span>
 #include <vector>
+#include "render/IndexBuffer.hpp"
 #include "render/Vertex.hpp"
+#include "render/VertexBuffer.hpp"
 
 namespace R3 {
 
 struct MeshSpecification {
-    uint32 location;
-    uint32 binding;
-    uint32 offset;
+    Ref<const PhysicalDevice> physicalDevice;
+    Ref<const LogicalDevice> logicalDevice;
+    Ref<const CommandPool> commandPool;
+    std::span<const Vertex> vertices;
+    std::span<const uint32> indices;
 };
 
 class Mesh {
 public:
-    Mesh() = default; ///< @brief default constructable
+    Mesh() = default;
 
-    Mesh(std::span<Vertex> vertices, std::span<uint32> indices = {});
-
-    Mesh(const Mesh&) = delete;           ///< @brief non-copyable
-    void operator=(const Mesh&) = delete; ///< @brief non-copyable
-
-    /// @brief Move constructor
-    /// @param src
-    Mesh(Mesh&& src) noexcept {
-        this->~Mesh();
-        m_vao = src.m_vao;
-        m_vbo = src.m_vbo;
-        m_ebo = src.m_ebo;
-        m_vertexCount = src.m_vertexCount;
-        m_indexCount = src.m_indexCount;
-        m_textures = src.m_textures;
-        src.m_vao = src.m_vbo = src.m_ebo = 0;
-    }
-
-    /// @brief Move assignment operator
-    /// @param src
-    /// @return moved Mesh
-    Mesh& operator=(Mesh&& src) noexcept {
-        this->~Mesh();
-        m_vao = src.m_vao;
-        m_vbo = src.m_vbo;
-        m_ebo = src.m_ebo;
-        m_vertexCount = src.m_vertexCount;
-        m_indexCount = src.m_indexCount;
-        m_textures = src.m_textures;
-        src.m_vao = src.m_vbo = src.m_ebo = 0;
-        return *this;
-    }
-
-    /// @brief delete VAO
+    Mesh(const MeshSpecification& spec);
+    Mesh(Mesh&&) noexcept = default;
+    Mesh& operator=(Mesh&&) noexcept = default;
     ~Mesh();
 
-    /// @brief Bind VAO to gpu
-    void bind();
+    uint32 vertexCount() const { return m_vertexBuffer.count(); }
+    const VertexBuffer& vertexBuffer() const { return m_vertexBuffer; }
 
-    /// @brief Get index count of Mesh
-    /// @return count
-    uint32 indexCount() const { return m_indexCount; }
+    uint32 indexCount() const { return m_indexBuffer.count(); }
+    const IndexBuffer<uint32>& indexBuffer() const { return m_indexBuffer; }
 
-    /// @brief Get vertex count of Mesh
-    /// @return count
-    uint32 vertexCount() const { return m_vertexCount; }
-
-    /// @brief Get the indices of Model textures bound to this mesh, used by ModelSystem
-    /// @return list of texture indices
-    const std::vector<usize>& textures() const { return m_textures; }
-
-    /// @brief Addes a texture index to the list of bound textures
-    /// @param i index of texture stored in the Model
-    void addTextureIndex(usize i) { m_textures.push_back(i); }
+    void addTextureIndex(uint32 index) { m_textureIndices.push_back(index); }
+    bool removeTextureIndex(uint32 index); // return true if index was erased
 
 private:
-    uint32 m_vao{0};
-    uint32 m_vbo{0};
-    uint32 m_ebo{0};
-    uint32 m_vertexCount{0};
-    uint32 m_indexCount{0};
-    std::vector<usize> m_textures;
+    MeshSpecification m_spec;
+    VertexBuffer m_vertexBuffer;
+    IndexBuffer<uint32> m_indexBuffer;
+    std::vector<uint32> m_textureIndices;
 };
 
 } // namespace R3

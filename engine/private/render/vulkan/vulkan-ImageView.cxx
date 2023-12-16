@@ -6,7 +6,6 @@
 #include "api/Check.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/Swapchain.hpp"
 
 namespace R3 {
 
@@ -18,7 +17,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
         .flags = {},
         .image = m_spec.image->as<vk::Image>(),
         .viewType = vk::ImageViewType::e2D,
-        .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
+        .format = (vk::Format)m_spec.format,
         .components =
             {
                 .r = vk::ComponentSwizzle::eIdentity,
@@ -28,7 +27,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
             },
         .subresourceRange =
             {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
+                .aspectMask = (vk::ImageAspectFlags)(static_cast<uint32>(m_spec.aspectMask)),
                 .baseMipLevel = 0,
                 .levelCount = 1,
                 .baseArrayLayer = 0,

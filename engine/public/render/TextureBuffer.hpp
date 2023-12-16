@@ -8,12 +8,26 @@
 
 namespace R3 {
 
+// clang-format off
+enum class TextureType : uint8 {
+    Albedo              = 0,
+    Normal              = 1,
+    MetallicRoughness   = 2,
+    AmbientOcclusion    = 3,
+    Emissive            = 4,
+};
+// clang-format on
+
 struct TextureBufferSpecification {
     Ref<const PhysicalDevice> physicalDevice;
     Ref<const LogicalDevice> logicalDevice;
     Ref<const Swapchain> swapchain;
     Ref<const CommandPool> commandPool;
-    std::string_view path;
+    uint32 width;
+    uint32 height;
+    const void* data;
+    const char* path;
+    TextureType type;
 };
 
 class TextureBuffer : public Buffer {

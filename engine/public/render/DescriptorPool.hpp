@@ -1,9 +1,9 @@
 #pragma once
 
-#include <span>
 #include <vector>
 #include "api/Types.hpp"
 #include "render/DescriptorSet.hpp"
+#include "render/DescriptorSetLayout.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
 
@@ -11,7 +11,6 @@ namespace R3 {
 
 struct DescriptorPoolSpecification {
     Ref<const LogicalDevice> logicalDevice;
-    Ref<const DescriptorSetLayout> descriptorSetLayout;
     uint32 descriptorSetCount;
 };
 
@@ -23,12 +22,13 @@ public:
     DescriptorPool& operator=(DescriptorPool&&) noexcept = default;
     ~DescriptorPool();
 
-    std::span<DescriptorSet> descriptorSets() { return m_descriptorSets; }
-    DescriptorSet& descriptorSet(usize index) { return m_descriptorSets[index]; }
+    const DescriptorSetLayout& layout() const { return m_layout; }
+    std::vector<DescriptorSet>& descriptorSets() { return m_descriptorSets; }
 
 private:
     DescriptorPoolSpecification m_spec;
 
+    DescriptorSetLayout m_layout;
     std::vector<DescriptorSet> m_descriptorSets;
 };
 

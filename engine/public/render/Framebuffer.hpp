@@ -8,7 +8,8 @@ namespace R3 {
 struct FramebufferSpecification {
     Ref<const LogicalDevice> logicalDevice;
     Ref<const Swapchain> swapchain;
-    Ref<const ImageView> imageView;
+    Ref<const ImageView> swapchainImageView;
+    Ref<const ImageView> depthBufferImageView;
     Ref<const RenderPass> renderPass;
 };
 

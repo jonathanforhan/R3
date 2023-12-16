@@ -6,16 +6,12 @@
 using namespace R3;
 
 void runScene() {
+    Engine::renderer()._Model = ModelComponent("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
     Engine::loop();
 }
 
 int main() {
-
-    try {
         runScene();
-    } catch (std::exception& e) {
-        LOG(Error, e.what());
-    }
 
     return 0;
 }

@@ -16,7 +16,7 @@ layout (set = 0, binding = 0) uniform UniformBufferObject {
 } u_UBO;
 
 void main() {
-    vec3 pos = (a_Position + vec3(0, 0.2, 1.0)) * 0.3;
+    vec3 pos = (a_Position + vec3(0.0, 0.0, 1.0)) * 0.25;
     gl_Position = u_UBO.projection * u_UBO.view * u_UBO.model * vec4(pos, 1.0);
     v_Color = vec3(1.0, 1.0, 0.0);
     v_TexCoords = a_TexCoords;

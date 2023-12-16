@@ -9,9 +9,8 @@
 
 namespace R3 {
 
-ModelComponent::ModelComponent(const std::string& path, Shader& shader)
-    : m_shader(shader),
-      m_directory(),
+ModelComponent::ModelComponent(const std::string& path)
+    : m_directory(),
       m_file() {
     usize split = path.find_last_of('/') + 1;
     m_directory = path.substr(0, split);
@@ -29,7 +28,7 @@ ModelComponent::ModelComponent(const std::string& path, Shader& shader)
         LOG(Info, ext);
     }
 
-    Engine::activeScene().addSystem<ModelSystem>();
+    // Engine::activeScene().addSystem<ModelSystem>();
 }
 
 void ModelComponent::processNode(glTF::Model* model, glTF::Node* node) {
@@ -44,16 +43,18 @@ void ModelComponent::processNode(glTF::Model* model, glTF::Node* node) {
 
 void ModelComponent::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh) {
     auto datatypeSize = [](uint32 datatype) -> usize {
-        if (datatype == glTF::UNSIGNED_BYTE)
-            return sizeof(uint8);
-        if (datatype == glTF::UNSIGNED_SHORT)
-            return sizeof(uint16);
-        if (datatype == glTF::UNSIGNED_INT)
-            return sizeof(uint32);
-        if (datatype == glTF::FLOAT)
-            return sizeof(float);
-        else
-            ENSURE(false);
+        switch (datatype) {
+            case glTF::UNSIGNED_BYTE:
+                return sizeof(uint8);
+            case glTF::UNSIGNED_SHORT:
+                return sizeof(uint16);
+            case glTF::UNSIGNED_INT:
+                return sizeof(uint32);
+            case glTF::FLOAT:
+                return sizeof(float);
+            default:
+                ENSURE(false);
+        }
     };
 
     auto populateVertexAttrib = [=](const glTF::MeshPrimitive& primitive, auto& vec, const char* attrib) {
@@ -145,7 +146,15 @@ void ModelComponent::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mes
                 vertices[i].textureCoords = texCoords[i];
         }
 
-        m_meshes.emplace_back(vertices, indices);
+        auto& renderer = Engine::renderer();
+
+        m_meshes.emplace_back(MeshSpecification{
+            .physicalDevice = renderer.physicalDevice(),
+            .logicalDevice = renderer.logicalDevice(),
+            .commandPool = renderer.commandPool(),
+            .vertices = vertices,
+            .indices = indices,
+        });
 
         if (primitive.material != glTF::UNDEFINED) {
             processMaterial(model, &model->materials[primitive.material]);
@@ -183,16 +192,35 @@ void ModelComponent::processTexture(glTF::Model* model, glTF::TextureInfo* textu
 
     glTF::Texture& texture = model->textures[textureInfo->index];
 
+    auto& renderer = Engine::renderer();
+
     if (texture.source != glTF::UNDEFINED) {
-        m_meshes.back().addTextureIndex(m_textures.size());
+        m_meshes.back().addTextureIndex(static_cast<uint32>(m_textures.size()));
         glTF::Image& image = model->images[texture.source];
+
         if (!image.uri.empty()) {
-            m_textures.emplace_back(m_directory + image.uri, type);
+            m_textures.emplace_back(TextureBufferSpecification{
+                .physicalDevice = renderer.physicalDevice(),
+                .logicalDevice = renderer.logicalDevice(),
+                .swapchain = renderer.swapchain(),
+                .commandPool = renderer.commandPool(),
+                .path = std::string(m_directory + image.uri).c_str(),
+                .type = type,
+            });
         } else {
             glTF::BufferView& bufferView = model->bufferViews[image.bufferView];
+            const uint8* data = model->buffer().data() + bufferView.byteOffset;
 
-            const char* data = model->buffer().data() + bufferView.byteOffset;
-            m_textures.emplace_back(bufferView.byteLength, 0, data, type);
+            m_textures.emplace_back(TextureBufferSpecification{
+                .physicalDevice = renderer.physicalDevice(),
+                .logicalDevice = renderer.logicalDevice(),
+                .swapchain = renderer.swapchain(),
+                .commandPool = renderer.commandPool(),
+                .width = bufferView.byteLength,
+                .height = 0,
+                .data = data,
+                .type = type,
+            });
         }
     }
 }

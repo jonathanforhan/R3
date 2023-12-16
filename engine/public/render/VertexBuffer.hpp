@@ -22,7 +22,7 @@ public:
     VertexBuffer& operator=(VertexBuffer&&) noexcept = default;
     ~VertexBuffer();
 
-    uint32 vertexCount() const { return m_vertexCount; }
+    uint32 count() const { return m_vertexCount; }
 
 private:
     VertexBufferSpecification m_spec;

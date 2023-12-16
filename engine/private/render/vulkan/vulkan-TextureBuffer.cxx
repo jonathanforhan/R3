@@ -16,9 +16,12 @@ namespace R3 {
 
 TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     : m_spec(spec) {
+    CHECK((m_spec.path != nullptr) ^ (m_spec.data != nullptr));
 
     int32 w, h, channels;
-    const uint8* bytes = stbi_load(m_spec.path.data(), &w, &h, &channels, 0);
+    uint32 len = m_spec.height ? m_spec.width * m_spec.height : m_spec.width;
+    const uint8* bytes = m_spec.data ? stbi_load_from_memory((const stbi_uc*)m_spec.data, len, &w, &h, &channels, 0)
+                                     : stbi_load(m_spec.path, &w, &h, &channels, 0);
     CHECK(bytes != nullptr);
     const usize imageSize = w * h * 4;
 
@@ -67,7 +70,6 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
     auto [image, memory] = Image::allocate(imageAllocateSpecification);
-
 
     const auto& commandBuffer = m_spec.commandPool->commandBuffers().front();
 
@@ -136,8 +138,9 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     const Image img(handle());
     m_imageView = ImageView(ImageViewSpecification{
         .logicalDevice = m_spec.logicalDevice,
-        .swapchain = m_spec.swapchain,
         .image = &img,
+        .format = R3_FORMAT_R8G8B8A8_SRGB,
+        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
     });
 
     m_sampler = Sampler(SamplerSpecification{

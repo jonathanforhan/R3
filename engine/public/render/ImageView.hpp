@@ -1,15 +1,18 @@
 #pragma once
 
 #include <vector>
+#include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
+#include "render/RenderSpecification.hpp"
 
 namespace R3 {
 
 struct ImageViewSpecification {
     Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
     Ref<const Image> image;
+    Format format;
+    uint64 aspectMask;
 };
 
 class ImageView : public NativeRenderObject {

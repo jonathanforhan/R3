@@ -11,7 +11,6 @@ struct DepthBufferSpecification {
     Ref<const PhysicalDevice> physicalDevice;
     Ref<const LogicalDevice> logicalDevice;
     Ref<const Swapchain> swapchain;
-    Ref<const CommandPool> commandPool;
 };
 
 class DepthBuffer : public Buffer {
@@ -21,6 +20,8 @@ public:
     DepthBuffer(DepthBuffer&&) noexcept = default;
     DepthBuffer& operator=(DepthBuffer&&) noexcept = default;
     ~DepthBuffer();
+
+    const ImageView& imageView() const { return m_imageView; }
 
 private:
     DepthBufferSpecification m_spec;

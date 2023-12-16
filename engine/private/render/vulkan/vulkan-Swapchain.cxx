@@ -8,6 +8,7 @@
 // clang-format on
 #include "api/Check.hpp"
 #include "api/Log.hpp"
+#include "render/DepthBuffer.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
@@ -69,14 +70,18 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     for (usize i = 0; i < m_images.size(); i++) {
         m_imageViews[i] = ImageView({
             .logicalDevice = m_spec.logicalDevice,
-            .swapchain = this,
             .image = &m_images[i],
+            .format = R3_FORMAT_R8G8B8A8_SRGB,
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         });
     }
 }
 
-void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPass& renderPass) {
+void Swapchain::recreate(std::vector<Framebuffer>& framebuffers,
+                         DepthBuffer& depthBuffer,
+                         const RenderPass& renderPass) {
     CHECK(framebuffers.size() == m_imageViews.size());
+    m_spec.logicalDevice->as<vk::Device>().waitIdle();
 
     // query
     const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
@@ -130,18 +135,27 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers, const RenderPas
 
     m_imageViews.clear();
     framebuffers.clear();
+    depthBuffer.~DepthBuffer();
+
+    depthBuffer = DepthBuffer(DepthBufferSpecification{
+        .physicalDevice = m_spec.physicalDevice,
+        .logicalDevice = m_spec.logicalDevice,
+        .swapchain = this,
+    });
 
     for (usize i = 0; i < m_images.size(); i++) {
         m_imageViews.emplace_back(ImageViewSpecification{
             .logicalDevice = m_spec.logicalDevice,
-            .swapchain = this,
             .image = &m_images[i],
+            .format = R3_FORMAT_R8G8B8A8_SRGB,
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         });
 
         framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
-            .imageView = &m_imageViews[i],
+            .swapchainImageView = &m_imageViews[i],
+            .depthBufferImageView = &depthBuffer.imageView(),
             .renderPass = &renderPass,
         });
     }

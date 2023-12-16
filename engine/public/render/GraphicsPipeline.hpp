@@ -2,6 +2,7 @@
 
 #include <string_view>
 #include "render/NativeRenderObject.hpp"
+#include "render/PipelineLayout.hpp"
 #include "render/RenderFwd.hpp"
 #include "render/Shader.hpp"
 
@@ -11,7 +12,7 @@ struct GraphicsPipelineSpecification {
     Ref<const LogicalDevice> logicalDevice;
     Ref<const Swapchain> swapchain;
     Ref<const RenderPass> renderPass;
-    Ref<const PipelineLayout> pipelineLayout;
+    Ref<const DescriptorSetLayout> descriptorSetLayout;
     std::string_view vertexShaderPath;
     std::string_view fragmentShaderPath;
 };
@@ -24,8 +25,11 @@ public:
     GraphicsPipeline& operator=(GraphicsPipeline&&) noexcept = default;
     ~GraphicsPipeline();
 
+    const PipelineLayout& layout() const { return m_layout; }
+
 private:
     GraphicsPipelineSpecification m_spec;
+    PipelineLayout m_layout;
     Shader m_vertexShader;
     Shader m_fragmentShader;
 };

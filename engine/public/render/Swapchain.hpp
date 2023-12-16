@@ -38,7 +38,7 @@ public:
     /// @brief A Swapchain may become unusable (like a window resize) or suboptimal so we recreate it
     /// @param framebuffers list of Framebuffers
     /// @param renderPass current render pass
-    void recreate(std::vector<Framebuffer>& framebuffers, const RenderPass& renderPass);
+    void recreate(std::vector<Framebuffer>& framebuffers, DepthBuffer& depthBuffer, const RenderPass& renderPass);
 
     Format surfaceFormat() const { return m_surfaceFormat; }               ///< @brief Query surface format
     ColorSpace colorSpace() const { return m_colorSpace; }                 ///< @brief Query color space
