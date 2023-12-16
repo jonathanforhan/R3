@@ -10,11 +10,12 @@ namespace R3 {
 
 // clang-format off
 enum class TextureType : uint8 {
-    Albedo              = 0,
-    Normal              = 1,
-    MetallicRoughness   = 2,
-    AmbientOcclusion    = 3,
-    Emissive            = 4,
+    Nil                 = 0,
+    Albedo              = 1,
+    Normal              = 2,
+    MetallicRoughness   = 3,
+    AmbientOcclusion    = 4,
+    Emissive            = 5,
 };
 // clang-format on
 
@@ -38,6 +39,8 @@ public:
     TextureBuffer& operator=(TextureBuffer&&) noexcept = default;
     ~TextureBuffer();
 
+    TextureType type() const { return m_spec.type; }
+    uint8 typeIndex() const { return (uint8)m_spec.type; }
     const ImageView& textureView() const { return m_imageView; }
     const Sampler& sampler() const { return m_sampler; }
 

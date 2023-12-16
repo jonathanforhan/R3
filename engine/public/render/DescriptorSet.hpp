@@ -24,12 +24,11 @@ struct UniformDescriptor {
 
 struct TextureDescriptor {
     const TextureBuffer& texture;
-    uint32 binding;
 };
 
 struct DescriptorSetBindingSpecification {
-    std::initializer_list<const UniformDescriptor> uniformDescriptors;
-    std::initializer_list<const TextureDescriptor> textureDescriptors;
+    std::span<const UniformDescriptor> uniformDescriptors;
+    std::span<const TextureDescriptor> textureDescriptors;
 };
 
 class DescriptorSet : public NativeRenderObject {

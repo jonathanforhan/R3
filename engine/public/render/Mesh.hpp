@@ -31,8 +31,12 @@ public:
     uint32 indexCount() const { return m_indexBuffer.count(); }
     const IndexBuffer<uint32>& indexBuffer() const { return m_indexBuffer; }
 
+    std::span<const uint32> textureIndices() const { return m_textureIndices; }
     void addTextureIndex(uint32 index) { m_textureIndices.push_back(index); }
     bool removeTextureIndex(uint32 index); // return true if index was erased
+
+public:
+    uint32 textureMask = 0;
 
 private:
     MeshSpecification m_spec;

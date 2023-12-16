@@ -10,7 +10,6 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "core/BasicGeometry.hpp"
 #include "render/UniformBufferObject.hpp"
@@ -101,8 +100,7 @@ Renderer::Renderer(RendererSpecification spec)
 
     //--- Framebuffers
     for (const auto& swapchainImageView : m_swapchain.imageViews()) {
-        Framebuffer& framebuffer = m_framebuffers.emplace_back();
-        framebuffer = Framebuffer({
+        m_framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = &m_logicalDevice,
             .swapchain = &m_swapchain,
             .swapchainImageView = &swapchainImageView,
@@ -111,13 +109,14 @@ Renderer::Renderer(RendererSpecification spec)
         });
     }
 
-    //--- CommandPool and CommandBuffer
+    //--- CommandPool and CommandBuffers
     m_commandPool = CommandPool({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
         .flags = CommandPoolFlags::Reset,
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
+
     m_commandPoolTransient = CommandPool({
         .logicalDevice = &m_logicalDevice,
         .swapchain = &m_swapchain,
@@ -127,51 +126,10 @@ Renderer::Renderer(RendererSpecification spec)
 
     //--- Synchronization
     for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_imageAvailable[i] = Semaphore({.logicalDevice = &m_logicalDevice});
-        m_renderFinished[i] = Semaphore({.logicalDevice = &m_logicalDevice});
-        m_inFlight[i] = Fence({.logicalDevice = &m_logicalDevice});
+        m_imageAvailable[i] = Semaphore({&m_logicalDevice});
+        m_renderFinished[i] = Semaphore({&m_logicalDevice});
+        m_inFlight[i] = Fence({&m_logicalDevice});
     }
-
-    //--- Test
-    Vertex vertices[4];
-    uint32 indices[6];
-    Plane(vertices, indices);
-
-    auto& vertex0 = m_vertexBuffers.emplace_back();
-    vertex0 = VertexBuffer({
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .commandPool = &m_commandPoolTransient,
-        .vertices = vertices,
-    });
-    auto& index0 = m_indexBuffers.emplace_back();
-    index0 = IndexBuffer<uint32>({
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .commandPool = &m_commandPoolTransient,
-        .indices = indices,
-    });
-
-#if 0xDEADBEEF
-
-    for (auto& vertex : vertices) {
-        vertex.position.y += 1.0f;
-        vertex.position.z += 1.0f;
-    }
-
-    m_vertexBuffers.emplace_back(VertexBufferSpecification{
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .commandPool = &m_commandPoolTransient,
-        .vertices = vertices,
-    });
-    m_indexBuffers.emplace_back(IndexBufferSpecification<uint32>{
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .commandPool = &m_commandPoolTransient,
-        .indices = indices,
-    });
-#endif
 
     //--- Uniforms
     m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -183,38 +141,25 @@ Renderer::Renderer(RendererSpecification spec)
         });
     }
 
-    //--- Texture
-    m_textureBuffer = TextureBuffer({
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
-        .commandPool = &m_commandPoolTransient,
-        .path = "textures/container.jpg",
-    });
-
+    //--- Update descriptorSets with uniform and texture info
     auto& descriptorSets = m_descriptorPool.descriptorSets();
-    for (uint32 i = 0; i < m_uniformBuffers.size(); i++) {
-        descriptorSets[i].bindResources({
-            .uniformDescriptors = {{
-                .uniform = m_uniformBuffers[i],
-                .binding = 0,
-            }},
-            .textureDescriptors = {{
-                .texture = m_textureBuffer,
-                .binding = 1,
-            }},
-        });
+    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        UniformDescriptor uniformDescriptors[] = {{
+            .uniform = m_uniformBuffers[i],
+            .binding = 0,
+        }};
+        descriptorSets[i].bindResources({uniformDescriptors, {}});
     }
 }
 
-void Renderer::render() {
-    const vk::Fence fences[]{m_inFlight[m_currentFrame].as<vk::Fence>()};
-    (void)m_logicalDevice.as<vk::Device>().waitForFences(fences, vk::False, UINT64_MAX);
+void Renderer::render(double dt) {
+    const vk::Fence inFlight = m_inFlight[m_currentFrame].as<vk::Fence>();
+    auto r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight, vk::False, UINT64_MAX);
+    CHECK(r == vk::Result::eSuccess);
 
-    const auto semaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
-    auto [result, value] =
-        m_logicalDevice.as<vk::Device>().acquireNextImageKHR(m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, semaphore);
-    const uint32 imageIndex = value;
+    const vk::Semaphore imageAvailable = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
+    auto [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
+        m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, imageAvailable);
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
@@ -222,47 +167,56 @@ void Renderer::render() {
             m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
-            ENSURE(false);
+            LOG(Error, "vulkan error code:", (VkResult)result);
         }
     }
 
-    m_logicalDevice.as<vk::Device>().resetFences(fences);
+    m_logicalDevice.as<vk::Device>().resetFences(inFlight);
 
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
+    DescriptorSet& descriptorSet = m_descriptorPool.descriptorSets()[m_currentFrame];
+
+    static std::vector<TextureDescriptor> textureCache;
+
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
+    commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
-        {
-            commandBuffer.bindPipeline(m_graphicsPipeline);
-            commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(),
-                                            m_descriptorPool.descriptorSets()[m_currentFrame]);
+        commandBuffer.bindPipeline(m_graphicsPipeline);
 
-            for (const auto& mesh : _Model.meshes()) {
-                commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
-                commandBuffer.bindIndexBuffer(mesh.indexBuffer());
-                commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
+        for (const auto& mesh : _Model.meshes()) {
+            textureCache.clear();
+            for (uint32 textureIndex : mesh.textureIndices()) {
+                textureCache.push_back({.texture = _Model.textures()[textureIndex]});
             }
+            descriptorSet.bindResources({{}, {textureCache}});
+            commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(), descriptorSet);
+
+            commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
+            commandBuffer.bindIndexBuffer(mesh.indexBuffer());
+            commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
         }
-        commandBuffer.endRenderPass();
     }
+    commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
 
 #if 1
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    static double t = 0.0;
+    t += dt;
     UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    ubo.model = glm::rotate(ubo.model, (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
+    ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
     ubo.projection = glm::perspective(glm::radians(45.0f), m_spec.window.aspectRatio(), 0.1f, 100.0f);
     m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
 #endif
 
     const vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
     const vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
-    const vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    constexpr vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
+    const vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
     const vk::CommandBuffer commandBuffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+
     const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .pNext = nullptr,
@@ -274,9 +228,8 @@ void Renderer::render() {
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = singalSemaphores,
     };
-    m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, m_inFlight[m_currentFrame].as<vk::Fence>());
+    m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, inFlight);
 
-    const vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
     const vk::PresentInfoKHR presentInfo = {
         .sType = vk::StructureType::ePresentInfoKHR,
         .pNext = nullptr,
@@ -300,7 +253,7 @@ void Renderer::render() {
         }
     }
 
-    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    m_currentFrame = (imageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Renderer::waitIdle() const {

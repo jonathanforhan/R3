@@ -109,7 +109,7 @@ constexpr auto SAMPLER_LINEAR = "LINEAR";
 constexpr auto SAMPLER_STEP = "STEP";
 constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
 
-constexpr auto UNDEFINED = UINT32_MAX;
+constexpr auto UNDEFINED = (~0U);
 
 #pragma pack(push, 1)
 

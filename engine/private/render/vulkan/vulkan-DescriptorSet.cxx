@@ -98,7 +98,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
             .sType = vk::StructureType::eWriteDescriptorSet,
             .pNext = nullptr,
             .dstSet = as<vk::DescriptorSet>(),
-            .dstBinding = it.binding,
+            .dstBinding = it.texture.typeIndex(),
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,

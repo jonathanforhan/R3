@@ -9,13 +9,13 @@ layout(location = 4) in vec2 a_TexCoords;
 layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec3 v_Normal;
 layout(location = 2) out vec2 v_TexCoords;
-layout(location = 3) out flat highp uint v_Flags;
+layout(location = 3) out flat uint v_Flags;
 
-layout(set = 0, binding = 0) uniform MVP {
+layout(set = 0, binding = 0) uniform UBO {
 	uniform mat4 u_Model;
 	uniform mat4 u_View;
 	uniform mat4 u_Projection;
-	uniform highp uint u_Flags;
+	uniform uint u_Flags;
 };
 
 void main() {

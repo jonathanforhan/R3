@@ -7,19 +7,15 @@
 #include "render/Fence.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
-#include "render/IndexBuffer.hpp"
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
 #include "render/RenderSpecification.hpp"
 #include "render/Semaphore.hpp"
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
-#include "render/TextureBuffer.hpp"
 #include "render/UniformBuffer.hpp"
-#include "render/VertexBuffer.hpp"
 #include "render/Window.hpp"
 #include "components/ModelComponent.hpp"
 
@@ -38,7 +34,7 @@ public:
     [[nodiscard]] Ref<const Swapchain> swapchain() const { return &m_swapchain; }
     [[nodiscard]] Ref<const CommandPool> commandPool() const { return &m_commandPool; }
 
-    void render();
+    void render(double dt);
     void waitIdle() const;
 
 private:
@@ -60,10 +56,7 @@ private:
     uint32 m_currentFrame = 0;
 
     // TODO
-    std::vector<VertexBuffer> m_vertexBuffers;
-    std::vector<IndexBuffer<uint32>> m_indexBuffers;
     std::vector<UniformBuffer> m_uniformBuffers;
-    TextureBuffer m_textureBuffer;
     DepthBuffer m_depthBuffer;
 
     RendererSpecification m_spec;

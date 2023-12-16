@@ -185,6 +185,7 @@ void ModelComponent::processMaterial(glTF::Model* model, glTF::Material* materia
 void ModelComponent::processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type) {
     if (m_loadedTextures.contains(textureInfo->index)) {
         m_meshes.back().addTextureIndex(textureInfo->index);
+        m_meshes.back().textureMask |= (1 << ((uint32)type - 1));
         return;
     } else {
         m_loadedTextures.emplace(textureInfo->index, m_textures.size());
@@ -196,6 +197,7 @@ void ModelComponent::processTexture(glTF::Model* model, glTF::TextureInfo* textu
 
     if (texture.source != glTF::UNDEFINED) {
         m_meshes.back().addTextureIndex(static_cast<uint32>(m_textures.size()));
+        m_meshes.back().textureMask |= (1 << ((uint32)type - 1));
         glTF::Image& image = model->images[texture.source];
 
         if (!image.uri.empty()) {
