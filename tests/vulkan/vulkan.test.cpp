@@ -1,7 +1,5 @@
 #include <R3>
-#include "render/Vertex.hpp"
-#include "core/BasicGeometry.hpp"
-#include "api/Log.hpp"
+#include "event/Event.hpp"
 
 using namespace R3;
 
@@ -10,8 +8,11 @@ void runScene() {
     Engine::loop();
 }
 
-int main() {
-        runScene();
+int main(int argc, char** argv) {
+    static constexpr uuid _A = "Hello World"_HASH;
+    static constexpr uuid _B = HASH("Hello World");
+    static_assert(_A == _B);
 
+    runScene();
     return 0;
 }

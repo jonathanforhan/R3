@@ -46,7 +46,6 @@ class Lock:
             exit(-1)
 
 
-
 def main(glslc: str, in_dir: str, out_dir: str, force: bool):
     print("checking shader cache...")
     os.chdir(in_dir)

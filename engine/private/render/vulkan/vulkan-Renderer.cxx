@@ -164,6 +164,7 @@ void Renderer::render(double dt) {
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
             m_spec.window.setShouldResize(false);
+
             m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
