@@ -1,4 +1,5 @@
-#include "CameraComponent.hpp"
+#include "components/CameraComponent.hpp"
+
 #include <algorithm>
 #include "api/Math.hpp"
 #include "core/Engine.hpp"

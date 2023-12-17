@@ -1,4 +1,5 @@
-#include "ModelComponent.hpp"
+#include "components/ModelComponent.hpp"
+
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"

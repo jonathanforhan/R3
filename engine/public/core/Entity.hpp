@@ -7,9 +7,7 @@ namespace R3 {
 
 /// @brief Used to check if we can/must initialize an Entity on Entity::create<Derived>
 template <typename T>
-concept Initializable = requires(T t) {
-    t.init();
-};
+concept Initializable = requires(T t) { t.init(); };
 
 /// @brief Entity base class that other Entity subclasses can derive
 ///

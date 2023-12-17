@@ -64,12 +64,14 @@ def main(glslc: str, in_dir: str, out_dir: str, force: bool):
             print(f"compiling {in_shader}...")
             lock.update_hash(in_shader)
 
-            if os.name == "nt":
-                os.system(f"{glslc} {in_shader} -o {out_shader}.spv")
-            else:
-                os.system(f"{glslc} {in_shader} -o {out_shader}.spv")
+            os.system(f"{glslc} {in_shader} -o {out_shader}.spv")
 
 
 if __name__ == "__main__":
     force = "--force" in sys.argv or "-f" in sys.argv
+    try:
+        sys.argv.remove("--force")
+        sys.argv.remove("-f")
+    except:
+        ...
     main(sys.argv[1], sys.argv[2], sys.argv[3], force);

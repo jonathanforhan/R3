@@ -26,7 +26,7 @@ public:
     Swapchain() = default;
 
     /// @brief Create a Swapchain, queury device for images, create ImageViews from them
-    /// @param spec 
+    /// @param spec
     Swapchain(const SwapchainSpecification& spec);
 
     Swapchain(Swapchain&&) noexcept = default;

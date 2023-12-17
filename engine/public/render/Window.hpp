@@ -18,7 +18,7 @@ public:
     Window() = default;
 
     /// @brief Create Window from spec
-    /// @param spec 
+    /// @param spec
     Window(const WindowSpecification& spec);
 
     /// @brief free Window

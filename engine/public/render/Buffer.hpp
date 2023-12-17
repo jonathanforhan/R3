@@ -30,15 +30,14 @@ protected:
     Buffer() = default;
 
     /// @brief Allocate a Buffer with given flags
-    /// @param spec 
+    /// @param spec
     /// @return (Buffer object, DeviceMemory object)
     [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
         const BufferAllocateSpecification& spec);
 
     /// @brief Copy stagingBuffer to buffer
-    /// @param spec 
+    /// @param spec
     void static copy(const BufferCopySpecification& spec);
-                     
 };
 
 } // namespace R3

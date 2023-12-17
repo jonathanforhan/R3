@@ -4,7 +4,7 @@
 #include "render/RenderFwd.hpp"
 
 namespace R3 {
-    
+
 struct SemaphoreSpecification {
     Ref<const LogicalDevice> logicalDevice;
 };

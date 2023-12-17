@@ -6,9 +6,7 @@ namespace R3 {
 
 /// @brief checks for `void tick(double)` method present
 template <typename T>
-concept Tickable = requires(T t) {
-    t.tick(double{});
-};
+concept Tickable = requires(T t) { t.tick(double{}); };
 
 /// @brief Tick system is used to class tick on a `Tickable` object once per frame
 /// Entity will register this TickSytem with an Derived Entity T if that entity implements the Tickable concept

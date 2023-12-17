@@ -1,17 +1,16 @@
 #if R3_VULKAN
 
 #include <vulkan/vulkan.hpp>
-#include "render/UniformBuffer.hpp"
-#include "render/RenderSpecification.hpp"
+#include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "api/Check.hpp"
+#include "render/RenderSpecification.hpp"
+#include "render/UniformBuffer.hpp"
 
 namespace R3 {
 
 UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
     : m_spec(spec) {
-
     const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *m_spec.physicalDevice,
         .logicalDevice = *m_spec.logicalDevice,

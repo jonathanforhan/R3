@@ -22,7 +22,7 @@ public:
 
     /// @brief Create a LogicalDevice and Queues
     /// @note The queues are both created and destroyed by the logical device, it owns them
-    /// @param spec 
+    /// @param spec
     LogicalDevice(const LogicalDeviceSpecification& spec);
 
     LogicalDevice(LogicalDevice&&) noexcept = default;

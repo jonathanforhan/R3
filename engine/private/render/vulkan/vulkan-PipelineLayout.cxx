@@ -11,7 +11,6 @@ namespace R3 {
 
 PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
     : m_spec(spec) {
-
     vk::DescriptorSetLayout descriptorSetLayouts[] = {
         m_spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
     };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "api/Types.hpp"
+#include "components/ModelComponent.hpp"
 #include "render/CommandPool.hpp"
 #include "render/DepthBuffer.hpp"
 #include "render/DescriptorPool.hpp"
@@ -17,7 +18,6 @@
 #include "render/Swapchain.hpp"
 #include "render/UniformBuffer.hpp"
 #include "render/Window.hpp"
-#include "components/ModelComponent.hpp"
 
 namespace R3 {
 

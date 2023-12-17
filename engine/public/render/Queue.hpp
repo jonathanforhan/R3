@@ -45,7 +45,7 @@ class Queue : public NativeRenderObject {
 public:
     /// @brief Queues live of the hardware and we only acquire them, not create them.
     /// Queues are released by LogicalDevice of when it is destroyed
-    /// @param spec 
+    /// @param spec
     void acquire(const QueueSpecification& spec);
 
     /// @brief Query type of queue family

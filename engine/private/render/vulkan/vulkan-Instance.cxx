@@ -48,7 +48,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
 Instance::Instance(const InstanceSpecification& spec)
     : m_spec(spec) {
-
     const vk::ApplicationInfo applicationInfo = {
         .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,

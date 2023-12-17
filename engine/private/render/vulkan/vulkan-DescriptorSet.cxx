@@ -14,8 +14,8 @@
 namespace R3 {
 
 std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecification& spec) {
-    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(spec.descriptorSetCount,
-                                                              spec.descriptorSetLayout->as<vk::DescriptorSetLayout>());
+    const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(
+        spec.descriptorSetCount, spec.descriptorSetLayout->as<vk::DescriptorSetLayout>());
 
     const vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         .sType = vk::StructureType::eDescriptorSetAllocateInfo,
@@ -66,7 +66,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
             .buffer = it.uniform.as<vk::Buffer>(),
             .offset = it.offset,
-            .range = it.range ?  it.range : vk::WholeSize,
+            .range = it.range ? it.range : vk::WholeSize,
         });
 
         descriptorWrites.emplace_back(vk::WriteDescriptorSet{

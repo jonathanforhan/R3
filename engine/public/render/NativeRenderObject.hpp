@@ -62,7 +62,7 @@ public:
 
 protected:
     /// @brief Set handle
-    /// @param handle 
+    /// @param handle
     template <typename T = Handle>
     constexpr void setHandle(const T& handle) {
         if constexpr (IsWrapper<T>) {

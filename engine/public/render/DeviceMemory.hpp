@@ -42,7 +42,7 @@ protected:
     }
 
     /// @brief Set Buffer handle
-    /// @param bufferHandle 
+    /// @param bufferHandle
     template <typename T = Handle>
     constexpr void setDeviceMemory(const T& bufferHandle) {
         if constexpr (IsWrapper<T>) {

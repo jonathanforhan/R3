@@ -47,7 +47,7 @@ public:
     static std::vector<Image> acquireImages(const ImageSpecification& spec);
 
     /// @brief Allocate a Image with given flags
-    /// @param spec 
+    /// @param spec
     /// @return tuple<Image::Handle, DeviceMemory::Handle>
     [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
         const ImageAllocateSpecification& spec);

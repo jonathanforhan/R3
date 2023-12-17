@@ -19,7 +19,7 @@ inline std::string _fmt(Args&&... args) {
 } // namespace R3::detail::check
 
 #if not R3_BUILD_DIST
-#define CHECK(_Expr)                                                                                                  \
+#define CHECK(_Expr)                                                                          \
     do {                                                                                      \
         if (!(_Expr)) {                                                                       \
             throw std::runtime_error(::R3::detail::check::_fmt(                               \

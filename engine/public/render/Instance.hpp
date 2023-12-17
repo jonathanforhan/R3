@@ -22,7 +22,7 @@ public:
     Instance() = default;
 
     /// @brief Initialize instance from spec
-    /// @param spec 
+    /// @param spec
     Instance(const InstanceSpecification& spec);
 
     Instance(Instance&&) noexcept = default;
