@@ -35,6 +35,7 @@ public:
     [[nodiscard]] Ref<const CommandPool> commandPool() const { return &m_commandPool; }
 
     void render(double dt);
+    void resize(uvec2 dimensions);
     void waitIdle() const;
 
 private:

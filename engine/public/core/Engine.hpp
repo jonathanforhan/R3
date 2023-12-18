@@ -1,6 +1,11 @@
 #pragma once
+#include <any>
+#include <functional>
+#include <queue>
 #include <unordered_map>
+#include "api/Function.hpp"
 #include "core/Scene.hpp"
+#include "event/Event.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"
 
@@ -41,7 +46,7 @@ public:
     static void setActiveScene(const std::string& name);
 
     /// @brief Starts main game loop
-    /// @warning this function will not return until the gameloop i.e. the game is over
+    /// @warning this function will not return until the gameloop (i.e. the game) is over
     static void loop();
 
     /// @return Engine instance's Window
@@ -49,6 +54,19 @@ public:
 
     /// @return Engine instance's Renderer
     static Renderer& renderer() { return Engine::inst().m_renderer; }
+
+    /// @brief Push an Event onto the Event queue. This event will be called on this game tick.
+    /// Events get freed from heap memory when they are dispatched. There is a static_assert
+    /// on Event ensuring that the Event is trivially deconstructable so we can delete the void*
+    template <typename Event, typename... Args>
+    static constexpr void pushEvent(Args&&... args);
+
+    static void popEvent();
+
+    static uuid32 topEvent();
+
+    template <typename F>
+    static constexpr void bindEventListener(F&& callback);
 
 private:
     /// @brief Returns the Engine singleton instance, this will initialize the engine if not already initialized
@@ -58,11 +76,31 @@ private:
     /// @return delta time between frames
     double deltaTime() const;
 
+    void dispatchEvents();
+
+    template <typename Event, typename... Args>
+    void pushEventHelper(Args&&... args);
+
+    void popEventHelper();
+
+    // non-static allows us to call this in the engine constructor
+    template <typename F>
+    void bindEventListenerHelper(F&& callback);
+
 private:
     Window m_window;
     Renderer m_renderer;
+
+    //--- Scene System
     std::unordered_map<std::string, Scene> m_scenes;
     Scene* m_activeScene;
+
+    //--- Event System
+    std::queue<std::pair<void*, usize>> m_eventQueue; // tracks event (as void*) and the payload size
+    std::vector<uint8> m_eventArena;                  // memory pool for allocations when pushing events
+    std::unordered_multimap<uuid32, std::function<void(void*)>> m_eventRegistery; // mapping of id to callback
 };
 
 } // namespace R3
+
+#include "core/Engine.ipp"

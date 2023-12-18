@@ -19,6 +19,15 @@ struct SwapchainSpecification {
     Ref<const Window> window;                 ///< @brief Valid non-null Window
 };
 
+/// @brief Swapchain Recreation Specification
+struct SwapchainRecreatationSpecification {
+    std::vector<Framebuffer>& framebuffers;
+    DepthBuffer& depthBuffer;
+    const RenderPass& renderPass;
+    uint32 width;  ///< @brief if zero will query for you
+    uint32 height; ///< @brief if zero will query for you
+};
+
 /// @brief Swapchain is an Abstract that represents and series of images
 /// We do not own these images, we only look into them with ImageViews
 class Swapchain : public NativeRenderObject {
@@ -38,7 +47,7 @@ public:
     /// @brief A Swapchain may become unusable (like a window resize) or suboptimal so we recreate it
     /// @param framebuffers list of Framebuffers
     /// @param renderPass current render pass
-    void recreate(std::vector<Framebuffer>& framebuffers, DepthBuffer& depthBuffer, const RenderPass& renderPass);
+    void recreate(const SwapchainRecreatationSpecification& spec);
 
     Format surfaceFormat() const { return m_surfaceFormat; }               ///< @brief Query surface format
     ColorSpace colorSpace() const { return m_colorSpace; }                 ///< @brief Query color space

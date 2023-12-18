@@ -8,8 +8,10 @@
 // clang-format on
 #include <vector>
 #include "api/Ensure.hpp"
+#include "api/Hash.hpp"
 #include "api/Log.hpp"
 #include "api/Version.hpp"
+#include "core/Engine.hpp"
 
 namespace R3 {
 
@@ -39,12 +41,11 @@ Window::Window(const WindowSpecification& spec)
     }
     glfwMakeContextCurrent(handle<GLFWwindow*>());
     glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
-    glfwSwapInterval(GLFW_TRUE);
-    glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
-    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int, int) {
-        Window* self = reinterpret_cast<Window*>(glfwGetWindowUserPointer(window));
-        self->setShouldResize(true);
+    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int width, int height) {
+        if (Engine::topEvent() == HASH32("on-resize"))
+            Engine::popEvent();
+        Engine::pushEvent<EVENT("on-resize", WindowResizePayload)>(width, height);
     });
 }
 
@@ -86,14 +87,6 @@ float Window::aspectRatio() const {
 
 bool Window::shouldClose() const {
     return glfwWindowShouldClose(handle<GLFWwindow*>());
-}
-
-bool Window::shouldResize() const {
-    return m_shouldResize;
-}
-
-void Window::setShouldResize(bool b) {
-    m_shouldResize = b;
 }
 
 void Window::update() {

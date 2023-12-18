@@ -77,21 +77,23 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     }
 }
 
-void Swapchain::recreate(std::vector<Framebuffer>& framebuffers,
-                         DepthBuffer& depthBuffer,
-                         const RenderPass& renderPass) {
-    CHECK(framebuffers.size() == m_imageViews.size());
+void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
+    CHECK(spec.framebuffers.size() == m_imageViews.size());
     m_spec.logicalDevice->as<vk::Device>().waitIdle();
 
     // query
-    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
-    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
-
-    // if extent == 0 -> we're minimized -> wait idle until maximized
-    while (m_extent2D.x == 0 || m_extent2D.y == 0) {
-        glfwWaitEvents();
+    if (spec.width == 0 || spec.height == 0) {
+        const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+            m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+
+        // if extent == 0 -> we're minimized -> wait idle until maximized
+        while (m_extent2D.x == 0 || m_extent2D.y == 0) {
+            glfwWaitEvents();
+            m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+        }
+    } else {
+        m_extent2D = {spec.width, spec.height};
     }
 
     const uint32 queueFamilyIndices[] = {
@@ -134,10 +136,10 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers,
     });
 
     m_imageViews.clear();
-    framebuffers.clear();
-    depthBuffer.~DepthBuffer();
+    spec.framebuffers.clear();
+    spec.depthBuffer.~DepthBuffer();
 
-    depthBuffer = DepthBuffer(DepthBufferSpecification{
+    spec.depthBuffer = DepthBuffer(DepthBufferSpecification{
         .physicalDevice = m_spec.physicalDevice,
         .logicalDevice = m_spec.logicalDevice,
         .swapchain = this,
@@ -151,12 +153,12 @@ void Swapchain::recreate(std::vector<Framebuffer>& framebuffers,
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         });
 
-        framebuffers.emplace_back(FramebufferSpecification{
+        spec.framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = this,
             .swapchainImageView = &m_imageViews[i],
-            .depthBufferImageView = &depthBuffer.imageView(),
-            .renderPass = &renderPass,
+            .depthBufferImageView = &spec.depthBuffer.imageView(),
+            .renderPass = &spec.renderPass,
         });
     }
 }

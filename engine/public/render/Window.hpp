@@ -1,11 +1,15 @@
 #pragma once
 
-#include <atomic>
 #include <string_view>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 
 namespace R3 {
+
+struct WindowResizePayload {
+    int32 width;
+    int32 height;
+};
 
 /// @brief Specification for Window creation
 struct WindowSpecification {
@@ -56,14 +60,6 @@ public:
     /// @return true if the window should close
     bool shouldClose() const;
 
-    /// @brief Query the Window state for if it should resize
-    /// @return true if the window should resize
-    bool shouldResize() const;
-
-    /// @brief Set Window state, Window will set this automatically if it's framebuffer is resized
-    /// @param b yes/no
-    void setShouldResize(bool b);
-
     /// @brief Swapbuffers and poll events
     void update();
 
@@ -76,8 +72,6 @@ public:
 
 private:
     WindowSpecification m_spec;
-
-    std::atomic_bool m_shouldResize = false;
 };
 
 } // namespace R3

@@ -1,18 +1,18 @@
 #include <R3>
+#include <format>
 #include "event/Event.hpp"
 
 using namespace R3;
 
 void runScene() {
     Engine::renderer()._Model = ModelComponent("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    Engine::bindEventListener([](Event<HASH32("on-resize"), WindowResizePayload>& event) {
+        std::printf("%s\n", std::format("{}x{}", event.payload.width, event.payload.height).c_str());
+    });
     Engine::loop();
 }
 
-int main(int argc, char** argv) {
-    static constexpr uuid _A = "Hello World"_HASH;
-    static constexpr uuid _B = HASH("Hello World");
-    static_assert(_A == _B);
-
+int main() {
     runScene();
     return 0;
 }

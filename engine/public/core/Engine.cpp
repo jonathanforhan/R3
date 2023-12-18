@@ -1,13 +1,20 @@
 #include "Engine.hpp"
 #include <chrono>
+#include "Engine.hpp"
 #include "api/Log.hpp"
+#include "api/Memory.hxx"
 
 namespace R3 {
 
 Engine::Engine()
     : m_window({.title = "R3"}),
       m_renderer({.window = m_window}),
-      m_activeScene(nullptr) {}
+      m_activeScene(nullptr) {
+    m_eventArena.reserve(KILOBYTE * 5);
+    bindEventListenerHelper([this](EVENT("on-resize", WindowResizePayload) & e) {
+        m_renderer.resize({e.payload.width, e.payload.height});
+    });
+}
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
     auto& engine = Engine::inst();
@@ -26,7 +33,7 @@ void Engine::removeScene(const std::string& name) {
     }
 }
 
-auto Engine::activeScene() -> Scene& {
+Scene& Engine::activeScene() {
     return *Engine::inst().m_activeScene;
 }
 
@@ -48,7 +55,7 @@ void Engine::loop() {
     auto& engine = Engine::inst();
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
-        // engine.m_renderer.predraw();
+        engine.dispatchEvents();
         engine.m_renderer.render(engine.deltaTime());
         // engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_window.update();
@@ -69,6 +76,22 @@ double Engine::deltaTime() const {
     double dt = duration<double>(now - s_prev).count();
     s_prev = now;
     return dt;
+}
+
+void Engine::dispatchEvents() {
+    while (!m_eventQueue.empty()) {
+        void* const p = m_eventQueue.front().first;
+        const uuid32 id = *(uuid32*)p;
+
+        auto range = m_eventRegistery.equal_range(id);
+        CHECK(range.first != range.second);
+
+        for (auto& it = range.first; it != range.second; ++it) {
+            it->second(p);
+        }
+
+        Engine::popEvent();
+    }
 }
 
 } // namespace R3

@@ -8,17 +8,21 @@
 /// @param ... variadic log arguements
 
 #if R3_LOGGING_ENABLED
+
 namespace R3::detail::logging {
+
 /// @private
 inline void log() {
     std::cout << '\n';
 }
-template <typename T, typename... Args>
+
 /// @private
+template <typename T, typename... Args>
 inline void log(T x, Args&&... args) {
     std::cout << x << ' ';
     ::R3::detail::logging::log(args...);
 }
+
 } // namespace R3::detail::logging
 
 #if R3_LOG_VERBOSE

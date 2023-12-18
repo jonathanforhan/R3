@@ -163,9 +163,7 @@ void Renderer::render(double dt) {
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
-            m_spec.window.setShouldResize(false);
-
-            m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
+            resize({});
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
             LOG(Error, "vulkan error code:", (VkResult)result);
@@ -245,16 +243,24 @@ void Renderer::render(double dt) {
     try {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (std::exception& e) {
-        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-            m_spec.window.shouldResize()) {
-            m_spec.window.setShouldResize(false);
-            m_swapchain.recreate(m_framebuffers, m_depthBuffer, m_renderPass);
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+            resize({});
         } else {
             LOG(Error, e.what());
         }
     }
 
     m_currentFrame = (imageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Renderer::resize(uvec2 dimensions) {
+    m_swapchain.recreate({
+        .framebuffers = m_framebuffers,
+        .depthBuffer = m_depthBuffer,
+        .renderPass = m_renderPass,
+        .width = dimensions.x,
+        .height = dimensions.y,
+    });
 }
 
 void Renderer::waitIdle() const {
