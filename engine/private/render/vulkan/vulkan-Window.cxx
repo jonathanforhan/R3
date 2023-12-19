@@ -1,6 +1,7 @@
 #if R3_VULKAN
 
 #include "render/Window.hpp"
+
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
@@ -43,9 +44,9 @@ Window::Window(const WindowSpecification& spec)
     glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
 
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int width, int height) {
-        if (Engine::topEvent() == HASH32("on-resize"))
+        if (Engine::topEvent() == HASH32("on-window-resize"))
             Engine::popEvent();
-        Engine::pushEvent<EVENT("on-resize", WindowResizePayload)>(width, height);
+        Engine::pushEvent<WindowResizeEvent>(width, height);
     });
 }
 

@@ -1,6 +1,6 @@
-#include "Engine.hpp"
+#include "core/Engine.hpp"
+
 #include <chrono>
-#include "Engine.hpp"
 #include "api/Log.hpp"
 #include "api/Memory.hxx"
 
@@ -11,7 +11,7 @@ Engine::Engine()
       m_renderer({.window = m_window}),
       m_activeScene(nullptr) {
     m_eventArena.reserve(KILOBYTE * 5);
-    bindEventListenerHelper([this](EVENT("on-resize", WindowResizePayload)&) { m_renderer.resize(); });
+    bindEventListenerHelper([this](WindowResizeEvent&) { m_renderer.resize(); });
 }
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
@@ -54,8 +54,8 @@ void Engine::loop() {
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
         engine.dispatchEvents();
-        engine.m_renderer.render(engine.deltaTime());
         // engine.m_activeScene->runSystems(engine.deltaTime());
+        engine.m_renderer.render(engine.deltaTime());
         engine.m_window.update();
     }
     engine.m_renderer.waitIdle();
@@ -82,7 +82,6 @@ void Engine::dispatchEvents() {
         const uuid32 id = *(uuid32*)p;
 
         auto range = m_eventRegistery.equal_range(id);
-        CHECK(range.first != range.second);
 
         for (auto& it = range.first; it != range.second; ++it) {
             it->second(p);

@@ -50,15 +50,13 @@ private:
     std::vector<Framebuffer> m_framebuffers;
     CommandPool m_commandPool;          // used for the render command buffers
     CommandPool m_commandPoolTransient; // used for small command buffer operations like CPU -> GPU copy
+    std::vector<UniformBuffer> m_uniformBuffers;
+    DepthBuffer m_depthBuffer;
 
     Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
-
-    // TODO
-    std::vector<UniformBuffer> m_uniformBuffers;
-    DepthBuffer m_depthBuffer;
 
     RendererSpecification m_spec;
 

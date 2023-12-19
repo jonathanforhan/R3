@@ -1,6 +1,5 @@
 #pragma once
 
-#include <immintrin.h>
 #include "api/Types.hpp"
 
 namespace R3 {

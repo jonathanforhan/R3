@@ -40,7 +40,7 @@ public:
     ~TextureBuffer();
 
     TextureType type() const { return m_spec.type; }
-    uint8 typeIndex() const { return (uint8)m_spec.type; }
+    constexpr uint8 typeIndex() const { return (uint8)m_spec.type; }
     const ImageView& textureView() const { return m_imageView; }
     const Sampler& sampler() const { return m_sampler; }
 

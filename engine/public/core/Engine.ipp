@@ -19,6 +19,7 @@ inline uuid32 Engine::topEvent() {
 }
 
 template <typename F>
+requires EventListener<F>
 inline constexpr void Engine::bindEventListener(F&& callback) {
     Engine::inst().bindEventListenerHelper(std::forward<F>(callback));
 }
@@ -45,6 +46,8 @@ template <typename F>
 requires EventListener<F>
 inline void Engine::bindEventListenerHelper(F&& callback) {
     using Event_T = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
+    static_assert(offsetof(Event_T, signal) == 0);
+    static_assert(std::is_object_v<typename Event_T::template PayloadType>);
     // create wrapper so that we can store functions with void ptr param in registry
     std::function<void(void*)> wrapper = [callback](void* event) { callback(*(Event_T*)event); };
     this->m_eventRegistery.insert(std::make_pair(Event_T::type, wrapper));

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "api/Types.hpp"
+
 namespace R3 {
 
 constexpr usize KILOBYTE = 1024;

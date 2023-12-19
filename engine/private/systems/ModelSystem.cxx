@@ -1,4 +1,5 @@
-#include "ModelSystem.hpp"
+#include "systems/ModelSystem.hpp"
+
 #include <sstream>
 #include "api/Check.hpp"
 #include "api/Log.hpp"

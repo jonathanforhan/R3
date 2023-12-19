@@ -1,9 +1,11 @@
 #pragma once
+
+#include "api/Function.hpp"
 #include "api/Hash.hpp"
 #include "api/Log.hpp"
 #include "api/Types.hpp"
 
-#define EVENT(_Signal, _Payload) Event<HASH32(_Signal), _Payload>
+#define EVENT(_Signal, _Payload) Event<::R3::HASH32(_Signal), _Payload>
 
 namespace R3 {
 

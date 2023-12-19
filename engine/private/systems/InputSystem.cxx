@@ -1,45 +1,27 @@
-#if R3_OPENGL
-
 #include "systems/InputSystem.hpp"
+
 #include <GLFW/glfw3.h>
 #include <vector>
 #include "api/Log.hpp"
 #include "core/Engine.hpp"
 
-struct MouseButtonState {
-    bool active;
-    int action;
-    int mods;
-};
-
-// Global state for c callbacks
-static std::vector<R3::Key> g_activeKeys;
-static MouseButtonState g_leftButton;
-static MouseButtonState g_rightButton;
-static MouseButtonState g_middleButton;
-static R3::dvec2 g_cursorPos;
-static bool g_initialized = false;
-
 static void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods) {
     (void)scancode;
     (void)mods;
     if (action == GLFW_PRESS) {
-        g_activeKeys.push_back(R3::Key(key));
+        R3::Engine::pushEvent<R3::KeyPressEvent>(R3::Key(key), mods);
     } else if (action == GLFW_RELEASE) {
-        g_activeKeys.erase(std::ranges::find(g_activeKeys, R3::Key(key)));
+        R3::Engine::pushEvent<R3::KeyReleaseEvent>(R3::Key(key), mods);
     }
 }
 
 static void mouseCallback(GLFWwindow*, int button, int action, int mods) {
     switch (button) {
         case GLFW_MOUSE_BUTTON_LEFT:
-            g_leftButton = {true, action, mods};
             break;
         case GLFW_MOUSE_BUTTON_RIGHT:
-            g_rightButton = {true, action, mods};
             break;
         case GLFW_MOUSE_BUTTON_MIDDLE:
-            g_middleButton = {true, action, mods};
             break;
         default:
             return;
@@ -49,28 +31,25 @@ static void mouseCallback(GLFWwindow*, int button, int action, int mods) {
 static void cursorCallback(GLFWwindow* window, double x, double y) {
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
-    g_cursorPos = {x / w, y / w};
+    // g_cursorPos = {x / w, y / w};
 }
 
 namespace R3 {
 
 InputSystem::InputSystem() {
-    GLFWwindow* nativeWindow = reinterpret_cast<GLFWwindow*>(Engine::window().nativeWindow());
+    GLFWwindow* window = Engine::window().handle<GLFWwindow*>();
 
     static bool s_initialized = false;
     if (!s_initialized) {
-        glfwSetKeyCallback(nativeWindow, keyCallback);
-        glfwSetMouseButtonCallback(nativeWindow, mouseCallback);
-        glfwSetCursorPosCallback(nativeWindow, cursorCallback);
+        glfwSetKeyCallback(window, keyCallback);
+        // glfwSetMouseButtonCallback(window, mouseCallback);
+        // glfwSetCursorPosCallback(window, cursorCallback);
         s_initialized = true;
     }
 }
 
-std::tuple<double, double> InputSystem::cursorPosition() const {
-    return {g_cursorPos.x, g_cursorPos.y};
-}
-
 void InputSystem::tick(double) {
+#if 0
     // apply key changes
     for (Key key : g_activeKeys) {
         if (!m_keyBindings[usize(key)])
@@ -90,8 +69,7 @@ void InputSystem::tick(double) {
     mouseHelper(g_leftButton, GLFW_MOUSE_BUTTON_LEFT);
     mouseHelper(g_rightButton, GLFW_MOUSE_BUTTON_RIGHT);
     mouseHelper(g_middleButton, GLFW_MOUSE_BUTTON_MIDDLE);
+#endif 0
 }
 
 } // namespace R3
-
-#endif // R3_OPENGL

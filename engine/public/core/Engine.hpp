@@ -1,11 +1,10 @@
 #pragma once
-#include <any>
+
 #include <functional>
 #include <queue>
 #include <unordered_map>
-#include "api/Function.hpp"
 #include "core/Scene.hpp"
-#include "event/Event.hpp"
+#include "input/Event.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"
 
@@ -66,6 +65,7 @@ public:
     static uuid32 topEvent();
 
     template <typename F>
+    requires EventListener<F>
     static constexpr void bindEventListener(F&& callback);
 
 private:

@@ -175,7 +175,7 @@ void Renderer::render(double dt) {
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     DescriptorSet& descriptorSet = m_descriptorPool.descriptorSets()[m_currentFrame];
 
-    static std::vector<TextureDescriptor> textureCache;
+    static std::vector<TextureDescriptor> textures;
 
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
@@ -184,11 +184,11 @@ void Renderer::render(double dt) {
         commandBuffer.bindPipeline(m_graphicsPipeline);
 
         for (const auto& mesh : _Model.meshes()) {
-            textureCache.clear();
+            textures.clear();
             for (uint32 textureIndex : mesh.textureIndices()) {
-                textureCache.push_back({.texture = _Model.textures()[textureIndex]});
+                textures.push_back({.texture = _Model.textures()[textureIndex]});
             }
-            descriptorSet.bindResources({{}, {textureCache}});
+            descriptorSet.bindResources({{}, {textures}});
             commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(), descriptorSet);
 
             commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
@@ -210,22 +210,22 @@ void Renderer::render(double dt) {
     m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
 #endif
 
-    const vk::Semaphore waitSemaphores[] = {m_imageAvailable[m_currentFrame].as<vk::Semaphore>()};
-    const vk::Semaphore singalSemaphores[] = {m_renderFinished[m_currentFrame].as<vk::Semaphore>()};
-    constexpr vk::PipelineStageFlags waitStages[] = {vk::PipelineStageFlagBits::eColorAttachmentOutput};
-    const vk::SwapchainKHR swapchains[]{m_swapchain.as<vk::SwapchainKHR>()};
-    const vk::CommandBuffer commandBuffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+    const vk::Semaphore waitSemaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
+    const vk::Semaphore singalSemaphore = m_renderFinished[m_currentFrame].as<vk::Semaphore>();
+    constexpr vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+    const vk::SwapchainKHR swapchain = m_swapchain.as<vk::SwapchainKHR>();
+    const vk::CommandBuffer commandBuf = commandBuffer.as<vk::CommandBuffer>();
 
     const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = waitSemaphores,
-        .pWaitDstStageMask = waitStages,
+        .pWaitSemaphores = &waitSemaphore,
+        .pWaitDstStageMask = &waitStage,
         .commandBufferCount = 1,
-        .pCommandBuffers = commandBuffers,
+        .pCommandBuffers = &commandBuf,
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = singalSemaphores,
+        .pSignalSemaphores = &singalSemaphore,
     };
     m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, inFlight);
 
@@ -233,9 +233,9 @@ void Renderer::render(double dt) {
         .sType = vk::StructureType::ePresentInfoKHR,
         .pNext = nullptr,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = singalSemaphores,
+        .pWaitSemaphores = &singalSemaphore,
         .swapchainCount = 1,
-        .pSwapchains = swapchains,
+        .pSwapchains = &swapchain,
         .pImageIndices = &imageIndex,
         .pResults = nullptr,
     };

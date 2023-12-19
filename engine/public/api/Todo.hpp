@@ -1,4 +1,5 @@
 #pragma once
+
 #if R3_BUILD_DIST
 #error "Todo.hpp included in a dist build"
 #endif
@@ -8,7 +9,7 @@
 #include <string>
 
 /// @def TODO(_Msg)
-/// @brief TODO will throw a compile error if built in dist configuration, else it will throw a runtime error
+/// @brief TODO will throw a compile error if built in dist configuration, else it will throw a runtime error if hit
 
 namespace R3::detail::todo {
 template <typename... Args>

@@ -4,39 +4,40 @@ project(R3_ENGINE LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/public/*.cpp")
-file(GLOB_RECURSE CXX_SOURCES_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx")
-list(APPEND R3_ENGINE_SOURCES ${CXX_SOURCES} ${CXX_SOURCES_PRIVATE})
+file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx")
+
+# [[ EXCLUDE RENDERERS NOT IN USE ]]
+if (NOT R3_OPENGL)
+	list(FILTER CXX_SOURCES EXCLUDE REGEX "/opengl-[a-z|A-Z|0-9]*\\.cxx")
+endif ()
+if (NOT R3_VULKAN)
+	list(FILTER CXX_SOURCES EXCLUDE REGEX "/vulkan-[a-z|A-Z|0-9]*\\.cxx")
+endif ()
+if (NOT R3_DX12)
+	list(FILTER CXX_SOURCES EXCLUDE REGEX "/dx12-[a-z|A-Z|0-9]*\\.cxx")
+endif ()
+list(APPEND R3_ENGINE_SOURCES ${CXX_SOURCES})
 
 #[[ R3 ENGINE ]]
 add_library(R3_ENGINE STATIC ${R3_ENGINE_SOURCES})
 
 if (MSVC)
-	if (NOT R3_BUILD_DIST)
-		set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
-	else ()
-		set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
-	endif ()
+	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
 	foreach (VKCPP IN LISTS ${VULKAN_SOURCES})
 		set_source_files_properties(${VKCPP} PROPERTIES COMPILE_FLAGS "/Yuvulkan.hpp")
 	endforeach ()
-	target_precompile_headers(R3_ENGINE PUBLIC
-		"public/api/Ref.hpp"
-		"public/render/DeviceMemory.hpp"
-		"public/render/NativeRenderObject.hpp"
-	)
 else ()
-	if (NOT R3_BUILD_DIST)
-		set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-	else ()
-		set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
-	endif ()
-	target_precompile_headers(R3_ENGINE PUBLIC
-		"public/api/Ref.hpp"
-		"public/render/DeviceMemory.hpp"
-		"public/render/NativeRenderObject.hpp"
-	)
+	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 endif ()
+
+target_precompile_headers(R3_ENGINE PUBLIC
+	"public/api/Ref.hpp"
+	"public/api/Check.hpp"
+	"public/api/Ensure.hpp"
+	"public/api/Types.hpp"
+	"public/render/DeviceMemory.hpp"
+	"public/render/NativeRenderObject.hpp"
+)
 
 #[[ SANITY CHECK ]]
 set(RENDERER_COUNT 0)

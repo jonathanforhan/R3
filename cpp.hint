@@ -3,3 +3,4 @@
 // For more information see https://go.microsoft.com/fwlink/?linkid=865984
 #define R3_NOEXCEPT
 #define HASH(_Str) (detail::hash::crc32<sizeof(_Str) - 2>(_Str) ^ 0xFFFF'FFFF)
+#define EVENT(_Signal, _Payload) Event<HASH32(_Signal), _Payload>

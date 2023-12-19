@@ -1,4 +1,5 @@
 #pragma once
+
 #include "api/Check.hpp"
 #include "api/NoExcept.hpp"
 
@@ -15,16 +16,20 @@ namespace R3 {
 template <typename T>
 class Ref {
 public:
-    Ref() R3_NOEXCEPT : m_ptr(nullptr) {}
+    Ref()
+        : m_ptr(nullptr) {}
 
-    Ref(T* ptr) R3_NOEXCEPT : m_ptr(ptr) { CHECK(m_ptr != nullptr); }
+    Ref(T* ptr)
+        : m_ptr(ptr) {
+        CHECK(m_ptr != nullptr);
+    }
 
-    Ref(const Ref<T>& src) R3_NOEXCEPT {
+    Ref(const Ref<T>& src) {
         CHECK(src.m_ptr != nullptr);
         m_ptr = src.m_ptr;
     }
 
-    Ref& operator=(const Ref<T>& src) R3_NOEXCEPT {
+    Ref& operator=(const Ref<T>& src) {
         CHECK(src.m_ptr != nullptr);
         m_ptr = src.m_ptr;
         return *this;
