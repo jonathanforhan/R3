@@ -85,6 +85,7 @@ private:
 
     // non-static allows us to call this in the engine constructor
     template <typename F>
+    requires EventListener<F>
     void bindEventListenerHelper(F&& callback);
 
 private:

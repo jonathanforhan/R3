@@ -82,18 +82,14 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
     m_spec.logicalDevice->as<vk::Device>().waitIdle();
 
     // query
-    if (spec.width == 0 || spec.height == 0) {
-        const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-            m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
-        m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
+        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
+    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
-        // if extent == 0 -> we're minimized -> wait idle until maximized
-        while (m_extent2D.x == 0 || m_extent2D.y == 0) {
-            glfwWaitEvents();
-            m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
-        }
-    } else {
-        m_extent2D = {spec.width, spec.height};
+    // if extent == 0 -> we're minimized -> wait idle until maximized
+    while (m_extent2D.x == 0 || m_extent2D.y == 0) {
+        glfwWaitEvents();
+        m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
 
     const uint32 queueFamilyIndices[] = {

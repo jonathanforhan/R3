@@ -7,11 +7,14 @@
 
 namespace R3 {
 
-template <uuid32 Signal, typename Payload_T>
+template <typename F>
+concept EventListener = requires { std::is_invocable_r_v<void, F&&, typename FunctionTraits<F>::template ArgType<0>>; };
+
+template <uuid32 Signal, typename Payload>
+requires requires { std::is_trivially_destructible_v<Payload>; }
 class Event {
 public:
-    using PayloadType = Payload_T;
-    static_assert(std::is_trivially_destructible_v<PayloadType>, "payload cannot have a destructor, must be pure data");
+    using PayloadType = Payload;
 
     Event(PayloadType payload)
         : payload(payload) {}

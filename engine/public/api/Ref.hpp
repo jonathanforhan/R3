@@ -6,10 +6,11 @@ namespace R3 {
 
 /// @brief Reference class
 /// Ref's internal pointer is set null on creation however, you CANNOT assign nullptr to it after initial creation,
-/// this means that it can default initialed however still has guarentees that anytime it's assigned, copied or
+/// this means that it can be default initialized however still has guarentees that anytime it's assigned, copied or
 /// referrenced it is NOT null. Anytime the Ref is std::move'd it is set to null and unusable unless reassigned to Ref
 /// guarentees that the pointer is not null, it DOES NOT do anything like freeing the pointer, in fact never use Ref for
-/// things that you own, it is strictly for referencing unowned objects
+/// things that you own, it is strictly for referencing unowned objects.
+/// All it's checks are runtime checks that are turned off for Distribution builds
 /// @tparam T underlying type
 template <typename T>
 class Ref {

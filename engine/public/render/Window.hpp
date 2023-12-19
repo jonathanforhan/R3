@@ -6,6 +6,7 @@
 
 namespace R3 {
 
+/// @brief Dimesions handled by swapchain due to extent limitations
 struct WindowResizePayload {
     int32 width;
     int32 height;

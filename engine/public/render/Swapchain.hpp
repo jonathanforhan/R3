@@ -24,8 +24,6 @@ struct SwapchainRecreatationSpecification {
     std::vector<Framebuffer>& framebuffers;
     DepthBuffer& depthBuffer;
     const RenderPass& renderPass;
-    uint32 width;  ///< @brief if zero will query for you
-    uint32 height; ///< @brief if zero will query for you
 };
 
 /// @brief Swapchain is an Abstract that represents and series of images

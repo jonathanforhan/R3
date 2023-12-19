@@ -42,16 +42,9 @@ inline void Engine::popEventHelper() {
 }
 
 template <typename F>
+requires EventListener<F>
 inline void Engine::bindEventListenerHelper(F&& callback) {
-    using traits = FunctionTraits<F>;
-    using EventRef_T = typename traits::template ArgType<0>;
-
-    // sanity check
-    static_assert(std::is_reference_v<EventRef_T> and std::is_same_v<typename traits::ResultType, void> and
-                      std::is_same_v<typename traits::template Arity, std::integral_constant<std::size_t, 1>>,
-                  "callback structure: [...](Event<Signal, Payload>& event) -> void {...})");
-
-    using Event_T = std::remove_reference_t<EventRef_T>;
+    using Event_T = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
     // create wrapper so that we can store functions with void ptr param in registry
     std::function<void(void*)> wrapper = [callback](void* event) { callback(*(Event_T*)event); };
     this->m_eventRegistery.insert(std::make_pair(Event_T::type, wrapper));

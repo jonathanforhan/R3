@@ -25,6 +25,7 @@ public:
     std::tuple<Format, ColorSpace> optimalSurfaceFormat() const;
     PresentMode optimalPresentMode() const;
     uvec2 optimalExtent(GLFWwindow* window) const;
+    static uvec2 clampExtent(uvec2 extent);
 };
 
 } // namespace R3::vulkan

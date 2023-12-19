@@ -51,12 +51,15 @@ public:
     [[nodiscard]] bool valid() const;
 
     /// @brief Create an Entity class/subclass bound to a controling scene.
+    /// the entity created must derivate from Entity, only for the id and parentScene fields.
+    /// We store it as it's type, not an Entity pointer so Entity does not need a virtual descructor
     /// @tparam T Entity type
     /// @tparam ...Args constructor args
     /// @param parentScene the scene to bind the entity
     /// @param ...args forwarded to the Entity-Derived constructor
     /// @return reference to created entity
     template <typename T, typename... Args>
+    requires requires { std::is_base_of_v<Entity, T>; }
     static T& create(Scene* parentScene, Args&&... args);
 
     /// @brief Destroy Entity / make invalid
@@ -127,8 +130,8 @@ inline bool Entity::valid() const {
 }
 
 template <typename T, typename... Args>
+requires requires { std::is_base_of_v<Entity, T>; }
 inline T& Entity::create(Scene* parentScene, Args&&... args) {
-    static_assert(std::is_base_of_v<Entity, T>);
     // add to registry
     entt::entity id = parentScene->m_registry.create();
 

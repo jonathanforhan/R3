@@ -11,9 +11,7 @@ Engine::Engine()
       m_renderer({.window = m_window}),
       m_activeScene(nullptr) {
     m_eventArena.reserve(KILOBYTE * 5);
-    bindEventListenerHelper([this](EVENT("on-resize", WindowResizePayload) & e) {
-        m_renderer.resize({e.payload.width, e.payload.height});
-    });
+    bindEventListenerHelper([this](EVENT("on-resize", WindowResizePayload)&) { m_renderer.resize(); });
 }
 
 Scene& Engine::addScene(const std::string& name, bool setActive) {
