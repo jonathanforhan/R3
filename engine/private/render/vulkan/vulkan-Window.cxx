@@ -13,6 +13,7 @@
 #include "api/Log.hpp"
 #include "api/Version.hpp"
 #include "core/Engine.hpp"
+#include "input/WindowEvent.hpp"
 
 namespace R3 {
 

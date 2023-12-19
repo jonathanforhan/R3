@@ -5,13 +5,24 @@
 #include "api/Log.hpp"
 #include "core/Engine.hpp"
 
+namespace R3 {
+
+namespace local {
+
 static void keyCallback(GLFWwindow*, int key, int scancode, int action, int mods) {
     (void)scancode;
-    (void)mods;
-    if (action == GLFW_PRESS) {
-        R3::Engine::pushEvent<R3::KeyPressEvent>(R3::Key(key), mods);
-    } else if (action == GLFW_RELEASE) {
-        R3::Engine::pushEvent<R3::KeyReleaseEvent>(R3::Key(key), mods);
+    switch (action) {
+        case GLFW_PRESS:
+            Engine::pushEvent<KeyPressEvent>(static_cast<Key>(key), static_cast<KeyModifier::Mask>(mods));
+            return;
+        case GLFW_REPEAT:
+            Engine::pushEvent<KeyRepeatEvent>(static_cast<Key>(key), static_cast<KeyModifier::Mask>(mods));
+            return;
+        case GLFW_RELEASE:
+            Engine::pushEvent<KeyReleaseEvent>(static_cast<Key>(key), static_cast<KeyModifier::Mask>(mods));
+            return;
+        default:
+            return;
     }
 }
 
@@ -34,14 +45,14 @@ static void cursorCallback(GLFWwindow* window, double x, double y) {
     // g_cursorPos = {x / w, y / w};
 }
 
-namespace R3 {
+} // namespace local
 
 InputSystem::InputSystem() {
     GLFWwindow* window = Engine::window().handle<GLFWwindow*>();
 
     static bool s_initialized = false;
     if (!s_initialized) {
-        glfwSetKeyCallback(window, keyCallback);
+        glfwSetKeyCallback(window, local::keyCallback);
         // glfwSetMouseButtonCallback(window, mouseCallback);
         // glfwSetCursorPosCallback(window, cursorCallback);
         s_initialized = true;

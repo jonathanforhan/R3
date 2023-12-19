@@ -17,6 +17,7 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/UniformBuffer.hpp"
+#include "render/UniformBufferObject.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
@@ -36,6 +37,8 @@ public:
 
     void render(double dt);
     void resize();
+    void updateView(const mat4& view) { m_view = view; }
+    void updateProjection(const mat4& projection) { m_projection = projection; }
     void waitIdle() const;
 
 private:
@@ -50,8 +53,10 @@ private:
     std::vector<Framebuffer> m_framebuffers;
     CommandPool m_commandPool;          // used for the render command buffers
     CommandPool m_commandPoolTransient; // used for small command buffer operations like CPU -> GPU copy
-    std::vector<UniformBuffer> m_uniformBuffers;
     DepthBuffer m_depthBuffer;
+    UniformBuffer m_uniformBuffers[MAX_FRAMES_IN_FLIGHT];
+    mat4 m_view;
+    mat4 m_projection;
 
     Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];

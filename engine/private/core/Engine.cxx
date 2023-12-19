@@ -1,8 +1,8 @@
 #include "core/Engine.hpp"
 
 #include <chrono>
-#include "api/Log.hpp"
 #include "api/Memory.hxx"
+#include "input/WindowEvent.hpp"
 
 namespace R3 {
 
@@ -54,6 +54,7 @@ void Engine::loop() {
     engine.m_window.show();
     while (!engine.m_window.shouldClose()) {
         engine.dispatchEvents();
+        CHECK(engine.m_eventArena.size() == 0);
         // engine.m_activeScene->runSystems(engine.deltaTime());
         engine.m_renderer.render(engine.deltaTime());
         engine.m_window.update();
@@ -82,7 +83,6 @@ void Engine::dispatchEvents() {
         const uuid32 id = *(uuid32*)p;
 
         auto range = m_eventRegistery.equal_range(id);
-
         for (auto& it = range.first; it != range.second; ++it) {
             it->second(p);
         }

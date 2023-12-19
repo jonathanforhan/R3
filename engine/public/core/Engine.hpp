@@ -58,6 +58,7 @@ public:
     /// Events get freed from heap memory when they are dispatched. There is a static_assert
     /// on Event ensuring that the Event is trivially deconstructable so we can delete the void*
     template <typename Event, typename... Args>
+    requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
     static constexpr void pushEvent(Args&&... args);
 
     static void popEvent();
@@ -79,6 +80,7 @@ private:
     void dispatchEvents();
 
     template <typename Event, typename... Args>
+    requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
     void pushEventHelper(Args&&... args);
 
     void popEventHelper();

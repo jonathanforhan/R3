@@ -132,7 +132,6 @@ Renderer::Renderer(RendererSpecification spec)
     }
 
     //--- Uniforms
-    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& uniformBuffer : m_uniformBuffers) {
         uniformBuffer = UniformBuffer({
             .physicalDevice = &m_physicalDevice,
@@ -177,6 +176,17 @@ void Renderer::render(double dt) {
 
     static std::vector<TextureDescriptor> textures;
 
+#if 1
+    static double t = 0.0;
+    t += dt;
+    mat4 model;
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+    model = glm::rotate(model, (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
+    // ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    // ubo.projection = glm::perspective(glm::radians(45.0f), m_spec.window.aspectRatio(), 0.1f, 100.0f);
+    m_uniformBuffers[m_currentFrame].update(&model, sizeof(model), 0);
+#endif
+
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
@@ -198,17 +208,6 @@ void Renderer::render(double dt) {
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
-
-#if 1
-    static double t = 0.0;
-    t += dt;
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    ubo.model = glm::rotate(ubo.model, (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
-    ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.projection = glm::perspective(glm::radians(45.0f), m_spec.window.aspectRatio(), 0.1f, 100.0f);
-    m_uniformBuffers[m_currentFrame].update(&ubo, sizeof(ubo));
-#endif
 
     const vk::Semaphore waitSemaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
     const vk::Semaphore singalSemaphore = m_renderFinished[m_currentFrame].as<vk::Semaphore>();

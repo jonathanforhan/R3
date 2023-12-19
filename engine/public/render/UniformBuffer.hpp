@@ -19,7 +19,7 @@ public:
     UniformBuffer& operator=(UniformBuffer&&) noexcept = default;
     ~UniformBuffer();
 
-    void update(void* buffer, usize size);
+    void update(void* buffer, usize size, usize offset);
 
 private:
     UniformBufferSpecification m_spec;

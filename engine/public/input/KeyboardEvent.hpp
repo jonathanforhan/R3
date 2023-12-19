@@ -12,6 +12,9 @@ struct KeyboardEventPayload {
 };
 
 using KeyPressEvent = EVENT("on-key-press", KeyboardEventPayload);
+
+using KeyRepeatEvent = EVENT("on-key-repeat", KeyboardEventPayload);
+
 using KeyReleaseEvent = EVENT("on-key-release", KeyboardEventPayload);
 
 } // namespace R3

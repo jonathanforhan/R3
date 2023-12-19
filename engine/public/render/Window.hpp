@@ -2,18 +2,9 @@
 
 #include <string_view>
 #include "api/Types.hpp"
-#include "input/Event.hpp"
 #include "render/NativeRenderObject.hpp"
 
 namespace R3 {
-
-/// @brief Dimesions handled by swapchain due to extent limitations
-struct WindowResizePayload {
-    int32 width;
-    int32 height;
-};
-
-using WindowResizeEvent = EVENT("on-window-resize", WindowResizePayload);
 
 /// @brief Specification for Window creation
 struct WindowSpecification {

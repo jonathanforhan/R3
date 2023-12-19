@@ -1,7 +1,6 @@
 #include <R3>
-#include <format>
-#include "input/Event.hpp"
 #include "input/KeyboardEvent.hpp"
+#include "input/WindowEvent.hpp"
 #include "systems/InputSystem.hpp"
 
 using namespace R3;
@@ -9,13 +8,10 @@ using namespace R3;
 void runScene() {
     Engine::renderer()._Model = ModelComponent("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
 
-    //--- The code required to setup those callbacks... SO EASY!!!
-    Engine::bindEventListener([](WindowResizeEvent& event) -> void {
-        std::cout << std::format("{}x{}", event.payload.width, event.payload.height);
-    });
-    Engine::bindEventListener([](KeyPressEvent& event) { std::printf("%c", event.payload.key); });
-    Engine::bindEventListener([](KeyReleaseEvent& event) { std::printf("%c", (int)event.payload.key + ('a' - 'A')); });
-    //---
+    Engine::bindEventListener([](WindowResizeEvent& e) { printf("%ux%u\n", e.payload.width, e.payload.height); });
+    Engine::bindEventListener([](KeyPressEvent& e) { printf("press: %c\n", e.payload.key); });
+    Engine::bindEventListener([](KeyRepeatEvent& e) { printf("repeat: %c\n", e.payload.key); });
+    Engine::bindEventListener([](KeyReleaseEvent& e) { printf("release: %c\n", e.payload.key); });
 
     InputSystem in;
 
