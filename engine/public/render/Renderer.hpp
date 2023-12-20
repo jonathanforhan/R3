@@ -1,7 +1,6 @@
 #pragma once
 
 #include "api/Types.hpp"
-#include "components/ModelComponent.hpp"
 #include "render/CommandPool.hpp"
 #include "render/DepthBuffer.hpp"
 #include "render/DescriptorPool.hpp"
@@ -64,9 +63,6 @@ private:
     uint32 m_currentFrame = 0;
 
     RendererSpecification m_spec;
-
-public:
-    ModelComponent _Model;
 };
 
 } // namespace R3

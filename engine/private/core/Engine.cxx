@@ -23,7 +23,7 @@ Engine::Engine() {
 
     s_instance.activeScene = scene;
 
-    Scene::bindEventListener([this](WindowResizeEvent&) { s_instance.renderer.resize(); });
+    Scene::bindEventListener([](const WindowResizeEvent&) { s_instance.renderer.resize(); });
     Scene::addSystem<InputSystem>();
 }
 
@@ -37,6 +37,7 @@ void Engine::loop() {
     s_instance.window.show();
     while (!s_instance.window.shouldClose()) {
         dispatchEvents();
+        CHECK(activeScene()->m_eventArena.size() == 0);
         double dt = deltaTime();
         s_instance.activeScene->runSystems(dt);
         s_instance.renderer.setView(s_instance.activeScene->view());
@@ -56,7 +57,7 @@ Scene* Engine::addScene(bool setActive) {
     }
 
     // always bind resize listener
-    Scene::bindEventListener([](WindowResizeEvent&) { s_instance.renderer.resize(); });
+    Scene::bindEventListener([](const WindowResizeEvent&) { s_instance.renderer.resize(); });
     Scene::addSystem<InputSystem>();
 
     return scene;
@@ -81,7 +82,7 @@ double Engine::deltaTime() {
 
 void Engine::dispatchEvents() {
     while (!s_instance.activeScene->m_eventQueue.empty()) {
-        void* const p = s_instance.activeScene->m_eventQueue.front().first;
+        void* const p = s_instance.activeScene->m_eventQueue.front().data();
         const uuid32 id = *(uuid32*)p;
 
         auto range = s_instance.activeScene->m_eventRegistery.equal_range(id);

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <unordered_map>
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
 #include "systems/System.hpp"
@@ -22,7 +23,7 @@ public:
     /// Events get freed from heap memory when they are dispatched. There is a static_assert
     /// on Event ensuring that the Event is trivially deconstructable so we can delete the void*
     template <typename Event, typename... Args>
-    requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
+    requires std::is_constructible_v<typename Event::PayloadType, Args...>
     static constexpr void pushEvent(Args&&... args);
 
     static void popEvent();
@@ -31,7 +32,7 @@ public:
 
     template <typename F>
     requires EventListener<F>
-    static constexpr void bindEventListener(F&& callback);
+    static void bindEventListener(F&& callback);
 
     static void setView(const mat4& view);
     static void setProjection(const mat4& projection);
@@ -55,8 +56,8 @@ private:
     std::set<std::string> m_systemSet;
 
     //--- Event System
-    std::queue<std::pair<void*, usize>> m_eventQueue;                // tracks event (as void*) and the payload size
-    std::vector<uint8> m_eventArena;                                 // memory pool for allocations when pushing events
+    std::queue<std::span<std::byte>> m_eventQueue;                   // tracks event byte array
+    std::vector<std::byte> m_eventArena;                             // memory pool for allocations when pushing events
     std::unordered_multimap<uuid32, EventCallback> m_eventRegistery; // mapping of id to callback
 
     //--- Accessors

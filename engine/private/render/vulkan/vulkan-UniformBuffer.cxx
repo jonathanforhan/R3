@@ -36,7 +36,7 @@ UniformBuffer::~UniformBuffer() {
     }
 }
 
-void UniformBuffer::update(void* buffer, usize size, usize offset) {
+void UniformBuffer::update(const void* buffer, usize size, usize offset) {
     CHECK(buffer != nullptr);
     CHECK(size + offset <= m_spec.bufferSize);
     memcpy(reinterpret_cast<uint8*>(m_mappedMemory) + offset, buffer, size);

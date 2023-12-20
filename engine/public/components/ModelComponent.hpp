@@ -24,7 +24,8 @@ class Model;                 ///< @private
 
 class ModelComponent {
 public:
-    ModelComponent() = default;
+    ModelComponent(const ModelComponent&) = delete;
+    ModelComponent(ModelComponent&&) = default;
 
     /// @brief Construct a ModelComponent and add a ModelSystem to active scene if not present
     /// @param path path to glTF resourse
@@ -39,14 +40,6 @@ public:
     /// @return textures
     std::vector<TextureBuffer>& textures() { return m_textures; }
 
-    /// @brief Get the glTF resource path used for the ModelComponent
-    /// @return filepath
-    [[nodiscard]] std::string path() const { return m_directory + m_file; }
-
-public:
-    mat4 transform{1.0f};          ///< @brief ModelComponent Transform Matrix as used by shader
-    float emissiveIntensity{1.0f}; ///< @brief Intensity of emissive material, ignored if no emissive texture present
-
 private:
     void processNode(glTF::Model* model, glTF::Node* node);
     void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh);
@@ -60,7 +53,6 @@ private:
     std::vector<TextureBuffer> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
-    std::string m_file;
 };
 
 } // namespace R3

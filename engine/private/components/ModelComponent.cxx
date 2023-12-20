@@ -4,20 +4,19 @@
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Math.hpp"
-#include "core/Engine.hpp"
+#include "core/Scene.hpp"
 #include "media/glTF/glTF-Model.hxx"
 #include "systems/ModelSystem.hpp"
 
 namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& path)
-    : m_directory(),
-      m_file() {
+    : m_directory() {
     usize split = path.find_last_of('/') + 1;
     m_directory = path.substr(0, split);
-    m_file = path.substr(split);
+    auto file = path.substr(split);
 
-    glTF::Model gltf(path);
+    glTF::Model gltf(m_directory + file);
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
@@ -29,7 +28,7 @@ ModelComponent::ModelComponent(const std::string& path)
         LOG(Info, ext);
     }
 
-    // Engine::activeScene().addSystem<ModelSystem>();
+    Scene::addSystem<ModelSystem>();
 }
 
 void ModelComponent::processNode(glTF::Model* model, glTF::Node* node) {

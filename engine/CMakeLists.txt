@@ -27,7 +27,7 @@ if (MSVC)
 		set_source_files_properties(${VKCPP} PROPERTIES COMPILE_FLAGS "/Yuvulkan.hpp")
 	endforeach ()
 else ()
-	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++20")
 endif ()
 
 target_precompile_headers(R3_ENGINE PUBLIC

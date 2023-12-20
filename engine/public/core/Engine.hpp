@@ -68,5 +68,3 @@ private:
 };
 
 } // namespace R3
-
-#include "core/Engine.ipp"

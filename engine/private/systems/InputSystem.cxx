@@ -56,6 +56,6 @@ InputSystem::InputSystem() {
     }
 }
 
-void InputSystem::tick(double dt) {}
+void InputSystem::tick(double) {}
 
 } // namespace R3

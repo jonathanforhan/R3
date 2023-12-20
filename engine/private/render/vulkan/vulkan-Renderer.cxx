@@ -11,8 +11,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
-#include "core/BasicGeometry.hpp"
-#include "render/UniformBufferObject.hpp"
+#include "components/ModelComponent.hpp"
+#include "core/Entity.hpp"
+#include "core/Scene.hpp"
 
 namespace R3 {
 
@@ -151,7 +152,7 @@ Renderer::Renderer(RendererSpecification spec)
     }
 }
 
-void Renderer::render(double dt) {
+void Renderer::render(double) {
     const vk::Fence inFlight = m_inFlight[m_currentFrame].as<vk::Fence>();
     auto r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight, vk::False, UINT64_MAX);
     CHECK(r == vk::Result::eSuccess);
@@ -174,37 +175,36 @@ void Renderer::render(double dt) {
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     DescriptorSet& descriptorSet = m_descriptorPool.descriptorSets()[m_currentFrame];
 
-    static std::vector<TextureDescriptor> textures;
-
-#if 1
-    static double t = 0.0;
-    t += dt;
-    mat4 model = glm::rotate(mat4(1.0f), (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
-
-    static constexpr auto mat4Size = sizeof(mat4);
-    m_uniformBuffers[m_currentFrame].update(&model, mat4Size, mat4Size * 0);
-    m_uniformBuffers[m_currentFrame].update(&m_view, mat4Size, mat4Size * 1);
-    m_uniformBuffers[m_currentFrame].update(&m_projection, mat4Size, mat4Size * 2);
-#endif
-
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        commandBuffer.bindPipeline(m_graphicsPipeline);
+        commandBuffer.bindPipeline(m_graphicsPipeline); // TODO
 
-        for (const auto& mesh : _Model.meshes()) {
-            textures.clear();
-            for (uint32 textureIndex : mesh.textureIndices()) {
-                textures.push_back({.texture = _Model.textures()[textureIndex]});
+        static constexpr auto mat4Size = sizeof(mat4);
+        m_uniformBuffers[m_currentFrame].update(&m_view, mat4Size, mat4Size * 1);
+        m_uniformBuffers[m_currentFrame].update(&m_projection, mat4Size, mat4Size * 2);
+
+        static std::vector<TextureDescriptor> textures;
+
+        Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, auto& model) {
+            m_uniformBuffers[m_currentFrame].update(&transform, mat4Size, 0);
+
+            for (const auto& mesh : model.meshes()) {
+                textures.clear();
+
+                for (uint32 textureIndex : mesh.textureIndices()) {
+                    textures.push_back({.texture = model.textures()[textureIndex]});
+                }
+
+                descriptorSet.bindResources({{}, {textures}});
+                commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(), descriptorSet);
+
+                commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
+                commandBuffer.bindIndexBuffer(mesh.indexBuffer());
+                commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
             }
-            descriptorSet.bindResources({{}, {textures}});
-            commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(), descriptorSet);
-
-            commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
-            commandBuffer.bindIndexBuffer(mesh.indexBuffer());
-            commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
-        }
+        });
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
