@@ -124,9 +124,9 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
 
     const vk::Viewport viewport = {
         .x = 0.0f,
-        .y = 0.0f,
+        .y = static_cast<float>(m_spec.swapchain->extent().y),
         .width = static_cast<float>(m_spec.swapchain->extent().x),
-        .height = static_cast<float>(m_spec.swapchain->extent().y),
+        .height = -static_cast<float>(m_spec.swapchain->extent().y),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };

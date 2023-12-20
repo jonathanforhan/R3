@@ -2,13 +2,13 @@
 
 #include "api/Types.hpp"
 #include "input/Event.hpp"
-#include "input/KeyCodes.hpp"
+#include "input/InputCodes.hpp"
 
 namespace R3 {
 
 struct KeyboardEventPayload {
     Key key;
-    KeyModifier::Mask modifiers;
+    InputModifier::Mask modifiers;
 };
 
 using KeyPressEvent = EVENT("on-key-press", KeyboardEventPayload);

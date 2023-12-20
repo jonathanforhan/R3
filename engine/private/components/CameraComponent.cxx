@@ -2,14 +2,14 @@
 
 #include <algorithm>
 #include "api/Math.hpp"
-#include "core/Engine.hpp"
+#include "core/Scene.hpp"
 #include "systems/CameraSystem.hpp"
 
 namespace R3 {
 
 CameraComponent::CameraComponent(CameraType type)
     : m_cameraType(type) {
-    Engine::activeScene().addSystem<CameraSystem>();
+    Scene::addSystem<CameraSystem>();
 }
 
 void CameraComponent::translateForward(float magnitude) {

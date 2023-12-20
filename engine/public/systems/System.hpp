@@ -17,4 +17,10 @@ struct System {
     virtual void tick(double dt) = 0;
 };
 
+template <typename T, typename... Args>
+concept ValidSystem = requires {
+    std::is_base_of_v<System, T>;
+    std::is_constructible_v<T, Args...>;
+};
+
 } // namespace R3

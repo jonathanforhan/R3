@@ -56,12 +56,11 @@ public:
     /// We store it as it's type, not an Entity pointer so Entity does not need a virtual descructor
     /// @tparam T Entity type
     /// @tparam ...Args constructor args
-    /// @param parentScene the scene to bind the entity
     /// @param ...args forwarded to the Entity-Derived constructor
     /// @return reference to created entity
     template <typename T, typename... Args>
     requires requires { std::is_base_of_v<Entity, T>; }
-    static T& create(Scene* parentScene, Args&&... args);
+    static T& create(Args&&... args);
 
     /// @brief Destroy Entity / make invalid
     void destroy();
@@ -132,7 +131,9 @@ inline bool Entity::valid() const {
 
 template <typename T, typename... Args>
 requires requires { std::is_base_of_v<Entity, T>; }
-inline T& Entity::create(Scene* parentScene, Args&&... args) {
+inline T& Entity::create(Args&&... args) {
+    Scene* parentScene = Engine::activeScene();
+
     // add to registry
     entt::entity id = parentScene->m_registry.create();
 

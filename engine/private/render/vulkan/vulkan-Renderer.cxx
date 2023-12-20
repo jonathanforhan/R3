@@ -179,12 +179,12 @@ void Renderer::render(double dt) {
 #if 1
     static double t = 0.0;
     t += dt;
-    mat4 model;
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-    model = glm::rotate(model, (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
-    // ubo.view = glm::lookAt(glm::vec3(0.0f, 2.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    // ubo.projection = glm::perspective(glm::radians(45.0f), m_spec.window.aspectRatio(), 0.1f, 100.0f);
-    m_uniformBuffers[m_currentFrame].update(&model, sizeof(model), 0);
+    mat4 model = glm::rotate(mat4(1.0f), (float)(t * 2.0), glm::vec3(0.0f, 1.0f, 0.0f));
+
+    static constexpr auto mat4Size = sizeof(mat4);
+    m_uniformBuffers[m_currentFrame].update(&model, mat4Size, mat4Size * 0);
+    m_uniformBuffers[m_currentFrame].update(&m_view, mat4Size, mat4Size * 1);
+    m_uniformBuffers[m_currentFrame].update(&m_projection, mat4Size, mat4Size * 2);
 #endif
 
     commandBuffer.resetCommandBuffer();

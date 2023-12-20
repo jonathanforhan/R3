@@ -4,21 +4,75 @@ namespace R3 {
 
 template <typename... T>
 inline decltype(auto) Scene::componentView() {
-    return m_registry.view<T...>();
-}
-
-template <typename... T>
-inline decltype(auto) Scene::componentView() const {
-    return m_registry.view<T...>();
+    return Engine::activeScene()->m_registry.view<T...>();
 }
 
 template <typename T, typename... Args>
-requires requires { std::is_base_of_v<System, T>; }
+requires ValidSystem<T, Args...>
 inline void Scene::addSystem(Args&&... args) {
-    if (!m_systemSet.contains(typeid(T).name())) {
-        m_systems.emplace_back(new T(std::forward<Args>(args)...));
-        m_systemSet.emplace(typeid(T).name());
+    auto& systemSet = Engine::activeScene()->m_systemSet;
+    auto& systems = Engine::activeScene()->m_systems;
+
+    if (!systemSet.contains(typeid(T).name())) {
+        systems.emplace_back(new T(std::forward<Args>(args)...));
+        systemSet.emplace(typeid(T).name());
     }
+}
+
+template <typename Event, typename... Args>
+requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
+inline constexpr void Scene::pushEvent(Args&&... args) {
+    auto& eventArena = Engine::activeScene()->m_eventArena;
+    auto& eventQueue = Engine::activeScene()->m_eventQueue;
+
+    using Payload_T = typename Event::PayloadType;
+    const auto event = Event(Payload_T(std::forward<Args>(args)...));  // construct event
+    const usize iEnd = eventArena.size();                              // get the offset
+    eventArena.resize(eventArena.size() + sizeof(event));              // resize our arena to fit event
+    memcpy(&eventArena[iEnd], &event, sizeof(event));                  // memcpy the event to arena
+    eventQueue.push(std::make_pair(&eventArena[iEnd], sizeof(event))); // add payload addr and size to queue
+}
+
+inline void Scene::popEvent() {
+    auto& eventArena = Engine::activeScene()->m_eventArena;
+    auto& eventQueue = Engine::activeScene()->m_eventQueue;
+
+    if (!eventQueue.empty()) {
+        auto eventSize = eventQueue.front().second;
+        eventArena.resize(eventArena.size() - eventSize);
+        eventQueue.pop();
+    }
+}
+
+inline uuid32 Scene::topEvent() {
+    auto& eventQueue = Engine::activeScene()->m_eventQueue;
+    return eventQueue.empty() ? 0 : *(uuid32*)eventQueue.front().first;
+}
+
+template <typename F>
+requires EventListener<F>
+inline constexpr void Scene::bindEventListener(F&& callback) {
+    auto& eventRegistery = Engine::activeScene()->m_eventRegistery;
+    using Event_T = EventTypeDeduced<F>;
+    // create wrapper so that we can store functions with void ptr param in registry
+    EventCallback wrapper = [callback](void* event) { callback(*(Event_T*)event); };
+    eventRegistery.insert(std::make_pair(Event_T::template SingalType::value, wrapper));
+}
+
+inline void Scene::setView(const mat4& view) {
+    Engine::activeScene()->m_view = view;
+}
+
+inline void Scene::setProjection(const mat4& projection) {
+    Engine::activeScene()->m_projection = projection;
+}
+
+inline mat4& Scene::view() {
+    return Engine::activeScene()->m_view;
+}
+
+inline mat4& Scene::projection() {
+    return Engine::activeScene()->m_projection;
 }
 
 inline void Scene::runSystems(double dt) {

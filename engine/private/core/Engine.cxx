@@ -1,73 +1,75 @@
 #include "core/Engine.hpp"
 
 #include <chrono>
-#include "api/Memory.hxx"
+#include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
+#include "systems/InputSystem.hpp"
 
 namespace R3 {
 
-Engine::Engine()
-    : m_window({.title = "R3"}),
-      m_renderer({.window = m_window}),
-      m_activeScene(nullptr) {
-    m_eventArena.reserve(KILOBYTE * 5);
-    bindEventListenerHelper([this](WindowResizeEvent&) { m_renderer.resize(); });
+//--- Static Initialization
+Engine::Instance Engine::s_instance = {
+    .window = Window({.title = "R3"}),
+    .renderer = Renderer({.window = s_instance.window}),
+    .activeScene = nullptr,
+    .sceneCounter = 0,
+    .scenes = {},
+};
+Engine Engine::Instance::engine = {};
+
+Engine::Engine() {
+    auto* scene = new Scene(s_instance.sceneCounter++);
+    s_instance.scenes.emplace(scene->id, scene);
+
+    s_instance.activeScene = scene;
+
+    Scene::bindEventListener([this](WindowResizeEvent&) { s_instance.renderer.resize(); });
+    Scene::addSystem<InputSystem>();
 }
 
-Scene& Engine::addScene(const std::string& name, bool setActive) {
-    auto& engine = Engine::inst();
-    engine.m_scenes.try_emplace(name);
-    if (setActive) {
-        setActiveScene(name);
+Engine::~Engine() {
+    for (auto& scene : s_instance.scenes) {
+        delete scene.second;
     }
-    return engine.m_scenes.at(name);
-}
-
-void Engine::removeScene(const std::string& name) {
-    auto& engine = Engine::inst();
-    auto it = engine.m_scenes.find(name);
-    if (it != engine.m_scenes.end()) {
-        engine.m_scenes.erase(it);
-    }
-}
-
-Scene& Engine::activeScene() {
-    return *Engine::inst().m_activeScene;
-}
-
-Scene& Engine::getScene(const std::string& name) {
-    return Engine::inst().m_scenes.at(name);
-}
-
-bool Engine::isActiveScene(const std::string& name) {
-    auto& engine = Engine::inst();
-    return &engine.m_scenes.at(name) == engine.m_activeScene;
-}
-
-void Engine::setActiveScene(const std::string& name) {
-    auto& engine = Engine::inst();
-    engine.m_activeScene = &engine.m_scenes.at(name);
 }
 
 void Engine::loop() {
-    auto& engine = Engine::inst();
-    engine.m_window.show();
-    while (!engine.m_window.shouldClose()) {
-        engine.dispatchEvents();
-        CHECK(engine.m_eventArena.size() == 0);
-        // engine.m_activeScene->runSystems(engine.deltaTime());
-        engine.m_renderer.render(engine.deltaTime());
-        engine.m_window.update();
+    s_instance.window.show();
+    while (!s_instance.window.shouldClose()) {
+        dispatchEvents();
+        double dt = deltaTime();
+        s_instance.activeScene->runSystems(dt);
+        s_instance.renderer.setView(s_instance.activeScene->view());
+        s_instance.renderer.setProjection(s_instance.activeScene->projection());
+        s_instance.renderer.render(dt);
+        s_instance.window.update();
     }
-    engine.m_renderer.waitIdle();
+    s_instance.renderer.waitIdle();
 }
 
-Engine& Engine::inst() {
-    static Engine s_instance;
-    return s_instance;
+Scene* Engine::addScene(bool setActive) {
+    auto* scene = new Scene(s_instance.sceneCounter++);
+    s_instance.scenes.emplace(scene->id, scene);
+
+    if (setActive) {
+        s_instance.activeScene = scene;
+    }
+
+    // always bind resize listener
+    Scene::bindEventListener([](WindowResizeEvent&) { s_instance.renderer.resize(); });
+    Scene::addSystem<InputSystem>();
+
+    return scene;
 }
 
-double Engine::deltaTime() const {
+void Engine::removeScene(uuid32 id) {
+    auto it = s_instance.scenes.find(id);
+    if (it != s_instance.scenes.end()) {
+        s_instance.scenes.erase(it);
+    }
+}
+
+double Engine::deltaTime() {
     using namespace std::chrono;
 
     static auto s_prev = system_clock::now();
@@ -78,16 +80,16 @@ double Engine::deltaTime() const {
 }
 
 void Engine::dispatchEvents() {
-    while (!m_eventQueue.empty()) {
-        void* const p = m_eventQueue.front().first;
+    while (!s_instance.activeScene->m_eventQueue.empty()) {
+        void* const p = s_instance.activeScene->m_eventQueue.front().first;
         const uuid32 id = *(uuid32*)p;
 
-        auto range = m_eventRegistery.equal_range(id);
+        auto range = s_instance.activeScene->m_eventRegistery.equal_range(id);
         for (auto& it = range.first; it != range.second; ++it) {
             it->second(p);
         }
 
-        Engine::popEvent();
+        Scene::popEvent();
     }
 }
 

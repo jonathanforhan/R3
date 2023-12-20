@@ -1,16 +1,17 @@
 #pragma once
 
-#include <functional>
 #include <queue>
 #include <unordered_map>
-#include "core/Scene.hpp"
 #include "input/Event.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
 
+class Scene; ///< @private
+
 /// @brief Singleton Game-Engine class used to access the Window, Renderer, and Scenes
+/// all members are static and life the lifetime of the program
 class Engine final {
 private:
     Engine();
@@ -18,90 +19,52 @@ private:
 public:
     Engine(const Engine&) = delete;
     Engine(Engine&&) = delete;
+    ~Engine();
 
-    /// @brief Add scene to scene-map by name
-    /// @param name name of scene
-    /// @param setActive activation scene on creation
-    /// @return scene created
-    static Scene& addScene(const std::string& name, bool setActive = false);
+    /// @brief Window getter
+    /// @return Window
+    static Window& window() { return s_instance.window; }
 
-    /// @brief Remove scene from scene-map by name
-    /// @param name name of scene
-    static void removeScene(const std::string& name);
+    /// @brief Renderer getter
+    /// @return Renderer
+    static Renderer& renderer() { return s_instance.renderer; }
 
-    /// @return active scene
-    static Scene& activeScene();
-
-    /// @param name scene name
-    /// @return scene by name
-    static Scene& getScene(const std::string& name);
-
-    /// @param name scene name
-    /// @return if scene is active as tracked by Engine
-    static bool isActiveScene(const std::string& name);
-
-    /// @brief Set the current active scene
-    /// @param name scene name
-    static void setActiveScene(const std::string& name);
+    /// @brief Scene getter
+    /// @return Scene
+    static Scene* activeScene() { return s_instance.activeScene; }
 
     /// @brief Starts main game loop
     /// @warning this function will not return until the gameloop (i.e. the game) is over
     static void loop();
 
-    /// @return Engine instance's Window
-    static Window& window() { return Engine::inst().m_window; }
+private:
+    /// @brief Add scene, automatically assigns it an id
+    /// @param setActive should set scene active?
+    /// @return Scene
+    static Scene* addScene(bool setActive = false);
 
-    /// @return Engine instance's Renderer
-    static Renderer& renderer() { return Engine::inst().m_renderer; }
-
-    /// @brief Push an Event onto the Event queue. This event will be called on this game tick.
-    /// Events get freed from heap memory when they are dispatched. There is a static_assert
-    /// on Event ensuring that the Event is trivially deconstructable so we can delete the void*
-    template <typename Event, typename... Args>
-    requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
-    static constexpr void pushEvent(Args&&... args);
-
-    static void popEvent();
-
-    static uuid32 topEvent();
-
-    template <typename F>
-    requires EventListener<F>
-    static constexpr void bindEventListener(F&& callback);
+    /// @brief Remove scene by uuid ie scene.id
+    /// @param id uuid
+    static void removeScene(uuid32 id);
 
 private:
-    /// @brief Returns the Engine singleton instance, this will initialize the engine if not already initialized
-    /// @return instance
-    static Engine& inst();
-
     /// @return delta time between frames
-    double deltaTime() const;
+    static double deltaTime();
 
-    void dispatchEvents();
-
-    template <typename Event, typename... Args>
-    requires requires(Args&&... args) { std::is_constructible_v<typename Event::PayloadType, Args...>; }
-    void pushEventHelper(Args&&... args);
-
-    void popEventHelper();
-
-    // non-static allows us to call this in the engine constructor
-    template <typename F>
-    requires EventListener<F>
-    void bindEventListenerHelper(F&& callback);
+    static void dispatchEvents();
 
 private:
-    Window m_window;
-    Renderer m_renderer;
+    static struct Instance {
+        Window window;
+        Renderer renderer;
+        Scene* activeScene;
+        uint32 sceneCounter;
+        std::unordered_map<uuid32, Scene*> scenes;
+        static Engine engine;
+    } s_instance;
 
-    //--- Scene System
-    std::unordered_map<std::string, Scene> m_scenes;
-    Scene* m_activeScene;
-
-    //--- Event System
-    std::queue<std::pair<void*, usize>> m_eventQueue; // tracks event (as void*) and the payload size
-    std::vector<uint8> m_eventArena;                  // memory pool for allocations when pushing events
-    std::unordered_multimap<uuid32, std::function<void(void*)>> m_eventRegistery; // mapping of id to callback
+    friend class Scene;
+    friend class Entity;
 };
 
 } // namespace R3

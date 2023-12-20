@@ -26,6 +26,7 @@ public:
     void translateUp(float magnitude);       ///< @brief Move camera up
     void translateDown(float magnitude);     ///< @brief Move camera down
     void lookAround(float x, float y);       ///< @brief Move the gimbal by x and y degrees on respective axes
+    void lookAround(vec2 pos) { lookAround(pos.x, pos.y); } ///< @brief Alias
 
     vec3 front() const { return m_front; }                     ///< @brief Get CameraComponent front vector
     float fov() const { return m_fov; }                        ///< @brief Get CameraComponent field of view

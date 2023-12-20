@@ -129,15 +129,29 @@ enum class Key : int16 {
     Menu = 348,
 };
 
-struct KeyModifier {
-    using Mask = uint16;
-    enum {
-        LeftShift = 0b0000'0001,
-        RightShift = 0b0000'0010,
-        LeftControl = 0b0000'0100,
-        RightControl = 0b0000'1000,
-        LeftAlt = 0b0001'0000,
-        RightAlt = 0b0010'0000,
+enum class MouseButton : uint8 {
+    Button1 = 0,
+    Button2 = 1,
+    Button3 = 2,
+    Button4 = 3,
+    Button5 = 4,
+    Button6 = 5,
+    Button7 = 6,
+    Button8 = 7,
+    Left = Button1,
+    Right = Button2,
+    Middle = Button3,
+};
+
+struct InputModifier {
+    using Mask = uint8;
+    enum : uint8 {
+        Shift = 0b0000'0001,
+        Control = 0b0000'0010,
+        Alt = 0b0000'0100,
+        Super = 0b0000'1000,
+        CapsLock = 0b0001'0000,
+        NumLock = 0b0010'0000,
     };
 };
 

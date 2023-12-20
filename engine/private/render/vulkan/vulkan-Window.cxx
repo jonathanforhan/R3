@@ -12,7 +12,7 @@
 #include "api/Hash.hpp"
 #include "api/Log.hpp"
 #include "api/Version.hpp"
-#include "core/Engine.hpp"
+#include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
 
 namespace R3 {
@@ -45,9 +45,9 @@ Window::Window(const WindowSpecification& spec)
     glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
 
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int width, int height) {
-        if (Engine::topEvent() == HASH32("on-window-resize"))
-            Engine::popEvent();
-        Engine::pushEvent<WindowResizeEvent>(width, height);
+        if (Scene::topEvent() == HASH32("on-window-resize"))
+            Scene::popEvent();
+        Scene::pushEvent<WindowResizeEvent>(width, height);
     });
 }
 

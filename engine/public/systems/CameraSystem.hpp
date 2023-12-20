@@ -10,9 +10,16 @@ public:
     void tick(double dt) override;
 
 private:
-    float m_deltaTime{0.0f};
-    bool m_mouseDown{false};
-    dvec2 m_prevCursorPosition{dvec2(0.0, 0.0)};
+    struct ActiveKeys {
+        bool w = false;
+        bool a = false;
+        bool s = false;
+        bool d = false;
+    } m_activeKeys;
+    bool m_mouseDown = false;
+
+    vec2 m_cursorPosition = vec2(0.0f);
+    vec2 m_prevCursorPosition = vec2(0.0f);
 };
 
 } // namespace R3

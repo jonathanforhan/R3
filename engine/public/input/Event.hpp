@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "api/Function.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
@@ -7,6 +8,8 @@
 #define EVENT(_Signal, _Payload) Event<::R3::HASH32(_Signal), _Payload>
 
 namespace R3 {
+
+using EventCallback = std::function<void(void*)>;
 
 template <typename F>
 using EventTypeDeduced = typename std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
