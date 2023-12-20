@@ -1,5 +1,6 @@
 #pragma once
 
+#include <atomic>
 #include <string_view>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
@@ -65,8 +66,17 @@ public:
     /// @brief Set the window should close to true
     void kill();
 
+    /// @brief Query resize state
+    /// @return true if needs to resize
+    bool shouldResize() const { return m_shouldResize; }
+
+    /// @brief Set resize state
+    /// @param b
+    void setShouldResize(bool b) { m_shouldResize = b; }
+
 private:
     WindowSpecification m_spec;
+    std::atomic_bool m_shouldResize;
 };
 
 } // namespace R3

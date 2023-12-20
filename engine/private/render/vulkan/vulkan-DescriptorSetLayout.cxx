@@ -17,7 +17,7 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification&
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eVertex,
         },
-        // Ambient Sampler
+        // Ambedo Sampler
         vk::DescriptorSetLayoutBinding{
             .binding = 1,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,

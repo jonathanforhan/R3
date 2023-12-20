@@ -43,12 +43,18 @@ Window::Window(const WindowSpecification& spec)
     }
     glfwMakeContextCurrent(handle<GLFWwindow*>());
     glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
+    glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
-    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int width, int height) {
+    glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
         if (Scene::topEvent() == HASH32("on-window-resize"))
             Scene::popEvent();
         Scene::pushEvent<WindowResizeEvent>(width, height);
+
+        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+        _this->m_shouldResize = true;
     });
+
+    glfwSetWindowCloseCallback(handle<GLFWwindow*>(), [](GLFWwindow*) { Scene::pushEvent<WindowCloseEvent>(); });
 }
 
 Window::~Window() {

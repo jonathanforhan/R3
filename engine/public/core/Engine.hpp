@@ -51,6 +51,7 @@ private:
     /// @return delta time between frames
     static double deltaTime();
 
+    /// @brief run event dispath on seperate thread
     static void dispatchEvents();
 
 private:

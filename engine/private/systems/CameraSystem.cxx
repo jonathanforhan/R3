@@ -64,7 +64,7 @@ void CameraSystem::tick(double dt) {
 
     Scene::componentView<CameraComponent>().each([this, deltaT](CameraComponent& camera) {
         if (camera.active()) {
-            static constexpr float mouseSensitivity = 250.0f;
+            static constexpr float mouseSensitivity = 220.0f;
             static constexpr float movementSensitivity = 0.8f;
 
             const float deltaX = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
@@ -72,7 +72,7 @@ void CameraSystem::tick(double dt) {
             const vec2 deltaPosition = vec2(deltaX, deltaY);
             m_prevCursorPosition = m_cursorPosition;
 
-            float deltaMovement = deltaT * movementSensitivity;
+            const float deltaMovement = deltaT * movementSensitivity;
 
             if (m_activeKeys.w)
                 camera.translateForward(deltaMovement);

@@ -14,6 +14,8 @@
 #include "components/ModelComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
+#include "vulkan-PushConstant.hxx"
+#include "vulkan-UniformBufferObject.hxx"
 
 namespace R3 {
 
@@ -137,7 +139,7 @@ Renderer::Renderer(RendererSpecification spec)
         uniformBuffer = UniformBuffer({
             .physicalDevice = &m_physicalDevice,
             .logicalDevice = &m_logicalDevice,
-            .bufferSize = sizeof(UniformBufferObject),
+            .bufferSize = sizeof(vulkan::UniformBufferObject),
         });
     }
 
@@ -152,7 +154,7 @@ Renderer::Renderer(RendererSpecification spec)
     }
 }
 
-void Renderer::render(double) {
+void Renderer::render() {
     const vk::Fence inFlight = m_inFlight[m_currentFrame].as<vk::Fence>();
     auto r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight, vk::False, UINT64_MAX);
     CHECK(r == vk::Result::eSuccess);
@@ -179,16 +181,17 @@ void Renderer::render(double) {
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        commandBuffer.bindPipeline(m_graphicsPipeline); // TODO
+        commandBuffer.bindPipeline(m_graphicsPipeline); // TODO should be able to bind different pipelines
 
-        static constexpr auto mat4Size = sizeof(mat4);
-        m_uniformBuffers[m_currentFrame].update(&m_view, mat4Size, mat4Size * 1);
-        m_uniformBuffers[m_currentFrame].update(&m_projection, mat4Size, mat4Size * 2);
+        // vulkan-only functionality
+        vk::PipelineLayout layout = m_graphicsPipeline.layout().as<vk::PipelineLayout>();
+        commandBuffer.as<vk::CommandBuffer>().pushConstants(
+            layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(ViewProjection), &m_viewProjection);
 
         static std::vector<TextureDescriptor> textures;
 
         Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, auto& model) {
-            m_uniformBuffers[m_currentFrame].update(&transform, mat4Size, 0);
+            m_uniformBuffers[m_currentFrame].update(&transform, sizeof(transform), 0);
 
             for (const auto& mesh : model.meshes()) {
                 textures.clear();
@@ -242,8 +245,10 @@ void Renderer::render(double) {
     try {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (std::exception& e) {
-        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR) {
+        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
+            m_spec.window.shouldResize()) {
             resize();
+            m_spec.window.setShouldResize(false);
         } else {
             LOG(Error, e.what());
         }

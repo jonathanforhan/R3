@@ -12,7 +12,7 @@ struct TransformComponent : public mat4 {
         : mat4(m) {}
 
     void operator=(const mat4& m) {
-        for (usize i = 0; i < mat4::length(); i++)
+        for (auto i = 0; i < mat4::length(); i++)
             (*this)[i] = m[i];
     }
 };

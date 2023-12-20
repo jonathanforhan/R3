@@ -6,6 +6,7 @@
 #include "api/Check.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
+#include "vulkan-PushConstant.hxx"
 
 namespace R3 {
 
@@ -15,14 +16,20 @@ PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
         m_spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
     };
 
+    vk::PushConstantRange pushConstant = {
+        .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        .offset = 0,
+        .size = sizeof(vulkan::PushConstant),
+    };
+
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         .sType = vk::StructureType::ePipelineLayoutCreateInfo,
         .pNext = nullptr,
         .flags = {},
         .setLayoutCount = 1,
         .pSetLayouts = descriptorSetLayouts,
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges = nullptr,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges = &pushConstant,
     };
 
     setHandle(m_spec.logicalDevice->as<vk::Device>().createPipelineLayout(pipelineLayoutCreateInfo));

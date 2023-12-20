@@ -1,6 +1,7 @@
 #include "core/Engine.hpp"
 
 #include <chrono>
+#include <thread>
 #include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
 #include "systems/InputSystem.hpp"
@@ -23,7 +24,6 @@ Engine::Engine() {
 
     s_instance.activeScene = scene;
 
-    Scene::bindEventListener([](const WindowResizeEvent&) { s_instance.renderer.resize(); });
     Scene::addSystem<InputSystem>();
 }
 
@@ -35,16 +35,17 @@ Engine::~Engine() {
 
 void Engine::loop() {
     s_instance.window.show();
+
     while (!s_instance.window.shouldClose()) {
-        dispatchEvents();
-        CHECK(activeScene()->m_eventArena.size() == 0);
         double dt = deltaTime();
+        dispatchEvents();
         s_instance.activeScene->runSystems(dt);
         s_instance.renderer.setView(s_instance.activeScene->view());
         s_instance.renderer.setProjection(s_instance.activeScene->projection());
-        s_instance.renderer.render(dt);
+        s_instance.renderer.render();
         s_instance.window.update();
     }
+
     s_instance.renderer.waitIdle();
 }
 

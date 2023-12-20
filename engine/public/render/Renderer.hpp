@@ -16,7 +16,6 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/UniformBuffer.hpp"
-#include "render/UniformBufferObject.hpp"
 #include "render/Window.hpp"
 
 namespace R3 {
@@ -34,10 +33,10 @@ public:
     [[nodiscard]] Ref<const Swapchain> swapchain() const { return &m_swapchain; }
     [[nodiscard]] Ref<const CommandPool> commandPool() const { return &m_commandPool; }
 
-    void render(double dt);
+    void render();
     void resize();
-    void setView(const mat4& view) { m_view = view; }
-    void setProjection(const mat4& projection) { m_projection = projection; }
+    void setView(const mat4& view) { m_viewProjection.view = view; }
+    void setProjection(const mat4& projection) { m_viewProjection.projection = projection; }
     void waitIdle() const;
 
 private:
@@ -50,12 +49,14 @@ private:
     DescriptorPool m_descriptorPool;
     GraphicsPipeline m_graphicsPipeline;
     std::vector<Framebuffer> m_framebuffers;
-    CommandPool m_commandPool;          // used for the render command buffers
     CommandPool m_commandPoolTransient; // used for small command buffer operations like CPU -> GPU copy
+    CommandPool m_commandPool;          // used for the render command buffers
     DepthBuffer m_depthBuffer;
     UniformBuffer m_uniformBuffers[MAX_FRAMES_IN_FLIGHT];
-    mat4 m_view = mat4(1.0f);
-    mat4 m_projection = mat4(1.0f);
+    struct ViewProjection {
+        alignas(16) mat4 view = mat4(1.0f);
+        alignas(16) mat4 projection = mat4(1.0f);
+    } m_viewProjection;
 
     Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];

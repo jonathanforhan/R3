@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <mutex>
 #include <unordered_map>
 #include "api/Types.hpp"
 #include "core/Engine.hpp"

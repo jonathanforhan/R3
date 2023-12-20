@@ -1,8 +1,6 @@
 #include <R3>
 #include "components/CameraComponent.hpp"
 #include "components/ModelComponent.hpp"
-#include "input/KeyboardEvent.hpp"
-#include "input/MouseEvent.hpp"
 #include "input/WindowEvent.hpp"
 #include "systems/InputSystem.hpp"
 
@@ -15,19 +13,19 @@ public:
     }
 
     void tick(double dt) {
-        double theta = 0.0;
-        theta += dt;
         auto& transform = get<TransformComponent>();
-        transform = glm::rotate(transform, (float)theta, vec3(0.0f, 1.0f, 0.0f));
+        transform = glm::rotate(transform, (float)dt, vec3(0.0f, 1.0f, 0.0f));
     }
 };
 
 void runScene() {
+    Scene::bindEventListener([](const WindowCloseEvent& e) { puts("shutting down..."); });
+
     //--- Camera
     auto& cameraEntity = Entity::create<Entity>();
     auto& camera = cameraEntity.emplace<CameraComponent>();
     camera.setActive(true);
-    camera.setPosition(vec3(0, 0, -4));
+    camera.setPosition(vec3(0, 0, -2));
 
     //--- Model
     Entity::create<Helmet>();

@@ -55,8 +55,8 @@ public:
         : payload(payload) {}
 
 public:
-    const SingalType::value_type signal = Signal; ///< @brief Signal, a const uuid32 that we cast to get event type
-    const PayloadType payload;                    ///< @brief Payload, contains Event data
+    const uuid32 signal = Signal; ///< @brief Signal, a const uuid32 that we cast to get event type
+    const PayloadType payload;    ///< @brief Payload, contains Event data
 };
 
 } // namespace R3
