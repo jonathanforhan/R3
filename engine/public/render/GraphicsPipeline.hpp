@@ -28,7 +28,7 @@ public:
     const PipelineLayout& layout() const { return m_layout; }
 
 private:
-    GraphicsPipelineSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
     PipelineLayout m_layout;
     Shader m_vertexShader;
     Shader m_fragmentShader;

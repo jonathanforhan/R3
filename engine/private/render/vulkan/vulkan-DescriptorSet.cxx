@@ -32,25 +32,11 @@ std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecificat
     std::vector<DescriptorSet> descriptorSets(spec.descriptorSetCount);
 
     for (usize i = 0; i < descriptorSets.size(); i++) {
-        descriptorSets[i].m_spec = spec;
+        descriptorSets[i].m_logicalDevice = spec.logicalDevice;
         descriptorSets[i].setHandle(allocatedDescriptorSets[i]);
     }
 
     return descriptorSets;
-}
-
-void DescriptorSet::free(const std::span<DescriptorSet> descriptorSets) {
-    std::vector<vk::DescriptorSet> sets;
-    for (const auto& descriptorSet : descriptorSets) {
-        sets.push_back(descriptorSet.as<vk::DescriptorSet>());
-    }
-    const auto& spec = descriptorSets.front().m_spec;
-    spec.logicalDevice->as<vk::Device>().freeDescriptorSets(spec.descriptorPool->as<vk::DescriptorPool>(), sets);
-}
-
-void DescriptorSet::free() {
-    m_spec.logicalDevice->as<vk::Device>().freeDescriptorSets(m_spec.descriptorPool->as<vk::DescriptorPool>(),
-                                                              {as<vk::DescriptorSet>()});
 }
 
 void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec) {
@@ -108,7 +94,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
         });
     }
 
-    m_spec.logicalDevice->as<vk::Device>().updateDescriptorSets(descriptorWrites, {});
+    m_logicalDevice->as<vk::Device>().updateDescriptorSets(descriptorWrites, {});
 }
 
 } // namespace R3

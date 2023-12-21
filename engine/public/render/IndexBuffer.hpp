@@ -26,7 +26,7 @@ public:
     uint32 count() const { return m_indexCount; }
 
 private:
-    IndexBufferSpecification<T> m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
     uint32 m_indexCount = 0;
 };
 

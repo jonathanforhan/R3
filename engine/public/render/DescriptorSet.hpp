@@ -33,14 +33,14 @@ struct DescriptorSetBindingSpecification {
 
 class DescriptorSet : public NativeRenderObject {
 public:
+    DescriptorSet() = default;
+
     static std::vector<DescriptorSet> allocate(const DescriptorSetSpecification& spec);
-    static void free(const std::span<DescriptorSet> descriptorSets);
-    void free();
 
     void bindResources(const DescriptorSetBindingSpecification& spec);
 
 private:
-    DescriptorSetSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
 };
 
 } // namespace R3

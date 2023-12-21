@@ -27,7 +27,6 @@ public:
 
 private:
     DescriptorPoolSpecification m_spec;
-
     DescriptorSetLayout m_layout;
     std::vector<DescriptorSet> m_descriptorSets;
 };

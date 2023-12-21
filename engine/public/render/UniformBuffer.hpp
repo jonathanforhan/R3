@@ -20,6 +20,7 @@ public:
     ~UniformBuffer();
 
     void update(const void* buffer, usize size, usize offset);
+    void flush();
 
 private:
     UniformBufferSpecification m_spec;

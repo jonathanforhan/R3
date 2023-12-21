@@ -25,7 +25,7 @@ public:
     uint32 count() const { return m_vertexCount; }
 
 private:
-    VertexBufferSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
     uint32 m_vertexCount = 0;
 };
 

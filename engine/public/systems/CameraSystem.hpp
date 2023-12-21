@@ -15,6 +15,8 @@ private:
         bool a = false;
         bool s = false;
         bool d = false;
+        bool e = false;
+        bool q = false;
     } m_activeKeys;
     bool m_mouseDown = false;
 

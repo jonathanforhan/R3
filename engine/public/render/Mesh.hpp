@@ -1,9 +1,11 @@
 #pragma once
 
 #include <span>
+#include <string_view>
 #include <vector>
+#include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"
-#include "render/Vertex.hpp"
+#include "render/Material.hpp"
 #include "render/VertexBuffer.hpp"
 
 namespace R3 {
@@ -12,6 +14,9 @@ struct MeshSpecification {
     Ref<const PhysicalDevice> physicalDevice;
     Ref<const LogicalDevice> logicalDevice;
     Ref<const CommandPool> commandPool;
+    const MaterialSpecification& materialSpecification;
+    std::string_view vertexShaderPath;
+    std::string_view fragmentShaderPath;
     std::span<const Vertex> vertices;
     std::span<const uint32> indices;
 };
@@ -21,9 +26,9 @@ public:
     Mesh() = default;
 
     Mesh(const MeshSpecification& spec);
+    Mesh(const Mesh&) = delete;
     Mesh(Mesh&&) noexcept = default;
     Mesh& operator=(Mesh&&) noexcept = default;
-    ~Mesh();
 
     uint32 vertexCount() const { return m_vertexBuffer.count(); }
     const VertexBuffer& vertexBuffer() const { return m_vertexBuffer; }
@@ -31,18 +36,15 @@ public:
     uint32 indexCount() const { return m_indexBuffer.count(); }
     const IndexBuffer<uint32>& indexBuffer() const { return m_indexBuffer; }
 
-    std::span<const uint32> textureIndices() const { return m_textureIndices; }
-    void addTextureIndex(uint32 index) { m_textureIndices.push_back(index); }
-    bool removeTextureIndex(uint32 index); // return true if index was erased
+    Material& material() { return m_material; }
 
-public:
-    uint32 textureMask = 0;
+    GraphicsPipeline& pipeline() { return m_pipeline; }
 
 private:
-    MeshSpecification m_spec;
     VertexBuffer m_vertexBuffer;
     IndexBuffer<uint32> m_indexBuffer;
-    std::vector<uint32> m_textureIndices;
+    Material m_material;
+    GraphicsPipeline m_pipeline;
 };
 
 } // namespace R3

@@ -78,22 +78,6 @@ Renderer::Renderer(RendererSpecification spec)
         .swapchain = &m_swapchain,
     });
 
-    //--- DescriptorPool
-    m_descriptorPool = DescriptorPool({
-        .logicalDevice = &m_logicalDevice,
-        .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
-    });
-
-    //--- Graphics Pipeline
-    m_graphicsPipeline = GraphicsPipeline({
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
-        .renderPass = &m_renderPass,
-        .descriptorSetLayout = &m_descriptorPool.layout(),
-        .vertexShaderPath = "spirv/test.vert.spv",
-        .fragmentShaderPath = "spirv/test.frag.spv",
-    });
-
     //--- DepthBuffer
     m_depthBuffer = DepthBuffer({
         .physicalDevice = &m_physicalDevice,
@@ -133,25 +117,6 @@ Renderer::Renderer(RendererSpecification spec)
         m_renderFinished[i] = Semaphore({&m_logicalDevice});
         m_inFlight[i] = Fence({&m_logicalDevice});
     }
-
-    //--- Uniforms
-    for (auto& uniformBuffer : m_uniformBuffers) {
-        uniformBuffer = UniformBuffer({
-            .physicalDevice = &m_physicalDevice,
-            .logicalDevice = &m_logicalDevice,
-            .bufferSize = sizeof(vulkan::UniformBufferObject),
-        });
-    }
-
-    //--- Update descriptorSets with uniform and texture info
-    auto& descriptorSets = m_descriptorPool.descriptorSets();
-    for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        UniformDescriptor uniformDescriptors[] = {{
-            .uniform = m_uniformBuffers[i],
-            .binding = 0,
-        }};
-        descriptorSets[i].bindResources({uniformDescriptors, {}});
-    }
 }
 
 void Renderer::render() {
@@ -175,33 +140,26 @@ void Renderer::render() {
     m_logicalDevice.as<vk::Device>().resetFences(inFlight);
 
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
-    DescriptorSet& descriptorSet = m_descriptorPool.descriptorSets()[m_currentFrame];
 
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        commandBuffer.bindPipeline(m_graphicsPipeline); // TODO should be able to bind different pipelines
+        Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, ModelComponent& model) {
+            for (Mesh& mesh : model.meshes()) {
+                commandBuffer.bindPipeline(mesh.pipeline());
+                mesh.material().uniforms()[m_currentFrame].update(&transform, sizeof(transform), 0);
 
-        // vulkan-only functionality
-        vk::PipelineLayout layout = m_graphicsPipeline.layout().as<vk::PipelineLayout>();
-        commandBuffer.as<vk::CommandBuffer>().pushConstants(
-            layout, vk::ShaderStageFlagBits::eVertex, 0, sizeof(ViewProjection), &m_viewProjection);
+                const auto& layout = mesh.pipeline().layout();
+                const auto& descriptor = mesh.material().descriptorAt(m_currentFrame);
+                commandBuffer.bindDescriptorSet(layout, descriptor);
 
-        static std::vector<TextureDescriptor> textures;
-
-        Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, auto& model) {
-            m_uniformBuffers[m_currentFrame].update(&transform, sizeof(transform), 0);
-
-            for (const auto& mesh : model.meshes()) {
-                textures.clear();
-
-                for (uint32 textureIndex : mesh.textureIndices()) {
-                    textures.push_back({.texture = model.textures()[textureIndex]});
-                }
-
-                descriptorSet.bindResources({{}, {textures}});
-                commandBuffer.bindDescriptorSet(m_graphicsPipeline.layout(), descriptorSet);
+                // vulkan-only functionality
+                commandBuffer.as<vk::CommandBuffer>().pushConstants(mesh.pipeline().layout().as<vk::PipelineLayout>(),
+                                                                    vk::ShaderStageFlagBits::eVertex,
+                                                                    0,
+                                                                    sizeof(ViewProjection),
+                                                                    &m_viewProjection);
 
                 commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
                 commandBuffer.bindIndexBuffer(mesh.indexBuffer());

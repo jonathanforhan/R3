@@ -22,6 +22,12 @@ CameraSystem::CameraSystem() {
             case Key::D:
                 m_activeKeys.d = true;
                 break;
+            case Key::E:
+                m_activeKeys.e = true;
+                break;
+            case Key::Q:
+                m_activeKeys.q = true;
+                break;
             default:
                 break;
         }
@@ -40,6 +46,12 @@ CameraSystem::CameraSystem() {
                 break;
             case Key::D:
                 m_activeKeys.d = false;
+                break;
+            case Key::E:
+                m_activeKeys.e = false;
+                break;
+            case Key::Q:
+                m_activeKeys.q = false;
                 break;
             default:
                 break;
@@ -64,8 +76,8 @@ void CameraSystem::tick(double dt) {
 
     Scene::componentView<CameraComponent>().each([this, deltaT](CameraComponent& camera) {
         if (camera.active()) {
-            static constexpr float mouseSensitivity = 220.0f;
-            static constexpr float movementSensitivity = 0.8f;
+            static constexpr float mouseSensitivity = 360.0f;
+            static constexpr float movementSensitivity = 4.0f;
 
             const float deltaX = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
             const float deltaY = m_mouseDown ? -m_cursorPosition.y + m_prevCursorPosition.y : 0.0f;
@@ -83,6 +95,11 @@ void CameraSystem::tick(double dt) {
                 camera.translateLeft(deltaMovement);
             else if (m_activeKeys.d)
                 camera.translateRight(deltaMovement);
+
+            if (m_activeKeys.e)
+                camera.translateUp(deltaMovement);
+            else if (m_activeKeys.q)
+                camera.translateDown(deltaMovement);
 
             if (m_mouseDown)
                 camera.lookAround(deltaPosition * mouseSensitivity);

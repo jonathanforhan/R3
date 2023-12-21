@@ -14,14 +14,14 @@
 namespace R3 {
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     m_layout = PipelineLayout({
-        .logicalDevice = m_spec.logicalDevice,
-        .descriptorSetLayout = m_spec.descriptorSetLayout,
+        .logicalDevice = spec.logicalDevice,
+        .descriptorSetLayout = spec.descriptorSetLayout,
     });
 
-    m_vertexShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.vertexShaderPath});
-    m_fragmentShader = Shader({.logicalDevice = m_spec.logicalDevice, .path = m_spec.fragmentShaderPath});
+    m_vertexShader = Shader({.logicalDevice = spec.logicalDevice, .path = spec.vertexShaderPath});
+    m_fragmentShader = Shader({.logicalDevice = spec.logicalDevice, .path = spec.fragmentShaderPath});
 
     const vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
@@ -229,20 +229,20 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pColorBlendState = &colorBlendStateCreateInfo,
         .pDynamicState = &dynamicStateCreateInfo,
         .layout = m_layout.as<vk::PipelineLayout>(),
-        .renderPass = m_spec.renderPass->as<vk::RenderPass>(),
+        .renderPass = spec.renderPass->as<vk::RenderPass>(),
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = -1,
     };
 
-    const auto r = m_spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+    const auto r = spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
     ENSURE(r.result == vk::Result::eSuccess);
     setHandle(r.value);
 }
 
 GraphicsPipeline::~GraphicsPipeline() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyPipeline(as<vk::Pipeline>());
+        m_logicalDevice->as<vk::Device>().destroyPipeline(as<vk::Pipeline>());
     }
 }
 

@@ -35,7 +35,6 @@ public:
     const Queue& presentationQueue() const { return m_presentationQueue; } ///< @brief Query Presentation Queue
 
 private:
-    LogicalDeviceSpecification m_spec;
     Queue m_graphicsQueue;
     Queue m_presentationQueue;
 };

@@ -8,9 +8,7 @@ using namespace R3;
 
 class Helmet : public Entity {
 public:
-    void init() {
-        emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"); //
-    }
+    void init() { emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"); }
 
     void tick(double dt) {
         auto& transform = get<TransformComponent>();
@@ -19,7 +17,7 @@ public:
 };
 
 void runScene() {
-    Scene::bindEventListener([](const WindowCloseEvent& e) { puts("shutting down..."); });
+    Scene::bindEventListener([](const WindowCloseEvent&) { puts("shutting down..."); });
 
     //--- Camera
     auto& cameraEntity = Entity::create<Entity>();
@@ -30,10 +28,19 @@ void runScene() {
     //--- Model
     Entity::create<Helmet>();
 
+    auto& entity = Entity::create<Entity>();
+    entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
+    auto& transform = entity.get<TransformComponent>();
+    transform = glm::translate(transform, vec3(0, -2, 0));
+
     Engine::loop();
 }
 
 int main() {
+    // try {
     runScene();
+    // } catch (std::exception& e) {
+    //    LOG(Error, e.what());
+    // }
     return 0;
 }

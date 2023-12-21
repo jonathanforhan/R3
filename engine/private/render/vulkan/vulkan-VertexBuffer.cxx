@@ -11,13 +11,13 @@
 namespace R3 {
 
 VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
-    : m_spec(spec),
+    : m_logicalDevice(spec.logicalDevice),
       m_vertexCount(static_cast<uint32>(spec.vertices.size())) {
     // staging buffer, CPU writable
     const BufferAllocateSpecification stagingAllocateSpecification = {
-        .physicalDevice = *m_spec.physicalDevice,
-        .logicalDevice = *m_spec.logicalDevice,
-        .size = m_spec.vertices.size_bytes(),
+        .physicalDevice = *spec.physicalDevice,
+        .logicalDevice = *spec.logicalDevice,
+        .size = spec.vertices.size_bytes(),
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
@@ -25,15 +25,15 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
 
     // copy data to staging buffer
     void* data =
-        m_spec.logicalDevice->as<vk::Device>().mapMemory(stagingMemory.as<vk::DeviceMemory>(), 0, m_vertexCount, {});
-    memcpy(data, m_spec.vertices.data(), m_spec.vertices.size_bytes());
-    m_spec.logicalDevice->as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
+        spec.logicalDevice->as<vk::Device>().mapMemory(stagingMemory.as<vk::DeviceMemory>(), 0, m_vertexCount, {});
+    memcpy(data, spec.vertices.data(), spec.vertices.size_bytes());
+    spec.logicalDevice->as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
 
     // real buffer, copy staging buffer to this GPU buffer
     const BufferAllocateSpecification bufferAllocateSpecification = {
-        .physicalDevice = *m_spec.physicalDevice,
-        .logicalDevice = *m_spec.logicalDevice,
-        .size = m_spec.vertices.size_bytes(),
+        .physicalDevice = *spec.physicalDevice,
+        .logicalDevice = *spec.logicalDevice,
+        .size = spec.vertices.size_bytes(),
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
@@ -41,16 +41,16 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
 
     // copy staging -> buffer
     const BufferCopySpecification bufferCopySpecification = {
-        .logicalDevice = *m_spec.logicalDevice,
-        .commandPool = *m_spec.commandPool,
+        .logicalDevice = *spec.logicalDevice,
+        .commandPool = *spec.commandPool,
         .buffer = buffer,
         .stagingBuffer = stagingBuffer,
-        .size = m_spec.vertices.size_bytes(),
+        .size = spec.vertices.size_bytes(),
     };
     Buffer::copy(bufferCopySpecification);
 
-    m_spec.logicalDevice->as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
-    m_spec.logicalDevice->as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
+    spec.logicalDevice->as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
+    spec.logicalDevice->as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
 
     setHandle(buffer.handle());
     setDeviceMemory(memory.handle());
@@ -58,8 +58,8 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
 
 VertexBuffer::~VertexBuffer() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
-        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+        m_logicalDevice->as<vk::Device>().destroyBuffer(as<vk::Buffer>());
+        m_logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
     }
 }
 
