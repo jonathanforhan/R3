@@ -8,7 +8,7 @@
 namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     constexpr std::array<vk::DescriptorSetLayoutBinding, 6> descriptorSetLayoutBindings = {
         // UBO
         vk::DescriptorSetLayoutBinding{
@@ -62,12 +62,12 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification&
         .pBindings = descriptorSetLayoutBindings.data(),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
 }
 
 DescriptorSetLayout::~DescriptorSetLayout() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorSetLayout(as<vk::DescriptorSetLayout>());
+        m_logicalDevice->as<vk::Device>().destroyDescriptorSetLayout(as<vk::DescriptorSetLayout>());
     }
 }
 

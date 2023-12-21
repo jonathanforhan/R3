@@ -13,10 +13,10 @@
 namespace R3 {
 
 RenderPass::RenderPass(const RenderPassSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::AttachmentDescription colorAttachment = {
         .flags = {},
-        .format = (vk::Format)m_spec.swapchain->surfaceFormat(),
+        .format = (vk::Format)spec.swapchain->surfaceFormat(),
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
@@ -33,7 +33,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
 
     const vk::AttachmentDescription depthAttachment = {
         .flags = {},
-        .format = vulkan::getSupportedDepthFormat(m_spec.physicalDevice->as<vk::PhysicalDevice>(),
+        .format = vulkan::getSupportedDepthFormat(spec.physicalDevice->as<vk::PhysicalDevice>(),
                                                   vk::ImageTiling::eOptimal,
                                                   vk::FormatFeatureFlagBits::eDepthStencilAttachment),
         .samples = vk::SampleCountFlagBits::e1,
@@ -89,12 +89,12 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .pDependencies = &subpassDependency,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
 }
 
 RenderPass::~RenderPass() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyRenderPass(as<vk::RenderPass>());
+        m_logicalDevice->as<vk::Device>().destroyRenderPass(as<vk::RenderPass>());
     }
 }
 

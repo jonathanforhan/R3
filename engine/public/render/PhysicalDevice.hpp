@@ -10,9 +10,9 @@ namespace R3 {
 
 /// @brief Physical Device Specification
 struct PhysicalDeviceSpecification {
-    Ref<const Instance> instance;        ///< @brief Valid non-null Instance
-    Ref<const Surface> surface;          ///< @brief Valid non-null Surface
-    std::vector<const char*> extensions; ///< @brief GPU extensions
+    Ref<const Instance> instance;               ///< @brief Valid non-null Instance
+    Ref<const Surface> surface;                 ///< @brief Valid non-null Surface
+    const std::vector<const char*>& extensions; ///< @brief GPU extensions
 };
 
 /// @brief Abstraction over API specific representation of Hardware/GPU
@@ -32,7 +32,7 @@ public:
 
     /// @brief Query GPU Extensions
     /// @return extensions
-    std::span<const char* const> extensions() const { return m_spec.extensions; }
+    std::span<const char* const> extensions() const { return m_extensions; }
 
 private:
     // ranks GPU based on several factor to determine best fit
@@ -42,7 +42,8 @@ private:
     bool checkExtensionSupport(const NativeRenderObject& deviceHandle) const;
 
 private:
-    PhysicalDeviceSpecification m_spec;
+    Ref<const Surface> m_surface;
+    std::vector<const char*> m_extensions;
 };
 
 } // namespace R3

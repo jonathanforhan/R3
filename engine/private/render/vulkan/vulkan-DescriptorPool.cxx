@@ -10,17 +10,17 @@
 namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
-    : m_spec(spec) {
-    m_layout = DescriptorSetLayout({m_spec.logicalDevice});
+    : m_logicalDevice(spec.logicalDevice) {
+    m_layout = DescriptorSetLayout({m_logicalDevice});
 
     const vk::DescriptorPoolSize uboDescriptorPoolSize = {
         .type = vk::DescriptorType::eUniformBuffer,
-        .descriptorCount = m_spec.descriptorSetCount,
+        .descriptorCount = spec.descriptorSetCount,
     };
 
     const vk::DescriptorPoolSize samplerDescriptorPoolSize = {
         .type = vk::DescriptorType::eCombinedImageSampler,
-        .descriptorCount = m_spec.descriptorSetCount,
+        .descriptorCount = spec.descriptorSetCount,
     };
 
     const std::array<vk::DescriptorPoolSize, 2> poolSizes = {
@@ -32,24 +32,24 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
         .sType = vk::StructureType::eDescriptorPoolCreateInfo,
         .pNext = nullptr,
         .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-        .maxSets = m_spec.descriptorSetCount,
+        .maxSets = spec.descriptorSetCount,
         .poolSizeCount = static_cast<uint32>(poolSizes.size()),
         .pPoolSizes = poolSizes.data(),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));
 
     m_descriptorSets = DescriptorSet::allocate({
-        .logicalDevice = m_spec.logicalDevice,
+        .logicalDevice = m_logicalDevice,
         .descriptorPool = this,
         .descriptorSetLayout = &m_layout,
-        .descriptorSetCount = m_spec.descriptorSetCount,
+        .descriptorSetCount = spec.descriptorSetCount,
     });
 }
 
 DescriptorPool::~DescriptorPool() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyDescriptorPool(as<vk::DescriptorPool>());
+        m_logicalDevice->as<vk::Device>().destroyDescriptorPool(as<vk::DescriptorPool>());
     }
 }
 

@@ -3,21 +3,20 @@
 #include "render/ImageView.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 ImageView::ImageView(const ImageViewSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::ImageViewCreateInfo imageViewCreateInfo = {
         .sType = vk::StructureType::eImageViewCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .image = m_spec.image->as<vk::Image>(),
+        .image = spec.image->as<vk::Image>(),
         .viewType = vk::ImageViewType::e2D,
-        .format = (vk::Format)m_spec.format,
+        .format = (vk::Format)spec.format,
         .components =
             {
                 .r = vk::ComponentSwizzle::eIdentity,
@@ -27,7 +26,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
             },
         .subresourceRange =
             {
-                .aspectMask = (vk::ImageAspectFlags)(static_cast<uint32>(m_spec.aspectMask)),
+                .aspectMask = (vk::ImageAspectFlags)(static_cast<uint32>(spec.aspectMask)),
                 .baseMipLevel = 0,
                 .levelCount = 1,
                 .baseArrayLayer = 0,
@@ -35,12 +34,12 @@ ImageView::ImageView(const ImageViewSpecification& spec)
             },
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createImageView(imageViewCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createImageView(imageViewCreateInfo));
 }
 
 ImageView::~ImageView() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyImageView(as<vk::ImageView>());
+        m_logicalDevice->as<vk::Device>().destroyImageView(as<vk::ImageView>());
     }
 }
 

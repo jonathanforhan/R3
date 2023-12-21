@@ -39,13 +39,14 @@ public:
     TextureBuffer& operator=(TextureBuffer&&) noexcept = default;
     ~TextureBuffer();
 
-    TextureType type() const { return m_spec.type; }
-    constexpr uint8 typeIndex() const { return (uint8)m_spec.type; }
+    TextureType type() const { return m_type; }
+    constexpr uint8 typeIndex() const { return (uint8)m_type; }
     const ImageView& textureView() const { return m_imageView; }
     const Sampler& sampler() const { return m_sampler; }
 
 private:
-    TextureBufferSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
+    TextureType m_type;
     ImageView m_imageView;
     Sampler m_sampler;
 };

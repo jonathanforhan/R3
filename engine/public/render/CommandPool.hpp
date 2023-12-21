@@ -34,8 +34,7 @@ public:
     std::span<const CommandBuffer> commandBuffers() const { return m_commandBuffers; }
 
 private:
-    CommandPoolSpecification m_spec;
-
+    Ref<const LogicalDevice> m_logicalDevice;
     std::vector<CommandBuffer> m_commandBuffers;
 };
 

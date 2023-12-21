@@ -75,7 +75,6 @@ public:
     void setShouldResize(bool b) { m_shouldResize = b; }
 
 private:
-    WindowSpecification m_spec;
     std::atomic_bool m_shouldResize;
 };
 

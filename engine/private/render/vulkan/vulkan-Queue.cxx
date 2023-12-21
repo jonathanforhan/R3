@@ -38,8 +38,9 @@ QueueFamilyIndices QueueFamilyIndices::query(NativeRenderObject&& physicalDevice
 }
 
 void Queue::acquire(const QueueSpecification& spec) {
-    m_spec = spec;
-    setHandle(m_spec.logicalDevice->as<vk::Device>().getQueue(m_spec.queueIndex, 0));
+    m_queueType = spec.queueType;
+    m_queueIndex = spec.queueIndex;
+    setHandle(spec.logicalDevice->as<vk::Device>().getQueue(m_queueIndex, 0));
 }
 
 } // namespace R3

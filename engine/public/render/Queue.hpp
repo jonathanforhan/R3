@@ -50,14 +50,15 @@ public:
 
     /// @brief Query type of queue family
     /// @return type
-    QueueType type() const { return m_spec.queueType; }
+    QueueType type() const { return m_queueType; }
 
     /// @brief Query index of queue family
     /// @return index
-    uint32 index() const { return m_spec.queueIndex; }
+    uint32 index() const { return m_queueIndex; }
 
 private:
-    QueueSpecification m_spec;
+    QueueType m_queueType;
+    uint32 m_queueIndex;
 };
 
 } // namespace R3

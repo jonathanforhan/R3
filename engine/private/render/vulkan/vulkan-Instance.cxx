@@ -46,20 +46,19 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
 } // namespace local
 
-Instance::Instance(const InstanceSpecification& spec)
-    : m_spec(spec) {
+Instance::Instance(const InstanceSpecification& spec) {
     const vk::ApplicationInfo applicationInfo = {
         .sType = vk::StructureType::eApplicationInfo,
         .pNext = nullptr,
-        .pApplicationName = m_spec.applicationName.data(),
+        .pApplicationName = spec.applicationName.data(),
         .applicationVersion = R3_VK_VERSION,
         .pEngineName = "R3",
         .engineVersion = R3_VK_VERSION,
         .apiVersion = R3_VK_VERSION,
     };
 
-    CHECK(checkExtensionSupport(m_spec.extensions));
-    CHECK(checkValidationLayerSupport(m_spec.validationLayers));
+    CHECK(checkExtensionSupport(spec.extensions));
+    CHECK(checkValidationLayerSupport(spec.validationLayers));
 
 #if R3_VALIDATION_LAYERS_ENABLED
     const vk::DebugUtilsMessengerCreateInfoEXT debugMessengerCreateInfo = {
@@ -83,10 +82,10 @@ Instance::Instance(const InstanceSpecification& spec)
         .pNext = &debugMessengerCreateInfo,
         .flags = {},
         .pApplicationInfo = &applicationInfo,
-        .enabledLayerCount = static_cast<uint32>(m_spec.validationLayers.size()),
-        .ppEnabledLayerNames = m_spec.validationLayers.data(),
-        .enabledExtensionCount = static_cast<uint32>(m_spec.extensions.size()),
-        .ppEnabledExtensionNames = m_spec.extensions.data(),
+        .enabledLayerCount = static_cast<uint32>(spec.validationLayers.size()),
+        .ppEnabledLayerNames = spec.validationLayers.data(),
+        .enabledExtensionCount = static_cast<uint32>(spec.extensions.size()),
+        .ppEnabledExtensionNames = spec.extensions.data(),
     };
 #else
     const vk::InstanceCreateInfo instanceCreateInfo = {
@@ -96,8 +95,8 @@ Instance::Instance(const InstanceSpecification& spec)
         .pApplicationInfo = &applicationInfo,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = nullptr,
-        .enabledExtensionCount = static_cast<uint32>(m_spec.extensions.size()),
-        .ppEnabledExtensionNames = m_spec.extensions.data(),
+        .enabledExtensionCount = static_cast<uint32>(spec.extensions.size()),
+        .ppEnabledExtensionNames = spec.extensions.data(),
     };
 #endif
     setHandle(vk::createInstance(instanceCreateInfo));

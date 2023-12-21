@@ -19,7 +19,7 @@ public:
     ~PipelineLayout();
 
 private:
-    PipelineLayoutSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
 };
 
 } // namespace R3

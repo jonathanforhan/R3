@@ -11,9 +11,9 @@
 namespace R3 {
 
 PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     vk::DescriptorSetLayout descriptorSetLayouts[] = {
-        m_spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
+        spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
     };
 
     vk::PushConstantRange pushConstant = {
@@ -32,12 +32,12 @@ PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
         .pPushConstantRanges = &pushConstant,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createPipelineLayout(pipelineLayoutCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createPipelineLayout(pipelineLayoutCreateInfo));
 }
 
 PipelineLayout::~PipelineLayout() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyPipelineLayout(as<vk::PipelineLayout>());
+        m_logicalDevice->as<vk::Device>().destroyPipelineLayout(as<vk::PipelineLayout>());
     }
 }
 

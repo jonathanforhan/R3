@@ -14,17 +14,16 @@
 namespace R3 {
 
 Surface::Surface(const SurfaceSpecification& spec)
-    : m_spec(spec) {
+    : m_instance(spec.instance) {
     VkSurfaceKHR tmp;
-    VkResult result =
-        glfwCreateWindowSurface(m_spec.instance->as<VkInstance>(), m_spec.window->as<GLFWwindow*>(), nullptr, &tmp);
+    auto result = glfwCreateWindowSurface(m_instance->as<VkInstance>(), spec.window->as<GLFWwindow*>(), nullptr, &tmp);
     ENSURE(result == VK_SUCCESS);
     setHandle(tmp);
 }
 
 Surface::~Surface() {
     if (validHandle()) {
-        m_spec.instance->as<vk::Instance>().destroySurfaceKHR(as<VkSurfaceKHR>());
+        m_instance->as<vk::Instance>().destroySurfaceKHR(as<VkSurfaceKHR>());
     }
 }
 

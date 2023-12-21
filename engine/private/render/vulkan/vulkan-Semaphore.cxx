@@ -9,19 +9,19 @@
 namespace R3 {
 
 Semaphore::Semaphore(const SemaphoreSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::SemaphoreCreateInfo semaphoreCreateInfo = {
         .sType = vk::StructureType::eSemaphoreCreateInfo,
         .pNext = nullptr,
         .flags = {},
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createSemaphore(semaphoreCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createSemaphore(semaphoreCreateInfo));
 }
 
 Semaphore::~Semaphore() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroySemaphore(as<vk::Semaphore>());
+        m_logicalDevice->as<vk::Device>().destroySemaphore(as<vk::Semaphore>());
     }
 }
 

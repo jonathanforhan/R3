@@ -26,7 +26,7 @@ public:
     std::vector<DescriptorSet>& descriptorSets() { return m_descriptorSets; }
 
 private:
-    DescriptorPoolSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
     DescriptorSetLayout m_layout;
     std::vector<DescriptorSet> m_descriptorSets;
 };

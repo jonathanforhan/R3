@@ -7,7 +7,6 @@
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
-#include <vector>
 #include "api/Ensure.hpp"
 #include "api/Hash.hpp"
 #include "api/Log.hpp"
@@ -17,8 +16,7 @@
 
 namespace R3 {
 
-Window::Window(const WindowSpecification& spec)
-    : m_spec(spec) {
+Window::Window(const WindowSpecification& spec) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -36,7 +34,7 @@ Window::Window(const WindowSpecification& spec)
     const int32 w = static_cast<int>(vidmode->width * 0.75);
     const int32 h = static_cast<int>(vidmode->height * 0.75);
 
-    setHandle(glfwCreateWindow(w, h, m_spec.title.data(), nullptr, nullptr));
+    setHandle(glfwCreateWindow(w, h, spec.title.data(), nullptr, nullptr));
     if (handle() == nullptr) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);

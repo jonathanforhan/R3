@@ -59,7 +59,7 @@ private:
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
 
-    RendererSpecification m_spec;
+    Window& m_window;
 };
 
 } // namespace R3

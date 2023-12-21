@@ -20,7 +20,7 @@ public:
     ~RenderPass();
 
 private:
-    RenderPassSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
 };
 
 } // namespace R3

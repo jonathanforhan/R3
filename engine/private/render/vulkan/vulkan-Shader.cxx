@@ -11,8 +11,8 @@
 namespace R3 {
 
 Shader::Shader(const ShaderSpecification& spec)
-    : m_spec(spec) {
-    std::ifstream ifs(m_spec.path.data(), std::ios::ate | std::ios::binary);
+    : m_logicalDevice(spec.logicalDevice) {
+    std::ifstream ifs(spec.path.data(), std::ios::ate | std::ios::binary);
     CHECK(ifs.is_open());
 
     std::vector<char> bytes(ifs.tellg());
@@ -28,12 +28,12 @@ Shader::Shader(const ShaderSpecification& spec)
         .pCode = reinterpret_cast<const uint32*>(bytes.data()),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createShaderModule(shaderModuleCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createShaderModule(shaderModuleCreateInfo));
 }
 
 Shader::~Shader() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyShaderModule(as<vk::ShaderModule>());
+        m_logicalDevice->as<vk::Device>().destroyShaderModule(as<vk::ShaderModule>());
     }
 }
 

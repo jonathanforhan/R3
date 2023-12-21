@@ -2,7 +2,6 @@
 
 #include <span>
 #include <string_view>
-#include <vector>
 #include "render/NativeRenderObject.hpp"
 
 #define R3_VALIDATION_LAYERS_ENABLED R3_BUILD_DEBUG
@@ -11,9 +10,9 @@ namespace R3 {
 
 /// @brief Instance Specification
 struct InstanceSpecification {
-    std::string_view applicationName;          ///< @brief Name of application
-    std::vector<const char*> extensions;       ///< @brief Renderer extensions
-    std::vector<const char*> validationLayers; ///< @brief Renderer validation layers
+    std::string_view applicationName;        ///< @brief Name of application
+    std::span<const char*> extensions;       ///< @brief Renderer extensions
+    std::span<const char*> validationLayers; ///< @brief Renderer validation layers
 };
 
 /// @brief Many graphics APIs have a concept of instance, or per-application state, this wraps those instances
@@ -34,9 +33,6 @@ public:
 private:
     bool checkExtensionSupport(std::span<const char*> requiredExtensions) const;
     bool checkValidationLayerSupport(std::span<const char*> requiredValidationLayers) const;
-
-private:
-    InstanceSpecification m_spec;
 };
 
 } // namespace R3

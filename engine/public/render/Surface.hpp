@@ -22,7 +22,7 @@ public:
     ~Surface();
 
 private:
-    SurfaceSpecification m_spec;
+    Ref<const Instance> m_instance;
 };
 
 } // namespace R3

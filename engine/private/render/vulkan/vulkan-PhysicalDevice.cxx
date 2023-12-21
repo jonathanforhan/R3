@@ -15,9 +15,10 @@
 namespace R3 {
 
 PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
-    : m_spec(spec) {
+    : m_surface(spec.surface),
+      m_extensions(spec.extensions) {
     const std::vector<vk::PhysicalDevice> physicalDevices =
-        m_spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
+        spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
 
     int32 bestScore = INT32_MIN;
     for (vk::PhysicalDevice physicalDevice : physicalDevices) {
@@ -33,7 +34,7 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
 
 int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) const {
     const vk::PhysicalDevice physicalDevice = deviceHandle.as<vk::PhysicalDevice>();
-    const auto surface = m_spec.surface->as<vk::SurfaceKHR>();
+    const auto surface = m_surface->as<vk::SurfaceKHR>();
 
     const auto physicalDeviceProperties = physicalDevice.getProperties();
     const auto physicalDeviceFeatures = physicalDevice.getFeatures();

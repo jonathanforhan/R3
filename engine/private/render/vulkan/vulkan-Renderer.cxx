@@ -20,7 +20,7 @@
 namespace R3 {
 
 Renderer::Renderer(RendererSpecification spec)
-    : m_spec(spec) {
+    : m_window(spec.window) {
     //--- Instance Extensions
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -43,7 +43,7 @@ Renderer::Renderer(RendererSpecification spec)
     //--- Surface
     m_surface = Surface({
         .instance = &m_instance,
-        .window = &m_spec.window,
+        .window = &m_window,
     });
 
     //--- Physical Device
@@ -204,9 +204,9 @@ void Renderer::render() {
         result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
     } catch (std::exception& e) {
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-            m_spec.window.shouldResize()) {
+            m_window.shouldResize()) {
             resize();
-            m_spec.window.setShouldResize(false);
+            m_window.setShouldResize(false);
         } else {
             LOG(Error, e.what());
         }

@@ -10,19 +10,19 @@
 namespace R3 {
 
 Fence::Fence(const FenceSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::FenceCreateInfo fenceCreateInfo = {
         .sType = vk::StructureType::eFenceCreateInfo,
         .pNext = nullptr,
         .flags = vk::FenceCreateFlagBits::eSignaled,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createFence(fenceCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createFence(fenceCreateInfo));
 }
 
 Fence::~Fence() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyFence(as<vk::Fence>());
+        m_logicalDevice->as<vk::Device>().destroyFence(as<vk::Fence>());
     }
 }
 

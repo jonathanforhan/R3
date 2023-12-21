@@ -18,7 +18,7 @@ public:
     ~Fence();
 
 private:
-    FenceSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
 };
 
 } // namespace R3

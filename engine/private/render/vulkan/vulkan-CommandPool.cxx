@@ -27,27 +27,27 @@ static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoo
 } // namespace local
 
 CommandPool::CommandPool(const CommandPoolSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
         .pNext = nullptr,
-        .flags = local::CommandPoolFlagsToVkFlags(m_spec.flags),
-        .queueFamilyIndex = m_spec.logicalDevice->graphicsQueue().index(),
+        .flags = local::CommandPoolFlagsToVkFlags(spec.flags),
+        .queueFamilyIndex = m_logicalDevice->graphicsQueue().index(),
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createCommandPool(commandPoolCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createCommandPool(commandPoolCreateInfo));
 
     m_commandBuffers = CommandBuffer::allocate({
-        .logicalDevice = m_spec.logicalDevice,
-        .swapchain = m_spec.swapchain,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = spec.swapchain,
         .commandPool = this,
-        .commandBufferCount = m_spec.commandBufferCount,
+        .commandBufferCount = spec.commandBufferCount,
     });
 }
 
 CommandPool::~CommandPool() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
+        m_logicalDevice->as<vk::Device>().destroyCommandPool(as<vk::CommandPool>());
     }
 }
 

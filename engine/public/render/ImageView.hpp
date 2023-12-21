@@ -1,6 +1,5 @@
 #pragma once
 
-#include <vector>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -24,7 +23,7 @@ public:
     ~ImageView();
 
 private:
-    ImageViewSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
 };
 
 } // namespace R3

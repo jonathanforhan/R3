@@ -13,18 +13,18 @@
 namespace R3 {
 
 DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
-    : m_spec(spec) {
+    : m_logicalDevice(spec.logicalDevice) {
     const vk::FormatProperties formatProperties =
-        m_spec.physicalDevice->as<vk::PhysicalDevice>().getFormatProperties(vk::Format::eD32Sfloat);
-    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(m_spec.physicalDevice->as<vk::PhysicalDevice>(),
+        spec.physicalDevice->as<vk::PhysicalDevice>().getFormatProperties(vk::Format::eD32Sfloat);
+    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice->as<vk::PhysicalDevice>(),
                                                                    vk::ImageTiling::eOptimal,
                                                                    vk::FormatFeatureFlagBits::eDepthStencilAttachment);
 
-    const uvec2 extent = m_spec.swapchain->extent();
+    const uvec2 extent = spec.swapchain->extent();
 
     const ImageAllocateSpecification imageAllocateSpecification = {
-        .physicalDevice = *m_spec.physicalDevice,
-        .logicalDevice = *m_spec.logicalDevice,
+        .physicalDevice = *spec.physicalDevice,
+        .logicalDevice = *m_logicalDevice,
         .size = extent.x * extent.y * sizeof(float),
         .format = (Format)depthFormat,
         .width = extent.x,
@@ -39,7 +39,7 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
 
     Image img(handle());
     m_imageView = ImageView(ImageViewSpecification{
-        .logicalDevice = m_spec.logicalDevice,
+        .logicalDevice = m_logicalDevice,
         .image = &img,
         .format = (Format)depthFormat,
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -48,8 +48,8 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
 
 DepthBuffer::~DepthBuffer() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroyImage(as<vk::Image>());
-        m_spec.logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
+        m_logicalDevice->as<vk::Device>().destroyImage(as<vk::Image>());
+        m_logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());
     }
 }
 

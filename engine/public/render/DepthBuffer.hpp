@@ -24,7 +24,7 @@ public:
     const ImageView& imageView() const { return m_imageView; }
 
 private:
-    DepthBufferSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
     ImageView m_imageView;
 };
 
