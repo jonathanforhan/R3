@@ -131,7 +131,7 @@ void Image::copy(const ImageCopySpecification& spec) {
                                                         vk::ImageLayout::eTransferSrcOptimal,
                                                         spec.dst.as<vk::Image>(),
                                                         vk::ImageLayout::eTransferDstOptimal,
-                                                        {imageCopy});
+                                                        imageCopy);
     }
 
     commandBuffer.endCommandBuffer();

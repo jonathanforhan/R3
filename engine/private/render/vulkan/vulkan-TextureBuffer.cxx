@@ -24,7 +24,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     const uint8* bytes = spec.data ? stbi_load_from_memory((const stbi_uc*)spec.data, len, &w, &h, &channels, 0)
                                    : stbi_load(spec.path, &w, &h, &channels, 0);
     CHECK(bytes != nullptr);
-    const usize imageSize = w * h * 4;
+    const usize imageSize = usize(w * h * 4);
 
     // staging buffer for wriring
     const BufferAllocateSpecification bufferAllocateSpecification = {
@@ -34,7 +34,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
     };
-    auto [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
+    auto&& [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy image data to buffer
     void* data = m_logicalDevice->as<vk::Device>().mapMemory(stagingMemory.as<vk::DeviceMemory>(), 0, imageSize, {});
@@ -42,7 +42,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         // no Alpha channel
         if (channels == 3) {
             uint32* rgba = reinterpret_cast<uint32*>(data);
-            constexpr uint32 OPAQUE_MASK = 0xFF00'0000;
+            static constexpr uint32 OPAQUE_MASK = 0xFF00'0000;
             const uint32 rgbSize = w * h * 3;
 
             for (uint32 i = 0, j = 0; i < rgbSize; i += 3, j++) {
@@ -69,7 +69,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .imageFlags = uint32(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
-    auto [image, memory] = Image::allocate(imageAllocateSpecification);
+    auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
 
     const auto& commandBuffer = spec.commandPool->commandBuffers().front();
 
@@ -136,14 +136,14 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     setDeviceMemory(memory.handle());
 
     const Image img(handle());
-    m_imageView = ImageView(ImageViewSpecification{
+    m_imageView = ImageView({
         .logicalDevice = m_logicalDevice,
         .image = &img,
         .format = R3_FORMAT_R8G8B8A8_SRGB,
         .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
     });
 
-    m_sampler = Sampler(SamplerSpecification{
+    m_sampler = Sampler({
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = m_logicalDevice,
     });

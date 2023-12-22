@@ -1,7 +1,6 @@
 #pragma once
 
 #include "api/Check.hpp"
-#include "api/NoExcept.hpp"
 
 namespace R3 {
 
@@ -35,51 +34,51 @@ public:
         return *this;
     }
 
-    Ref(Ref<T>&& src) R3_NOEXCEPT {
+    Ref(Ref<T>&& src) noexcept {
         CHECK(src.m_ptr != nullptr);
         m_ptr = src.m_ptr;
         src.m_ptr = nullptr;
     }
 
-    Ref& operator=(Ref<T>&& src) R3_NOEXCEPT {
+    Ref& operator=(Ref<T>&& src) noexcept {
         CHECK(src.m_ptr != nullptr);
         m_ptr = src.m_ptr;
         src.m_ptr = nullptr;
         return *this;
     }
 
-    Ref& operator=(auto* ptr) R3_NOEXCEPT {
+    Ref& operator=(auto* ptr) {
         CHECK(ptr != nullptr);
         m_ptr = ptr;
         return *this;
     }
 
-    constexpr operator T*() R3_NOEXCEPT {
+    constexpr operator T*() {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }
 
-    constexpr operator T*() const R3_NOEXCEPT {
+    constexpr operator T*() const {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }
 
-    constexpr auto& operator*() R3_NOEXCEPT {
+    constexpr auto& operator*() {
         CHECK(m_ptr != nullptr);
         return *m_ptr;
     }
 
-    constexpr auto& operator*() const R3_NOEXCEPT {
+    constexpr auto& operator*() const {
         CHECK(m_ptr != nullptr);
         return *m_ptr;
     }
 
-    constexpr T* operator->() R3_NOEXCEPT {
+    constexpr T* operator->() {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }
 
-    constexpr T* operator->() const R3_NOEXCEPT {
+    constexpr T* operator->() const {
         CHECK(m_ptr != nullptr);
         return m_ptr;
     }

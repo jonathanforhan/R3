@@ -14,13 +14,21 @@
 #include "components/ModelComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
+#include "render/ResourceManager.hxx"
 #include "vulkan-PushConstant.hxx"
 #include "vulkan-UniformBufferObject.hxx"
 
 namespace R3 {
 
-Renderer::Renderer(RendererSpecification spec)
-    : m_window(spec.window) {
+Renderer::Renderer(const RendererSpecification& spec)
+    : m_window(spec.window),
+      m_modelLoader({
+          .physicalDevice = m_physicalDevice,
+          .logicalDevice = m_logicalDevice,
+          .swapchain = m_swapchain,
+          .renderPass = m_renderPass,
+          .commandPool = m_commandPool,
+      }) {
     //--- Instance Extensions
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -147,23 +155,27 @@ void Renderer::render() {
     {
         Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, ModelComponent& model) {
             for (Mesh& mesh : model.meshes()) {
-                commandBuffer.bindPipeline(mesh.pipeline());
-                mesh.material().uniforms()[m_currentFrame].update(&transform, sizeof(transform), 0);
+                auto& pipeline = GlobalResourceManager().getGraphicsPipelineById(mesh.pipeline);
+                auto& uniform = GlobalResourceManager().getUniformById(mesh.material.uniforms[m_currentFrame]);
+                auto& descriptorPool = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool);
+                auto& vertexBuffer = GlobalResourceManager().getVertexBufferById(mesh.vertexBuffer);
+                auto& indexBuffer = GlobalResourceManager().getIndexBufferById(mesh.indexBuffer);
 
-                const auto& layout = mesh.pipeline().layout();
-                const auto& descriptor = mesh.material().descriptorAt(m_currentFrame);
-                commandBuffer.bindDescriptorSet(layout, descriptor);
+                commandBuffer.bindPipeline(pipeline);
+                uniform.update(&transform, sizeof(transform), 0);
+
+                commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
                 // vulkan-only functionality
-                commandBuffer.as<vk::CommandBuffer>().pushConstants(mesh.pipeline().layout().as<vk::PipelineLayout>(),
+                commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
                                                                     vk::ShaderStageFlagBits::eVertex,
                                                                     0,
                                                                     sizeof(ViewProjection),
                                                                     &m_viewProjection);
 
-                commandBuffer.bindVertexBuffer(mesh.vertexBuffer());
-                commandBuffer.bindIndexBuffer(mesh.indexBuffer());
-                commandBuffer.as<vk::CommandBuffer>().drawIndexed(mesh.indexCount(), 1, 0, 0, 0);
+                commandBuffer.bindVertexBuffer(vertexBuffer);
+                commandBuffer.bindIndexBuffer(indexBuffer);
+                commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
             }
         });
     }

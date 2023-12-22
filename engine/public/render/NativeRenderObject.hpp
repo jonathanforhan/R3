@@ -1,4 +1,5 @@
 #pragma once
+
 #include "api/Ref.hpp"
 
 namespace R3 {
@@ -15,6 +16,7 @@ public:
     using Handle = void*;
     using HandleRef = Ref<std::remove_pointer_t<Handle>>;
     using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>;
+    using ID = usize;
 
 protected:
     NativeRenderObject() = default;
@@ -32,8 +34,8 @@ public:
     NativeRenderObject(const NativeRenderObject&) = delete;
     NativeRenderObject& operator=(const NativeRenderObject&) = delete;
 
-    NativeRenderObject(NativeRenderObject&&) R3_NOEXCEPT = default;
-    NativeRenderObject& operator=(NativeRenderObject&&) R3_NOEXCEPT = default;
+    NativeRenderObject(NativeRenderObject&&) noexcept = default;
+    NativeRenderObject& operator=(NativeRenderObject&&) noexcept = default;
 
     /// @brief Query is handle is null
     /// @return true if not null

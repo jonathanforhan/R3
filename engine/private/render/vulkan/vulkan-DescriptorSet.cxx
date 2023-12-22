@@ -8,6 +8,7 @@
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/RenderSpecification.hpp"
+#include "render/ResourceManager.hxx"
 #include "render/TextureBuffer.hpp"
 #include "render/UniformBuffer.hpp"
 
@@ -49,8 +50,10 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
+        auto& uniform = GlobalResourceManager().getUniformById(it.uniform);
+
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
-            .buffer = it.uniform.as<vk::Buffer>(),
+            .buffer = uniform.as<vk::Buffer>(),
             .offset = it.offset,
             .range = it.range ? it.range : vk::WholeSize,
         });
@@ -74,9 +77,11 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorImageInfos.reserve(spec.textureDescriptors.size());
 
     for (const auto& it : spec.textureDescriptors) {
+        auto& texture = GlobalResourceManager().getTextureById(it.texture);
+
         auto& info = descriptorImageInfos.emplace_back(vk::DescriptorImageInfo{
-            .sampler = it.texture.sampler().as<vk::Sampler>(),
-            .imageView = it.texture.textureView().as<vk::ImageView>(),
+            .sampler = texture.sampler().as<vk::Sampler>(),
+            .imageView = texture.textureView().as<vk::ImageView>(),
             .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
         });
 
@@ -84,7 +89,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
             .sType = vk::StructureType::eWriteDescriptorSet,
             .pNext = nullptr,
             .dstSet = as<vk::DescriptorSet>(),
-            .dstBinding = it.texture.typeIndex(),
+            .dstBinding = texture.typeIndex(),
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,

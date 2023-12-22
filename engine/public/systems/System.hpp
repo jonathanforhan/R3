@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 namespace R3 {
 
 /// @brief System is the base abstract class for Derived systems
@@ -18,9 +20,6 @@ struct System {
 };
 
 template <typename T, typename... Args>
-concept ValidSystem = requires {
-    std::is_base_of_v<System, T>;
-    std::is_constructible_v<T, Args...>;
-};
+concept ValidSystem = std::is_base_of_v<System, T> and std::is_constructible_v<T, Args...>;
 
 } // namespace R3

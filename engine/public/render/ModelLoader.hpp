@@ -4,8 +4,17 @@
 #include <unordered_map>
 #include <vector>
 #include "api/Types.hpp"
-#include "render/Mesh.hpp"
+#include "components/ModelComponent.hpp"
 #include "render/TextureBuffer.hpp"
+#include "render/Vertex.hpp"
+
+#include "render/IndexBuffer.hpp"
+#include "render/VertexBuffer.hpp"
+
+#include "render/CommandPool.hpp"
+#include "render/LogicalDevice.hpp"
+#include "render/PhysicalDevice.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 
@@ -20,18 +29,27 @@ class Model;                 ///< @private
 } // namespace glTF
 
 struct MeshPrototype {
-    std::vector<Vertex> vertices;
-    std::vector<uint32> indices;
-    std::vector<usize> textureIndices;
+    VertexBuffer::ID vertexBuffer;
+    IndexBuffer<uint32>::ID indexBuffer;
+    std::vector<usize> textureIndices; // index of model-loader interal textures, not global pool
+};
+
+struct ModelLoaderSpecification {
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const RenderPass& renderPass;
+    const CommandPool& commandPool;
 };
 
 class ModelLoader {
 public:
-    ModelLoader() = default;
+    ModelLoader(const ModelLoaderSpecification& spec)
+        : m_spec(spec) {}
     ModelLoader(const ModelLoader&) = delete;
-    ModelLoader(ModelLoader&&) = default;
+    ModelLoader(ModelLoader&&) = delete;
 
-    void load(const std::string& path, std::vector<Mesh>& meshes, std::vector<TextureBuffer>& textures);
+    void load(const std::string& path, ModelComponent& model);
 
 private:
     void processNode(glTF::Model* model, glTF::Node* node);
@@ -42,8 +60,9 @@ private:
     void processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type);
 
 private:
+    ModelLoaderSpecification m_spec;
     std::vector<MeshPrototype> m_prototypes;
-    std::vector<TextureBuffer> m_textures;
+    std::vector<TextureBuffer::ID> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
 };

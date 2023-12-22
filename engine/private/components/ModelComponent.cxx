@@ -8,9 +8,14 @@
 namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& path) {
-    ModelLoader modelLoader;
-    modelLoader.load(path, m_meshes, m_textures);
+    Engine::renderer().modelLoader().load(path, *this);
     Scene::addSystem<ModelSystem>();
+}
+
+ModelComponent::~ModelComponent() {
+    for (auto& mesh : m_meshes) {
+        mesh.destroy();
+    }
 }
 
 } // namespace R3

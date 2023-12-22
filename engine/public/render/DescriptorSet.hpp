@@ -5,6 +5,8 @@
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
+#include "render/TextureBuffer.hpp"
+#include "render/UniformBuffer.hpp"
 
 namespace R3 {
 
@@ -16,14 +18,14 @@ struct DescriptorSetSpecification {
 };
 
 struct UniformDescriptor {
-    const UniformBuffer& uniform;
+    UniformBuffer::ID uniform;
     uint32 binding;
     usize offset;
     usize range;
 };
 
 struct TextureDescriptor {
-    const TextureBuffer& texture;
+    TextureBuffer::ID texture;
 };
 
 struct DescriptorSetBindingSpecification {

@@ -19,12 +19,7 @@ Engine::Instance Engine::s_instance = {
 Engine Engine::Instance::engine = {};
 
 Engine::Engine() {
-    auto* scene = new Scene(s_instance.sceneCounter++);
-    s_instance.scenes.emplace(scene->id, scene);
-
-    s_instance.activeScene = scene;
-
-    Scene::addSystem<InputSystem>();
+    addScene(true);
 }
 
 Engine::~Engine() {
@@ -36,7 +31,7 @@ Engine::~Engine() {
 void Engine::loop() {
     s_instance.window.show();
 
-    while (!s_instance.window.shouldClose()) {
+    while (!s_instance.window.shouldClose() || !s_instance.activeScene->m_eventQueue.empty()) {
         double dt = deltaTime();
         dispatchEvents();
         s_instance.activeScene->runSystems(dt);
@@ -46,7 +41,13 @@ void Engine::loop() {
         s_instance.window.update();
     }
 
+    // sync
     s_instance.renderer.waitIdle();
+
+    // destroy ECS (must do explicitly due to static object lifetimes ie the GlobalResourceManager)
+    for (auto& scene : s_instance.scenes) {
+        scene.second->m_registry.clear();
+    }
 }
 
 Scene* Engine::addScene(bool setActive) {
@@ -57,7 +58,7 @@ Scene* Engine::addScene(bool setActive) {
         s_instance.activeScene = scene;
     }
 
-    // always bind resize listener
+    // always bind resize listener and input system
     Scene::bindEventListener([](const WindowResizeEvent&) { s_instance.renderer.resize(); });
     Scene::addSystem<InputSystem>();
 
@@ -67,6 +68,7 @@ Scene* Engine::addScene(bool setActive) {
 void Engine::removeScene(uuid32 id) {
     auto it = s_instance.scenes.find(id);
     if (it != s_instance.scenes.end()) {
+        delete it->second;
         s_instance.scenes.erase(it);
     }
 }

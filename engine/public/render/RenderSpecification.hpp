@@ -5,7 +5,7 @@
 /// All values are Vulkan Native, convert for capability with other renderers
 
 namespace R3 {
-
+constexpr auto PBR_TEXTURE_COUNT = 5;
 constexpr auto MAX_FRAMES_IN_FLIGHT = 3;
 
 enum ImageAspect {

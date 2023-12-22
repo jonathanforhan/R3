@@ -6,10 +6,12 @@
 #include "api/Math.hpp"
 #include "core/Scene.hpp"
 #include "media/glTF/glTF-Model.hxx"
+#include "render/ResourceManager.hxx"
+#include "render/vulkan/vulkan-UniformBufferObject.hxx"
 
 namespace R3 {
 
-void ModelLoader::load(const std::string& path, std::vector<Mesh>& meshes, std::vector<TextureBuffer>& textures) {
+void ModelLoader::load(const std::string& path, ModelComponent& model) {
     usize split = path.find_last_of('/') + 1;
     m_directory = path.substr(0, split);
     auto file = path.substr(split);
@@ -22,44 +24,91 @@ void ModelLoader::load(const std::string& path, std::vector<Mesh>& meshes, std::
         }
     }
 
-    for (usize i = 0; i < m_prototypes.size(); i++) {
-        MaterialSpecification materialSpecification;
+    for (auto& prototype : m_prototypes) {
+        auto mesh = Mesh();
 
-        for (usize index : m_prototypes[i].textureIndices) {
-            switch (m_textures[index].type()) {
+        // Vertex Buffer
+        mesh.vertexBuffer = prototype.vertexBuffer;
+
+        // Index Buffer
+        mesh.indexBuffer = prototype.indexBuffer;
+
+        // Descriptor Pool
+        mesh.material.descriptorPool = GlobalResourceManager().allocateDescriptorPool({
+            .logicalDevice = &m_spec.logicalDevice,
+            .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+        });
+
+        // Pipeline
+        mesh.pipeline = GlobalResourceManager().allocateGraphicsPipeline({
+            .logicalDevice = &m_spec.logicalDevice,
+            .swapchain = &m_spec.swapchain,
+            .renderPass = &m_spec.renderPass,
+            .descriptorSetLayout =
+                &GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool).layout(),
+            .vertexShaderPath = "spirv/test.vert.spv",
+            .fragmentShaderPath = "spirv/test.frag.spv",
+        });
+
+        // Uniform
+        for (auto& uniform : mesh.material.uniforms) {
+            uniform = GlobalResourceManager().allocateUniform({
+                .physicalDevice = &m_spec.physicalDevice,
+                .logicalDevice = &m_spec.logicalDevice,
+                .bufferSize = sizeof(vulkan::UniformBufferObject),
+            });
+        }
+
+        // Textures
+        std::vector<TextureDescriptor> textureDescriptors;
+
+        for (usize index : prototype.textureIndices) {
+            switch (GlobalResourceManager().getTextureById(m_textures[index]).type()) {
                 case TextureType::Albedo:
-                    materialSpecification.albedo = &m_textures[index];
+                    mesh.material.textures.albedo = m_textures[index];
+                    textureDescriptors.push_back({m_textures[index]});
                     break;
                 case TextureType::MetallicRoughness:
-                    materialSpecification.metallicRoughness = &m_textures[index];
+                    mesh.material.textures.metallicRoughness = m_textures[index];
+                    textureDescriptors.push_back({m_textures[index]});
                     break;
                 case TextureType::Normal:
-                    materialSpecification.normal = &m_textures[index];
+                    mesh.material.textures.normal = m_textures[index];
+                    textureDescriptors.push_back({m_textures[index]});
                     break;
                 case TextureType::AmbientOcclusion:
-                    materialSpecification.ambientOcculsion = &m_textures[index];
+                    mesh.material.textures.ambientOcclusion = m_textures[index];
+                    textureDescriptors.push_back({m_textures[index]});
                     break;
                 case TextureType::Emissive:
-                    materialSpecification.emissive = &m_textures[index];
+                    mesh.material.textures.emissive = m_textures[index];
+                    textureDescriptors.push_back({m_textures[index]});
                     break;
                 default:
                     break;
             }
         }
 
-        meshes.emplace_back(MeshSpecification{
-            .physicalDevice = Engine::renderer().physicalDevice(),
-            .logicalDevice = Engine::renderer().logicalDevice(),
-            .commandPool = Engine::renderer().commandPool(),
-            .materialSpecification = materialSpecification,
-            .vertexShaderPath = "spirv/test.vert.spv",
-            .fragmentShaderPath = "spirv/test.frag.spv",
-            .vertices = std::move(m_prototypes[i].vertices),
-            .indices = std::move(m_prototypes[i].indices),
-        });
+        // Bindings
+        std::vector<UniformDescriptor> uniformDescriptors;
+        for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            uniformDescriptors.push_back({mesh.material.uniforms[i], 0});
+        };
+
+        auto& descriptorPool = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool);
+        auto& descriptorSets = descriptorPool.descriptorSets();
+
+        for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            descriptorSets[i].bindResources({uniformDescriptors, textureDescriptors});
+        }
+
+        model.m_meshes.emplace_back(std::move(mesh));
     }
 
-    textures = std::move(m_textures);
+    // save for reuse
+    m_prototypes.clear();
+    m_textures.clear();
+    m_loadedTextures.clear();
 }
 
 void ModelLoader::processNode(glTF::Model* model, glTF::Node* node) {
@@ -178,8 +227,18 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
         }
 
         m_prototypes.emplace_back(MeshPrototype{
-            .vertices = std::move(vertices),
-            .indices = std::move(indices),
+            .vertexBuffer = GlobalResourceManager().allocateVertexBuffer({
+                .physicalDevice = &m_spec.physicalDevice,
+                .logicalDevice = &m_spec.logicalDevice,
+                .commandPool = &m_spec.commandPool,
+                .vertices = vertices,
+            }),
+            .indexBuffer = GlobalResourceManager().allocateIndexBuffer({
+                .physicalDevice = &m_spec.physicalDevice,
+                .logicalDevice = &m_spec.logicalDevice,
+                .commandPool = &m_spec.commandPool,
+                .indices = indices,
+            }),
             .textureIndices = {},
         });
 
@@ -219,30 +278,28 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
 
     glTF::Texture& texture = model->textures[textureInfo->index];
 
-    auto& renderer = Engine::renderer();
-
     if (texture.source != glTF::UNDEFINED) {
         m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
         glTF::Image& image = model->images[texture.source];
 
         if (!image.uri.empty()) {
-            m_textures.emplace_back(TextureBufferSpecification{
-                .physicalDevice = renderer.physicalDevice(),
-                .logicalDevice = renderer.logicalDevice(),
-                .swapchain = renderer.swapchain(),
-                .commandPool = renderer.commandPool(),
+            m_textures.push_back(GlobalResourceManager().allocateTexture({
+                .physicalDevice = &m_spec.physicalDevice,
+                .logicalDevice = &m_spec.logicalDevice,
+                .swapchain = &m_spec.swapchain,
+                .commandPool = &m_spec.commandPool,
                 .path = std::string(m_directory + image.uri).c_str(),
                 .type = type,
-            });
+            }));
         } else {
             glTF::BufferView& bufferView = model->bufferViews[image.bufferView];
             const uint8* data = model->buffer().data() + bufferView.byteOffset;
 
-            m_textures.emplace_back(TextureBuffer({
-                .physicalDevice = renderer.physicalDevice(),
-                .logicalDevice = renderer.logicalDevice(),
-                .swapchain = renderer.swapchain(),
-                .commandPool = renderer.commandPool(),
+            m_textures.push_back(GlobalResourceManager().allocateTexture({
+                .physicalDevice = &m_spec.physicalDevice,
+                .logicalDevice = &m_spec.logicalDevice,
+                .swapchain = &m_spec.swapchain,
+                .commandPool = &m_spec.commandPool,
                 .width = bufferView.byteLength,
                 .height = 0,
                 .data = data,

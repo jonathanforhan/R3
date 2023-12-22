@@ -14,8 +14,8 @@ protected:
     DeviceMemory(const DeviceMemory&) = delete;
     DeviceMemory& operator=(const DeviceMemory&) = delete;
 
-    DeviceMemory(DeviceMemory&& src) R3_NOEXCEPT = default;
-    DeviceMemory& operator=(DeviceMemory&& src) R3_NOEXCEPT = default;
+    DeviceMemory(DeviceMemory&& src) noexcept = default;
+    DeviceMemory& operator=(DeviceMemory&& src) noexcept = default;
 
     /// @brief Query is device memory is null
     /// @return true if null

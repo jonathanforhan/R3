@@ -51,4 +51,12 @@ private:
     Sampler m_sampler;
 };
 
+struct PBRTextureResource {
+    TextureBuffer::ID albedo = usize(~0);
+    TextureBuffer::ID metallicRoughness = usize(~0);
+    TextureBuffer::ID normal = usize(~0);
+    TextureBuffer::ID ambientOcclusion = usize(~0);
+    TextureBuffer::ID emissive = usize(~0);
+};
+
 } // namespace R3

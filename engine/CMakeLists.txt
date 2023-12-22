@@ -27,16 +27,15 @@ if (MSVC)
 		set_source_files_properties(${VKCPP} PROPERTIES COMPILE_FLAGS "/Yuvulkan.hpp")
 	endforeach ()
 else ()
-	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -std=c++20")
+	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 endif ()
 
+file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
 target_precompile_headers(R3_ENGINE PUBLIC
-	"public/api/Ref.hpp"
-	"public/api/Check.hpp"
-	"public/api/Ensure.hpp"
-	"public/api/Types.hpp"
+	"${PRE_COMPILE_API}"
 	"public/render/DeviceMemory.hpp"
 	"public/render/NativeRenderObject.hpp"
+	"public/render/LogicalDevice.hpp"
 )
 
 #[[ SANITY CHECK ]]

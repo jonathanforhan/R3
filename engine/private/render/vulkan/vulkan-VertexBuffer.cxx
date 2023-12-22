@@ -37,7 +37,7 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
         .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
-    auto [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
+    auto&& [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy staging -> buffer
     const BufferCopySpecification bufferCopySpecification = {

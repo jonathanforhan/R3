@@ -1,8 +1,9 @@
 #include <R3>
 #include "components/CameraComponent.hpp"
 #include "components/ModelComponent.hpp"
-#include "input/WindowEvent.hpp"
-#include "systems/InputSystem.hpp"
+#include "input/KeyboardEvent.hpp"
+
+#define R3_TEST_TRY 1
 
 using namespace R3;
 
@@ -17,8 +18,6 @@ public:
 };
 
 void runScene() {
-    Scene::bindEventListener([](const WindowCloseEvent&) { puts("shutting down..."); });
-
     //--- Camera
     auto& cameraEntity = Entity::create<Entity>();
     auto& camera = cameraEntity.emplace<CameraComponent>();
@@ -26,21 +25,32 @@ void runScene() {
     camera.setPosition(vec3(0, 0, -2));
 
     //--- Model
-    Entity::create<Helmet>();
+    auto& helmet = Entity::create<Helmet>();
 
     auto& entity = Entity::create<Entity>();
     entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
     auto& transform = entity.get<TransformComponent>();
     transform = glm::translate(transform, vec3(0, -2, 0));
 
+    Scene::bindEventListener([&](const KeyPressEvent& e) {
+        if (e.payload.key == Key::Space)
+            helmet.destroy();
+        else if (e.payload.key == Key::Enter)
+            entity.destroy();
+    });
+
     Engine::loop();
 }
 
 int main() {
-    // try {
-    runScene();
-    // } catch (std::exception& e) {
-    //    LOG(Error, e.what());
-    // }
+#if R3_TEST_TRY
+    try {
+#endif
+        runScene();
+#if R3_TEST_TRY
+    } catch (std::exception& e) {
+        LOG(Error, e.what());
+    }
+#endif
     return 0;
 }

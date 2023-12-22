@@ -7,6 +7,7 @@
 #include "render/Framebuffer.hpp"
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
+#include "render/ModelLoader.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/RenderPass.hpp"
 #include "render/RenderSpecification.hpp"
@@ -23,13 +24,7 @@ struct RendererSpecification {
 
 class Renderer {
 public:
-    Renderer(RendererSpecification spec);
-
-    [[nodiscard]] Ref<const PhysicalDevice> physicalDevice() const { return &m_physicalDevice; }
-    [[nodiscard]] Ref<const LogicalDevice> logicalDevice() const { return &m_logicalDevice; }
-    [[nodiscard]] Ref<const Swapchain> swapchain() const { return &m_swapchain; }
-    [[nodiscard]] Ref<const RenderPass> renderPass() const { return &m_renderPass; }
-    [[nodiscard]] Ref<const CommandPool> commandPool() const { return &m_commandPool; }
+    Renderer(const RendererSpecification& spec);
 
     void render();
     void resize();
@@ -37,7 +32,10 @@ public:
     void setProjection(const mat4& projection) { m_viewProjection.projection = projection; }
     void waitIdle() const;
 
+    ModelLoader& modelLoader() { return m_modelLoader; }
+
 private:
+    Window& m_window;
     Instance m_instance;
     Surface m_surface;
     PhysicalDevice m_physicalDevice;
@@ -59,7 +57,9 @@ private:
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
 
-    Window& m_window;
+    ModelLoader m_modelLoader;
+
+    friend class ResourceManager;
 };
 
 } // namespace R3

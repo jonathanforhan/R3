@@ -15,7 +15,7 @@ class Lock:
                 self.__data = json.load(lock)
         except:
             with open(f"{lock_file}", mode="w") as lock:
-                print(f"Creating new {lock_file}")
+                print(f"creating new {lock_file}")
                 json.dump(self.__data, lock, indent=2)
 
 
