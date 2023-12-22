@@ -14,32 +14,40 @@ struct FunctionTraits : public FunctionTraits<decltype(&T::operator())> {};
 template <typename ClassType, typename ReturnType, typename... Args>
 struct FunctionTraits<ReturnType (ClassType::*)(Args...)> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
     using ResultType = ReturnType;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
     using ResultType = ReturnType;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct FunctionTraits<ReturnType (ClassType::*)(Args..., ...)> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
     using ResultType = ReturnType;
 };
 
 template <typename ClassType, typename ReturnType, typename... Args>
 struct FunctionTraits<ReturnType (ClassType::*)(Args..., ...) const> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
     using ResultType = ReturnType;
 };
 

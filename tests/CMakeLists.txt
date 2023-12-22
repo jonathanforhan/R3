@@ -14,9 +14,10 @@ function(TEST_PROJECT)
 		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 	endif ()
 
-	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
-	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
+	target_sources(${DIRNAME} PRIVATE ${C_SOURCES} ${CXX_SOURCES})
+	target_include_directories(${DIRNAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+	target_link_libraries(${DIRNAME} PRIVATE R3_ENGINE)
+	target_link_libraries(${DIRNAME} PRIVATE R3_EDITOR)
 	add_dependencies(${DIRNAME} COMPILE_SHADERS)
 endfunction()
 

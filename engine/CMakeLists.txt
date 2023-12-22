@@ -97,6 +97,9 @@ endif ()
 if (R3_EXTENDED_RENDER_INFO)
 	target_compile_definitions(R3_ENGINE PUBLIC -DR3_EXTENDED_RENDER_INFO=1)
 endif ()
+if (R3_BUILD_EDITOR)
+	target_compile_definitions(R3_ENGINE PUBLIC -DR3_BUILD_EDITOR=1)
+endif ()
 
 target_compile_definitions(R3_ENGINE PUBLIC
 	-DGLFW_INCLUDE_NONE=1

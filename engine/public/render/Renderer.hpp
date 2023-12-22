@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include "api/Types.hpp"
 #include "render/CommandPool.hpp"
 #include "render/DepthBuffer.hpp"
@@ -15,6 +16,10 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
+
+#if R3_BUILD_EDITOR
+#include "Editor.hpp"
+#endif
 
 namespace R3 {
 
@@ -33,6 +38,11 @@ public:
     void waitIdle() const;
 
     ModelLoader& modelLoader() { return m_modelLoader; }
+
+#if R3_BUILD_EDITOR
+    editor::EditorSpecification editorRenderInfo() const;
+    std::function<void(Ref<const CommandBuffer>)> editorDrawCallback = {};
+#endif
 
 private:
     Window& m_window;

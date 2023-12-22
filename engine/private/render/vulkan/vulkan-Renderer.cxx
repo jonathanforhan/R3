@@ -153,7 +153,7 @@ void Renderer::render() {
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        Scene::componentView<TransformComponent, ModelComponent>().each([&](auto& transform, ModelComponent& model) {
+        Scene::componentForEach([&](TransformComponent& transform, ModelComponent& model) {
             for (Mesh& mesh : model.meshes()) {
                 auto& pipeline = GlobalResourceManager().getGraphicsPipelineById(mesh.pipeline);
                 auto& uniform = GlobalResourceManager().getUniformById(mesh.material.uniforms[m_currentFrame]);
@@ -178,6 +178,10 @@ void Renderer::render() {
                 commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
             }
         });
+
+        #if R3_BUILD_EDITOR
+        editorDrawCallback(&commandBuffer);
+        #endif
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
@@ -238,6 +242,21 @@ void Renderer::resize() {
 void Renderer::waitIdle() const {
     m_logicalDevice.as<vk::Device>().waitIdle();
 }
+
+#if R3_BUILD_EDITOR
+editor::EditorSpecification Renderer::editorRenderInfo() const {
+    return {
+        .window = &m_window,
+        .instance = &m_instance,
+        .physicalDevice = &m_physicalDevice,
+        .logicalDevice = &m_logicalDevice,
+        .renderPass = &m_renderPass,
+        .graphicsQueue = &m_logicalDevice.graphicsQueue(),
+        .minImageCount = MAX_FRAMES_IN_FLIGHT,
+        .imageCount = MAX_FRAMES_IN_FLIGHT,
+    };
+}
+#endif
 
 } // namespace R3
 

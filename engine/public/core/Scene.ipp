@@ -7,6 +7,23 @@ inline decltype(auto) Scene::componentView() {
     return Engine::activeScene()->m_registry.view<T...>();
 }
 
+template <typename F>
+requires requires { FunctionTraits<F>::Arity::value <= 2; }
+inline void Scene::componentForEach(F&& callback) {
+    using Traits = FunctionTraits<F>;
+
+    static_assert(Traits::Arity::value != 0, "need a component to iterate through");
+
+    if constexpr (Traits::Arity::value == 1) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        Engine::activeScene()->m_registry.view<Arg0>().each(callback);
+    } else if constexpr (Traits::Arity::value == 2) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        using Arg1 = std::remove_reference_t<typename Traits::template ArgType<1>>;
+        Engine::activeScene()->m_registry.view<Arg0, Arg1>().each(callback);
+    }
+}
+
 template <typename T, typename... Args>
 requires ValidSystem<T, Args...>
 inline void Scene::addSystem(Args&&... args) {

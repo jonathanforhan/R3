@@ -23,6 +23,9 @@ option(R3_BUILD_DEBUG OFF)
 option(R3_BUILD_RELEASE OFF)
 option(R3_BUILD_DIST OFF)
 
+#[[ EDITOR ]]
+option(R3_BUILD_EDITOR OFF)
+
 #[[ LOGGING ]]
 option(R3_LOGGING_ENABLED ON)
 option(R3_LOG_VERBOSE ON)
@@ -67,11 +70,14 @@ add_custom_target(COMPILE_SHADERS ALL COMMAND
 
 add_subdirectory(engine)
 
-#[[
-add_subdirectory(editor)
-target_sources(R3_EDITOR PRIVATE ${R3_ENGINE_INCLUDES})
-target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
-]]
+if (R3_BUILD_EDITOR)
+	add_subdirectory(editor)
+	target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
+	target_include_directories(R3_ENGINE PUBLIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/editor/src"
+		"${CMAKE_CURRENT_SOURCE_DIR}/editor/extern/imgui"
+	)
+endif ()
 
 if(R3_BUILD_TESTS)
 	add_subdirectory(tests)

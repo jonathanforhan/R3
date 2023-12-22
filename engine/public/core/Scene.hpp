@@ -16,6 +16,10 @@ public:
     template <typename... T>
     [[nodiscard]] static decltype(auto) componentView();
 
+    template <typename F>
+    requires requires { FunctionTraits<F>::Arity::value <= 2; }
+    static void componentForEach(F&& callback);
+
     template <typename T, typename... Args>
     requires ValidSystem<T, Args...>
     static void addSystem(Args&&... args);
