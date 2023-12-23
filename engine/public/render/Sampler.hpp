@@ -8,6 +8,7 @@ namespace R3 {
 struct SamplerSpecification {
     Ref<const PhysicalDevice> physicalDevice;
     Ref<const LogicalDevice> logicalDevice;
+    uint32 mipLevels;
 };
 
 class Sampler : public NativeRenderObject {

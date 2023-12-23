@@ -134,6 +134,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     m_sampler = Sampler({
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = m_logicalDevice,
+        .mipLevels = mipLevels,
     });
 }
 

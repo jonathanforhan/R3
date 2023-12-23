@@ -29,7 +29,7 @@ Sampler::Sampler(const SamplerSpecification& spec)
         .compareEnable = VK_FALSE,
         .compareOp = vk::CompareOp::eAlways,
         .minLod = 0.0f,
-        .maxLod = 0.0f,
+        .maxLod = static_cast<float>(spec.mipLevels),
         .borderColor = vk::BorderColor::eIntOpaqueBlack,
         .unnormalizedCoordinates = VK_FALSE,
     };
