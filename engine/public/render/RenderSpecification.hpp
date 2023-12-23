@@ -33,6 +33,27 @@ struct ImageAspect : public Flag {
     };
 };
 
+enum class ImageLayout {
+    Undefined = 0,
+    General = 1,
+    ColorAttachmentOptimal = 2,
+    DepthStencilAttachmentOptimal = 3,
+    DepthStencilReadOnlyOptimal = 4,
+    ShaderReadOnlyOptimal = 5,
+    TransferSrcOptimal = 6,
+    TransferDstOptimal = 7,
+    Preinitialized = 8,
+    DepthReadOnlyStencilAttachmentOptimal = 1000117000,
+    DepthAttachmentStencilReadOnlyOptimal = 1000117001,
+    DepthAttachmentOptimal = 1000241000,
+    DepthReadOnlyOptimal = 1000241001,
+    StencilAttachmentOptimal = 1000241002,
+    StencilReadOnlyOptimal = 1000241003,
+    ReadOnlyOptimal = 1000314000,
+    AttachmentOptimal = 1000314001,
+    PresentSrc = 1000001002,
+};
+
 enum class ImageCopyType {
     Image,
     BufferToImage,
@@ -205,6 +226,64 @@ enum class ColorSpace {
     PassThroughEXT = 1000104013,
     ExtendedSrgbNonlinearEXT = 1000104014,
     DisplayNativeAMD = 1000213000,
+};
+
+struct MemoryAccessor : public Flag {
+    enum {
+        IndirectCommandRead = 0x0000'0001,
+        IndexRead = 0x0000'0002,
+        VertexAttributeRead = 0x0000'0004,
+        UniformRead = 0x0000'0008,
+        InputAttachmentRead = 0x0000'0010,
+        ShaderRead = 0x0000'0020,
+        ShaderWrite = 0x0000'0040,
+        ColorAttachmentRead = 0x0000'0080,
+        ColorAttachmentWrite = 0x0000'0100,
+        DepthStencilAttachmentRead = 0x0000'0200,
+        DepthStencilAttachmentWrite = 0x0000'0400,
+        TransferRead = 0x0000'0800,
+        TransferWrite = 0x0000'1000,
+        HostRead = 0x0000'2000,
+        HostWrite = 0x0000'4000,
+        MemoryRead = 0x0000'8000,
+        MemoryWrite = 0x0001'0000,
+        None = 0x0000'0000,
+    };
+};
+
+struct PipelineStage : public Flag {
+    enum {
+        TopOfPipe = 0x0000'0001,
+        DrawIndirect = 0x0000'0002,
+        VertexInput = 0x0000'0004,
+        VertexShader = 0x0000'0008,
+        TessellationControlShader = 0x0000'0010,
+        TessellationEvaluationShader = 0x0000'0020,
+        GeometryShader = 0x0000'0040,
+        FragmentShader = 0x0000'0080,
+        EarlyFragmentTests = 0x0000'0100,
+        LateFragmentTests = 0x0000'0200,
+        ColorAttachmentOutput = 0x0000'0400,
+        ComputeShader = 0x0000'0800,
+        Transfer = 0x0000'1000,
+        BottomOfPipe = 0x0000'2000,
+        Host = 0x0000'4000,
+        AllGraphics = 0x0000'8000,
+        AllCommands = 0x0001'0000,
+        None = 0x0000'0000,
+        TransformFeedback = 0x0100'0000,
+        ConditionalRendering = 0x0004'0000,
+        AccelerationStructureBuild = 0x0200'0000,
+        RayTracingShader = 0x0020'0000,
+        ShadingRateImageNV = 0x0000'0000,
+        RayTracingShaderNV = 0x0000'0000,
+        AccelerationStructureBuildNV = 0x0000'0000,
+        TaskShaderNV = 0x0008'0000,
+        MeshShaderNV = 0x0010'0000,
+        FragmentDensityProcess = 0x0080'0000,
+        FragmentShadingRateAttachment = 0x0040'0000,
+        CommandPreprocessNV = 0x0002'0000,
+    };
 };
 
 } // namespace R3

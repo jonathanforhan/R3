@@ -73,7 +73,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
             .logicalDevice = m_spec.logicalDevice,
             .image = &m_images[i],
             .format = Format::R8G8B8A8Srgb,
-            .mipLevels = 0,
+            .mipLevels = 1,
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         });
     }

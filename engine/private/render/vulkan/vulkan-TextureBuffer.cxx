@@ -68,44 +68,28 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .format = Format::R8G8B8A8Srgb,
         .width = static_cast<uint32>(w),
         .height = static_cast<uint32>(h),
-        .mipLevels = 1, // mipLevels,
-        .imageFlags = (ImageUsage::TransferSrc & 0) | ImageUsage::TransferDst | ImageUsage::Sampled,
+        .mipLevels = mipLevels,
+        .imageFlags = ImageUsage::TransferSrc | ImageUsage::TransferDst | ImageUsage::Sampled,
         .memoryFlags = MemoryProperty::DeviceLocal,
     };
 
-    auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
+    auto&& [img, memory] = Image::allocate(imageAllocateSpecification);
+    Image image(img.handle());
 
-    const auto& commandBuffer = spec.commandPool->commandBuffers().front();
-
-    vk::ImageMemoryBarrier imageMemoryBarrier = {
-        .sType = vk::StructureType::eImageMemoryBarrier,
-        .pNext = nullptr,
-        .srcAccessMask = {},
-        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
-        .oldLayout = vk::ImageLayout::eUndefined,
-        .newLayout = vk::ImageLayout::eTransferDstOptimal,
-        .srcQueueFamilyIndex = vk::QueueFamilyIgnored,
-        .dstQueueFamilyIndex = vk::QueueFamilyIgnored,
-        .image = image.as<vk::Image>(),
-        .subresourceRange =
-            {
-                .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0, // mipLevels,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1,
-            },
+    // transition image layout in pipeline
+    const ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationWrite = {
+        .commandPool = *spec.commandPool,
+        .image = image,
+        .srcAccessor = {},
+        .dstAccessor = MemoryAccessor::TransferWrite,
+        .oldLayout = ImageLayout::Undefined,
+        .newLayout = ImageLayout::TransferDstOptimal,
+        .aspectMask = ImageAspect::Color,
+        .mipLevels = mipLevels,
+        .srcStageMask = PipelineStage::TopOfPipe,
+        .dstStageMask = PipelineStage::Transfer,
     };
-
-    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
-    commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlagBits::eTopOfPipe},
-                                                          {vk::PipelineStageFlagBits::eTransfer},
-                                                          {},
-                                                          {},
-                                                          {},
-                                                          {imageMemoryBarrier});
-    commandBuffer.endCommandBuffer();
-    commandBuffer.oneTimeSubmit();
+    Image::transition(imageLayoutTransitionSpecificationWrite);
 
     const ImageCopySpecification imageCopySpecification = {
         .logicalDevice = *m_logicalDevice,
@@ -119,20 +103,19 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     };
     Image::copy(imageCopySpecification);
 
-    imageMemoryBarrier.oldLayout = imageMemoryBarrier.newLayout;
-    imageMemoryBarrier.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    imageMemoryBarrier.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
-    imageMemoryBarrier.dstAccessMask = vk::AccessFlagBits::eShaderRead;
-
-    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
-    commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlagBits::eTransfer},
-                                                          {vk::PipelineStageFlagBits::eFragmentShader},
-                                                          {},
-                                                          {},
-                                                          {},
-                                                          {imageMemoryBarrier});
-    commandBuffer.endCommandBuffer();
-    commandBuffer.oneTimeSubmit();
+    const ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationShader = {
+        .commandPool = *spec.commandPool,
+        .image = image,
+        .srcAccessor = MemoryAccessor::TransferWrite,
+        .dstAccessor = MemoryAccessor::ShaderRead,
+        .oldLayout = ImageLayout::TransferDstOptimal,
+        .newLayout = ImageLayout::ShaderReadOnlyOptimal,
+        .aspectMask = ImageAspect::Color,
+        .mipLevels = mipLevels,
+        .srcStageMask = PipelineStage::Transfer,
+        .dstStageMask = PipelineStage::FragmentShader,
+    };
+    Image::transition(imageLayoutTransitionSpecificationShader);
 
     m_logicalDevice->as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
     m_logicalDevice->as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
@@ -140,12 +123,11 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     setHandle(image.handle());
     setDeviceMemory(memory.handle());
 
-    const Image img(handle());
     m_imageView = ImageView({
         .logicalDevice = m_logicalDevice,
-        .image = &img,
+        .image = &image,
         .format = Format::R8G8B8A8Srgb,
-        .mipLevels = 1,
+        .mipLevels = mipLevels,
         .aspectMask = ImageAspect::Color,
     });
 

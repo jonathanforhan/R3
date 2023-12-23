@@ -10,6 +10,8 @@ namespace R3 {
 
 ImageView::ImageView(const ImageViewSpecification& spec)
     : m_logicalDevice(spec.logicalDevice) {
+    CHECK(spec.mipLevels != 0);
+
     const vk::ImageViewCreateInfo imageViewCreateInfo = {
         .sType = vk::StructureType::eImageViewCreateInfo,
         .pNext = nullptr,
@@ -28,7 +30,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
             {
                 .aspectMask = (vk::ImageAspectFlags)spec.aspectMask,
                 .baseMipLevel = 0,
-                .levelCount = 1,
+                .levelCount = spec.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
             },

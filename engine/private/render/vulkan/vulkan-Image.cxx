@@ -26,6 +26,8 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
 }
 
 std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAllocateSpecification& spec) {
+    CHECK(spec.mipLevels != 0);
+
     const uint32 indices[] = {
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
@@ -43,7 +45,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
                 .height = spec.height,
                 .depth = 1,
             },
-        .mipLevels = 1, // spec.mipLevels,
+        .mipLevels = spec.mipLevels,
         .arrayLayers = 1,
         .samples = vk::SampleCountFlagBits::e1,
         .tiling = vk::ImageTiling::eOptimal,
@@ -134,6 +136,40 @@ void Image::copy(const ImageCopySpecification& spec) {
                                                         imageCopy);
     }
 
+    commandBuffer.endCommandBuffer();
+    commandBuffer.oneTimeSubmit();
+}
+
+void Image::transition(const ImageLayoutTransitionSpecification& spec) {
+    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
+
+    vk::ImageMemoryBarrier imageMemoryBarrier = {
+        .sType = vk::StructureType::eImageMemoryBarrier,
+        .pNext = nullptr,
+        .srcAccessMask = vk::AccessFlags(spec.srcAccessor),
+        .dstAccessMask = vk::AccessFlags(spec.dstAccessor),
+        .oldLayout = vk::ImageLayout(spec.oldLayout),
+        .newLayout = vk::ImageLayout(spec.newLayout),
+        .srcQueueFamilyIndex = vk::QueueFamilyIgnored,
+        .dstQueueFamilyIndex = vk::QueueFamilyIgnored,
+        .image = spec.image.as<vk::Image>(),
+        .subresourceRange =
+            {
+                .aspectMask = vk::ImageAspectFlags(spec.aspectMask),
+                .baseMipLevel = 0,
+                .levelCount = spec.mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount = 1,
+            },
+    };
+
+    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
+    commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlags(spec.srcStageMask)},
+                                                          {vk::PipelineStageFlags(spec.dstStageMask)},
+                                                          {},
+                                                          {},
+                                                          {},
+                                                          {imageMemoryBarrier});
     commandBuffer.endCommandBuffer();
     commandBuffer.oneTimeSubmit();
 }

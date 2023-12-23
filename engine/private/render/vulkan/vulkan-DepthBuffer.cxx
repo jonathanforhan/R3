@@ -14,12 +14,9 @@ namespace R3 {
 
 DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     : m_logicalDevice(spec.logicalDevice) {
-    const vk::FormatProperties formatProperties =
-        spec.physicalDevice->as<vk::PhysicalDevice>().getFormatProperties(vk::Format::eD32Sfloat);
     const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice->as<vk::PhysicalDevice>(),
                                                                    vk::ImageTiling::eOptimal,
                                                                    vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-
     const uvec2 extent = spec.swapchain->extent();
 
     const ImageAllocateSpecification imageAllocateSpecification = {
@@ -29,9 +26,9 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
         .format = Format(depthFormat),
         .width = extent.x,
         .height = extent.y,
-        .mipLevels = 0,
-        .imageFlags = uint32(vk::ImageUsageFlagBits::eDepthStencilAttachment),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
+        .mipLevels = 1,
+        .imageFlags = ImageUsage::DepthStencilAttachment,
+        .memoryFlags = MemoryProperty::DeviceLocal,
     };
     auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
 
@@ -43,8 +40,8 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
         .logicalDevice = m_logicalDevice,
         .image = &img,
         .format = Format(depthFormat),
-        .mipLevels = 0,
-        .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+        .mipLevels = 1,
+        .aspectMask = ImageAspect::Depth,
     });
 }
 

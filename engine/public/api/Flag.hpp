@@ -5,6 +5,7 @@
 namespace R3 {
 
 struct Flag {
+    Flag() = delete;
     using Flags = uint32;
 };
 

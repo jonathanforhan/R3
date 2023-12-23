@@ -37,6 +37,19 @@ struct ImageCopySpecification {
     ImageCopyType copyType;
 };
 
+struct ImageLayoutTransitionSpecification {
+    const CommandPool& commandPool;
+    Image& image;
+    MemoryAccessor::Flags srcAccessor;
+    MemoryAccessor::Flags dstAccessor;
+    ImageLayout oldLayout;
+    ImageLayout newLayout;
+    ImageAspect::Flags aspectMask;
+    uint32 mipLevels;
+    PipelineStage::Flags srcStageMask;
+    PipelineStage::Flags dstStageMask;
+};
+
 class Image : public NativeRenderObject {
 public:
     Image() = default;
@@ -46,10 +59,12 @@ public:
     /// @brief Allocate a Image with given flags
     /// @param spec
     /// @return tuple<Image::Handle, DeviceMemory::Handle>
-    [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
-        const ImageAllocateSpecification& spec);
+    [[nodiscard]] static auto allocate(const ImageAllocateSpecification& spec)
+        -> std::tuple<NativeRenderObject, NativeRenderObject>;
 
     static void copy(const ImageCopySpecification& spec);
+
+    static void transition(const ImageLayoutTransitionSpecification& spec);
 };
 
 } // namespace R3
