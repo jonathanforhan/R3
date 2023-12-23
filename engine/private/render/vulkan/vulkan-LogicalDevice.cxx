@@ -12,7 +12,7 @@
 namespace R3 {
 
 LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
-    const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice->handle(), spec.surface->handle());
+    const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice.handle(), spec.surface.handle());
     CHECK(queueFamilyIndices.isValid());
 
     const std::set<int32> uniqueQueueIndices = {
@@ -38,7 +38,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
         .samplerAnisotropy = vk::True,
     };
 
-    const std::span<const char* const> deviceExtensions = spec.physicalDevice->extensions();
+    const std::span<const char* const> deviceExtensions = spec.physicalDevice.extensions();
 
     const vk::DeviceCreateInfo logicalDeviceCreateInfo = {
         .sType = vk::StructureType::eDeviceCreateInfo,
@@ -52,7 +52,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
         .ppEnabledExtensionNames = deviceExtensions.empty() ? nullptr : deviceExtensions.data(),
         .pEnabledFeatures = &physicalDeviceFeatures};
 
-    setHandle(spec.physicalDevice->as<vk::PhysicalDevice>().createDevice(logicalDeviceCreateInfo));
+    setHandle(spec.physicalDevice.as<vk::PhysicalDevice>().createDevice(logicalDeviceCreateInfo));
 
     m_graphicsQueue.acquire({
         .logicalDevice = this,

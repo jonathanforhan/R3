@@ -8,8 +8,8 @@ namespace R3 {
 
 /// @brief Surface Specification
 struct SurfaceSpecification {
-    Ref<const Instance> instance; ///< @brief Valid non-null Instance
-    Ref<const Window> window;     ///< @brief Valid non-null Window
+    const Instance& instance; ///< @brief Valid non-null Instance
+    const Window& window;     ///< @brief Valid non-null Window
 };
 
 /// @brief Abstract over platform-specific Surface models of how to draw to the screen

@@ -10,8 +10,8 @@ namespace R3 {
 
 /// @brief Physical Device Specification
 struct PhysicalDeviceSpecification {
-    Ref<const Instance> instance;               ///< @brief Valid non-null Instance
-    Ref<const Surface> surface;                 ///< @brief Valid non-null Surface
+    const Instance& instance;                   ///< @brief Valid non-null Instance
+    const Surface& surface;                     ///< @brief Valid non-null Surface
     const std::vector<const char*>& extensions; ///< @brief GPU extensions
 };
 

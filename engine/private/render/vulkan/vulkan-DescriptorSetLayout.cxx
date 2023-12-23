@@ -8,7 +8,7 @@
 namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     constexpr std::array<vk::DescriptorSetLayoutBinding, 6> descriptorSetLayoutBindings = {
         // UBO
         vk::DescriptorSetLayoutBinding{

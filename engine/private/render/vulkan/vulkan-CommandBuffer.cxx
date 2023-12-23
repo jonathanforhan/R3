@@ -11,7 +11,6 @@
 #include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
@@ -40,19 +39,21 @@ std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecificat
     const vk::CommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType = vk::StructureType::eCommandBufferAllocateInfo,
         .pNext = nullptr,
-        .commandPool = spec.commandPool->as<vk::CommandPool>(),
+        .commandPool = spec.commandPool.as<vk::CommandPool>(),
         .level = vk::CommandBufferLevel::ePrimary,
         .commandBufferCount = spec.commandBufferCount,
     };
 
     const auto allocatedCommandBuffers =
-        spec.logicalDevice->as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo);
+        spec.logicalDevice.as<vk::Device>().allocateCommandBuffers(commandBufferAllocateInfo);
     CHECK(allocatedCommandBuffers.size() == spec.commandBufferCount);
 
     std::vector<CommandBuffer> commandBuffers(spec.commandBufferCount);
 
     for (usize i = 0; i < commandBuffers.size(); i++) {
-        commandBuffers[i].m_spec = spec;
+        commandBuffers[i].m_logicalDevice = &spec.logicalDevice;
+        commandBuffers[i].m_swapchain = &spec.swapchain;
+        commandBuffers[i].m_commandPool = &spec.commandPool;
         commandBuffers[i].setHandle(allocatedCommandBuffers[i]);
     }
 
@@ -64,13 +65,16 @@ void CommandBuffer::free(std::vector<CommandBuffer>& commandBuffers) {
     for (const auto& commandBuffer : commandBuffers) {
         buffers.push_back(commandBuffer.as<vk::CommandBuffer>());
     }
-    const auto& spec = commandBuffers.front().m_spec;
-    spec.logicalDevice->as<vk::Device>().freeCommandBuffers(spec.commandPool->as<vk::CommandPool>(), buffers);
+
+    const auto& logicalDevice = commandBuffers.front().m_logicalDevice;
+    const auto& commandPool = commandBuffers.front().m_commandPool;
+
+    logicalDevice->as<vk::Device>().freeCommandBuffers(commandPool->as<vk::CommandPool>(), buffers);
 }
 
 void CommandBuffer::free() {
-    m_spec.logicalDevice->as<vk::Device>().freeCommandBuffers(m_spec.commandPool->as<vk::CommandPool>(),
-                                                              {as<vk::CommandBuffer>()});
+    m_logicalDevice->as<vk::Device>().freeCommandBuffers(m_commandPool->as<vk::CommandPool>(),
+                                                         {as<vk::CommandBuffer>()});
 }
 
 void CommandBuffer::resetCommandBuffer() const {
@@ -106,7 +110,7 @@ void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuf
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
+                .extent = {m_swapchain->extent().x, m_swapchain->extent().y},
             },
         .clearValueCount = static_cast<uint32>(clearValues.size()),
         .pClearValues = clearValues.data(),
@@ -124,9 +128,9 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
 
     const vk::Viewport viewport = {
         .x = 0.0f,
-        .y = static_cast<float>(m_spec.swapchain->extent().y),
-        .width = static_cast<float>(m_spec.swapchain->extent().x),
-        .height = -static_cast<float>(m_spec.swapchain->extent().y),
+        .y = static_cast<float>(m_swapchain->extent().y),
+        .width = static_cast<float>(m_swapchain->extent().x),
+        .height = -static_cast<float>(m_swapchain->extent().y),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
@@ -134,7 +138,7 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
 
     const vk::Rect2D scissor = {
         .offset = {0, 0},
-        .extent = {m_spec.swapchain->extent().x, m_spec.swapchain->extent().y},
+        .extent = {m_swapchain->extent().x, m_swapchain->extent().y},
     };
     as<vk::CommandBuffer>().setScissor(0, {scissor});
 }
@@ -164,8 +168,8 @@ void CommandBuffer::oneTimeSubmit() const {
         .commandBufferCount = 1,
         .pCommandBuffers = &vkCommandBuffer,
     };
-    m_spec.logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
-    m_spec.logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
+    m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
+    m_logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
 }
 
 } // namespace R3

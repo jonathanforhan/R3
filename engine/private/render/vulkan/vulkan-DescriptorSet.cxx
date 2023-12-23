@@ -16,24 +16,24 @@ namespace R3 {
 
 std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecification& spec) {
     const std::vector<vk::DescriptorSetLayout> descriptorSetLayouts(
-        spec.descriptorSetCount, spec.descriptorSetLayout->as<vk::DescriptorSetLayout>());
+        spec.descriptorSetCount, spec.descriptorSetLayout.as<vk::DescriptorSetLayout>());
 
     const vk::DescriptorSetAllocateInfo descriptorSetAllocateInfo = {
         .sType = vk::StructureType::eDescriptorSetAllocateInfo,
         .pNext = nullptr,
-        .descriptorPool = spec.descriptorPool->as<vk::DescriptorPool>(),
+        .descriptorPool = spec.descriptorPool.as<vk::DescriptorPool>(),
         .descriptorSetCount = spec.descriptorSetCount,
         .pSetLayouts = descriptorSetLayouts.data(),
     };
 
     const auto allocatedDescriptorSets =
-        spec.logicalDevice->as<vk::Device>().allocateDescriptorSets(descriptorSetAllocateInfo);
+        spec.logicalDevice.as<vk::Device>().allocateDescriptorSets(descriptorSetAllocateInfo);
     CHECK(allocatedDescriptorSets.size() == spec.descriptorSetCount);
 
     std::vector<DescriptorSet> descriptorSets(spec.descriptorSetCount);
 
     for (usize i = 0; i < descriptorSets.size(); i++) {
-        descriptorSets[i].m_logicalDevice = spec.logicalDevice;
+        descriptorSets[i].m_logicalDevice = &spec.logicalDevice;
         descriptorSets[i].setHandle(allocatedDescriptorSets[i]);
     }
 

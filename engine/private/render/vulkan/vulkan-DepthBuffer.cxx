@@ -3,7 +3,6 @@
 #include "render/DepthBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Ensure.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
@@ -13,14 +12,14 @@
 namespace R3 {
 
 DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
-    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice->as<vk::PhysicalDevice>(),
+    : m_logicalDevice(&spec.logicalDevice) {
+    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
                                                                    vk::ImageTiling::eOptimal,
                                                                    vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-    const uvec2 extent = spec.swapchain->extent();
+    const uvec2 extent = spec.swapchain.extent();
 
     const ImageAllocateSpecification imageAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
+        .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = extent.x * extent.y * sizeof(float),
         .format = Format(depthFormat),
@@ -36,9 +35,9 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     setDeviceMemory(memory.handle());
 
     Image img(handle());
-    m_imageView = ImageView(ImageViewSpecification{
-        .logicalDevice = m_logicalDevice,
-        .image = &img,
+    m_imageView = ImageView({
+        .logicalDevice = *m_logicalDevice,
+        .image = img,
         .format = Format(depthFormat),
         .mipLevels = 1,
         .aspectMask = ImageAspect::Depth,

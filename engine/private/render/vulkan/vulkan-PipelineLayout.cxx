@@ -11,9 +11,9 @@
 namespace R3 {
 
 PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     vk::DescriptorSetLayout descriptorSetLayouts[] = {
-        spec.descriptorSetLayout->as<vk::DescriptorSetLayout>(),
+        spec.descriptorSetLayout.as<vk::DescriptorSetLayout>(),
     };
 
     vk::PushConstantRange pushConstant = {

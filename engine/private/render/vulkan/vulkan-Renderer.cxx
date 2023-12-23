@@ -52,14 +52,14 @@ Renderer::Renderer(const RendererSpecification& spec)
 
     //--- Surface
     m_surface = Surface({
-        .instance = &m_instance,
-        .window = &m_window,
+        .instance = m_instance,
+        .window = m_window,
     });
 
     //--- Physical Device
     m_physicalDevice = PhysicalDevice({
-        .instance = &m_instance,
-        .surface = &m_surface,
+        .instance = m_instance,
+        .surface = m_surface,
         .extensions =
             {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -68,64 +68,64 @@ Renderer::Renderer(const RendererSpecification& spec)
 
     //--- Logical Device and Queues
     m_logicalDevice = LogicalDevice({
-        .instance = &m_instance,
-        .surface = &m_surface,
-        .physicalDevice = &m_physicalDevice,
+        .instance = m_instance,
+        .surface = m_surface,
+        .physicalDevice = m_physicalDevice,
     });
 
     //--- Swapchain
     m_swapchain = Swapchain({
-        .physicalDevice = &m_physicalDevice,
-        .surface = &m_surface,
-        .logicalDevice = &m_logicalDevice,
-        .window = &spec.window,
+        .physicalDevice = m_physicalDevice,
+        .surface = m_surface,
+        .logicalDevice = m_logicalDevice,
+        .window = m_window,
     });
 
     //--- RenderPass
     m_renderPass = RenderPass({
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
     });
 
     //--- DepthBuffer
     m_depthBuffer = DepthBuffer({
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
     });
 
     //--- Framebuffers
     for (const auto& swapchainImageView : m_swapchain.imageViews()) {
         m_framebuffers.emplace_back(FramebufferSpecification{
-            .logicalDevice = &m_logicalDevice,
-            .swapchain = &m_swapchain,
-            .swapchainImageView = &swapchainImageView,
-            .depthBufferImageView = &m_depthBuffer.imageView(),
-            .renderPass = &m_renderPass,
+            .logicalDevice = m_logicalDevice,
+            .swapchain = m_swapchain,
+            .swapchainImageView = swapchainImageView,
+            .depthBufferImageView = m_depthBuffer.imageView(),
+            .renderPass = m_renderPass,
         });
     }
 
     //--- CommandPool and CommandBuffers
     m_commandPool = CommandPool({
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
         .flags = CommandPoolFlags::Reset,
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
 
     m_commandPoolTransient = CommandPool({
-        .logicalDevice = &m_logicalDevice,
-        .swapchain = &m_swapchain,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
         .flags = CommandPoolFlags::Reset,
         .commandBufferCount = 1,
     });
 
     //--- Synchronization
     for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_imageAvailable[i] = Semaphore({&m_logicalDevice});
-        m_renderFinished[i] = Semaphore({&m_logicalDevice});
-        m_inFlight[i] = Fence({&m_logicalDevice});
+        m_imageAvailable[i] = Semaphore({m_logicalDevice});
+        m_renderFinished[i] = Semaphore({m_logicalDevice});
+        m_inFlight[i] = Fence({m_logicalDevice});
     }
 }
 

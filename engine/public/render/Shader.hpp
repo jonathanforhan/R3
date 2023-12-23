@@ -17,7 +17,7 @@ enum class ShaderType {
 };
 
 struct ShaderSpecification {
-    Ref<const LogicalDevice> logicalDevice;
+    const LogicalDevice& logicalDevice;
     std::string_view path;
 };
 

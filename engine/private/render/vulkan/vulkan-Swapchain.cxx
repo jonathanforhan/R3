@@ -2,7 +2,6 @@
 
 #include "render/Swapchain.hpp"
 
-#include <thread>
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
@@ -20,22 +19,25 @@
 namespace R3 {
 
 Swapchain::Swapchain(const SwapchainSpecification& spec)
-    : m_spec(spec) {
+    : m_physicalDevice(&spec.physicalDevice),
+      m_surface(&spec.surface),
+      m_logicalDevice(&spec.logicalDevice),
+      m_window(&spec.window) {
     const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
+        m_physicalDevice->as<vk::PhysicalDevice>(), m_surface->as<vk::SurfaceKHR>());
 
     const auto format = swapchainSupportDetails.optimalSurfaceFormat();
     m_surfaceFormat = std::get<0>(format);
     m_colorSpace = std::get<1>(format);
-    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+    m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
 
     swapchainSupportDetails.capabilities.minImageCount == swapchainSupportDetails.capabilities.maxImageCount
         ? m_imageCount = swapchainSupportDetails.capabilities.maxImageCount
         : m_imageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
 
     const uint32 queueFamilyIndices[] = {
-        m_spec.logicalDevice->graphicsQueue().index(),
-        m_spec.logicalDevice->presentationQueue().index(),
+        m_logicalDevice->graphicsQueue().index(),
+        m_logicalDevice->presentationQueue().index(),
     };
     const bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
@@ -43,7 +45,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
-        .surface = m_spec.surface->as<vk::SurfaceKHR>(),
+        .surface = m_surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
         .imageFormat = (vk::Format)m_surfaceFormat,
         .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
@@ -60,18 +62,18 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .oldSwapchain = VK_NULL_HANDLE,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
+    setHandle(m_logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
 
     m_images = Image::acquireImages({
-        .logicalDevice = m_spec.logicalDevice,
-        .swapchain = this,
+        .logicalDevice = *m_logicalDevice,
+        .swapchain = *this,
     });
 
     m_imageViews.resize(m_images.size());
     for (usize i = 0; i < m_images.size(); i++) {
         m_imageViews[i] = ImageView({
-            .logicalDevice = m_spec.logicalDevice,
-            .image = &m_images[i],
+            .logicalDevice = *m_logicalDevice,
+            .image = m_images[i],
             .format = Format::R8G8B8A8Srgb,
             .mipLevels = 1,
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -81,25 +83,25 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
 
 void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
     CHECK(spec.framebuffers.size() == m_imageViews.size());
-    m_spec.logicalDevice->as<vk::Device>().waitIdle();
+    m_logicalDevice->as<vk::Device>().waitIdle();
 
-    vk::PhysicalDevice vkPhysicalDevice = m_spec.physicalDevice->as<vk::PhysicalDevice>();
-    vk::SurfaceKHR vkSurface = m_spec.surface->as<vk::SurfaceKHR>();
+    vk::PhysicalDevice vkPhysicalDevice = m_physicalDevice->as<vk::PhysicalDevice>();
+    vk::SurfaceKHR vkSurface = m_surface->as<vk::SurfaceKHR>();
 
     // query
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
-    m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+    m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent2D.x == 0 || m_extent2D.y == 0) {
         glfwWaitEvents();
         swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
-        m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
+        m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
     }
 
     const uint32 queueFamilyIndices[] = {
-        m_spec.logicalDevice->graphicsQueue().index(),
-        m_spec.logicalDevice->presentationQueue().index(),
+        m_logicalDevice->graphicsQueue().index(),
+        m_logicalDevice->presentationQueue().index(),
     };
     const bool sameQueueFamily = queueFamilyIndices[0] == queueFamilyIndices[1];
 
@@ -110,7 +112,7 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
         .sType = vk::StructureType::eSwapchainCreateInfoKHR,
         .pNext = nullptr,
         .flags = {},
-        .surface = m_spec.surface->as<vk::SurfaceKHR>(),
+        .surface = m_surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
         .imageFormat = (vk::Format)m_surfaceFormat,
         .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
@@ -127,48 +129,47 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
         .oldSwapchain = oldSwapchain,
     };
 
-    setHandle(m_spec.logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
-    m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(oldSwapchain);
+    setHandle(m_logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
+    m_logicalDevice->as<vk::Device>().destroySwapchainKHR(oldSwapchain);
 
     // restore
     m_images = Image::acquireImages({
-        .logicalDevice = m_spec.logicalDevice,
-        .swapchain = this,
+        .logicalDevice = *m_logicalDevice,
+        .swapchain = *this,
     });
 
     m_imageViews.clear();
     spec.framebuffers.clear();
-
-    // execute async to not lag, deallocation is expensive
-    std::thread([&]() { spec.depthBuffer.~DepthBuffer(); }).detach();
+    spec.depthBuffer.~DepthBuffer();
 
     spec.depthBuffer = DepthBuffer({
-        .physicalDevice = m_spec.physicalDevice,
-        .logicalDevice = m_spec.logicalDevice,
-        .swapchain = this,
+        .physicalDevice = *m_physicalDevice,
+        .logicalDevice = *m_logicalDevice,
+        .swapchain = *this,
     });
 
     for (usize i = 0; i < m_images.size(); i++) {
         m_imageViews.emplace_back(ImageViewSpecification{
-            .logicalDevice = m_spec.logicalDevice,
-            .image = &m_images[i],
+            .logicalDevice = *m_logicalDevice,
+            .image = m_images[i],
             .format = Format::R8G8B8A8Srgb,
+            .mipLevels = 1,
             .aspectMask = ImageAspect::Color,
         });
 
         spec.framebuffers.emplace_back(FramebufferSpecification{
-            .logicalDevice = m_spec.logicalDevice,
-            .swapchain = this,
-            .swapchainImageView = &m_imageViews[i],
-            .depthBufferImageView = &spec.depthBuffer.imageView(),
-            .renderPass = &spec.renderPass,
+            .logicalDevice = *m_logicalDevice,
+            .swapchain = *this,
+            .swapchainImageView = m_imageViews[i],
+            .depthBufferImageView = spec.depthBuffer.imageView(),
+            .renderPass = spec.renderPass,
         });
     }
 }
 
 Swapchain::~Swapchain() {
     if (validHandle()) {
-        m_spec.logicalDevice->as<vk::Device>().destroySwapchainKHR(as<vk::SwapchainKHR>());
+        m_logicalDevice->as<vk::Device>().destroySwapchainKHR(as<vk::SwapchainKHR>());
     }
 }
 

@@ -4,20 +4,19 @@
 #include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
-#include "render/RenderSpecification.hpp"
 #include "render/UniformBuffer.hpp"
 
 namespace R3 {
 
 UniformBuffer::UniformBuffer(const UniformBufferSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice),
+    : m_logicalDevice(&spec.logicalDevice),
       m_bufferSize(spec.bufferSize) {
     const BufferAllocateSpecification bufferAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
+        .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = m_bufferSize,
-        .bufferFlags = uint32(vk::BufferUsageFlagBits::eUniformBuffer),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
+        .bufferFlags = BufferUsage::UniformBuffer,
+        .memoryFlags = MemoryProperty::HostVisible | MemoryProperty::HostCoherent,
     };
     auto&& [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 

@@ -3,20 +3,21 @@
 #include "render/ImageView.hpp"
 
 #include <vulkan/vulkan.hpp>
+#include "api/Check.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 ImageView::ImageView(const ImageViewSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     CHECK(spec.mipLevels != 0);
 
     const vk::ImageViewCreateInfo imageViewCreateInfo = {
         .sType = vk::StructureType::eImageViewCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .image = spec.image->as<vk::Image>(),
+        .image = spec.image.as<vk::Image>(),
         .viewType = vk::ImageViewType::e2D,
         .format = vk::Format(spec.format),
         .components =

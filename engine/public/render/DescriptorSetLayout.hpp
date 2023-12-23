@@ -6,7 +6,7 @@
 namespace R3 {
 
 struct DescriptorSetLayoutSpecification {
-    Ref<const LogicalDevice> logicalDevice;
+    const LogicalDevice& logicalDevice;
 };
 
 class DescriptorSetLayout : public NativeRenderObject {

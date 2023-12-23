@@ -11,7 +11,7 @@
 namespace R3 {
 
 Shader::Shader(const ShaderSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     std::ifstream ifs(spec.path.data(), std::ios::ate | std::ios::binary);
     CHECK(ifs.is_open());
 

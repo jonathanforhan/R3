@@ -8,9 +8,9 @@ namespace R3 {
 
 template <std::integral T>
 struct IndexBufferSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const CommandPool> commandPool;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const CommandPool& commandPool;
     std::span<const T> indices;
 };
 

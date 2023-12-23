@@ -20,10 +20,10 @@ enum class TextureType : uint8 {
 // clang-format on
 
 struct TextureBufferSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
-    Ref<const CommandPool> commandPool;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const CommandPool& commandPool;
     uint32 width;
     uint32 height;
     const void* data;

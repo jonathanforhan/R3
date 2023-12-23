@@ -11,9 +11,9 @@
 namespace R3 {
 
 struct DescriptorSetSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const DescriptorPool> descriptorPool;
-    Ref<const DescriptorSetLayout> descriptorSetLayout;
+    const LogicalDevice& logicalDevice;
+    const DescriptorPool& descriptorPool;
+    const DescriptorSetLayout& descriptorSetLayout;
     uint32 descriptorSetCount;
 };
 

@@ -3,18 +3,17 @@
 #include "render/GraphicsPipeline.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/Mesh.hpp"
 #include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
+#include "render/Vertex.hpp"
 
 namespace R3 {
 
 GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     m_layout = PipelineLayout({
         .logicalDevice = spec.logicalDevice,
         .descriptorSetLayout = spec.descriptorSetLayout,
@@ -229,13 +228,13 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pColorBlendState = &colorBlendStateCreateInfo,
         .pDynamicState = &dynamicStateCreateInfo,
         .layout = m_layout.as<vk::PipelineLayout>(),
-        .renderPass = spec.renderPass->as<vk::RenderPass>(),
+        .renderPass = spec.renderPass.as<vk::RenderPass>(),
         .subpass = 0,
         .basePipelineHandle = VK_NULL_HANDLE,
         .basePipelineIndex = -1,
     };
 
-    const auto r = spec.logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
+    const auto r = m_logicalDevice->as<vk::Device>().createGraphicsPipeline(nullptr, graphicsPipelineCreateInfo);
     ENSURE(r.result == vk::Result::eSuccess);
     setHandle(r.value);
 }

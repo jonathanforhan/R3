@@ -3,6 +3,7 @@
 #include "api/Types.hpp"
 #include "render/DeviceMemory.hpp"
 #include "render/RenderFwd.hpp"
+#include "render/RenderSpecification.hpp"
 
 namespace R3 {
 
@@ -11,8 +12,8 @@ struct BufferAllocateSpecification {
     const PhysicalDevice& physicalDevice; ///< @brief Valid physical device
     const LogicalDevice& logicalDevice;   ///< @brief Valid logical device
     usize size;                           ///< @brief Buffer size in bytes
-    uint64 bufferFlags;                   ///< @brief Buffer usage flags
-    uint64 memoryFlags;                   ///< @brief Memory property flags
+    BufferUsage::Flags bufferFlags;       ///< @brief Buffer usage flags
+    MemoryProperty::Flags memoryFlags;    ///< @brief Memory property flags
 };
 
 /// @brief Spec for copying a buffer of memory, either on CPU or GPU
@@ -32,8 +33,8 @@ protected:
     /// @brief Allocate a Buffer with given flags
     /// @param spec
     /// @return (Buffer object, DeviceMemory object)
-    [[nodiscard]] static std::tuple<NativeRenderObject, NativeRenderObject> allocate(
-        const BufferAllocateSpecification& spec);
+    [[nodiscard]] static auto allocate(const BufferAllocateSpecification& spec)
+        -> std::tuple<NativeRenderObject, NativeRenderObject>;
 
     /// @brief Copy stagingBuffer to buffer
     /// @param spec

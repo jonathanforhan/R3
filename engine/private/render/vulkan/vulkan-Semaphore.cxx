@@ -3,13 +3,12 @@
 #include "render/Semaphore.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
 
 Semaphore::Semaphore(const SemaphoreSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     const vk::SemaphoreCreateInfo semaphoreCreateInfo = {
         .sType = vk::StructureType::eSemaphoreCreateInfo,
         .pNext = nullptr,

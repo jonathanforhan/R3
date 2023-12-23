@@ -10,7 +10,7 @@
 namespace R3 {
 
 struct DescriptorPoolSpecification {
-    Ref<const LogicalDevice> logicalDevice;
+    const LogicalDevice& logicalDevice;
     uint32 descriptorSetCount;
 };
 

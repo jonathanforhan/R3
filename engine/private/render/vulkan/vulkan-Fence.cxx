@@ -10,7 +10,7 @@
 namespace R3 {
 
 Fence::Fence(const FenceSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     const vk::FenceCreateInfo fenceCreateInfo = {
         .sType = vk::StructureType::eFenceCreateInfo,
         .pNext = nullptr,

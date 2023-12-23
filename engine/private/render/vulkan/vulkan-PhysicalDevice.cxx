@@ -4,9 +4,7 @@
 
 #include <cstring>
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "api/Ensure.hpp"
-#include "api/Log.hpp"
 #include "render/Instance.hpp"
 #include "render/Queue.hpp"
 #include "render/Surface.hpp"
@@ -15,10 +13,9 @@
 namespace R3 {
 
 PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
-    : m_surface(spec.surface),
+    : m_surface(&spec.surface),
       m_extensions(spec.extensions) {
-    const std::vector<vk::PhysicalDevice> physicalDevices =
-        spec.instance->as<vk::Instance>().enumeratePhysicalDevices();
+    const std::vector<vk::PhysicalDevice> physicalDevices = spec.instance.as<vk::Instance>().enumeratePhysicalDevices();
 
     int32 bestScore = INT32_MIN;
     for (vk::PhysicalDevice physicalDevice : physicalDevices) {

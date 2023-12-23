@@ -15,12 +15,12 @@
 namespace R3 {
 
 TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice),
+    : m_logicalDevice(&spec.logicalDevice),
       m_type(spec.type) {
     CHECK((spec.path != nullptr) ^ (spec.data != nullptr));
 
     // check for blitting capability
-    const auto& gpu = spec.physicalDevice->as<vk::PhysicalDevice>();
+    const auto& gpu = spec.physicalDevice.as<vk::PhysicalDevice>();
     CHECK(gpu.getFormatProperties(vk::Format::eR8G8B8A8Srgb).optimalTilingFeatures &
           vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
@@ -35,11 +35,11 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     // staging buffer for wriring
     const BufferAllocateSpecification bufferAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
+        .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = imageSize,
-        .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
+        .bufferFlags = BufferUsage::TransferSrc,
+        .memoryFlags = MemoryProperty::HostVisible | MemoryProperty::HostCoherent,
     };
     auto&& [stagingBuffer, stagingMemory] = Buffer::allocate(bufferAllocateSpecification);
 
@@ -67,8 +67,8 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     // real image we use to store data
     const ImageAllocateSpecification imageAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
-        .logicalDevice = *spec.logicalDevice,
+        .physicalDevice = spec.physicalDevice,
+        .logicalDevice = *m_logicalDevice,
         .size = imageSize,
         .format = Format::R8G8B8A8Srgb,
         .width = static_cast<uint32>(w),
@@ -83,7 +83,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     // transition image layout in pipeline
     const ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationWrite = {
-        .commandPool = *spec.commandPool,
+        .commandPool = spec.commandPool,
         .image = image,
         .srcAccessor = {},
         .dstAccessor = MemoryAccessor::TransferWrite,
@@ -98,7 +98,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     const ImageCopySpecification imageCopySpecification = {
         .logicalDevice = *m_logicalDevice,
-        .commandPool = *spec.commandPool,
+        .commandPool = spec.commandPool,
         .dst = image,
         .src = stagingBuffer,
         .size = imageSize,
@@ -109,7 +109,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     Image::copy(imageCopySpecification);
 
     const ImageMipmapSpecification imageMipmapSpecification = {
-        .commandPool = *spec.commandPool,
+        .commandPool = spec.commandPool,
         .image = image,
         .mipLevels = mipLevels,
         .width = w,
@@ -124,8 +124,8 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     setDeviceMemory(memory.handle());
 
     m_imageView = ImageView({
-        .logicalDevice = m_logicalDevice,
-        .image = &image,
+        .logicalDevice = *m_logicalDevice,
+        .image = image,
         .format = Format::R8G8B8A8Srgb,
         .mipLevels = mipLevels,
         .aspectMask = ImageAspect::Color,
@@ -133,7 +133,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     m_sampler = Sampler({
         .physicalDevice = spec.physicalDevice,
-        .logicalDevice = m_logicalDevice,
+        .logicalDevice = *m_logicalDevice,
         .mipLevels = mipLevels,
     });
 }

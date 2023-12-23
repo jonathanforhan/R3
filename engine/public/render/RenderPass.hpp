@@ -6,9 +6,9 @@
 namespace R3 {
 
 struct RenderPassSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
 };
 
 class RenderPass : public NativeRenderObject {

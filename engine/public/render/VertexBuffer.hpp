@@ -8,9 +8,9 @@
 namespace R3 {
 
 struct VertexBufferSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const CommandPool> commandPool;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const CommandPool& commandPool;
     std::span<const Vertex> vertices;
 };
 

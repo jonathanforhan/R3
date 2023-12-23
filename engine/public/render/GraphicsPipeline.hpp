@@ -9,10 +9,10 @@
 namespace R3 {
 
 struct GraphicsPipelineSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
-    Ref<const RenderPass> renderPass;
-    Ref<const DescriptorSetLayout> descriptorSetLayout;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const RenderPass& renderPass;
+    const DescriptorSetLayout& descriptorSetLayout;
     std::string_view vertexShaderPath;
     std::string_view fragmentShaderPath;
 };

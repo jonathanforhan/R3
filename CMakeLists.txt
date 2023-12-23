@@ -56,6 +56,11 @@ execute_process(
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
 
 execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts")
+
+execute_process(
 	COMMAND ${CMAKE_COMMAND} -E make_directory
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )

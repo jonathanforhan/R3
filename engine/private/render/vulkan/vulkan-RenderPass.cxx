@@ -3,8 +3,6 @@
 #include "render/RenderPass.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/Swapchain.hpp"
@@ -13,10 +11,10 @@
 namespace R3 {
 
 RenderPass::RenderPass(const RenderPassSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     const vk::AttachmentDescription colorAttachment = {
         .flags = {},
-        .format = (vk::Format)spec.swapchain->surfaceFormat(),
+        .format = (vk::Format)spec.swapchain.surfaceFormat(),
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
@@ -33,7 +31,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
 
     const vk::AttachmentDescription depthAttachment = {
         .flags = {},
-        .format = vulkan::getSupportedDepthFormat(spec.physicalDevice->as<vk::PhysicalDevice>(),
+        .format = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
                                                   vk::ImageTiling::eOptimal,
                                                   vk::FormatFeatureFlagBits::eDepthStencilAttachment),
         .samples = vk::SampleCountFlagBits::e1,

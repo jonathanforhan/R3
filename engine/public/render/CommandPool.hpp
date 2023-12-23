@@ -16,8 +16,8 @@ enum class CommandPoolFlags {
 };
 
 struct CommandPoolSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
     CommandPoolFlags flags;
     uint32 commandBufferCount;
 };

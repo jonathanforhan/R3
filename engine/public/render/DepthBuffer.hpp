@@ -3,14 +3,13 @@
 #include "render/Buffer.hpp"
 #include "render/ImageView.hpp"
 #include "render/RenderFwd.hpp"
-#include "render/Sampler.hpp"
 
 namespace R3 {
 
 struct DepthBufferSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
 };
 
 class DepthBuffer : public Buffer {

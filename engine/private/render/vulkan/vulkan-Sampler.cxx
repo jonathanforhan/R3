@@ -3,15 +3,14 @@
 #include "render/Sampler.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 
 namespace R3 {
 
 Sampler::Sampler(const SamplerSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
-    vk::PhysicalDeviceProperties props = spec.physicalDevice->as<vk::PhysicalDevice>().getProperties();
+    : m_logicalDevice(&spec.logicalDevice) {
+    vk::PhysicalDeviceProperties props = spec.physicalDevice.as<vk::PhysicalDevice>().getProperties();
 
     const vk::SamplerCreateInfo samplerCreateInfo = {
         .sType = vk::StructureType::eSamplerCreateInfo,

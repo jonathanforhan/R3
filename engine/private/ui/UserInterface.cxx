@@ -60,6 +60,10 @@ UserInterface::UserInterface() {
 
     ImGui_ImplVulkan_Init(&initInfo, renderer.m_renderPass.as<vk::RenderPass>());
 
+    auto& io = ImGui::GetIO();
+    io.Fonts->AddFontFromFileTTF("fonts/Cascadia/CascadiaCode.ttf", 16.0f);
+    io.Fonts->Build();
+
     ImGui_ImplVulkan_CreateFontsTexture();
 }
 

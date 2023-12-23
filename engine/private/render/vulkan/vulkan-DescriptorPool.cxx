@@ -10,8 +10,8 @@
 namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
-    m_layout = DescriptorSetLayout({m_logicalDevice});
+    : m_logicalDevice(&spec.logicalDevice) {
+    m_layout = DescriptorSetLayout({*m_logicalDevice});
 
     const vk::DescriptorPoolSize uboDescriptorPoolSize = {
         .type = vk::DescriptorType::eUniformBuffer,
@@ -40,9 +40,9 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     setHandle(m_logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));
 
     m_descriptorSets = DescriptorSet::allocate({
-        .logicalDevice = m_logicalDevice,
-        .descriptorPool = this,
-        .descriptorSetLayout = &m_layout,
+        .logicalDevice = *m_logicalDevice,
+        .descriptorPool = *this,
+        .descriptorSetLayout = m_layout,
         .descriptorSetCount = spec.descriptorSetCount,
     });
 }

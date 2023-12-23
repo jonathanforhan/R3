@@ -8,8 +8,8 @@
 namespace R3 {
 
 struct ImageViewSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Image> image;
+    const LogicalDevice& logicalDevice;
+    const Image& image;
     Format format;
     uint32 mipLevels;
     ImageAspect::Flags aspectMask;

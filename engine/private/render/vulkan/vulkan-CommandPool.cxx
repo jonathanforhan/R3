@@ -3,7 +3,6 @@
 #include "render/CommandPool.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
@@ -27,7 +26,7 @@ static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoo
 } // namespace local
 
 CommandPool::CommandPool(const CommandPoolSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice) {
+    : m_logicalDevice(&spec.logicalDevice) {
     const vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
         .pNext = nullptr,
@@ -38,9 +37,9 @@ CommandPool::CommandPool(const CommandPoolSpecification& spec)
     setHandle(m_logicalDevice->as<vk::Device>().createCommandPool(commandPoolCreateInfo));
 
     m_commandBuffers = CommandBuffer::allocate({
-        .logicalDevice = m_logicalDevice,
+        .logicalDevice = *m_logicalDevice,
         .swapchain = spec.swapchain,
-        .commandPool = this,
+        .commandPool = *this,
         .commandBufferCount = spec.commandBufferCount,
     });
 }

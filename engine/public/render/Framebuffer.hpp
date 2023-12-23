@@ -6,11 +6,11 @@
 namespace R3 {
 
 struct FramebufferSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
-    Ref<const ImageView> swapchainImageView;
-    Ref<const ImageView> depthBufferImageView;
-    Ref<const RenderPass> renderPass;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const ImageView& swapchainImageView;
+    const ImageView& depthBufferImageView;
+    const RenderPass& renderPass;
 };
 
 class Framebuffer : public NativeRenderObject {

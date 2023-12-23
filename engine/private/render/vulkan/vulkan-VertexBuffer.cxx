@@ -11,15 +11,15 @@
 namespace R3 {
 
 VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
-    : m_logicalDevice(spec.logicalDevice),
+    : m_logicalDevice(&spec.logicalDevice),
       m_vertexCount(static_cast<uint32>(spec.vertices.size())) {
     // staging buffer, CPU writable
     const BufferAllocateSpecification stagingAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
+        .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = spec.vertices.size_bytes(),
-        .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferSrc),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent),
+        .bufferFlags = BufferUsage::TransferSrc,
+        .memoryFlags = MemoryProperty::HostVisible | MemoryProperty::HostCoherent,
     };
     auto&& [stagingBuffer, stagingMemory] = Buffer::allocate(stagingAllocateSpecification);
 
@@ -31,18 +31,18 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
 
     // real buffer, copy staging buffer to this GPU buffer
     const BufferAllocateSpecification bufferAllocateSpecification = {
-        .physicalDevice = *spec.physicalDevice,
+        .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = spec.vertices.size_bytes(),
-        .bufferFlags = uint32(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
+        .bufferFlags = BufferUsage::TransferDst | BufferUsage::VertexBuffer,
+        .memoryFlags = MemoryProperty::DeviceLocal,
     };
     auto&& [buffer, memory] = Buffer::allocate(bufferAllocateSpecification);
 
     // copy staging -> buffer
     const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_logicalDevice,
-        .commandPool = *spec.commandPool,
+        .commandPool = spec.commandPool,
         .buffer = buffer,
         .stagingBuffer = stagingBuffer,
         .size = spec.vertices.size_bytes(),

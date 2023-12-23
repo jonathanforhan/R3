@@ -6,8 +6,8 @@
 namespace R3 {
 
 struct UniformBufferSpecification {
-    Ref<const PhysicalDevice> physicalDevice;
-    Ref<const LogicalDevice> logicalDevice;
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
     usize bufferSize;
 };
 

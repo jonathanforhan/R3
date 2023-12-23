@@ -6,7 +6,7 @@
 namespace R3 {
 
 struct SemaphoreSpecification {
-    Ref<const LogicalDevice> logicalDevice;
+    const LogicalDevice& logicalDevice;
 };
 
 class Semaphore : public NativeRenderObject {

@@ -13,10 +13,10 @@ namespace R3 {
 
 /// @brief Swapchain Specification
 struct SwapchainSpecification {
-    Ref<const PhysicalDevice> physicalDevice; ///< @brief Valid non-null PhysicalDevice
-    Ref<const Surface> surface;               ///< @brief Valid non-null Surface
-    Ref<const LogicalDevice> logicalDevice;   ///< @brief Valid non-null LogicalDevice
-    Ref<const Window> window;                 ///< @brief Valid non-null Window
+    const PhysicalDevice& physicalDevice; ///< @brief Valid non-null PhysicalDevice
+    const Surface& surface;               ///< @brief Valid non-null Surface
+    const LogicalDevice& logicalDevice;   ///< @brief Valid non-null LogicalDevice
+    const Window& window;                 ///< @brief Valid non-null Window
 };
 
 /// @brief Swapchain Recreation Specification
@@ -55,7 +55,10 @@ public:
     std::span<const ImageView> imageViews() const { return m_imageViews; } ///< @brief Query image views
 
 private:
-    SwapchainSpecification m_spec;
+    Ref<const PhysicalDevice> m_physicalDevice;
+    Ref<const Surface> m_surface;
+    Ref<const LogicalDevice> m_logicalDevice;
+    Ref<const Window> m_window;
 
     Format m_surfaceFormat = Format::Undefined;
     ColorSpace m_colorSpace = ColorSpace::SrgbNonlinear;

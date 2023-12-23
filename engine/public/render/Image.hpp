@@ -10,8 +10,8 @@
 namespace R3 {
 
 struct ImageSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
 };
 
 struct ImageAllocateSpecification {

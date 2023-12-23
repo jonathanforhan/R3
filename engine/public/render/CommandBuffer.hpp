@@ -1,6 +1,5 @@
 #pragma once
 
-#include <span>
 #include <vector>
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
@@ -16,9 +15,9 @@ enum class CommandBufferFlags {
 };
 
 struct CommandBufferSpecification {
-    Ref<const LogicalDevice> logicalDevice;
-    Ref<const Swapchain> swapchain;
-    Ref<const CommandPool> commandPool;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const CommandPool& commandPool;
     uint32 commandBufferCount;
 };
 
@@ -41,7 +40,9 @@ public:
     void oneTimeSubmit() const;
 
 private:
-    CommandBufferSpecification m_spec;
+    Ref<const LogicalDevice> m_logicalDevice;
+    Ref<const Swapchain> m_swapchain;
+    Ref<const CommandPool> m_commandPool;
 };
 
 } // namespace R3

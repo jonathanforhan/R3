@@ -190,18 +190,6 @@ enum class Format {
     S8Uint = 127,
 };
 
-struct MemoryProperty {
-    using Flags = uint32;
-    enum {
-        DeviceLocal = 0x01,
-        HostVisible = 0x02,
-        HostCoherent = 0x04,
-        HostCached = 0x08,
-        LazilyAllocated = 0x10,
-        Protected = 0x20,
-    };
-};
-
 enum class PresentMode {
     Immediate = 0,
     Mailbox = 1,
@@ -283,6 +271,45 @@ struct PipelineStage : public Flag {
         FragmentDensityProcess = 0x0080'0000,
         FragmentShadingRateAttachment = 0x0040'0000,
         CommandPreprocessNV = 0x0002'0000,
+    };
+};
+
+struct BufferUsage : public Flag {
+    enum {
+        TransferSrc = 0x0000'0001,
+        TransferDst = 0x0000'0002,
+        UniformTexelBuffer = 0x0000'0004,
+        StorageTexelBuffer = 0x0000'0008,
+        UniformBuffer = 0x0000'0010,
+        StorageBuffer = 0x0000'0020,
+        IndexBuffer = 0x0000'0040,
+        VertexBuffer = 0x0000'0080,
+        IndirectBuffer = 0x0000'0100,
+        ShaderDeviceAddress = 0x0002'0000,
+        VideoDecodeSrc = 0x0000'2000,
+        VideoDecodeDst = 0x0000'4000,
+        TransformFeedbackBuffer = 0x0000'0800,
+        TransformFeedbackCounterBuffer = 0x0000'1000,
+        ConditionalRendering = 0x0000'0200,
+        SamplerDescriptorBuffer = 0x0020'0000,
+        ResourceDescriptorBuffer = 0x0040'0000,
+        PushDescriptorsDescriptorBuffer = 0x0400'0000,
+        MicromapBuildInputReadOnly = 0x0080'0000,
+        MicromapStorage = 0x0100'0000,
+    };
+};
+
+struct MemoryProperty : public Flag {
+    enum {
+        DeviceLocal = 0x0000'0001,
+        HostVisible = 0x0000'0002,
+        HostCoherent = 0x0000'0004,
+        HostCached = 0x0000'0008,
+        LazilyAllocated = 0x0000'0010,
+        Protected = 0x0000'0020,
+        DeviceCoherentAMD = 0x0000'0040,
+        DeviceUncachedAMD = 0x0000'0080,
+        RdmaCapableNV = 0x0000'0100,
     };
 };
 

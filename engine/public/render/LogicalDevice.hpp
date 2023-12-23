@@ -8,9 +8,9 @@ namespace R3 {
 
 /// @brief Logical Device Specification
 struct LogicalDeviceSpecification {
-    Ref<const Instance> instance;             ///< @brief Valid Instance
-    Ref<const Surface> surface;               ///< @brief Valid Surface
-    Ref<const PhysicalDevice> physicalDevice; ///< @brief Valid PhysicalDevice
+    const Instance& instance;             ///< @brief Valid Instance
+    const Surface& surface;               ///< @brief Valid Surface
+    const PhysicalDevice& physicalDevice; ///< @brief Valid PhysicalDevice
 };
 
 /// @brief LogicalDevice represents the application view of the underlaying hardware

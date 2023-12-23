@@ -6,7 +6,7 @@
 namespace R3 {
 
 struct FenceSpecification {
-    Ref<const LogicalDevice> logicalDevice;
+    const LogicalDevice& logicalDevice;
 };
 
 class Fence : public NativeRenderObject {
