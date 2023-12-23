@@ -46,8 +46,17 @@ struct ImageLayoutTransitionSpecification {
     ImageLayout newLayout;
     ImageAspect::Flags aspectMask;
     uint32 mipLevels;
+    uint32 baseMipLevel = 0;
     PipelineStage::Flags srcStageMask;
     PipelineStage::Flags dstStageMask;
+};
+
+struct ImageMipmapSpecification {
+    const CommandPool& commandPool;
+    Image& image;
+    uint32 mipLevels;
+    int32 width;
+    int32 height;
 };
 
 class Image : public NativeRenderObject {
@@ -65,6 +74,8 @@ public:
     static void copy(const ImageCopySpecification& spec);
 
     static void transition(const ImageLayoutTransitionSpecification& spec);
+
+    static void generateMipMaps(const ImageMipmapSpecification& spec);
 };
 
 } // namespace R3

@@ -156,7 +156,7 @@ void Image::transition(const ImageLayoutTransitionSpecification& spec) {
         .subresourceRange =
             {
                 .aspectMask = vk::ImageAspectFlags(spec.aspectMask),
-                .baseMipLevel = 0,
+                .baseMipLevel = spec.baseMipLevel,
                 .levelCount = spec.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
@@ -172,6 +172,101 @@ void Image::transition(const ImageLayoutTransitionSpecification& spec) {
                                                           {imageMemoryBarrier});
     commandBuffer.endCommandBuffer();
     commandBuffer.oneTimeSubmit();
+}
+
+void Image::generateMipMaps(const ImageMipmapSpecification& spec) {
+    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
+
+    ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationWrite = {
+        .commandPool = spec.commandPool,
+        .image = spec.image,
+        .srcAccessor = MemoryAccessor::TransferWrite,
+        .dstAccessor = MemoryAccessor::TransferRead,
+        .oldLayout = ImageLayout::TransferDstOptimal,
+        .newLayout = ImageLayout::TransferSrcOptimal,
+        .aspectMask = ImageAspect::Color,
+        .mipLevels = 1,
+        .baseMipLevel = 0,
+        .srcStageMask = PipelineStage::Transfer,
+        .dstStageMask = PipelineStage::Transfer,
+    };
+
+    ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationShader = {
+        .commandPool = spec.commandPool,
+        .image = spec.image,
+        .srcAccessor = MemoryAccessor::TransferRead,
+        .dstAccessor = MemoryAccessor::ShaderRead,
+        .oldLayout = ImageLayout::TransferSrcOptimal,
+        .newLayout = ImageLayout::ShaderReadOnlyOptimal,
+        .aspectMask = ImageAspect::Color,
+        .mipLevels = 1,
+        .baseMipLevel = 0,
+        .srcStageMask = PipelineStage::Transfer,
+        .dstStageMask = PipelineStage::FragmentShader,
+    };
+
+    int32 w = spec.width, h = spec.height;
+
+    for (uint32 i = 0; i < spec.mipLevels - 1; i++) {
+        imageLayoutTransitionSpecificationWrite.baseMipLevel = i;
+        transition(imageLayoutTransitionSpecificationWrite);
+
+        vk::ImageBlit blit = {
+            .srcSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlags(ImageAspect::Color),
+                    .mipLevel = i,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+            .srcOffsets = {},
+            .dstSubresource =
+                {
+                    .aspectMask = vk::ImageAspectFlags(ImageAspect::Color),
+                    .mipLevel = i + 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                },
+            .dstOffsets = {},
+        };
+
+        blit.srcOffsets[0] = {0, 0, 0};
+        blit.srcOffsets[1] = {w, h, 1};
+
+        blit.dstOffsets[0] = {0, 0, 0};
+        blit.dstOffsets[1] = {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1};
+
+        commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
+        commandBuffer.as<vk::CommandBuffer>().blitImage(spec.image.as<vk::Image>(),
+                                                        vk::ImageLayout::eTransferSrcOptimal,
+                                                        spec.image.as<vk::Image>(),
+                                                        vk::ImageLayout::eTransferDstOptimal,
+                                                        blit,
+                                                        vk::Filter::eLinear);
+        commandBuffer.endCommandBuffer();
+        commandBuffer.oneTimeSubmit();
+
+        imageLayoutTransitionSpecificationShader.baseMipLevel = i;
+        transition(imageLayoutTransitionSpecificationShader);
+
+        w = w > 1 ? w / 2 : w;
+        h = h > 1 ? h / 2 : h;
+    }
+
+    ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationFinal = {
+        .commandPool = spec.commandPool,
+        .image = spec.image,
+        .srcAccessor = MemoryAccessor::TransferWrite,
+        .dstAccessor = MemoryAccessor::ShaderRead,
+        .oldLayout = ImageLayout::TransferDstOptimal,
+        .newLayout = ImageLayout::ShaderReadOnlyOptimal,
+        .aspectMask = ImageAspect::Color,
+        .mipLevels = 1,
+        .baseMipLevel = spec.mipLevels - 1,
+        .srcStageMask = PipelineStage::Transfer,
+        .dstStageMask = PipelineStage::FragmentShader,
+    };
+    transition(imageLayoutTransitionSpecificationFinal);
 }
 
 } // namespace R3

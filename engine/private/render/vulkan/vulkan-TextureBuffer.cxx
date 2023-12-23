@@ -103,19 +103,14 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     };
     Image::copy(imageCopySpecification);
 
-    const ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationShader = {
+    const ImageMipmapSpecification imageMipmapSpecification = {
         .commandPool = *spec.commandPool,
         .image = image,
-        .srcAccessor = MemoryAccessor::TransferWrite,
-        .dstAccessor = MemoryAccessor::ShaderRead,
-        .oldLayout = ImageLayout::TransferDstOptimal,
-        .newLayout = ImageLayout::ShaderReadOnlyOptimal,
-        .aspectMask = ImageAspect::Color,
         .mipLevels = mipLevels,
-        .srcStageMask = PipelineStage::Transfer,
-        .dstStageMask = PipelineStage::FragmentShader,
+        .width = w,
+        .height = h,
     };
-    Image::transition(imageLayoutTransitionSpecificationShader);
+    Image::generateMipMaps(imageMipmapSpecification);
 
     m_logicalDevice->as<vk::Device>().destroyBuffer(stagingBuffer.as<vk::Buffer>());
     m_logicalDevice->as<vk::Device>().freeMemory(stagingMemory.as<vk::DeviceMemory>());
