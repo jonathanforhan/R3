@@ -19,6 +19,11 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
       m_type(spec.type) {
     CHECK((spec.path != nullptr) ^ (spec.data != nullptr));
 
+    // check for blitting capability
+    const auto& gpu = spec.physicalDevice->as<vk::PhysicalDevice>();
+    CHECK(gpu.getFormatProperties(vk::Format::eR8G8B8A8Srgb).optimalTilingFeatures &
+          vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
+
     int32 w, h, channels;
     uint32 len = spec.height ? spec.width * spec.height : spec.width;
     const uint8* bytes = spec.data ? stbi_load_from_memory((const stbi_uc*)spec.data, len, &w, &h, &channels, 0)
