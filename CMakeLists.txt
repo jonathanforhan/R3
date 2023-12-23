@@ -73,10 +73,7 @@ add_subdirectory(engine)
 if (R3_BUILD_EDITOR)
 	add_subdirectory(editor)
 	target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
-	target_include_directories(R3_ENGINE PUBLIC
-		"${CMAKE_CURRENT_SOURCE_DIR}/editor/src"
-		"${CMAKE_CURRENT_SOURCE_DIR}/editor/extern/imgui"
-	)
+	target_link_libraries(R3_ENGINE PUBLIC R3_EDITOR)
 endif ()
 
 if(R3_BUILD_TESTS)

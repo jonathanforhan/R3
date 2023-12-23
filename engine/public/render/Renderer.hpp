@@ -17,10 +17,6 @@
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
 
-#if R3_BUILD_EDITOR
-#include "Editor.hpp"
-#endif
-
 namespace R3 {
 
 struct RendererSpecification {
@@ -39,10 +35,8 @@ public:
 
     ModelLoader& modelLoader() { return m_modelLoader; }
 
-#if R3_BUILD_EDITOR
-    editor::EditorSpecification editorRenderInfo() const;
-    std::function<void(Ref<const CommandBuffer>)> editorDrawCallback = {};
-#endif
+private:
+    void newFrame();
 
 private:
     Window& m_window;
@@ -69,7 +63,7 @@ private:
 
     ModelLoader m_modelLoader;
 
-    friend class ResourceManager;
+    friend class UserInterface;
 };
 
 } // namespace R3

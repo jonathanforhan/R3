@@ -11,7 +11,8 @@ struct ImageViewSpecification {
     Ref<const LogicalDevice> logicalDevice;
     Ref<const Image> image;
     Format format;
-    uint64 aspectMask;
+    uint32 mipLevels;
+    ImageAspect::Flags aspectMask;
 };
 
 class ImageView : public NativeRenderObject {

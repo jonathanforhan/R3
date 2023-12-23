@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "api/Flag.hpp"
 #include "api/Types.hpp"
 #include "render/NativeRenderObject.hpp"
 #include "render/RenderFwd.hpp"
@@ -20,13 +21,9 @@ struct ImageAllocateSpecification {
     Format format;
     uint32 width;
     uint32 height;
-    uint64 imageFlags;
-    uint64 memoryFlags;
-};
-
-enum class ImageCopyType {
-    Image,
-    BufferToImage,
+    uint32 mipLevels;
+    ImageUsage::Flags imageFlags;
+    MemoryProperty::Flags memoryFlags;
 };
 
 struct ImageCopySpecification {

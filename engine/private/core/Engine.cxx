@@ -4,10 +4,7 @@
 #include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
 #include "systems/InputSystem.hpp"
-
-#if R3_BUILD_EDITOR
-#include "Editor.hpp"
-#endif
+#include "ui/UserInterface.hpp"
 
 namespace R3 {
 
@@ -32,18 +29,12 @@ Engine::~Engine() {
 }
 
 void Engine::loop() {
-#if R3_BUILD_EDITOR
-    editor::Editor editor;
-    s_instance.renderer.editorDrawCallback = [&](Ref<const CommandBuffer> cmd) { editor.drawUI(cmd); };
-#endif
+    UserInterface ui;
 
+    s_instance.renderer.render();
     s_instance.window.show();
 
     while (!s_instance.window.shouldClose() || !s_instance.activeScene->m_eventQueue.empty()) {
-#if R3_BUILD_EDITOR
-        editor.newFrame();
-#endif
-
         double dt = deltaTime();
         dispatchEvents();
         s_instance.activeScene->runSystems(dt);

@@ -2,6 +2,7 @@
 
 #include "render/Swapchain.hpp"
 
+#include <thread>
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
@@ -71,7 +72,8 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         m_imageViews[i] = ImageView({
             .logicalDevice = m_spec.logicalDevice,
             .image = &m_images[i],
-            .format = R3_FORMAT_R8G8B8A8_SRGB,
+            .format = Format::R8G8B8A8Srgb,
+            .mipLevels = 0,
             .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
         });
     }
@@ -81,14 +83,17 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
     CHECK(spec.framebuffers.size() == m_imageViews.size());
     m_spec.logicalDevice->as<vk::Device>().waitIdle();
 
+    vk::PhysicalDevice vkPhysicalDevice = m_spec.physicalDevice->as<vk::PhysicalDevice>();
+    vk::SurfaceKHR vkSurface = m_spec.surface->as<vk::SurfaceKHR>();
+
     // query
-    const auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(
-        m_spec.physicalDevice->as<vk::PhysicalDevice>(), m_spec.surface->as<vk::SurfaceKHR>());
+    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
     m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent2D.x == 0 || m_extent2D.y == 0) {
         glfwWaitEvents();
+        swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
         m_extent2D = swapchainSupportDetails.optimalExtent(m_spec.window->handle<GLFWwindow*>());
     }
 
@@ -133,9 +138,11 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
 
     m_imageViews.clear();
     spec.framebuffers.clear();
-    spec.depthBuffer.~DepthBuffer();
 
-    spec.depthBuffer = DepthBuffer(DepthBufferSpecification{
+    // execute async to not lag, deallocation is expensive
+    std::thread([&]() { spec.depthBuffer.~DepthBuffer(); }).detach();
+
+    spec.depthBuffer = DepthBuffer({
         .physicalDevice = m_spec.physicalDevice,
         .logicalDevice = m_spec.logicalDevice,
         .swapchain = this,
@@ -145,8 +152,8 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
         m_imageViews.emplace_back(ImageViewSpecification{
             .logicalDevice = m_spec.logicalDevice,
             .image = &m_images[i],
-            .format = R3_FORMAT_R8G8B8A8_SRGB,
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .format = Format::R8G8B8A8Srgb,
+            .aspectMask = ImageAspect::Color,
         });
 
         spec.framebuffers.emplace_back(FramebufferSpecification{

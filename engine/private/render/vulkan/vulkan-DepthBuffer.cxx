@@ -26,13 +26,14 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
         .physicalDevice = *spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = extent.x * extent.y * sizeof(float),
-        .format = (Format)depthFormat,
+        .format = Format(depthFormat),
         .width = extent.x,
         .height = extent.y,
+        .mipLevels = 0,
         .imageFlags = uint32(vk::ImageUsageFlagBits::eDepthStencilAttachment),
         .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
     };
-    auto [image, memory] = Image::allocate(imageAllocateSpecification);
+    auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
 
     setHandle(image.handle());
     setDeviceMemory(memory.handle());
@@ -41,7 +42,8 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     m_imageView = ImageView(ImageViewSpecification{
         .logicalDevice = m_logicalDevice,
         .image = &img,
-        .format = (Format)depthFormat,
+        .format = Format(depthFormat),
+        .mipLevels = 0,
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
     });
 }

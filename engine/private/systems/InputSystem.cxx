@@ -1,6 +1,7 @@
 #include "systems/InputSystem.hpp"
 
 #include <GLFW/glfw3.h>
+#include <imgui.h>
 #include "core/Scene.hpp"
 #include "input/KeyboardEvent.hpp"
 #include "input/MouseEvent.hpp"
@@ -10,6 +11,9 @@ namespace R3 {
 namespace local {
 
 static void keyCallback(GLFWwindow*, int key, int, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureKeyboard)
+        return;
+
     switch (action) {
         case GLFW_PRESS:
             Scene::pushEvent<KeyPressEvent>(Key(key), InputModifier::Mask(mods));
@@ -24,6 +28,9 @@ static void keyCallback(GLFWwindow*, int key, int, int action, int mods) {
 }
 
 static void mouseCallback(GLFWwindow*, int button, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+
     switch (action) {
         case GLFW_PRESS:
             Scene::pushEvent<MouseButtonPressEvent>(MouseButton(button), InputModifier::Mask(mods));
@@ -35,6 +42,9 @@ static void mouseCallback(GLFWwindow*, int button, int action, int mods) {
 }
 
 static void cursorCallback(GLFWwindow* window, double x, double y) {
+    if (ImGui::GetIO().WantCaptureMouse)
+        return;
+
     int w, h;
     glfwGetFramebufferSize(window, &w, &h);
     float posX = static_cast<float>(x) / static_cast<float>(w);

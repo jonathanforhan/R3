@@ -26,7 +26,7 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
 }
 
 std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAllocateSpecification& spec) {
-    const uint32 indices[]{
+    const uint32 indices[] = {
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
     };
@@ -43,11 +43,11 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
                 .height = spec.height,
                 .depth = 1,
             },
-        .mipLevels = 1,
+        .mipLevels = 1, // spec.mipLevels,
         .arrayLayers = 1,
         .samples = vk::SampleCountFlagBits::e1,
         .tiling = vk::ImageTiling::eOptimal,
-        .usage = (vk::ImageUsageFlags) static_cast<uint32>(spec.imageFlags),
+        .usage = vk::ImageUsageFlags(spec.imageFlags),
         .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,

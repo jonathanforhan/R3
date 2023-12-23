@@ -16,7 +16,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
         .flags = {},
         .image = spec.image->as<vk::Image>(),
         .viewType = vk::ImageViewType::e2D,
-        .format = (vk::Format)spec.format,
+        .format = vk::Format(spec.format),
         .components =
             {
                 .r = vk::ComponentSwizzle::eIdentity,
@@ -26,7 +26,7 @@ ImageView::ImageView(const ImageViewSpecification& spec)
             },
         .subresourceRange =
             {
-                .aspectMask = (vk::ImageAspectFlags)(static_cast<uint32>(spec.aspectMask)),
+                .aspectMask = (vk::ImageAspectFlags)spec.aspectMask,
                 .baseMipLevel = 0,
                 .levelCount = 1,
                 .baseArrayLayer = 0,

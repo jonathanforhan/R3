@@ -7,10 +7,12 @@
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Check.hpp"
-#include "api/Log.hpp"
 #include "components/ModelComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
@@ -128,6 +130,8 @@ Renderer::Renderer(const RendererSpecification& spec)
 }
 
 void Renderer::render() {
+    newFrame();
+
     const vk::Fence inFlight = m_inFlight[m_currentFrame].as<vk::Fence>();
     auto r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight, vk::False, UINT64_MAX);
     CHECK(r == vk::Result::eSuccess);
@@ -179,9 +183,7 @@ void Renderer::render() {
             }
         });
 
-        #if R3_BUILD_EDITOR
-        editorDrawCallback(&commandBuffer);
-        #endif
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.as<vk::CommandBuffer>());
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
@@ -243,20 +245,13 @@ void Renderer::waitIdle() const {
     m_logicalDevice.as<vk::Device>().waitIdle();
 }
 
-#if R3_BUILD_EDITOR
-editor::EditorSpecification Renderer::editorRenderInfo() const {
-    return {
-        .window = &m_window,
-        .instance = &m_instance,
-        .physicalDevice = &m_physicalDevice,
-        .logicalDevice = &m_logicalDevice,
-        .renderPass = &m_renderPass,
-        .graphicsQueue = &m_logicalDevice.graphicsQueue(),
-        .minImageCount = MAX_FRAMES_IN_FLIGHT,
-        .imageCount = MAX_FRAMES_IN_FLIGHT,
-    };
+void Renderer::newFrame() {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow();
+    ImGui::Render();
 }
-#endif
 
 } // namespace R3
 

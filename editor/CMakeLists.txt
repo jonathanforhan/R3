@@ -29,5 +29,3 @@ target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 #[[ R3 EXTERNAL DEPENDECIES ]]
 add_subdirectory(extern)
-
-target_link_libraries(R3_EDITOR PUBLIC ${R3_EDITOR_EXTERN_LIBS})

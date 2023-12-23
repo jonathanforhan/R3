@@ -57,9 +57,9 @@ public:
 private:
     SwapchainSpecification m_spec;
 
-    Format m_surfaceFormat = R3_FORMAT_UNDEFINED;
-    ColorSpace m_colorSpace = R3_COLOR_SPACE_SRGB_NONLINEAR;
-    PresentMode m_presentMode = R3_PRESENT_MODE_FIFO;
+    Format m_surfaceFormat = Format::Undefined;
+    ColorSpace m_colorSpace = ColorSpace::SrgbNonlinear;
+    PresentMode m_presentMode = PresentMode::Fifo;
     uvec2 m_extent2D;
     uint32 m_imageCount = 0;
 

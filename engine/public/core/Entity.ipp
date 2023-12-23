@@ -40,6 +40,7 @@ inline T& Entity::create(Args&&... args) {
 }
 
 inline void Entity::destroy() {
+    CHECK(valid());
     m_parentScene->m_registry.destroy(m_id);
 }
 

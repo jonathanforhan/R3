@@ -10,6 +10,6 @@
 [submodule "engine/extern/rapidjson"]
 	path = engine/extern/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
-[submodule "editor/extern/imgui"]
-	path = editor/extern/imgui
+[submodule "engine/extern/imgui"]
+	path = engine/extern/imgui
 	url = https://github.com/ocornut/imgui.git

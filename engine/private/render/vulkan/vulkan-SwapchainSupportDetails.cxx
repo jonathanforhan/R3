@@ -63,6 +63,12 @@ uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {
     return uvec2(extent.width, extent.height);
 }
 
+bool SwapchainSupportDetails::isMinimized(GLFWwindow* window) const {
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+    return !(width | height);
+}
+
 } // namespace R3::vulkan
 
 #endif // R3_VULKAN

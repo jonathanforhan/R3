@@ -26,6 +26,8 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     CHECK(bytes != nullptr);
     const usize imageSize = usize(w * h * 4);
 
+    auto mipLevels = static_cast<uint32>(std::floor(std::log2(std::max(w, h)))) + 1;
+
     // staging buffer for wriring
     const BufferAllocateSpecification bufferAllocateSpecification = {
         .physicalDevice = *spec.physicalDevice,
@@ -63,12 +65,14 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .physicalDevice = *spec.physicalDevice,
         .logicalDevice = *spec.logicalDevice,
         .size = imageSize,
-        .format = R3_FORMAT_R8G8B8A8_SRGB,
+        .format = Format::R8G8B8A8Srgb,
         .width = static_cast<uint32>(w),
         .height = static_cast<uint32>(h),
-        .imageFlags = uint32(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eSampled),
-        .memoryFlags = uint32(vk::MemoryPropertyFlagBits::eDeviceLocal),
+        .mipLevels = 1, // mipLevels,
+        .imageFlags = (ImageUsage::TransferSrc & 0) | ImageUsage::TransferDst | ImageUsage::Sampled,
+        .memoryFlags = MemoryProperty::DeviceLocal,
     };
+
     auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
 
     const auto& commandBuffer = spec.commandPool->commandBuffers().front();
@@ -86,12 +90,13 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .subresourceRange =
             {
                 .aspectMask = vk::ImageAspectFlagBits::eColor,
-                .baseMipLevel = 0,
+                .baseMipLevel = 0, // mipLevels,
                 .levelCount = 1,
                 .baseArrayLayer = 0,
                 .layerCount = 1,
             },
     };
+
     commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
     commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlagBits::eTopOfPipe},
                                                           {vk::PipelineStageFlagBits::eTransfer},
@@ -139,8 +144,9 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     m_imageView = ImageView({
         .logicalDevice = m_logicalDevice,
         .image = &img,
-        .format = R3_FORMAT_R8G8B8A8_SRGB,
-        .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+        .format = Format::R8G8B8A8Srgb,
+        .mipLevels = 1,
+        .aspectMask = ImageAspect::Color,
     });
 
     m_sampler = Sampler({

@@ -31,16 +31,13 @@ Window::Window(const WindowSpecification& spec) {
     glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    const int32 w = static_cast<int>(vidmode->width * 0.75);
-    const int32 h = static_cast<int>(vidmode->height * 0.75);
-
-    setHandle(glfwCreateWindow(w, h, spec.title.data(), nullptr, nullptr));
+    setHandle(glfwCreateWindow(vidmode->width / 2, vidmode->height / 2, spec.title.data(), nullptr, nullptr));
     if (handle() == nullptr) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);
     }
     glfwMakeContextCurrent(handle<GLFWwindow*>());
-    glfwSetWindowPos(handle<GLFWwindow*>(), vidmode->width / 2 - w / 2, vidmode->height / 2 - h / 2);
+    glfwMaximizeWindow(handle<GLFWwindow*>());
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {

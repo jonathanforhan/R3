@@ -3,8 +3,6 @@
 #include "components/ModelComponent.hpp"
 #include "input/KeyboardEvent.hpp"
 
-#define R3_TEST_TRY 1
-
 using namespace R3;
 
 class Helmet : public Entity {
@@ -33,24 +31,21 @@ void runScene() {
     transform = glm::translate(transform, vec3(0, -2, 0));
 
     Scene::bindEventListener([&](const KeyPressEvent& e) {
-        if (e.payload.key == Key::Space)
+        if (e.payload.key == Key::Space && helmet.valid()) {
             helmet.destroy();
-        else if (e.payload.key == Key::Enter)
+        } else if (e.payload.key == Key::Enter && entity.valid()) {
             entity.destroy();
+        }
     });
 
     Engine::loop();
 }
 
 int main() {
-#if R3_TEST_TRY
     try {
-#endif
         runScene();
-#if R3_TEST_TRY
     } catch (std::exception& e) {
         LOG(Error, e.what());
     }
-#endif
     return 0;
 }
