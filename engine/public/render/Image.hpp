@@ -22,7 +22,8 @@ struct ImageAllocateSpecification {
     Format format;                        ///< Image Format
     uint32 width;                         ///< Image width
     uint32 height;                        ///< Image height
-    uint32 mipLevels;                     ///< Image Mipmap Levels
+    uint32 mipLevels = 1;                 ///< Image Mipmap Levels
+    uint8 samples;                        ///< Image Samples (1, 2, 4, ... 64)
     ImageUsage::Flags imageFlags;         ///< Usage flags
     MemoryProperty::Flags memoryFlags;    ///< Memory flags
 };
@@ -50,7 +51,7 @@ struct ImageLayoutTransitionSpecification {
     ImageLayout oldLayout;              ///< Old ImageLayout
     ImageLayout newLayout;              ///< New ImageLayout
     ImageAspect::Flags aspectMask;      ///< Aspect
-    uint32 mipLevels;                   ///< Mipmap levels
+    uint32 mipLevels = 1;               ///< Mipmap levels
     uint32 baseMipLevel = 0;            ///< Base mipmap level (default=0)
     PipelineStage::Flags srcStageMask;  ///< Source Stage Mask
     PipelineStage::Flags dstStageMask;  ///< Destination Stage Mask

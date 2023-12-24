@@ -5,6 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
+#include "render/PhysicalDevice.hpp"
 #include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
 #include "render/Swapchain.hpp"
@@ -162,8 +163,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .rasterizationSamples = vk::SampleCountFlagBits::e1,
-        .sampleShadingEnable = vk::False,
+        .rasterizationSamples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
+        .sampleShadingEnable = vk::True,
         .minSampleShading = 1.0f,
         .pSampleMask = nullptr,
         .alphaToCoverageEnable = vk::False,

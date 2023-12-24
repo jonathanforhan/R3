@@ -1,33 +1,31 @@
 #if R3_VULKAN
 
-#include "render/DepthBuffer.hpp"
+#include "render/ColorBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/Swapchain.hpp"
-#include "vulkan-DepthBufferFormat.hxx"
 
 namespace R3 {
 
-DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
+ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
-                                                                   vk::ImageTiling::eOptimal,
-                                                                   vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+    Format colorFormat = spec.swapchain.surfaceFormat();
+
     const uvec2 extent = spec.swapchain.extent();
 
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = extent.x * extent.y * sizeof(float),
-        .format = Format(depthFormat),
+        .format = Format(colorFormat),
         .width = extent.x,
         .height = extent.y,
         .mipLevels = 1,
         .samples = spec.physicalDevice.sampleCount(),
-        .imageFlags = ImageUsage::DepthStencilAttachment,
+        .imageFlags = ImageUsage::TransientAttachment | ImageUsage::ColorAttachment,
         .memoryFlags = MemoryProperty::DeviceLocal,
     };
     auto&& [image, memory] = Image::allocate(imageAllocateSpecification);
@@ -38,13 +36,13 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     m_imageView = ImageView({
         .logicalDevice = *m_logicalDevice,
         .image = Image(handle()),
-        .format = Format(depthFormat),
+        .format = Format(colorFormat),
         .mipLevels = 1,
-        .aspectMask = ImageAspect::Depth,
+        .aspectMask = ImageAspect::Color,
     });
 }
 
-DepthBuffer::~DepthBuffer() {
+ColorBuffer::~ColorBuffer() {
     if (validHandle()) {
         m_logicalDevice->as<vk::Device>().destroyImage(as<vk::Image>());
         m_logicalDevice->as<vk::Device>().freeMemory(deviceMemoryAs<vk::DeviceMemory>());

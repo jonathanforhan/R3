@@ -27,6 +27,7 @@ std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
 
 std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAllocateSpecification& spec) {
     CHECK(spec.mipLevels != 0);
+    CHECK(spec.samples != 0);
 
     const uint32 indices[] = {
         spec.logicalDevice.graphicsQueue().index(),
@@ -47,7 +48,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
             },
         .mipLevels = spec.mipLevels,
         .arrayLayers = 1,
-        .samples = vk::SampleCountFlagBits::e1,
+        .samples = vk::SampleCountFlagBits(spec.samples),
         .tiling = vk::ImageTiling::eOptimal,
         .usage = vk::ImageUsageFlags(spec.imageFlags),
         .sharingMode = vk::SharingMode::eExclusive,
@@ -139,6 +140,8 @@ void Image::copy(const ImageCopySpecification& spec) {
 }
 
 void Image::transition(const ImageLayoutTransitionSpecification& spec) {
+    CHECK(spec.mipLevels != 0);
+
     vk::ImageMemoryBarrier imageMemoryBarrier = {
         .sType = vk::StructureType::eImageMemoryBarrier,
         .pNext = nullptr,

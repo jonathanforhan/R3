@@ -88,6 +88,13 @@ Renderer::Renderer(const RendererSpecification& spec)
         .swapchain = m_swapchain,
     });
 
+    //--- ColorBuffer
+    m_colorBuffer = ColorBuffer({
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
+    });
+
     //--- DepthBuffer
     m_depthBuffer = DepthBuffer({
         .physicalDevice = m_physicalDevice,
@@ -101,6 +108,7 @@ Renderer::Renderer(const RendererSpecification& spec)
             .logicalDevice = m_logicalDevice,
             .swapchain = m_swapchain,
             .swapchainImageView = swapchainImageView,
+            .colorBufferImageView = m_colorBuffer.imageView(),
             .depthBufferImageView = m_depthBuffer.imageView(),
             .renderPass = m_renderPass,
         });
@@ -170,7 +178,6 @@ void Renderer::render() {
 
                 commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
-                // vulkan-only functionality
                 commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
                                                                     vk::ShaderStageFlagBits::eVertex,
                                                                     0,
@@ -236,6 +243,7 @@ void Renderer::render() {
 void Renderer::resize() {
     m_swapchain.recreate({
         .framebuffers = m_framebuffers,
+        .colorBuffer = m_colorBuffer,
         .depthBuffer = m_depthBuffer,
         .renderPass = m_renderPass,
     });

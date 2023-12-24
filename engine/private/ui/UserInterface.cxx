@@ -55,7 +55,7 @@ UserInterface::UserInterface() {
         .DescriptorPool = (VkDescriptorPool)m_descriptorPool.get(),
         .MinImageCount = MAX_FRAMES_IN_FLIGHT,
         .ImageCount = MAX_FRAMES_IN_FLIGHT,
-        .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+        .MSAASamples = (VkSampleCountFlagBits)renderer.m_physicalDevice.sampleCount(),
     };
 
     ImGui_ImplVulkan_Init(&initInfo, renderer.m_renderPass.as<vk::RenderPass>());

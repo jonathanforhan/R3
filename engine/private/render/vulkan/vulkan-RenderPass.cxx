@@ -14,16 +14,15 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
     const vk::AttachmentDescription colorAttachment = {
         .flags = {},
-        .format = (vk::Format)spec.swapchain.surfaceFormat(),
-        .samples = vk::SampleCountFlagBits::e1,
+        .format = vk::Format(spec.swapchain.surfaceFormat()),
+        .samples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
         .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
         .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
         .initialLayout = vk::ImageLayout::eUndefined,
-        .finalLayout = vk::ImageLayout::ePresentSrcKHR,
+        .finalLayout = vk::ImageLayout::eColorAttachmentOptimal,
     };
-
     const vk::AttachmentReference colorAttachmentReference = {
         .attachment = 0,
         .layout = vk::ImageLayout::eColorAttachmentOptimal,
@@ -34,7 +33,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .format = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
                                                   vk::ImageTiling::eOptimal,
                                                   vk::FormatFeatureFlagBits::eDepthStencilAttachment),
-        .samples = vk::SampleCountFlagBits::e1,
+        .samples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eDontCare,
         .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
@@ -42,10 +41,26 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .initialLayout = vk::ImageLayout::eUndefined,
         .finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
     };
-
     const vk::AttachmentReference depthAttachmentReference = {
         .attachment = 1,
         .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
+    };
+
+    // color resolve attachment, to convert color attach from MSAA to normal image
+    const vk::AttachmentDescription colorAttachmentResolve = {
+        .flags = {},
+        .format = vk::Format(spec.swapchain.surfaceFormat()),
+        .samples = vk::SampleCountFlagBits::e1,
+        .loadOp = vk::AttachmentLoadOp::eDontCare,
+        .storeOp = vk::AttachmentStoreOp::eStore,
+        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+        .initialLayout = vk::ImageLayout::eUndefined,
+        .finalLayout = vk::ImageLayout::ePresentSrcKHR,
+    };
+    const vk::AttachmentReference colorAttachmentResolveReference = {
+        .attachment = 2,
+        .layout = vk::ImageLayout::eColorAttachmentOptimal,
     };
 
     const vk::SubpassDescription subpassDescription = {
@@ -55,14 +70,14 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorAttachmentReference,
-        .pResolveAttachments = nullptr,
+        .pResolveAttachments = &colorAttachmentResolveReference,
         .pDepthStencilAttachment = &depthAttachmentReference,
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
     };
 
     const vk::SubpassDependency subpassDependency = {
-        .srcSubpass = VK_SUBPASS_EXTERNAL,
+        .srcSubpass = vk::SubpassExternal,
         .dstSubpass = 0,
         .srcStageMask =
             vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eEarlyFragmentTests,
@@ -73,13 +88,13 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyFlags = {},
     };
 
-    vk::AttachmentDescription attachments[2] = {colorAttachment, depthAttachment};
+    const vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment, colorAttachmentResolve};
 
     const vk::RenderPassCreateInfo renderPassCreateInfo = {
         .sType = vk::StructureType::eRenderPassCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .attachmentCount = 2,
+        .attachmentCount = static_cast<uint32>(std::size(attachments)),
         .pAttachments = attachments,
         .subpassCount = 1,
         .pSubpasses = &subpassDescription,

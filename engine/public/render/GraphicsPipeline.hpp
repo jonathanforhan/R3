@@ -12,6 +12,7 @@ namespace R3 {
 
 /// @brief Graphics Pipeline Specification
 struct GraphicsPipelineSpecification {
+    const PhysicalDevice& physicalDevice;           ///< PhysicalDevice
     const LogicalDevice& logicalDevice;             ///< LogicalDevice
     const Swapchain& swapchain;                     ///< Swapchain
     const RenderPass& renderPass;                   ///< RenderPass

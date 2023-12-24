@@ -13,6 +13,7 @@
 /// - Create Render CommandPool and Local CommandPool
 /// - Build Synchronization Resources
 
+#include "render/ColorBuffer.hpp"
 #include "render/CommandPool.hpp"
 #include "render/DepthBuffer.hpp"
 #include "render/Fence.hpp"
@@ -82,6 +83,7 @@ private:
     std::vector<Framebuffer> m_framebuffers;
     CommandPool m_commandPoolLocal; // used for small command buffer operations like CPU -> GPU copy
     CommandPool m_commandPool;      // used for the render command buffers
+    ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
 
     // mirrors shader push constant layout

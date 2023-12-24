@@ -74,6 +74,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         .width = static_cast<uint32>(w),
         .height = static_cast<uint32>(h),
         .mipLevels = mipLevels,
+        .samples = 1,
         .imageFlags = ImageUsage::TransferSrc | ImageUsage::TransferDst | ImageUsage::Sampled,
         .memoryFlags = MemoryProperty::DeviceLocal,
     };

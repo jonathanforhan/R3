@@ -2,7 +2,6 @@
 
 #include "render/Framebuffer.hpp"
 
-#include <array>
 #include <vulkan/vulkan.hpp>
 #include "render/ImageView.hpp"
 #include "render/LogicalDevice.hpp"
@@ -13,11 +12,12 @@ namespace R3 {
 
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    const vk::ImageView swapchainImageView = spec.swapchainImageView.as<vk::ImageView>();
-    const vk::ImageView depthBufferImageView = spec.depthBufferImageView.as<vk::ImageView>();
-    const std::array<vk::ImageView, 2> attachments = {
-        swapchainImageView,
-        depthBufferImageView,
+    // NOTE this format [ COLOR, DEPTH, SWAPCHAIN_IMAGE ]
+    // IS important. It is mirrored in the layout of the renderpass attachments
+    const vk::ImageView attachments[] = {
+        spec.colorBufferImageView.as<vk::ImageView>(),
+        spec.depthBufferImageView.as<vk::ImageView>(),
+        spec.swapchainImageView.as<vk::ImageView>(),
     };
 
     const vk::FramebufferCreateInfo framebufferCreateInfo = {
@@ -25,8 +25,8 @@ Framebuffer::Framebuffer(const FramebufferSpecification& spec)
         .pNext = nullptr,
         .flags = {},
         .renderPass = spec.renderPass.as<vk::RenderPass>(),
-        .attachmentCount = static_cast<uint32>(attachments.size()),
-        .pAttachments = attachments.data(),
+        .attachmentCount = static_cast<uint32>(std::size(attachments)),
+        .pAttachments = attachments,
         .width = spec.swapchain.extent().x,
         .height = spec.swapchain.extent().y,
         .layers = 1,

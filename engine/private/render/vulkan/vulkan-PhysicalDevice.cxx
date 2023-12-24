@@ -25,8 +25,19 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
             bestScore = score;
         }
     }
-
     ENSURE(validHandle() && bestScore >= 0);
+
+    const auto physicalDeviceProperties = as<vk::PhysicalDevice>().getProperties();
+
+    // get samples as 8-bit flags (2^0 - 2^6)
+    uint8 sampleFlags = (uint8)uint32(physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                                      physicalDeviceProperties.limits.framebufferDepthSampleCounts);
+    m_sampleCount = 64;
+    // shift sample count until we find biggest valid sampleCount
+    while (!(m_sampleCount & sampleFlags) && m_sampleCount != 0) {
+        m_sampleCount >>= 1;
+    }
+    CHECK(m_sampleCount != 0);
 }
 
 int32 PhysicalDevice::evaluateDevice(const NativeRenderObject& deviceHandle) const {

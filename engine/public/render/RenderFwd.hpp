@@ -35,6 +35,7 @@ struct UniformBufferObject;
 class UniformBuffer;
 class TextureBuffer;
 class Sampler;
+class ColorBuffer;
 class DepthBuffer;
 
 } // namespace R3

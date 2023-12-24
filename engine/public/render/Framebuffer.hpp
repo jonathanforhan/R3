@@ -12,6 +12,7 @@ struct FramebufferSpecification {
     const LogicalDevice& logicalDevice;    ///< LogicalDevice
     const Swapchain& swapchain;            ///< Swapchain
     const ImageView& swapchainImageView;   ///< Swapchain ImageView
+    const ImageView& colorBufferImageView; ///< ColorBuffer ImageView
     const ImageView& depthBufferImageView; ///< DepthBuffer ImageView
     const RenderPass& renderPass;          ///< RenderPass
 };

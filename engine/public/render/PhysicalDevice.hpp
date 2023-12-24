@@ -38,6 +38,10 @@ public:
     /// @return extensions
     std::span<const char* const> extensions() const { return m_extensions; }
 
+    /// @brief Query Sample count
+    /// @return Number of Samples
+    uint8 sampleCount() const { return m_sampleCount; }
+
 private:
     // ranks GPU based on several factor to determine best fit
     int32 evaluateDevice(const NativeRenderObject& deviceHandle) const;
@@ -48,6 +52,7 @@ private:
 private:
     Ref<const Surface> m_surface;
     std::vector<const char*> m_extensions;
+    uint8 m_sampleCount;
 };
 
 } // namespace R3

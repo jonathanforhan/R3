@@ -21,6 +21,7 @@ struct SwapchainSpecification {
 /// @brief Swapchain Recreation Specification
 struct SwapchainRecreatationSpecification {
     std::vector<Framebuffer>& framebuffers; ///< Framebuffers to be recreated
+    ColorBuffer& colorBuffer;               ///< ColorBuffer to recreate
     DepthBuffer& depthBuffer;               ///< DepthBuffer to recreate
     const RenderPass& renderPass;           ///< RenderPass to reference
 };
@@ -60,7 +61,7 @@ private:
     Format m_surfaceFormat = Format::Undefined;
     ColorSpace m_colorSpace = ColorSpace::SrgbNonlinear;
     PresentMode m_presentMode = PresentMode::Fifo;
-    uvec2 m_extent2D;
+    uvec2 m_extent2D = {};
     uint32 m_imageCount = 0;
 
     std::vector<Image> m_images;

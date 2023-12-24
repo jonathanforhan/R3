@@ -41,6 +41,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         // Pipeline
         mesh.pipeline = GlobalResourceManager().allocateGraphicsPipeline({
+            .physicalDevice = m_spec.physicalDevice,
             .logicalDevice = m_spec.logicalDevice,
             .swapchain = m_spec.swapchain,
             .renderPass = m_spec.renderPass,

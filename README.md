@@ -4,13 +4,17 @@
 
 ### Dev Dependencies
 
+- C++20 Compiler
 - CMake (version 3.20+)
+- Python3
 
 ### Dev Dependencies (optional)
 
 - wsl
 - clang-format (not optional for contributions)
 - Doxygen
+- npm (for stylized Doxygen docs)
+- VulkanSDK (for Vulkan Builds)
 
 ### Build steps
 
@@ -18,17 +22,19 @@ Windows and Unix
 
 ```git clone --recurse-submodules https://github.com/jonathanforhan/R3.git```
 
-```mkdir build ; cmake -S . -B ./build --preset $(PRESET *see table*); cmake --build ./build```
+```mkdir build ; cmake -S . -B ./build --preset $(PRESET*) ; cmake --build ./build```
 
-**NOTE** must use developer Powershell.exe for Windows build, Windows builds use cl.exe for VS compatibility, Linux-* will also work if you are using Cygwin or MinGW
+\* see table
 
 #### CMake Presets
 
 | Debug                | Release                | Distribution        |
 |:-------------------- |:---------------------- |:------------------- |
-| Windows-Vulkan-Debug | Windows-Vulkan-Release | Windows-Vulkan-Dist |
-| Windows-OpenGL-Debug | Windows-OpenGL-Release | Windows-OpenGL-Dist |
-| Linux-Vulkan-Debug   | Linux-Vulkan-Release   | Linux-Vulkan-Dist	  |
-| Linux-OpenGL-Debug   | Linux-OpenGL-Release   | Linux-OpenGL-Dist   |
+| MSVC-Vulkan-Debug	   | MSVC-Vulkan-Release    | MSVC-Vulkan-Dist    |
+| MSVC-OpenGL-Debug    | MSVC-OpenGL-Release    | MSVC-OpenGL-Dist    |
+| Clang-Vulkan-Debug   | Clang-Vulkan-Release   | Clang-Vulkan-Dist	  |
+| Clang-OpenGL-Debug   | Clang-OpenGL-Release   | Clang-OpenGL-Dist   |
+| GCC-Vulkan-Debug	   | GCC-Vulkan-Release     | GCC-Vulkan-Dist     |
+| GCC-OpenGL-Debug     | GCC-OpenGL-Release     | GCC-OpenGL-Dist     |
 
 All builds are 64-bit

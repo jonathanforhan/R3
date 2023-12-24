@@ -8,6 +8,7 @@
 // clang-format on
 #include "api/Check.hpp"
 #include "api/Log.hpp"
+#include "render/ColorBuffer.hpp"
 #include "render/DepthBuffer.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/LogicalDevice.hpp"
@@ -76,7 +77,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
             .image = m_images[i],
             .format = Format::R8G8B8A8Srgb,
             .mipLevels = 1,
-            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .aspectMask = ImageAspect::Color,
         });
     }
 }
@@ -132,21 +133,31 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
     setHandle(m_logicalDevice->as<vk::Device>().createSwapchainKHR(swapchainCreateInfo));
     m_logicalDevice->as<vk::Device>().destroySwapchainKHR(oldSwapchain);
 
-    // restore
-    m_images = Image::acquireImages({
+    // recreate color buffer with new extent
+    spec.colorBuffer.~ColorBuffer();
+    spec.colorBuffer = ColorBuffer({
+        .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .swapchain = *this,
     });
 
-    m_imageViews.clear();
-    spec.framebuffers.clear();
+    // recreate depth buffer with new extent
     spec.depthBuffer.~DepthBuffer();
-
     spec.depthBuffer = DepthBuffer({
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .swapchain = *this,
     });
+
+    // restore images
+    m_images = Image::acquireImages({
+        .logicalDevice = *m_logicalDevice,
+        .swapchain = *this,
+    });
+
+    // recreate image views and framebuffers with new images
+    m_imageViews.clear();
+    spec.framebuffers.clear();
 
     for (usize i = 0; i < m_images.size(); i++) {
         m_imageViews.emplace_back(ImageViewSpecification{
@@ -161,6 +172,7 @@ void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
             .logicalDevice = *m_logicalDevice,
             .swapchain = *this,
             .swapchainImageView = m_imageViews[i],
+            .colorBufferImageView = spec.colorBuffer.imageView(),
             .depthBufferImageView = spec.depthBuffer.imageView(),
             .renderPass = spec.renderPass,
         });

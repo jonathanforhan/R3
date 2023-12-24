@@ -35,6 +35,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
     }
 
     const vk::PhysicalDeviceFeatures physicalDeviceFeatures = {
+        .sampleRateShading = vk::True,
         .samplerAnisotropy = vk::True,
     };
 
