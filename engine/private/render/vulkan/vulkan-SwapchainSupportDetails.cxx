@@ -21,8 +21,8 @@ std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() c
         if (surfaceFormat.format == vk::Format::eR8G8B8A8Srgb &&
             surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
             return {
-                (Format)surfaceFormat.format,
-                (ColorSpace)surfaceFormat.colorSpace,
+                Format(surfaceFormat.format),
+                ColorSpace(surfaceFormat.colorSpace),
             };
         }
     }
@@ -30,19 +30,19 @@ std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() c
     LOG(Warning, "surface format 32-bit SRGB is NOT available on this device, using sub-optimal format");
 
     return {
-        (Format)surfaceFormats.front().format,
-        (ColorSpace)surfaceFormats.front().colorSpace,
+        Format(surfaceFormats.front().format),
+        ColorSpace(surfaceFormats.front().colorSpace),
     };
 }
 
 PresentMode SwapchainSupportDetails::optimalPresentMode() const {
     for (const auto& presentMode : presentModes) {
         if (presentMode == vk::PresentModeKHR::eMailbox) {
-            return (PresentMode)presentMode;
+            return PresentMode(presentMode);
         }
     }
 
-    return (PresentMode)vk::PresentModeKHR::eFifo;
+    return PresentMode(vk::PresentModeKHR::eFifo);
 }
 
 uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {

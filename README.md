@@ -11,10 +11,11 @@
 ### Dev Dependencies (optional)
 
 - wsl
-- clang-format (not optional for contributions)
+- clang-format - not optional for contributions
 - Doxygen
-- npm (for stylized Doxygen docs)
-- VulkanSDK (for Vulkan Builds)
+- npm - for stylized Doxygen docs
+- VulkanSDK - for Vulkan Builds
+- Optick-GUI  - GUI front-end to profiler (https://github.com/bombomby/optick/releases)
 
 ### Build steps
 

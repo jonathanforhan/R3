@@ -29,12 +29,10 @@ void runScene() {
     //--- Model
     auto& helmet = Entity::create<Helmet>();
 
-    /*
     auto& entity = Entity::create<Entity>();
     entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
     auto& transform = entity.get<TransformComponent>();
     transform = glm::translate(transform, vec3(0, -2, 0));
-    */
 
     Scene::bindEventListener([&](const KeyPressEvent& e) {
         if (e.payload.key == Key::Space && helmet.valid())

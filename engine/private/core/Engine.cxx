@@ -1,6 +1,7 @@
 #include "core/Engine.hpp"
 
 #include <chrono>
+#include "api/Profile.hxx"
 #include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
 #include "systems/InputSystem.hpp"
@@ -28,13 +29,30 @@ void Engine::loop() {
     s_window.show();
 
     while (!s_window.shouldClose() || !s_engine.m_activeScene->m_eventQueue.empty()) {
+        R3_PROFILE(FRAME, "MainThread");
+
+        R3_PROFILE(PUSH, "Delta Time");
         double dt = deltaTime();
+        R3_PROFILE(POP);
+
+        R3_PROFILE(PUSH, "Events");
         dispatchEvents();
+        R3_PROFILE(POP);
+
+        R3_PROFILE(PUSH, "Systems");
         s_engine.m_activeScene->runSystems(dt);
+        R3_PROFILE(POP);
+
         s_renderer.setView(s_engine.m_activeScene->view());
         s_renderer.setProjection(s_engine.m_activeScene->projection());
+
+        R3_PROFILE(PUSH, "Render");
         s_renderer.render();
+        R3_PROFILE(POP);
+
+        R3_PROFILE(PUSH, "GLFW");
         s_window.update();
+        R3_PROFILE(POP);
     }
 
     // sync

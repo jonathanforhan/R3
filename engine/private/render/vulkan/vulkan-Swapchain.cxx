@@ -30,6 +30,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     const auto format = swapchainSupportDetails.optimalSurfaceFormat();
     m_surfaceFormat = std::get<0>(format);
     m_colorSpace = std::get<1>(format);
+    m_presentMode = swapchainSupportDetails.optimalPresentMode();
     m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
 
     swapchainSupportDetails.capabilities.minImageCount == swapchainSupportDetails.capabilities.maxImageCount
@@ -48,8 +49,8 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .flags = {},
         .surface = m_surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
-        .imageFormat = (vk::Format)m_surfaceFormat,
-        .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
+        .imageFormat = vk::Format(m_surfaceFormat),
+        .imageColorSpace = vk::ColorSpaceKHR(m_colorSpace),
         .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
@@ -58,7 +59,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .preTransform = swapchainSupportDetails.capabilities.currentTransform,
         .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        .presentMode = (vk::PresentModeKHR)m_presentMode,
+        .presentMode = vk::PresentModeKHR(m_presentMode),
         .clipped = VK_TRUE,
         .oldSwapchain = VK_NULL_HANDLE,
     };
@@ -115,8 +116,8 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .flags = {},
         .surface = m_surface->as<vk::SurfaceKHR>(),
         .minImageCount = m_imageCount,
-        .imageFormat = (vk::Format)m_surfaceFormat,
-        .imageColorSpace = (vk::ColorSpaceKHR)m_colorSpace,
+        .imageFormat = vk::Format(m_surfaceFormat),
+        .imageColorSpace = vk::ColorSpaceKHR(m_colorSpace),
         .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
@@ -125,7 +126,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .pQueueFamilyIndices = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .preTransform = vk::SurfaceTransformFlagBitsKHR::eIdentity,
         .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
-        .presentMode = (vk::PresentModeKHR)m_presentMode,
+        .presentMode = vk::PresentModeKHR(m_presentMode),
         .clipped = vk::True,
         .oldSwapchain = oldSwapchain,
     };

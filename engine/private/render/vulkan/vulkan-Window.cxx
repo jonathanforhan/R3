@@ -19,17 +19,10 @@ namespace R3 {
 Window::Window(const WindowSpecification& spec) {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_SAMPLES, 4);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
-
-    glfwWindowHint(GLFW_RED_BITS, vidmode->redBits);
-    glfwWindowHint(GLFW_GREEN_BITS, vidmode->greenBits);
-    glfwWindowHint(GLFW_BLUE_BITS, vidmode->blueBits);
-    glfwWindowHint(GLFW_REFRESH_RATE, vidmode->refreshRate);
-    glfwWindowHint(GLFW_AUTO_ICONIFY, GLFW_TRUE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     setHandle(glfwCreateWindow(vidmode->width / 2, vidmode->height / 2, spec.title.data(), nullptr, nullptr));
     if (handle() == nullptr) {

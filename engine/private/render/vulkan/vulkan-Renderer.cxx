@@ -176,9 +176,9 @@ void Renderer::render() {
                 auto& indexBuffer = GlobalResourceManager().getIndexBufferById(mesh.indexBuffer);
 
                 commandBuffer.bindPipeline(pipeline);
-                uniform.update(&transform, sizeof(transform), 0);
-
                 commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+
+                uniform.update(&transform, sizeof(transform), 0);
 
                 commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
                                                                     vk::ShaderStageFlagBits::eVertex,
@@ -239,7 +239,7 @@ void Renderer::render() {
         }
     }
 
-    m_currentFrame = (imageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+    m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void Renderer::resize() {

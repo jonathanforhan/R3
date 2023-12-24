@@ -13,3 +13,6 @@
 [submodule "engine/extern/imgui"]
 	path = engine/extern/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "engine/extern/optick"]
+	path = engine/extern/optick
+	url = https://github.com/bombomby/optick.git
