@@ -13,7 +13,7 @@ namespace R3 {
 struct VertexBufferSpecification {
     const PhysicalDevice& physicalDevice; ///< PhysicalDevice
     const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const CommandPool& commandPool;       ///< CommandPool
+    const CommandBuffer& commandBuffer;   ///< CommandBuffer
     std::span<const Vertex> vertices;     ///< Vertice data buffer
 };
 

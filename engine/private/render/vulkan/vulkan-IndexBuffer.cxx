@@ -41,7 +41,7 @@ IndexBuffer<T>::IndexBuffer(const IndexBufferSpecification<T>& spec)
 
     const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_logicalDevice,
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .buffer = buffer,
         .stagingBuffer = stagingBuffer,
         .size = spec.indices.size_bytes(),

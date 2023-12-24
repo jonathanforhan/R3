@@ -15,7 +15,7 @@ template <std::integral T>
 struct IndexBufferSpecification {
     const PhysicalDevice& physicalDevice; ///< PhysicalDevice
     const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const CommandPool& commandPool;       ///< CommandPool
+    const CommandBuffer& commandBuffer;   ///< CommandPool
     std::span<const T> indices;           ///< Array of indices
 };
 

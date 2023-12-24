@@ -24,19 +24,20 @@ public:
     NO_COPY(Engine);
     NO_MOVE(Engine);
 
+    /// @brief Free Scenes
     ~Engine();
 
     /// @brief Window getter
     /// @return Window
-    static Window& window() { return s_instance.window; }
+    static Window& window() { return s_window; }
 
     /// @brief Renderer getter
     /// @return Renderer
-    static Renderer& renderer() { return s_instance.renderer; }
+    static Renderer& renderer() { return s_renderer; }
 
     /// @brief Scene getter
     /// @return Scene
-    static Scene* activeScene() { return s_instance.activeScene; }
+    static Scene& activeScene() { return *s_engine.m_activeScene; }
 
     /// @brief Starts main game loop
     /// @warning this function will not return until the gameloop (i.e. the game) is over
@@ -46,7 +47,7 @@ private:
     /// @brief Add scene, automatically assigns it an id
     /// @param setActive should set scene active?
     /// @return Scene
-    static Scene* addScene(bool setActive = false);
+    static Ref<Scene> addScene(bool setActive = false);
 
     /// @brief Remove scene by uuid ie scene.id
     /// @param id uuid
@@ -59,15 +60,13 @@ private:
     static void dispatchEvents();
 
 private:
-    // TODO provide EngineLoader class
-    static struct Instance {
-        Window window;
-        Renderer renderer;
-        Scene* activeScene;
-        uint32 sceneCounter;
-        std::unordered_map<uuid32, Scene*> scenes;
-        static Engine engine;
-    } s_instance;
+    static Window s_window;
+    static Renderer s_renderer;
+    static Engine s_engine;
+
+    uint32 m_sceneCounter;
+    std::unordered_map<uuid32, Scene*> m_scenes;
+    Ref<Scene> m_activeScene;
 
     friend class Scene;
     friend class Entity;

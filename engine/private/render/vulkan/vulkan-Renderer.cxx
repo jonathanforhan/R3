@@ -23,14 +23,7 @@
 namespace R3 {
 
 Renderer::Renderer(const RendererSpecification& spec)
-    : m_window(spec.window),
-      m_modelLoader({
-          .physicalDevice = m_physicalDevice,
-          .logicalDevice = m_logicalDevice,
-          .swapchain = m_swapchain,
-          .renderPass = m_renderPass,
-          .commandPool = m_commandPool,
-      }) {
+    : m_window(spec.window) {
     //--- Instance Extensions
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -135,6 +128,15 @@ Renderer::Renderer(const RendererSpecification& spec)
         m_renderFinished[i] = Semaphore({m_logicalDevice});
         m_inFlight[i] = Fence({m_logicalDevice});
     }
+
+    // --- Model Loader
+    m_modelLoader = ModelLoader({
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .swapchain = m_swapchain,
+        .renderPass = m_renderPass,
+        .commandPool = m_commandPool,
+    });
 }
 
 void Renderer::render() {

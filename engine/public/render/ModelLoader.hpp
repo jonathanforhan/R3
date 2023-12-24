@@ -52,7 +52,11 @@ public:
     /// Renderer is the only one who should have valid info for spec
     /// @param spec
     ModelLoader(const ModelLoaderSpecification& spec)
-        : m_spec(spec) {}
+        : m_physicalDevice(&spec.physicalDevice),
+          m_logicalDevice(&spec.logicalDevice),
+          m_swapchain(&spec.swapchain),
+          m_renderPass(&spec.renderPass),
+          m_commandPool(&spec.commandPool) {}
 
     /// @brief Load in a glTF Model from path
     /// @param path
@@ -68,7 +72,12 @@ private:
     void processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type);
 
 private:
-    ModelLoaderSpecification m_spec;
+    Ref<const PhysicalDevice> m_physicalDevice;
+    Ref<const LogicalDevice> m_logicalDevice;
+    Ref<const Swapchain> m_swapchain;
+    Ref<const RenderPass> m_renderPass;
+    Ref<const CommandPool> m_commandPool;
+
     std::vector<MeshPrototype> m_prototypes;
     std::vector<TextureBuffer::ID> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;

@@ -35,16 +35,16 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         // Descriptor Pool
         mesh.material.descriptorPool = GlobalResourceManager().allocateDescriptorPool({
-            .logicalDevice = m_spec.logicalDevice,
+            .logicalDevice = *m_logicalDevice,
             .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
         });
 
         // Pipeline
         mesh.pipeline = GlobalResourceManager().allocateGraphicsPipeline({
-            .physicalDevice = m_spec.physicalDevice,
-            .logicalDevice = m_spec.logicalDevice,
-            .swapchain = m_spec.swapchain,
-            .renderPass = m_spec.renderPass,
+            .physicalDevice = *m_physicalDevice,
+            .logicalDevice = *m_logicalDevice,
+            .swapchain = *m_swapchain,
+            .renderPass = *m_renderPass,
             .descriptorSetLayout = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool).layout(),
             .vertexShaderPath = "spirv/test.vert.spv",
             .fragmentShaderPath = "spirv/test.frag.spv",
@@ -53,8 +53,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         // Uniform
         for (auto& uniform : mesh.material.uniforms) {
             uniform = GlobalResourceManager().allocateUniform({
-                .physicalDevice = m_spec.physicalDevice,
-                .logicalDevice = m_spec.logicalDevice,
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
                 .bufferSize = sizeof(vulkan::UniformBufferObject),
             });
         }
@@ -228,15 +228,15 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 
         m_prototypes.emplace_back(MeshPrototype{
             .vertexBuffer = GlobalResourceManager().allocateVertexBuffer({
-                .physicalDevice = m_spec.physicalDevice,
-                .logicalDevice = m_spec.logicalDevice,
-                .commandPool = m_spec.commandPool,
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
+                .commandBuffer = m_commandPool->commandBuffers().front(),
                 .vertices = vertices,
             }),
             .indexBuffer = GlobalResourceManager().allocateIndexBuffer({
-                .physicalDevice = m_spec.physicalDevice,
-                .logicalDevice = m_spec.logicalDevice,
-                .commandPool = m_spec.commandPool,
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
+                .commandBuffer = m_commandPool->commandBuffers().front(),
                 .indices = indices,
             }),
             .textureIndices = {},
@@ -284,10 +284,10 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
 
         if (!image.uri.empty()) {
             m_textures.push_back(GlobalResourceManager().allocateTexture({
-                .physicalDevice = m_spec.physicalDevice,
-                .logicalDevice = m_spec.logicalDevice,
-                .swapchain = m_spec.swapchain,
-                .commandBuffer = m_spec.commandPool.commandBuffers().front(),
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
+                .swapchain = *m_swapchain,
+                .commandBuffer = m_commandPool->commandBuffers().front(),
                 .path = std::string(m_directory + image.uri).c_str(),
                 .type = type,
             }));
@@ -296,10 +296,10 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
             const uint8* data = model->buffer().data() + bufferView.byteOffset;
 
             m_textures.push_back(GlobalResourceManager().allocateTexture({
-                .physicalDevice = m_spec.physicalDevice,
-                .logicalDevice = m_spec.logicalDevice,
-                .swapchain = m_spec.swapchain,
-                .commandBuffer = m_spec.commandPool.commandBuffers().front(),
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
+                .swapchain = *m_swapchain,
+                .commandBuffer = m_commandPool->commandBuffers().front(),
                 .width = bufferView.byteLength,
                 .height = 0,
                 .data = data,

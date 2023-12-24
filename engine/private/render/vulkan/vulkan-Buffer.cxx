@@ -43,13 +43,12 @@ std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const Buffer
 }
 
 void Buffer::copy(const BufferCopySpecification& spec) {
-    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
-    commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
-    commandBuffer.as<vk::CommandBuffer>().copyBuffer(
+    spec.commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
+    spec.commandBuffer.as<vk::CommandBuffer>().copyBuffer(
         spec.stagingBuffer.as<vk::Buffer>(), spec.buffer.as<vk::Buffer>(), {{.size = spec.size}});
-    commandBuffer.endCommandBuffer();
+    spec.commandBuffer.endCommandBuffer();
 
-    const vk::CommandBuffer buffers[] = {commandBuffer.as<vk::CommandBuffer>()};
+    const vk::CommandBuffer buffers[] = {spec.commandBuffer.as<vk::CommandBuffer>()};
     const vk::SubmitInfo submitInfo = {
         .sType = vk::StructureType::eSubmitInfo,
         .commandBufferCount = 1,

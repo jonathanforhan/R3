@@ -65,8 +65,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
         .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
-        .memoryTypeIndex =
-            spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
+        .memoryTypeIndex = spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, spec.memoryFlags),
     };
     const vk::DeviceMemory memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 

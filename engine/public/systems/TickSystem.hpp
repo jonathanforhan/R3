@@ -19,7 +19,7 @@ struct TickSystem : public System {
     /// @brief Standard R3 tick method
     /// @param dt delta time in milliseconds
     void tick(double dt) override {
-        Engine::activeScene()->componentForEach([=](T& component) { component.tick(dt); });
+        Engine::activeScene().componentForEach([=](T& component) { component.tick(dt); });
     }
 };
 

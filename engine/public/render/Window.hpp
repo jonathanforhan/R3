@@ -16,7 +16,6 @@ struct WindowSpecification {
 /// @brief Window class to abstract window operations
 class Window : public NativeRenderObject {
 public:
-    DEFAULT_CONSTRUCT(Window);
     NO_COPY(Window);
     NO_MOVE(Window);
 
@@ -78,7 +77,7 @@ public:
     void setShouldResize(bool b) { m_shouldResize = b; }
 
 private:
-    std::atomic_bool m_shouldResize;
+    std::atomic_bool m_shouldResize = false;
 };
 
 } // namespace R3

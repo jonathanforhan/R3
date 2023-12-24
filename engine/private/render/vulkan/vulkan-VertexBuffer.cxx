@@ -42,7 +42,7 @@ VertexBuffer::VertexBuffer(const VertexBufferSpecification& spec)
     // copy staging -> buffer
     const BufferCopySpecification bufferCopySpecification = {
         .logicalDevice = *m_logicalDevice,
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .buffer = buffer,
         .stagingBuffer = stagingBuffer,
         .size = spec.vertices.size_bytes(),

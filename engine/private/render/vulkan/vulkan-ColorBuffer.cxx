@@ -19,7 +19,7 @@ ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .size = extent.x * extent.y * sizeof(float),
+        .size = uint32(extent.x * extent.y * sizeof(float)),
         .format = Format(colorFormat),
         .width = extent.x,
         .height = extent.y,

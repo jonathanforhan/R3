@@ -19,8 +19,8 @@ struct BufferAllocateSpecification {
 
 /// @brief Spec for copying a buffer of memory, either on CPU or GPU
 struct BufferCopySpecification {
-    const LogicalDevice& logicalDevice;      ///< Logical Device
-    const CommandPool& commandPool;          ///< Command Pool, preferably transient a pool, used for one-time-command
+    const LogicalDevice& logicalDevice;      ///< LogicalDevice
+    const CommandBuffer& commandBuffer;      ///< CommandBuffer, a pool, used for one-time-command
     NativeRenderObject& buffer;              ///< Desination Buffer
     const NativeRenderObject& stagingBuffer; ///< Source Buffer
     usize size;                              ///< Buffer size in bytes
