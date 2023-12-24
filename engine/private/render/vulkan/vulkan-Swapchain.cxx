@@ -82,7 +82,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     }
 }
 
-void Swapchain::recreate(const SwapchainRecreatationSpecification& spec) {
+void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     CHECK(spec.framebuffers.size() == m_imageViews.size());
     m_logicalDevice->as<vk::Device>().waitIdle();
 

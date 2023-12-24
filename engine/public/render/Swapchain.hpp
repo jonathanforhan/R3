@@ -19,7 +19,7 @@ struct SwapchainSpecification {
 };
 
 /// @brief Swapchain Recreation Specification
-struct SwapchainRecreatationSpecification {
+struct SwapchainRecreationSpecification {
     std::vector<Framebuffer>& framebuffers; ///< Framebuffers to be recreated
     ColorBuffer& colorBuffer;               ///< ColorBuffer to recreate
     DepthBuffer& depthBuffer;               ///< DepthBuffer to recreate
@@ -43,7 +43,7 @@ public:
 
     /// @brief A Swapchain may become unusable (like a window resize) or suboptimal so we recreate it
     /// @param spec
-    void recreate(const SwapchainRecreatationSpecification& spec);
+    void recreate(const SwapchainRecreationSpecification& spec);
 
     Format surfaceFormat() const { return m_surfaceFormat; }               ///< @brief Query surface format
     ColorSpace colorSpace() const { return m_colorSpace; }                 ///< @brief Query color space
