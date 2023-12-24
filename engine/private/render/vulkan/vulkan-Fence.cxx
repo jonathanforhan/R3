@@ -3,8 +3,6 @@
 #include "render/Fence.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {

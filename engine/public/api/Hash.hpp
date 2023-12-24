@@ -1,11 +1,16 @@
 #pragma once
 
+/// @file Hash.hpp
+/// @brief Provides means of hashing at compile time
+/// Uses crc32 and crc64 hashing algorithms which are `consteval`ed
+
 #include "api/Types.hpp"
 
 namespace R3 {
 
 namespace detail::hash {
 
+/// @private
 constexpr uint32 crc32_table[256] = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3, 0x0edb8832,
     0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91, 0x1db71064, 0x6ab020f2,
@@ -38,6 +43,7 @@ constexpr uint32 crc32_table[256] = {
     0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 };
 
+/// @private
 constexpr uint64 crc64_table[256] = {
     0x0000000000000000, 0x42F0E1EBA9EA3693, 0x85E1C3D753D46D26, 0xC711223CFA3E5BB5, 0x493366450E42ECDF,
     0x0BC387AEA7A8DA4C, 0xCCD2A5925D9681F9, 0x8E224479F47CB76A, 0x9266CC8A1C85D9BE, 0xD0962D61B56FEF2D,
@@ -95,6 +101,10 @@ constexpr uint64 crc64_table[256] = {
 
 } // namespace detail::hash
 
+/// @brief HASH32 is the crc32 hash function evaluates consteval
+/// @tparam N
+/// @param s string to hash
+/// @return uuid
 template <std::size_t N>
 consteval uuid32 HASH32(const char (&s)[N]) {
     uuid32 crc = ~uint32(0);
@@ -103,6 +113,10 @@ consteval uuid32 HASH32(const char (&s)[N]) {
     return ~crc;
 }
 
+/// @brief HASH64 is the crc64 hash function evaluates consteval
+/// @tparam N
+/// @param s string to hash
+/// @return uuid
 template <std::size_t N>
 consteval uuid64 HASH64(const char (&s)[N]) {
     uuid64 crc = ~uint64(0);

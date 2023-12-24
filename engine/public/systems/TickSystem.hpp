@@ -1,4 +1,7 @@
 #pragma once
+
+/// @file TickSystem.hpp
+
 #include "System.hpp"
 #include "core/Engine.hpp"
 
@@ -16,7 +19,7 @@ struct TickSystem : public System {
     /// @brief Standard R3 tick method
     /// @param dt delta time in milliseconds
     void tick(double dt) override {
-        Engine::activeScene()->componentView<T>().each([=](T& ent) { ent.tick(dt); });
+        Engine::activeScene()->componentForEach([=](T& component) { component.tick(dt); });
     }
 };
 

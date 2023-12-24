@@ -1,11 +1,15 @@
 #pragma once
 
+/// @file Event.hpp
+/// @brief Event is a container for Event Payloads
+/// Events are listened to by binding an event listener to the scene
+
 #include <functional>
 #include "api/Function.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
 
-/// @def EVENT hashes _Signal and binds _Payload to a new Event
+/// @def EVENT(_Signal, _Payload) hashes _Signal and binds _Payload to a new Event
 #define EVENT(_Signal, _Payload) Event<::R3::HASH32(_Signal), _Payload>
 
 namespace R3 {

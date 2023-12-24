@@ -1,27 +1,31 @@
 #pragma once
 
+/// @file PhysicalDevice.hpp
+/// Abstraction over Graphics Hardware
+
 #include <span>
 #include <vector>
-#include "api/Types.hpp"
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
 /// @brief Physical Device Specification
 struct PhysicalDeviceSpecification {
-    const Instance& instance;                   ///< @brief Valid non-null Instance
-    const Surface& surface;                     ///< @brief Valid non-null Surface
-    const std::vector<const char*>& extensions; ///< @brief GPU extensions
+    const Instance& instance;                   ///< Instance
+    const Surface& surface;                     ///< Surface
+    const std::vector<const char*>& extensions; ///< GPU extensions
 };
 
 /// @brief Abstraction over API specific representation of Hardware/GPU
 class PhysicalDevice : public NativeRenderObject {
 public:
-    PhysicalDevice() = default;
+    DEFAULT_CONSTRUCT(PhysicalDevice);
+    NO_COPY(PhysicalDevice);
+    DEFAULT_MOVE(PhysicalDevice);
+
+    /// @brief Obtain a Physical Device from spec
+    /// @param spec
     PhysicalDevice(const PhysicalDeviceSpecification& spec);
-    PhysicalDevice(PhysicalDevice&&) noexcept = default;
-    PhysicalDevice& operator=(PhysicalDevice&&) noexcept = default;
 
     /// @brief Query the PhysicalDevice memory properties to find memory type
     /// this is a Vulkanism and may well be noops in other APIs

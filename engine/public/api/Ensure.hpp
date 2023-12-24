@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file Ensure.hpp
+/// @brief Provides a means to ensure that a given expression evaluates to true, applied to all builds
+
 #include <format>
 #include <stdexcept>
 

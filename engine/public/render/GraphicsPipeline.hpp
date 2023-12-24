@@ -1,30 +1,42 @@
 #pragma once
 
+/// @file GraphicsPipeline.hpp
+/// GraphicsPipeline Describes the all stages of the Render Pipeline
+
 #include <string_view>
-#include "render/NativeRenderObject.hpp"
 #include "render/PipelineLayout.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 #include "render/Shader.hpp"
 
 namespace R3 {
 
+/// @brief Graphics Pipeline Specification
 struct GraphicsPipelineSpecification {
-    const LogicalDevice& logicalDevice;
-    const Swapchain& swapchain;
-    const RenderPass& renderPass;
-    const DescriptorSetLayout& descriptorSetLayout;
-    std::string_view vertexShaderPath;
-    std::string_view fragmentShaderPath;
+    const LogicalDevice& logicalDevice;             ///< LogicalDevice
+    const Swapchain& swapchain;                     ///< Swapchain
+    const RenderPass& renderPass;                   ///< RenderPass
+    const DescriptorSetLayout& descriptorSetLayout; ///< DescriptorSetLayout
+    std::string_view vertexShaderPath;              ///< Vertex Shader filepath
+    std::string_view fragmentShaderPath;            ///< Fragment Shader filepath
 };
 
+/// @brief GraphicsPipeline created Pipeline from DescriptorLayout and genrates Shader Modules
+/// Pipelines are allocated by GlobalResourceManager
 class GraphicsPipeline : public NativeRenderObject {
 public:
-    GraphicsPipeline() = default;
+    DEFAULT_CONSTRUCT(GraphicsPipeline);
+    NO_COPY(GraphicsPipeline);
+    DEFAULT_MOVE(GraphicsPipeline);
+
+    /// @brief Construct Graphics Pipeline from spec
+    /// @param spec
     GraphicsPipeline(const GraphicsPipelineSpecification& spec);
-    GraphicsPipeline(GraphicsPipeline&&) noexcept = default;
-    GraphicsPipeline& operator=(GraphicsPipeline&&) noexcept = default;
+
+    /// @brief Destroy Pipeline
     ~GraphicsPipeline();
 
+    /// @brief Query PipelineLayout
+    /// @return Layout
     const PipelineLayout& layout() const { return m_layout; }
 
 private:

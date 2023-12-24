@@ -3,7 +3,6 @@
 #include "render/PipelineLayout.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 #include "vulkan-PushConstant.hxx"

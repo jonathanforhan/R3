@@ -1,21 +1,21 @@
 #pragma once
 
+/// @file DeviceMemory.hpp
+/// @brief Base for classes that need to allocate GPU memory
+
 #include "render/NativeRenderObject.hpp"
 
 namespace R3 {
 
-/// @brief Device base class, derived classed can store both their own Handle and a Memory handle
-/// see VertexBuffer for example, holds a Handle to the VAO itself and a handle to the device memory in the buffer
-/// DeviceMemory means GPU memory
+/// @brief DeviceMemory base class
+/// derived classes can store both their own Handle and a Memory handle (see VertexBuffer for example implementation)
+/// it holds a Handle to the VAO itself and a handle to the device memory in the buffer
 /// @note DeviceMemory does not handle clean up in anyway as it does not know implementation details
 class DeviceMemory : public NativeRenderObject {
 protected:
-    DeviceMemory() = default;
-    DeviceMemory(const DeviceMemory&) = delete;
-    DeviceMemory& operator=(const DeviceMemory&) = delete;
-
-    DeviceMemory(DeviceMemory&& src) noexcept = default;
-    DeviceMemory& operator=(DeviceMemory&& src) noexcept = default;
+    DEFAULT_CONSTRUCT(DeviceMemory);
+    NO_COPY(DeviceMemory);
+    DEFAULT_MOVE(DeviceMemory);
 
     /// @brief Query is device memory is null
     /// @return true if null

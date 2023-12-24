@@ -1,7 +1,11 @@
 #pragma once
 
+/// @file Engine.hpp
+/// @brief Main Engine that controls scenes and other functionality
+
 #include <queue>
 #include <unordered_map>
+#include "api/Construct.hpp"
 #include "input/Event.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"
@@ -17,8 +21,9 @@ private:
     Engine();
 
 public:
-    Engine(const Engine&) = delete;
-    Engine(Engine&&) = delete;
+    NO_COPY(Engine);
+    NO_MOVE(Engine);
+
     ~Engine();
 
     /// @brief Window getter
@@ -47,7 +52,6 @@ private:
     /// @param id uuid
     static void removeScene(uuid32 id);
 
-private:
     /// @return delta time between frames
     static double deltaTime();
 
@@ -55,6 +59,7 @@ private:
     static void dispatchEvents();
 
 private:
+    // TODO provide EngineLoader class
     static struct Instance {
         Window window;
         Renderer renderer;

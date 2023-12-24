@@ -1,11 +1,10 @@
 #if R3_VULKAN
 
+#include "render/DescriptorPool.hpp"
+
 #include <array>
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
-#include "render/DescriptorPool.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/RenderSpecification.hpp"
 
 namespace R3 {
 

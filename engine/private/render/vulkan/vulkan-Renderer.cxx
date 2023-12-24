@@ -110,14 +110,14 @@ Renderer::Renderer(const RendererSpecification& spec)
     m_commandPool = CommandPool({
         .logicalDevice = m_logicalDevice,
         .swapchain = m_swapchain,
-        .flags = CommandPoolFlags::Reset,
+        .type = CommandPoolType::Reset,
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
 
-    m_commandPoolTransient = CommandPool({
+    m_commandPoolLocal = CommandPool({
         .logicalDevice = m_logicalDevice,
         .swapchain = m_swapchain,
-        .flags = CommandPoolFlags::Reset,
+        .type = CommandPoolType::Reset,
         .commandBufferCount = 1,
     });
 

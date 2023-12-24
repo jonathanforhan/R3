@@ -1,20 +1,30 @@
 #pragma once
 
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+/// @file Fence.hpp
+/// @brief Provides Host synchonization
+
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Fence Specification
 struct FenceSpecification {
-    const LogicalDevice& logicalDevice;
+    const LogicalDevice& logicalDevice; ///< LogicalDevice
 };
 
+/// @brief Fences block Host operations and are used for synchronization
+/// All Fences start signalled
 class Fence : public NativeRenderObject {
 public:
-    Fence() = default;
+    DEFAULT_CONSTRUCT(Fence);
+    NO_COPY(Fence);
+    DEFAULT_MOVE(Fence);
+
+    /// @brief Construct Fence from spec
+    /// @param spec
     Fence(const FenceSpecification& spec);
-    Fence(Fence&&) noexcept = default;
-    Fence& operator=(Fence&&) noexcept = default;
+
+    /// @brief Destroy Fence
     ~Fence();
 
 private:

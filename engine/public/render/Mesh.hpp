@@ -1,5 +1,7 @@
 #pragma once
 
+/// @file Mesh.hpp
+
 #include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"
 #include "render/Material.hpp"
@@ -7,14 +9,16 @@
 
 namespace R3 {
 
+/// @brief Mesh is a POD struct that contains Buffer IDs,
 struct Mesh {
+    /// @brief Destroy allocated buffers manually
+    /// Used by ModelComponent
     void destroy();
 
-    // Mesh has handles to index it's resources
-    VertexBuffer::ID vertexBuffer;
-    IndexBuffer<uint32>::ID indexBuffer;
-    GraphicsPipeline::ID pipeline;
-    Material material;
+    VertexBuffer::ID vertexBuffer;       ///< Vertex handle
+    IndexBuffer<uint32>::ID indexBuffer; ///< Index handle
+    GraphicsPipeline::ID pipeline;       ///< Pipeline handle for binding
+    Material material;                   ///< Material
 };
 
 } // namespace R3

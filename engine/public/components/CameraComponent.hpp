@@ -1,44 +1,49 @@
 #pragma once
 
+/// @file CameraComponent.hpp
+/// @brief Component for viewing scenes
+
+#include "api/Construct.hpp"
 #include "api/Types.hpp"
 
 namespace R3 {
 
+/// @brief Types of Camera Projections
 enum class CameraType {
-    Perspective,
-    Orthographic,
+    Perspective,  ///< Perspective Projection
+    Orthographic, ///< Orthographic Projection
 };
 
-/// @brief Camera component that deals with both perspective and orthographic
+/// @brief Camera Component
+/// On creation if the Scene does not have a CameraSystem one will be bound to it
 class CameraComponent {
 public:
-    /// @brief construct new camera component
-    /// @param type type of camera
+    NO_COPY(CameraComponent);
+
+    /// @brief Create Component by type
+    /// @param type
     explicit CameraComponent(CameraType type = CameraType::Perspective);
 
-    CameraComponent(const CameraComponent&) = delete; ///< non-copyable
-    void operator=(const CameraComponent&) = delete;  ///< non-copyable
+    void translateForward(float magnitude);                 ///< Translate forward by `magnitude` amount
+    void translateBackward(float magnitude);                ///< Translate backward by `magnitude` amount
+    void translateRight(float magnitude);                   ///< Translate right by `magnitude` amount
+    void translateLeft(float magnitude);                    ///< Translate left by `magnitude` amount
+    void translateUp(float magnitude);                      ///< Translate up by `magnitude` amount
+    void translateDown(float magnitude);                    ///< Translate down by `magnitude` amount
+    void lookAround(float x, float y);                      ///< Move the gimbal by x and y degrees on respective axes
+    void lookAround(vec2 pos) { lookAround(pos.x, pos.y); } ///< Alias
 
-    void translateForward(float magnitude);  ///< @brief Move camera forward
-    void translateBackward(float magnitude); ///< @brief Move camera backward
-    void translateRight(float magnitude);    ///< @brief Move camera right
-    void translateLeft(float magnitude);     ///< @brief Move camera left
-    void translateUp(float magnitude);       ///< @brief Move camera up
-    void translateDown(float magnitude);     ///< @brief Move camera down
-    void lookAround(float x, float y);       ///< @brief Move the gimbal by x and y degrees on respective axes
-    void lookAround(vec2 pos) { lookAround(pos.x, pos.y); } ///< @brief Alias
-
-    vec3 front() const { return m_front; }                     ///< @brief Get CameraComponent front vector
-    float fov() const { return m_fov; }                        ///< @brief Get CameraComponent field of view
-    void setFov(float fov) { m_fov = fov; }                    ///< @brief Set CameraComponent field of view
-    vec3 position() const { return m_position; }               ///< @brief Get CameraComponent position
-    void setPosition(vec3 position) { m_position = position; } ///< @brief Set CameraComponent position
-    bool active() const { return m_active; }                   ///< @brief Get if CameraComponent is active
-    void setActive(bool active = true) { m_active = active; }  ///< @brief Set CameraComponent to activek
+    vec3 front() const { return m_front; }                     ///< Get CameraComponent front vector
+    float fov() const { return m_fov; }                        ///< Get CameraComponent field of view
+    void setFov(float fov) { m_fov = fov; }                    ///< Set CameraComponent field of view
+    vec3 position() const { return m_position; }               ///< Get CameraComponent position
+    void setPosition(vec3 position) { m_position = position; } ///< Set CameraComponent position
+    bool active() const { return m_active; }                   ///< Get if CameraComponent is active
+    void setActive(bool active = true) { m_active = active; }  ///< Set CameraComponent to activek
 
     /// @brief Apply the camera transform to the view and projection matrices
-    /// @param view view matrix
-    /// @param projection projection matrix
+    /// @param[out] view view matrix
+    /// @param[out] projection projection matrix
     /// @param aspectRatio Window's aspect ratio
     void apply(mat4* view, mat4* projection, float aspectRatio) const;
 

@@ -1,4 +1,8 @@
 #pragma once
+
+/// @file InputCodes.hpp
+/// @brief Provides Input codes for variable user inputs, closely matches glfw codes
+
 #include "api/Types.hpp"
 
 namespace R3 {
@@ -129,6 +133,7 @@ enum class Key : int16 {
     Menu = 348,
 };
 
+/// @brief Mouse Button codes
 enum class MouseButton : uint8 {
     Button1 = 0,
     Button2 = 1,
@@ -143,15 +148,16 @@ enum class MouseButton : uint8 {
     Middle = Button3,
 };
 
+/// @brief Modifiers like shift and control
 struct InputModifier {
     using Mask = uint8;
     enum : uint8 {
-        Shift = 0b0000'0001,
-        Control = 0b0000'0010,
-        Alt = 0b0000'0100,
-        Super = 0b0000'1000,
-        CapsLock = 0b0001'0000,
-        NumLock = 0b0010'0000,
+        Shift = 0x01,
+        Control = 0x02,
+        Alt = 0x04,
+        Super = 0x08,
+        CapsLock = 0x10,
+        NumLock = 0x020,
     };
 };
 

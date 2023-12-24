@@ -1,26 +1,38 @@
 #pragma once
 
+/// @file UniformBuffer.hpp
+
 #include "render/Buffer.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Uniform Buffer Specification
 struct UniformBufferSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    usize bufferSize;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    usize bufferSize;                     ///< Buffer size in bytes
 };
 
+/// @brief Buffer of Shader Uniform data
 class UniformBuffer : public Buffer {
 public:
-    UniformBuffer() = default;
+    DEFAULT_CONSTRUCT(UniformBuffer);
+    NO_COPY(UniformBuffer);
+    DEFAULT_MOVE(UniformBuffer);
+
+    /// @brief Construct UniformBuffer from spec
+    /// @param spec
     UniformBuffer(const UniformBufferSpecification& spec);
-    UniformBuffer(UniformBuffer&&) noexcept = default;
-    UniformBuffer& operator=(UniformBuffer&&) noexcept = default;
+
+    /// @brief Free UniformBuffer
     ~UniformBuffer();
 
-    void update(const void* buffer, usize size, usize offset);
-    void flush();
+    /// @brief Write data to UniformBuffer
+    /// @param data Buffer of data to write
+    /// @param size Size of data in bytes
+    /// @param offset Offset of UniformBuffer to write to
+    void update(const void* data, usize size, usize offset);
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

@@ -4,6 +4,7 @@
 
 namespace R3::vulkan {
 
+// Layout of vulkan UBO aligned
 struct UniformBufferObject {
     alignas(16) mat4 model;
 };

@@ -106,7 +106,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .flags = {},
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &bindingDescription,
-        .vertexAttributeDescriptionCount = sizeof(attributeDescriptions) / sizeof(*attributeDescriptions),
+        .vertexAttributeDescriptionCount = static_cast<uint32>(std::size(attributeDescriptions)),
         .pVertexAttributeDescriptions = attributeDescriptions,
     };
 
@@ -118,6 +118,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .primitiveRestartEnable = vk::False,
     };
 
+    // we then bind these in the command buffer when we bind our pipeline
     const std::vector<vk::DynamicState> dynamicStates = {
         vk::DynamicState::eViewport,
         vk::DynamicState::eScissor,

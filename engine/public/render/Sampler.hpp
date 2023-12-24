@@ -1,22 +1,30 @@
 #pragma once
 
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+/// @file Sampler.hpp
+
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Sampler Specification
 struct SamplerSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    uint32 mipLevels;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    uint32 mipLevels;                     ///< Mip levels
 };
 
+/// @brief Sampler used to read image data and apply various filtering like mipmapping
 class Sampler : public NativeRenderObject {
 public:
-    Sampler() = default;
+    DEFAULT_CONSTRUCT(Sampler);
+    NO_COPY(Sampler);
+    DEFAULT_MOVE(Sampler);
+
+    /// @brief Construct Sampler from spec
+    /// @param spec
     Sampler(const SamplerSpecification& spec);
-    Sampler(Sampler&&) noexcept = default;
-    Sampler& operator=(Sampler&&) noexcept = default;
+
+    /// @brief Destroy Sampler
     ~Sampler();
 
 private:

@@ -286,7 +286,7 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
                 .physicalDevice = m_spec.physicalDevice,
                 .logicalDevice = m_spec.logicalDevice,
                 .swapchain = m_spec.swapchain,
-                .commandPool = m_spec.commandPool,
+                .commandBuffer = m_spec.commandPool.commandBuffers().front(),
                 .path = std::string(m_directory + image.uri).c_str(),
                 .type = type,
             }));
@@ -298,7 +298,7 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
                 .physicalDevice = m_spec.physicalDevice,
                 .logicalDevice = m_spec.logicalDevice,
                 .swapchain = m_spec.swapchain,
-                .commandPool = m_spec.commandPool,
+                .commandBuffer = m_spec.commandPool.commandBuffers().front(),
                 .width = bufferView.byteLength,
                 .height = 0,
                 .data = data,

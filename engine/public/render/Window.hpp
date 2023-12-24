@@ -1,9 +1,10 @@
 #pragma once
 
+/// @file Window.hpp
+
 #include <atomic>
 #include <string_view>
-#include "api/Types.hpp"
-#include "render/NativeRenderObject.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
@@ -15,7 +16,9 @@ struct WindowSpecification {
 /// @brief Window class to abstract window operations
 class Window : public NativeRenderObject {
 public:
-    Window() = default;
+    DEFAULT_CONSTRUCT(Window);
+    NO_COPY(Window);
+    NO_MOVE(Window);
 
     /// @brief Create Window from spec
     /// @param spec

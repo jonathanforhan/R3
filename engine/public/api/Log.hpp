@@ -1,10 +1,16 @@
 #pragma once
 
+/// @file Log.hpp
+/// @brief Provide basic logging with good variadic API. Highly flexible but not very fast
+
 #include <iostream>
 
 /// @def LOG(_Level, ...)
 /// @brief Log message, LogLevel dependant
 /// All arguements are seperated by spaces
+/// @code
+/// LOG(Info, "Hello World"); -> "R3 Info: Hello World\n"
+/// @endcode
 /// @param _Level log level [Verbose|Info|Warning|Error]
 /// @param ... variadic log arguements
 

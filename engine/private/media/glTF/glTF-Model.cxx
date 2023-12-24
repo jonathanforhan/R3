@@ -1,8 +1,8 @@
 #include "glTF-Model.hxx"
-#include "api/Check.hpp"
+
+#include <sstream>
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
-#include "api/Todo.hpp"
 #include "api/Version.hpp"
 
 using namespace rapidjson;
@@ -171,7 +171,7 @@ void Model::populateAccessors() {
 
         // sparse
         if (itAccessor.HasMember("sparse"))
-            TODO("sparse incomplete");
+            ENSURE(false);
 
         // name
         maybeAssign(accessor.name, itAccessor, "name");

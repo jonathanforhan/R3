@@ -8,9 +8,10 @@
 
 namespace R3 {
 
-constexpr auto PBR_TEXTURE_COUNT = 5;
-constexpr auto MAX_FRAMES_IN_FLIGHT = 3;
+constexpr auto PBR_TEXTURE_COUNT = 5;    ///< Number of Textures used for PBR Renderering
+constexpr auto MAX_FRAMES_IN_FLIGHT = 3; ///< Maximum frames in queue at one time
 
+/// @brief Flags for Image Usage
 struct ImageUsage : public Flag {
     enum {
         TransferSrc = 0x01,
@@ -24,6 +25,7 @@ struct ImageUsage : public Flag {
     };
 };
 
+/// @brief Flags for Image Aspects
 struct ImageAspect : public Flag {
     enum {
         None = 0x00,
@@ -33,6 +35,7 @@ struct ImageAspect : public Flag {
     };
 };
 
+/// @brief Image Layouts
 enum class ImageLayout {
     Undefined = 0,
     General = 1,
@@ -54,11 +57,13 @@ enum class ImageLayout {
     PresentSrc = 1000001002,
 };
 
+/// @brief Types of Image copies supported
 enum class ImageCopyType {
     Image,
     BufferToImage,
 };
 
+/// @brief Color Formats
 enum class Format {
     Undefined = 0,
     R4G4UnormPack8 = 1,
@@ -190,6 +195,7 @@ enum class Format {
     S8Uint = 127,
 };
 
+/// @brief Presentation Modes
 enum class PresentMode {
     Immediate = 0,
     Mailbox = 1,
@@ -197,6 +203,7 @@ enum class PresentMode {
     FifoRelaxed = 3,
 };
 
+/// @brief ColorSpaces
 enum class ColorSpace {
     SrgbNonlinear = 0,
     DisplayP3NonlinearEXT = 1000104001,

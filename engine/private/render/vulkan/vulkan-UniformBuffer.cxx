@@ -35,22 +35,10 @@ UniformBuffer::~UniformBuffer() {
     }
 }
 
-void UniformBuffer::update(const void* buffer, usize size, usize offset) {
-    CHECK(buffer != nullptr);
+void UniformBuffer::update(const void* data, usize size, usize offset) {
+    CHECK(data != nullptr);
     CHECK(size + offset <= m_bufferSize);
-    memcpy(reinterpret_cast<uint8*>(m_mappedMemory) + offset, buffer, size);
-}
-
-void UniformBuffer::flush() {
-    vk::MappedMemoryRange range = {
-        .sType = vk::StructureType::eMappedMemoryRange,
-        .pNext = nullptr,
-        .memory = deviceMemoryAs<vk::DeviceMemory>(),
-        .offset = 0,
-        .size = m_bufferSize,
-    };
-
-    m_logicalDevice->as<vk::Device>().flushMappedMemoryRanges(range);
+    memcpy(reinterpret_cast<uint8*>(m_mappedMemory) + offset, data, size);
 }
 
 } // namespace R3

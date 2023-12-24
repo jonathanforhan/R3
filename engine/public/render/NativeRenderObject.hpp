@@ -1,9 +1,14 @@
 #pragma once
 
+/// @file NativeRenderObject.hpp
+/// Wraps different Render API Handle
+
 #include "api/Ref.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Comp-time api wrapper query
 template <typename T>
 concept IsWrapper = requires { typename T::NativeType; };
 
@@ -12,16 +17,22 @@ concept IsWrapper = requires { typename T::NativeType; };
 /// @note NativeRenderObject does not handle clean up in anyway as it does not know implementation details
 class NativeRenderObject {
 public:
-    /// @brief Opaque Handle type will be converted to API specific Handle when queried
-    using Handle = void*;
-    using HandleRef = Ref<std::remove_pointer_t<Handle>>;
-    using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>;
-    using ID = usize;
+    using Handle = void*; ///< Opaque Handle type will be converted to API specific Handle when queried
+    using HandleRef = Ref<std::remove_pointer_t<Handle>>;            ///< Handle Reference Type
+    using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>; ///< Handle const Reference Type
+    using ID = usize;                                                ///< ID type used by GlobalResourceManager
 
 protected:
-    NativeRenderObject() = default;
+    DEFAULT_CONSTRUCT(NativeRenderObject);
 
 public:
+    NO_COPY(NativeRenderObject);
+    DEFAULT_MOVE(NativeRenderObject);
+
+    /// @brief Construct NativeRenderObject from handle
+    /// If handle is API wrapper NRO behave accordingly
+    /// @tparam T handle type
+    /// @param handle
     template <typename T = Handle>
     NativeRenderObject(const T& handle) {
         if constexpr (IsWrapper<T>) {
@@ -30,12 +41,6 @@ public:
             m_handle = reinterpret_cast<Handle>(handle);
         }
     }
-
-    NativeRenderObject(const NativeRenderObject&) = delete;
-    NativeRenderObject& operator=(const NativeRenderObject&) = delete;
-
-    NativeRenderObject(NativeRenderObject&&) noexcept = default;
-    NativeRenderObject& operator=(NativeRenderObject&&) noexcept = default;
 
     /// @brief Query is handle is null
     /// @return true if not null

@@ -9,8 +9,6 @@
 #include "render/LogicalDevice.hpp"
 #include "render/RenderSpecification.hpp"
 #include "render/ResourceManager.hxx"
-#include "render/TextureBuffer.hpp"
-#include "render/UniformBuffer.hpp"
 
 namespace R3 {
 

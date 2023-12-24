@@ -14,4 +14,7 @@ assets/*
 !assets/Lantern
 !assets/Sponza
 
-docs/html
+docs/*
+!docs/docs.html
+!docs/package.json
+!docs/package-lock.json

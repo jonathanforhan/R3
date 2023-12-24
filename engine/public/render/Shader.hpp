@@ -1,13 +1,15 @@
 #pragma once
 
+/// @file Shader.hpp
+
 #include <string_view>
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
-class LogicalDevice;
+class LogicalDevice; ///< @private
 
+/// @brief Shader Type
 enum class ShaderType {
     Vertex,
     Tessellation,
@@ -16,17 +18,24 @@ enum class ShaderType {
     Compute,
 };
 
+/// @brief Shader Specification
 struct ShaderSpecification {
-    const LogicalDevice& logicalDevice;
-    std::string_view path;
+    const LogicalDevice& logicalDevice; ///< LogicalDevice
+    std::string_view path;              ///< Filepath to spirv shader
 };
 
+/// @brief Shader is a native shader module constructed from spirv
 class Shader : public NativeRenderObject {
 public:
-    Shader() = default;
+    DEFAULT_CONSTRUCT(Shader);
+    NO_COPY(Shader);
+    DEFAULT_MOVE(Shader);
+
+    /// @brief Construct Shader from spec
+    /// @param spec
     Shader(const ShaderSpecification& spec);
-    Shader(Shader&&) noexcept = default;
-    Shader& operator=(Shader&&) noexcept = default;
+
+    /// @brief Destroy Shader
     ~Shader();
 
 private:

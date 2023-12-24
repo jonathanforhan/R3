@@ -1,21 +1,29 @@
 #pragma once
 
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+/// @file PipelineLayout.hpp
+
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Pipeline Layout Specification
 struct PipelineLayoutSpecification {
-    const LogicalDevice& logicalDevice;
-    const DescriptorSetLayout& descriptorSetLayout;
+    const LogicalDevice& logicalDevice;             ///< LogicalDevice
+    const DescriptorSetLayout& descriptorSetLayout; ///< DescriptorSetLayout
 };
 
+/// @brief Layout of Pipeline
 class PipelineLayout : public NativeRenderObject {
 public:
-    PipelineLayout() = default;
+    DEFAULT_CONSTRUCT(PipelineLayout);
+    NO_COPY(PipelineLayout);
+    DEFAULT_MOVE(PipelineLayout);
+
+    /// @brief Construct PipelineLayout from spec
+    /// @param spec
     PipelineLayout(const PipelineLayoutSpecification& spec);
-    PipelineLayout(PipelineLayout&&) noexcept = default;
-    PipelineLayout& operator=(PipelineLayout&&) noexcept = default;
+
+    /// @brief Destroy PipelineLayout
     ~PipelineLayout();
 
 private:

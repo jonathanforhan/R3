@@ -1,34 +1,38 @@
 #pragma once
 
-#include "api/Types.hpp"
+/// @file Buffer.hpp
+/// Parent class used by buffers that allocate some memory on host or device
+
 #include "render/DeviceMemory.hpp"
-#include "render/RenderFwd.hpp"
-#include "render/RenderSpecification.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
 /// @brief Spec for allocating a buffer of memory, either on CPU or GPU
 struct BufferAllocateSpecification {
-    const PhysicalDevice& physicalDevice; ///< @brief Valid physical device
-    const LogicalDevice& logicalDevice;   ///< @brief Valid logical device
-    usize size;                           ///< @brief Buffer size in bytes
-    BufferUsage::Flags bufferFlags;       ///< @brief Buffer usage flags
-    MemoryProperty::Flags memoryFlags;    ///< @brief Memory property flags
+    const PhysicalDevice& physicalDevice; ///< Physical Device
+    const LogicalDevice& logicalDevice;   ///< Logical Device
+    usize size;                           ///< Buffer size in bytes
+    BufferUsage::Flags bufferFlags;       ///< Buffer usage flags
+    MemoryProperty::Flags memoryFlags;    ///< Memory property flags
 };
 
 /// @brief Spec for copying a buffer of memory, either on CPU or GPU
 struct BufferCopySpecification {
-    const LogicalDevice& logicalDevice;      ///< @brief Valid physical device
-    const CommandPool& commandPool;          ///< @brief Valid logical device
-    NativeRenderObject& buffer;              ///< @brief dst buffer
-    const NativeRenderObject& stagingBuffer; ///< @brief src buffer
-    usize size;                              ///< @brief buffer size
+    const LogicalDevice& logicalDevice;      ///< Logical Device
+    const CommandPool& commandPool;          ///< Command Pool, preferably transient a pool, used for one-time-command
+    NativeRenderObject& buffer;              ///< Desination Buffer
+    const NativeRenderObject& stagingBuffer; ///< Source Buffer
+    usize size;                              ///< Buffer size in bytes
 };
 
-/// @brief Buffer containing both a buffer handle and a handle to the underlying device memory handle
+/// @brief Buffer abstraction, Contains a Buffer Handle and a DeviceMemory handle,
+/// The Buffer handle is typically used for manipulation while the DeviceMemory handle is for allocation details
 class Buffer : public DeviceMemory {
 protected:
-    Buffer() = default;
+    DEFAULT_CONSTRUCT(Buffer);
+    NO_COPY(Buffer);
+    DEFAULT_MOVE(Buffer);
 
     /// @brief Allocate a Buffer with given flags
     /// @param spec

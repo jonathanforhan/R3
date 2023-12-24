@@ -1,6 +1,10 @@
 #pragma once
 
+/// @file Entity.hpp
+/// @brief Provides the Entity part of the Entity Component System
+
 #include <entt/entt.hpp>
+#include "api/Construct.hpp"
 #include "components/TransformComponent.hpp"
 #include "core/Scene.hpp"
 #include "systems/TickSystem.hpp"
@@ -20,9 +24,9 @@ concept Initializable = requires(T t) { t.init(); };
 /// if the class is `Initializable` (implements init() method) that will be called as well
 class Entity {
 public:
-    Entity() = default;
-    Entity(const Entity&) = delete;
-    Entity(Entity&&) = default;
+    DEFAULT_CONSTRUCT(Entity);
+    NO_COPY(Entity);
+    DEFAULT_MOVE(Entity);
 
     /// @brief Get the Entity's owning scene
     /// @return parent scene

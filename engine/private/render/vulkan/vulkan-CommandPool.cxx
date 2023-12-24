@@ -10,13 +10,13 @@ namespace R3 {
 
 namespace local {
 
-static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolFlags flags) {
+static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolType flags) {
     switch (flags) {
-        case CommandPoolFlags::Protected:
+        case CommandPoolType::Protected:
             return vk::CommandPoolCreateFlagBits::eProtected;
-        case CommandPoolFlags::Reset:
+        case CommandPoolType::Reset:
             return vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-        case CommandPoolFlags::Transient:
+        case CommandPoolType::Transient:
             return vk::CommandPoolCreateFlagBits::eTransient;
         default:
             ENSURE(false);
@@ -30,7 +30,7 @@ CommandPool::CommandPool(const CommandPoolSpecification& spec)
     const vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
         .pNext = nullptr,
-        .flags = local::CommandPoolFlagsToVkFlags(spec.flags),
+        .flags = local::CommandPoolFlagsToVkFlags(spec.type),
         .queueFamilyIndex = m_logicalDevice->graphicsQueue().index(),
     };
 

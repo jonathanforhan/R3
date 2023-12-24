@@ -1,28 +1,37 @@
 #pragma once
 
+/// @file VertexBuffer.hpp
+
 #include <span>
 #include "render/Buffer.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 #include "render/Vertex.hpp"
 
 namespace R3 {
 
+/// @brief Vertex Buffer Specification
 struct VertexBufferSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    const CommandPool& commandPool;
-    std::span<const Vertex> vertices;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    const CommandPool& commandPool;       ///< CommandPool
+    std::span<const Vertex> vertices;     ///< Vertice data buffer
 };
 
+/// @brief VertexBuffer (VAO) holds serialized vertex data on Device
 class VertexBuffer : public Buffer {
 public:
-    VertexBuffer() = default;
+    DEFAULT_CONSTRUCT(VertexBuffer);
+    NO_COPY(VertexBuffer);
+    DEFAULT_MOVE(VertexBuffer);
+
+    /// @brief Construct VertexBuffer from spec
+    /// @param spec
     VertexBuffer(const VertexBufferSpecification& spec);
-    VertexBuffer(VertexBuffer&&) noexcept = default;
-    VertexBuffer& operator=(VertexBuffer&&) noexcept = default;
+
+    /// @brief Free VertexBuffer
     ~VertexBuffer();
 
-    uint32 count() const { return m_vertexCount; }
+    uint32 count() const { return m_vertexCount; } ///< Query Vertex count
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

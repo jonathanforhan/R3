@@ -1,50 +1,47 @@
 #pragma once
 
+/// @file Swapchain.hpp
+
 #include <span>
 #include <vector>
-#include "api/Types.hpp"
 #include "render/Image.hpp"
 #include "render/ImageView.hpp"
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
-#include "render/RenderSpecification.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
 /// @brief Swapchain Specification
 struct SwapchainSpecification {
-    const PhysicalDevice& physicalDevice; ///< @brief Valid non-null PhysicalDevice
-    const Surface& surface;               ///< @brief Valid non-null Surface
-    const LogicalDevice& logicalDevice;   ///< @brief Valid non-null LogicalDevice
-    const Window& window;                 ///< @brief Valid non-null Window
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const Surface& surface;               ///< Surface
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    const Window& window;                 ///< Window
 };
 
 /// @brief Swapchain Recreation Specification
 struct SwapchainRecreatationSpecification {
-    std::vector<Framebuffer>& framebuffers;
-    DepthBuffer& depthBuffer;
-    const RenderPass& renderPass;
+    std::vector<Framebuffer>& framebuffers; ///< Framebuffers to be recreated
+    DepthBuffer& depthBuffer;               ///< DepthBuffer to recreate
+    const RenderPass& renderPass;           ///< RenderPass to reference
 };
 
 /// @brief Swapchain is an Abstract that represents and series of images
 /// We do not own these images, we only look into them with ImageViews
 class Swapchain : public NativeRenderObject {
 public:
-    Swapchain() = default;
+    DEFAULT_CONSTRUCT(Swapchain);
+    NO_COPY(Swapchain);
+    DEFAULT_MOVE(Swapchain);
 
     /// @brief Create a Swapchain, queury device for images, create ImageViews from them
     /// @param spec
     Swapchain(const SwapchainSpecification& spec);
 
-    Swapchain(Swapchain&&) noexcept = default;
-    Swapchain& operator=(Swapchain&&) noexcept = default;
-
     /// @brief Free image views and swapchain the actual images were never ours so we don't touch them
     ~Swapchain();
 
     /// @brief A Swapchain may become unusable (like a window resize) or suboptimal so we recreate it
-    /// @param framebuffers list of Framebuffers
-    /// @param renderPass current render pass
+    /// @param spec
     void recreate(const SwapchainRecreatationSpecification& spec);
 
     Format surfaceFormat() const { return m_surfaceFormat; }               ///< @brief Query surface format

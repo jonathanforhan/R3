@@ -85,3 +85,16 @@ if(R3_BUILD_TESTS)
 	add_subdirectory(tests)
 endif()
 
+#[[ DOCUMENTATION ]]
+if (R3_DOCS)
+	find_package(Doxygen)
+
+	if (DOXYGEN_FOUND)
+		execute_process(
+			COMMAND ${DOXYGEN_EXECUTABLE} "${R3_SOURCE_DIR}/Doxyfile"
+				WORKING_DIRECTORY ${R3_SOURCE_DIR}
+				OUTPUT_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
+				ERROR_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
+		)
+	endif ()
+endif ()

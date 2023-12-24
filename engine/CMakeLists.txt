@@ -34,8 +34,11 @@ file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
 target_precompile_headers(R3_ENGINE PUBLIC
 	"${PRE_COMPILE_API}"
 	"public/render/DeviceMemory.hpp"
-	"public/render/NativeRenderObject.hpp"
 	"public/render/LogicalDevice.hpp"
+	"public/render/NativeRenderObject.hpp"
+	"public/render/RenderApi.hpp"
+	"public/render/RenderFwd.hpp"
+	"public/render/RenderSpecification.hpp"
 )
 
 #[[ SANITY CHECK ]]
@@ -131,18 +134,3 @@ target_link_libraries(R3_ENGINE PRIVATE ${R3_EXTERN_LIBS_PRIVATE})
 
 target_include_directories(R3_ENGINE PUBLIC "${R3_EXTERN_INCLUDE_DIRS}")
 target_include_directories(R3_ENGINE PRIVATE "${R3_EXTERN_INCLUDE_DIRS_PRIVATE}")
-
-#[[ DOCUMENTATION ]]
-if (R3_DOCS)
-	find_package(Doxygen)
-
-	if (DOXYGEN_FOUND)
-		add_custom_target(R3_DOCS
-			COMMAND ${DOXYGEN_EXECUTABLE} "${R3_SOURCE_DIR}/Doxyfile"
-			WORKING_DIRECTORY ${R3_SOURCE_DIR}
-			COMMENT "Generating R3 Documentation with Doxygen"
-			OUTPUT_QUIET
-		)
-		add_dependencies(R3_ENGINE R3_DOCS)
-	endif ()
-endif ()

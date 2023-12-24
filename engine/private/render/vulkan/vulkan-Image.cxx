@@ -75,9 +75,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Image::allocate(const ImageAl
 }
 
 void Image::copy(const ImageCopySpecification& spec) {
-    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
-
-    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
+    spec.commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
 
     if (spec.copyType == ImageCopyType::BufferToImage) {
         const vk::BufferImageCopy bufferImageCopy = {
@@ -100,10 +98,10 @@ void Image::copy(const ImageCopySpecification& spec) {
                 },
         };
 
-        commandBuffer.as<vk::CommandBuffer>().copyBufferToImage(spec.src.as<vk::Buffer>(),
-                                                                spec.dst.as<vk::Image>(),
-                                                                vk::ImageLayout::eTransferDstOptimal,
-                                                                {bufferImageCopy});
+        spec.commandBuffer.as<vk::CommandBuffer>().copyBufferToImage(spec.src.as<vk::Buffer>(),
+                                                                     spec.dst.as<vk::Image>(),
+                                                                     vk::ImageLayout::eTransferDstOptimal,
+                                                                     {bufferImageCopy});
     } else if (spec.copyType == ImageCopyType::Image) {
         const vk::ImageCopy imageCopy = {
             .srcSubresource =
@@ -129,20 +127,18 @@ void Image::copy(const ImageCopySpecification& spec) {
                     .depth = 1,
                 },
         };
-        commandBuffer.as<vk::CommandBuffer>().copyImage(spec.src.as<vk::Image>(),
-                                                        vk::ImageLayout::eTransferSrcOptimal,
-                                                        spec.dst.as<vk::Image>(),
-                                                        vk::ImageLayout::eTransferDstOptimal,
-                                                        imageCopy);
+        spec.commandBuffer.as<vk::CommandBuffer>().copyImage(spec.src.as<vk::Image>(),
+                                                             vk::ImageLayout::eTransferSrcOptimal,
+                                                             spec.dst.as<vk::Image>(),
+                                                             vk::ImageLayout::eTransferDstOptimal,
+                                                             imageCopy);
     }
 
-    commandBuffer.endCommandBuffer();
-    commandBuffer.oneTimeSubmit();
+    spec.commandBuffer.endCommandBuffer();
+    spec.commandBuffer.oneTimeSubmit();
 }
 
 void Image::transition(const ImageLayoutTransitionSpecification& spec) {
-    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
-
     vk::ImageMemoryBarrier imageMemoryBarrier = {
         .sType = vk::StructureType::eImageMemoryBarrier,
         .pNext = nullptr,
@@ -163,22 +159,20 @@ void Image::transition(const ImageLayoutTransitionSpecification& spec) {
             },
     };
 
-    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
-    commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlags(spec.srcStageMask)},
-                                                          {vk::PipelineStageFlags(spec.dstStageMask)},
-                                                          {},
-                                                          {},
-                                                          {},
-                                                          {imageMemoryBarrier});
-    commandBuffer.endCommandBuffer();
-    commandBuffer.oneTimeSubmit();
+    spec.commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
+    spec.commandBuffer.as<vk::CommandBuffer>().pipelineBarrier({vk::PipelineStageFlags(spec.srcStageMask)},
+                                                               {vk::PipelineStageFlags(spec.dstStageMask)},
+                                                               {},
+                                                               {},
+                                                               {},
+                                                               {imageMemoryBarrier});
+    spec.commandBuffer.endCommandBuffer();
+    spec.commandBuffer.oneTimeSubmit();
 }
 
 void Image::generateMipMaps(const ImageMipmapSpecification& spec) {
-    const auto& commandBuffer = spec.commandPool.commandBuffers().front();
-
     ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationWrite = {
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .image = spec.image,
         .srcAccessor = MemoryAccessor::TransferWrite,
         .dstAccessor = MemoryAccessor::TransferRead,
@@ -192,7 +186,7 @@ void Image::generateMipMaps(const ImageMipmapSpecification& spec) {
     };
 
     ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationShader = {
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .image = spec.image,
         .srcAccessor = MemoryAccessor::TransferRead,
         .dstAccessor = MemoryAccessor::ShaderRead,
@@ -234,17 +228,17 @@ void Image::generateMipMaps(const ImageMipmapSpecification& spec) {
         blit.srcOffsets[1] = {w, h, 1};
 
         blit.dstOffsets[0] = {0, 0, 0};
-        blit.dstOffsets[1] = {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1};
+        blit.dstOffsets[1] = {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1}; // w and h will not be 0
 
-        commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
-        commandBuffer.as<vk::CommandBuffer>().blitImage(spec.image.as<vk::Image>(),
-                                                        vk::ImageLayout::eTransferSrcOptimal,
-                                                        spec.image.as<vk::Image>(),
-                                                        vk::ImageLayout::eTransferDstOptimal,
-                                                        blit,
-                                                        vk::Filter::eLinear);
-        commandBuffer.endCommandBuffer();
-        commandBuffer.oneTimeSubmit();
+        spec.commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
+        spec.commandBuffer.as<vk::CommandBuffer>().blitImage(spec.image.as<vk::Image>(),
+                                                             vk::ImageLayout::eTransferSrcOptimal,
+                                                             spec.image.as<vk::Image>(),
+                                                             vk::ImageLayout::eTransferDstOptimal,
+                                                             blit,
+                                                             vk::Filter::eLinear);
+        spec.commandBuffer.endCommandBuffer();
+        spec.commandBuffer.oneTimeSubmit();
 
         imageLayoutTransitionSpecificationShader.baseMipLevel = i;
         transition(imageLayoutTransitionSpecificationShader);
@@ -254,7 +248,7 @@ void Image::generateMipMaps(const ImageMipmapSpecification& spec) {
     }
 
     ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationFinal = {
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .image = spec.image,
         .srcAccessor = MemoryAccessor::TransferWrite,
         .dstAccessor = MemoryAccessor::ShaderRead,

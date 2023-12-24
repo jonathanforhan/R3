@@ -1,7 +1,9 @@
 #pragma once
 
+/// @file Scene.hpp
+/// @brief Provid Scene control for the API
+
 #include <entt/entt.hpp>
-#include <mutex>
 #include <unordered_map>
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
@@ -9,46 +11,81 @@
 
 namespace R3 {
 
+/// @brief A Scene handle Events and has an ECS Registry ties to it
 class Scene {
 public:
+    /// @brief Create Scene with uuid
+    /// @param id uuid
     explicit Scene(uuid32 id);
 
+    /// @brief Query Component View from entt
+    /// @tparam ...T Type of Components to Query
+    /// @return Component View
     template <typename... T>
     [[nodiscard]] static decltype(auto) componentView();
 
+    /// @brief Iterate Components from View
+    /// This will use the FunctionTraits<F> type deduction
+    /// Limited to two Components
+    /// @tparam F Functor
+    /// @param callback
     template <typename F>
     requires requires { FunctionTraits<F>::Arity::value <= 2; }
     static void componentForEach(F&& callback);
 
+    /// @brief Add a System to the Scene, will only add if not already present
+    /// @tparam T System
+    /// @tparam ...Args Constructor Args
+    /// @param ...args
     template <typename T, typename... Args>
     requires ValidSystem<T, Args...>
     static void addSystem(Args&&... args);
 
     /// @brief Push an Event onto the Event queue where is can be called.
-    /// Events get freed from heap memory when they are dispatched. There is a static_assert
-    /// on Event ensuring that the Event is trivially deconstructable so we can delete the void*
+    /// Events get freed from heap memory when they are dispatched
     template <typename Event, typename... Args>
     requires std::is_constructible_v<typename Event::PayloadType, Args...>
     static constexpr void pushEvent(Args&&... args);
 
+    /// @brief Pope event from queue, is freed automatically
     static void popEvent();
 
+    /// @brief Query Top event
+    /// used to not load a bunch of redundant events like in Window Resize
+    /// @return Top Event ID
     static uuid32 topEvent();
 
+    /// @brief Bind an Event listener to the current Scene
+    /// Uses FunctionTraits type deduction to deduce the Event
+    /// @tparam F Functor
+    /// @param callback
     template <typename F>
     requires EventListener<F>
     static void bindEventListener(F&& callback);
 
+    /// @brief Set View Matrix of Entire Scene
+    /// Used by CameraSystem
+    /// @param view
     static void setView(const mat4& view);
+
+    /// @brief Set Projection Matrix of Entire Scene
+    /// Used by CameraSystem
+    /// @param projection
     static void setProjection(const mat4& projection);
+
+    /// @brief Query View Matrix
+    /// @return
     static mat4& view();
+
+    /// @brief Query Projection Matrix
+    /// @return
     static mat4& projection();
 
 private:
     void runSystems(double dt);
 
 public:
-    const uuid32 id;
+    const uuid32 id; ///< Scene id
 
 private:
     //--- Graphics

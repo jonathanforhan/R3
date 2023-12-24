@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file Version.hpp
+/// @brief Basic versioning of engine
+
 namespace R3 {
 
 constexpr auto ENGINE_VERSION_MAJOR = 0; ///< @brief Engine Version Major

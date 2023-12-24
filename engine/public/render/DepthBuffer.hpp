@@ -1,25 +1,36 @@
 #pragma once
 
+/// @file DepthBuffer.hpp
+
 #include "render/Buffer.hpp"
 #include "render/ImageView.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Depth Buffer Specification
 struct DepthBufferSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    const Swapchain& swapchain;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    const Swapchain& swapchain;           ///< Swapchain
 };
 
+/// @brief DepthBuffer (or Z-Buffer) is used for Depth Operations
 class DepthBuffer : public Buffer {
 public:
-    DepthBuffer() = default;
+    DEFAULT_CONSTRUCT(DepthBuffer);
+    NO_COPY(DepthBuffer);
+    DEFAULT_MOVE(DepthBuffer);
+
+    /// @brief Construct DepthBuffer from spec
+    /// @param spec
     DepthBuffer(const DepthBufferSpecification& spec);
-    DepthBuffer(DepthBuffer&&) noexcept = default;
-    DepthBuffer& operator=(DepthBuffer&&) noexcept = default;
+
+    /// @brief Free Buffer and it's DeviceMemory
     ~DepthBuffer();
 
+    /// @brief Query DepthBuffer ImageViews
+    /// @return image views
     const ImageView& imageView() const { return m_imageView; }
 
 private:

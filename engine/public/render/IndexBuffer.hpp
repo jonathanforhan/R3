@@ -1,28 +1,43 @@
 #pragma once
 
+/// @file IndexBuffer.hpp
+/// @brief Conatains Handle to DeviceMemory where data is stored
+
 #include <span>
 #include "render/Buffer.hpp"
-#include "render/RenderFwd.hpp"
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Index Buffer Specification
+/// @tparam T IndexBuffer datatype
 template <std::integral T>
 struct IndexBufferSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    const CommandPool& commandPool;
-    std::span<const T> indices;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    const CommandPool& commandPool;       ///< CommandPool
+    std::span<const T> indices;           ///< Array of indices
 };
 
+/// @brief IndexBuffers are used to reduce the repetition on draw commands
+/// IndexBuffers are allocated by GlobalResourceManager
+/// @tparam T IndexBuffer datatype
 template <std::integral T>
 class IndexBuffer : public Buffer {
 public:
-    IndexBuffer() = default;
+    DEFAULT_CONSTRUCT(IndexBuffer);
+    NO_COPY(IndexBuffer);
+    DEFAULT_MOVE(IndexBuffer);
+
+    /// @brief Construct IndexBuffer of T type from spec
+    /// @param spec
     IndexBuffer(const IndexBufferSpecification<T>& spec);
-    IndexBuffer(IndexBuffer&&) noexcept = default;
-    IndexBuffer& operator=(IndexBuffer&&) noexcept = default;
+
+    /// @brief Free IndexBuffer
     ~IndexBuffer();
 
+    /// @brief Number of indices
+    /// @return count
     uint32 count() const { return m_indexCount; }
 
 private:
@@ -30,7 +45,7 @@ private:
     uint32 m_indexCount = 0;
 };
 
-extern template class IndexBuffer<uint32>;
-extern template class IndexBuffer<uint16>;
+extern template class IndexBuffer<uint32>; ///< Forward Declaration
+extern template class IndexBuffer<uint16>; ///< Forward Declaration
 
 } // namespace R3

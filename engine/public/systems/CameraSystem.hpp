@@ -1,13 +1,18 @@
 #pragma once
+
+/// @file CameraSystem.hpp
+
 #include "InputSystem.hpp"
 
 namespace R3 {
 
+/// @brief System for manipulating Camera (View and Projection)
 class CameraSystem : public InputSystem {
 public:
+    /// @brief Create New System, binds event callbacks for Camera response
     CameraSystem();
 
-    void tick(double dt) override;
+    void tick(double dt) override; ///< R3 tick
 
 private:
     struct ActiveKeys {

@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file Check.hpp
+/// @brief Macro for checking results, only applied to non-distribution builds
+
 #include <format>
 #include <stdexcept>
 

@@ -19,15 +19,15 @@ namespace R3 {
 
 namespace local {
 
-static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(CommandBufferFlags flags) {
+static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(CommandBufferUsage flags) {
     switch (flags) {
-        case CommandBufferFlags::OneTimeSubmit:
+        case CommandBufferUsage::OneTimeSubmit:
             return vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-        case CommandBufferFlags::RenderPassContinue:
+        case CommandBufferUsage::RenderPassContinue:
             return vk::CommandBufferUsageFlagBits::eRenderPassContinue;
-        case CommandBufferFlags::SimultaneousUse:
+        case CommandBufferUsage::SimultaneousUse:
             return vk::CommandBufferUsageFlagBits::eSimultaneousUse;
-        case CommandBufferFlags::Nil:
+        case CommandBufferUsage::Nil:
         default:
             return {};
     }
@@ -81,11 +81,11 @@ void CommandBuffer::resetCommandBuffer() const {
     as<vk::CommandBuffer>().reset();
 }
 
-void CommandBuffer::beginCommandBuffer(CommandBufferFlags flags) const {
+void CommandBuffer::beginCommandBuffer(CommandBufferUsage usage) const {
     const vk::CommandBufferBeginInfo commandBufferBeginInfo = {
         .sType = vk::StructureType::eCommandBufferBeginInfo,
         .pNext = nullptr,
-        .flags = local::CommandBufferFlagsToVkFlags(flags),
+        .flags = local::CommandBufferFlagsToVkFlags(usage),
         .pInheritanceInfo = nullptr,
     };
 
@@ -126,6 +126,7 @@ void CommandBuffer::endRenderPass() const {
 void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const {
     as<vk::CommandBuffer>().bindPipeline(vk::PipelineBindPoint::eGraphics, graphicsPipeline.as<vk::Pipeline>());
 
+    // set dynamic viewport
     const vk::Viewport viewport = {
         .x = 0.0f,
         .y = static_cast<float>(m_swapchain->extent().y),
@@ -136,6 +137,7 @@ void CommandBuffer::bindPipeline(const GraphicsPipeline& graphicsPipeline) const
     };
     as<vk::CommandBuffer>().setViewport(0, {viewport});
 
+    // set dynamic scissor
     const vk::Rect2D scissor = {
         .offset = {0, 0},
         .extent = {m_swapchain->extent().x, m_swapchain->extent().y},

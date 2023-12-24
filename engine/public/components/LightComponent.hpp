@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file LightComponent.hpp
+// TODO
+
 #include "api/Types.hpp"
 
 namespace R3 {

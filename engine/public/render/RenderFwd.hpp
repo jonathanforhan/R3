@@ -1,5 +1,8 @@
 #pragma once
 
+/// @file RenderFwd.hpp
+/// @brief Forward Declarations of render objects
+
 namespace R3 {
 
 class Window;

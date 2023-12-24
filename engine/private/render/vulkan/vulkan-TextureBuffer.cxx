@@ -83,7 +83,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     // transition image layout in pipeline
     const ImageLayoutTransitionSpecification imageLayoutTransitionSpecificationWrite = {
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .image = image,
         .srcAccessor = {},
         .dstAccessor = MemoryAccessor::TransferWrite,
@@ -98,7 +98,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
 
     const ImageCopySpecification imageCopySpecification = {
         .logicalDevice = *m_logicalDevice,
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .dst = image,
         .src = stagingBuffer,
         .size = imageSize,
@@ -109,7 +109,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     Image::copy(imageCopySpecification);
 
     const ImageMipmapSpecification imageMipmapSpecification = {
-        .commandPool = spec.commandPool,
+        .commandBuffer = spec.commandBuffer,
         .image = image,
         .mipLevels = mipLevels,
         .width = w,

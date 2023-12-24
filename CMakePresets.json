@@ -58,7 +58,8 @@
         "R3_LOG_WARNING": true,
         "R3_LOG_ERROR": true,
         "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": true
+        "R3_BUILD_EDITOR": true,
+        "R3_DOCS": true
       }
     },
     {
@@ -74,7 +75,8 @@
         "R3_LOG_WARNING": true,
         "R3_LOG_ERROR": true,
         "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": true
+        "R3_BUILD_EDITOR": true,
+        "R3_DOCS": true
       }
     },
     {
@@ -90,7 +92,8 @@
         "R3_LOG_WARNING": false,
         "R3_LOG_ERROR": false,
         "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": false
+        "R3_BUILD_EDITOR": false,
+        "R3_DOCS": false
       }
     },
     {

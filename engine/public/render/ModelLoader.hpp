@@ -1,20 +1,16 @@
 #pragma once
 
+/// @file ModelLoader.hpp
+/// Owned by Renderer and used to load in assets
+
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "api/Types.hpp"
 #include "components/ModelComponent.hpp"
-#include "render/TextureBuffer.hpp"
-#include "render/Vertex.hpp"
-
 #include "render/IndexBuffer.hpp"
+#include "render/RenderApi.hpp"
+#include "render/TextureBuffer.hpp"
 #include "render/VertexBuffer.hpp"
-
-#include "render/CommandPool.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/Swapchain.hpp"
 
 namespace R3 {
 
@@ -28,27 +24,39 @@ struct OcclusionTextureInfo; ///< @private
 class Model;                 ///< @private
 } // namespace glTF
 
+/// @brief Prototype used to build meshes
 struct MeshPrototype {
-    VertexBuffer::ID vertexBuffer;
-    IndexBuffer<uint32>::ID indexBuffer;
-    std::vector<usize> textureIndices; // index of model-loader interal textures, not global pool
+    VertexBuffer::ID vertexBuffer;       ///< Allocated VertexBuffer
+    IndexBuffer<uint32>::ID indexBuffer; ///< Allocated IndexBuffer
+    std::vector<usize> textureIndices;   ///< index of model-loader interal textures, not global pool
 };
 
+/// @brief Model Loader Specification
 struct ModelLoaderSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& logicalDevice;
-    const Swapchain& swapchain;
-    const RenderPass& renderPass;
-    const CommandPool& commandPool;
+    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
+    const LogicalDevice& logicalDevice;   ///< LogicalDevice
+    const Swapchain& swapchain;           ///< Swapchain
+    const RenderPass& renderPass;         ///< RenderPass
+    const CommandPool& commandPool;       ///< CommandPool
 };
 
+/// @brief ModelLoader used to load glTF Models
+/// Owned by renderer and will allocate all the object needed by a ModelComponent
 class ModelLoader {
 public:
+    DEFAULT_CONSTRUCT(ModelLoader);
+    NO_COPY(ModelLoader);
+    DEFAULT_MOVE(ModelLoader);
+
+    /// @brief Construct ModelLoader from spec
+    /// Renderer is the only one who should have valid info for spec
+    /// @param spec
     ModelLoader(const ModelLoaderSpecification& spec)
         : m_spec(spec) {}
-    ModelLoader(const ModelLoader&) = delete;
-    ModelLoader(ModelLoader&&) = delete;
 
+    /// @brief Load in a glTF Model from path
+    /// @param path
+    /// @param[out] model
     void load(const std::string& path, ModelComponent& model);
 
 private:

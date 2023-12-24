@@ -10,7 +10,7 @@
 namespace R3 {
 
 std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const BufferAllocateSpecification& spec) {
-    const uint32 indices[]{
+    const uint32 indices[] = {
         spec.logicalDevice.graphicsQueue().index(),
         spec.logicalDevice.presentationQueue().index(),
     };
@@ -20,7 +20,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const Buffer
         .pNext = nullptr,
         .flags = {},
         .size = spec.size,
-        .usage = (vk::BufferUsageFlags) static_cast<uint32>(spec.bufferFlags),
+        .usage = vk::BufferUsageFlags(spec.bufferFlags),
         .sharingMode = vk::SharingMode::eExclusive,
         .queueFamilyIndexCount = 2,
         .pQueueFamilyIndices = indices,
@@ -33,8 +33,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const Buffer
         .sType = vk::StructureType::eMemoryAllocateInfo,
         .pNext = nullptr,
         .allocationSize = memoryRequirements.size,
-        .memoryTypeIndex =
-            spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, (uint32)spec.memoryFlags),
+        .memoryTypeIndex = spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, spec.memoryFlags),
     };
     const auto memory = spec.logicalDevice.as<vk::Device>().allocateMemory(memoryAllocateInfo);
 
@@ -45,7 +44,7 @@ std::tuple<NativeRenderObject, NativeRenderObject> Buffer::allocate(const Buffer
 
 void Buffer::copy(const BufferCopySpecification& spec) {
     const auto& commandBuffer = spec.commandPool.commandBuffers().front();
-    commandBuffer.beginCommandBuffer(CommandBufferFlags::OneTimeSubmit);
+    commandBuffer.beginCommandBuffer(CommandBufferUsage::OneTimeSubmit);
     commandBuffer.as<vk::CommandBuffer>().copyBuffer(
         spec.stagingBuffer.as<vk::Buffer>(), spec.buffer.as<vk::Buffer>(), {{.size = spec.size}});
     commandBuffer.endCommandBuffer();

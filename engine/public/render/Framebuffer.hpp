@@ -1,24 +1,34 @@
 #pragma once
 
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+/// @file Framebuffer.hpp
+/// A Framebuffer references all ImageViews that represent attachments like Color Attachment
+
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
+/// @brief Framebuffer Specification
 struct FramebufferSpecification {
-    const LogicalDevice& logicalDevice;
-    const Swapchain& swapchain;
-    const ImageView& swapchainImageView;
-    const ImageView& depthBufferImageView;
-    const RenderPass& renderPass;
+    const LogicalDevice& logicalDevice;    ///< LogicalDevice
+    const Swapchain& swapchain;            ///< Swapchain
+    const ImageView& swapchainImageView;   ///< Swapchain ImageView
+    const ImageView& depthBufferImageView; ///< DepthBuffer ImageView
+    const RenderPass& renderPass;          ///< RenderPass
 };
 
+/// @brief Framebuffer is created per Image in Swapchain
+/// Framebuffers are owned by the Swapchain and recreated when resize event triggers
 class Framebuffer : public NativeRenderObject {
 public:
-    Framebuffer() = default;
+    DEFAULT_CONSTRUCT(Framebuffer);
+    NO_COPY(Framebuffer);
+    DEFAULT_MOVE(Framebuffer);
+
+    /// @brief Construct Framebuffer from spec
+    /// @param spec
     Framebuffer(const FramebufferSpecification& spec);
-    Framebuffer(Framebuffer&&) noexcept = default;
-    Framebuffer& operator=(Framebuffer&&) noexcept = default;
+
+    /// @brief Destroy Framebuffer (ImageViews are not destroyed by Framebuffer)
     ~Framebuffer();
 
 private:

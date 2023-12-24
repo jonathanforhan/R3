@@ -1,26 +1,27 @@
 #pragma once
 
-#include "api/Types.hpp"
-#include "render/NativeRenderObject.hpp"
-#include "render/RenderFwd.hpp"
+/// @file Queue.hpp
+/// @brief Provides means of querying and aquiring Queues
+
+#include "render/RenderApi.hpp"
 
 namespace R3 {
 
 /// @brief Queue Types used for Queue Creatation and Identification
 enum class QueueType {
-    Graphics,
-    Presentation,
-    Compute,
+    Graphics,     ///< Graphics Queue
+    Presentation, ///< Presentation Queue
+    Compute,      ///< Compute Queue
 };
 
 /// @brief Queue Family Indice wrapper for the querying of queue indices
 struct QueueFamilyIndices {
 private:
-    QueueFamilyIndices() = default;
+    DEFAULT_CONSTRUCT(QueueFamilyIndices);
 
 public:
-    int32 graphics = -1;     ///< @brief graphics queue index
-    int32 presentation = -1; ///< @brief presentation queue index
+    int32 graphics = -1;     ///< graphics queue index
+    int32 presentation = -1; ///< presentation queue index
 
     /// @brief Query whether all queue indices are valid
     /// @return valid/invalid
@@ -35,12 +36,13 @@ public:
 
 /// @brief Queue Specification
 struct QueueSpecification {
-    Ref<const LogicalDevice> logicalDevice; ///< @brief Valid non-null LogicalDevice
-    QueueType queueType;                    ///< @brief type of queue to create
+    Ref<const LogicalDevice> logicalDevice; ///< LogicalDevice
+    QueueType queueType;                    ///< type of queue to create
     uint32 queueIndex;                      ///< Index of queue as gotten through QueueFamilyIndices::query(...);
 };
 
-/// @brief Device Queue, lives of the hardware
+/// @brief Device Queue, Queues live on the hardware
+/// Queues are obtains through query and then stored in LogicalDevice
 class Queue : public NativeRenderObject {
 public:
     /// @brief Queues live of the hardware and we only acquire them, not create them.
