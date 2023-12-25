@@ -2,7 +2,6 @@
 
 /// @file Material.hpp
 
-#include <array>
 #include "render/DescriptorPool.hpp"
 #include "render/RenderApi.hpp"
 #include "render/TextureBuffer.hpp"
@@ -17,9 +16,9 @@ struct Material {
     /// @brief Manually destroy Material, used by ModelComponent
     void destroy();
 
-    DescriptorPool::ID descriptorPool;                            ///< Desciptor ID gotten on allocation
-    PBRTextureResource textures;                                  ///< PBR Texture IDs
-    std::array<UniformBuffer::ID, MAX_FRAMES_IN_FLIGHT> uniforms; ///< Uniform IDs
+    DescriptorPool::ID descriptorPool;                ///< Desciptor ID gotten on allocation
+    PBRTextureResource textures;                      ///< PBR Texture IDs
+    UniformBuffer::ID uniforms[MAX_FRAMES_IN_FLIGHT]; ///< Uniform IDs
 };
 
 } // namespace R3

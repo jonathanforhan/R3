@@ -2,7 +2,6 @@
 
 #include "render/DescriptorPool.hpp"
 
-#include <array>
 #include <vulkan/vulkan.hpp>
 #include "render/LogicalDevice.hpp"
 
@@ -22,7 +21,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
         .descriptorCount = spec.descriptorSetCount,
     };
 
-    const std::array<vk::DescriptorPoolSize, 2> poolSizes = {
+    const vk::DescriptorPoolSize poolSizes[] = {
         uboDescriptorPoolSize,
         samplerDescriptorPoolSize,
     };
@@ -32,8 +31,8 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
         .pNext = nullptr,
         .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = spec.descriptorSetCount,
-        .poolSizeCount = static_cast<uint32>(poolSizes.size()),
-        .pPoolSizes = poolSizes.data(),
+        .poolSizeCount = static_cast<uint32>(std::size(poolSizes)),
+        .pPoolSizes = poolSizes,
     };
 
     setHandle(m_logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));

@@ -1,7 +1,6 @@
 #if R3_VULKAN
 
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 
@@ -9,7 +8,7 @@ namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    constexpr std::array<vk::DescriptorSetLayoutBinding, 6> descriptorSetLayoutBindings = {
+    constexpr vk::DescriptorSetLayoutBinding descriptorSetLayoutBindings[] = {
         // UBO
         vk::DescriptorSetLayoutBinding{
             .binding = 0,
@@ -58,8 +57,8 @@ DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification&
         .sType = vk::StructureType::eDescriptorSetLayoutCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .bindingCount = static_cast<uint32>(descriptorSetLayoutBindings.size()),
-        .pBindings = descriptorSetLayoutBindings.data(),
+        .bindingCount = static_cast<uint32>(std::size(descriptorSetLayoutBindings)),
+        .pBindings = descriptorSetLayoutBindings,
     };
 
     setHandle(m_logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));
