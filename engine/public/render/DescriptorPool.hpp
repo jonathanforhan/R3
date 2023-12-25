@@ -2,7 +2,6 @@
 
 /// @file DescriptorPool.hpp
 
-#include <vector>
 #include "render/DescriptorSet.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/RenderApi.hpp"
@@ -11,8 +10,9 @@ namespace R3 {
 
 /// @brief Descriptor Pool Specification
 struct DescriptorPoolSpecification {
-    const LogicalDevice& logicalDevice; ///< LogicalDevice
-    uint32 descriptorSetCount;          ///< Number of DescriptorSets to allocate
+    const LogicalDevice& logicalDevice;                         ///< LogicalDevice
+    uint32 descriptorSetCount;                                  ///< Number of DescriptorSets to allocate
+    std::span<const DescriptorSetLayoutBinding> layoutBindings; ///< DescriptorSetLayoutBinding
 };
 
 /// @brief DescriptorPool owns and manages DescriptorSets

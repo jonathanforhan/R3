@@ -67,9 +67,6 @@ private:
     uint32 m_sceneCounter;
     std::unordered_map<uuid32, Scene*> m_scenes;
     Ref<Scene> m_activeScene;
-
-    friend class Scene;
-    friend class Entity;
 };
 
 } // namespace R3

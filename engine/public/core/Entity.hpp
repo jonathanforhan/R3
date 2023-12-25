@@ -110,7 +110,7 @@ public:
 
 private:
     entt::entity m_id = entt::null;
-    Ref<Scene> m_parentScene;
+    Scene* m_parentScene;
 };
 
 } // namespace R3

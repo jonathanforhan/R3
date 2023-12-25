@@ -74,7 +74,7 @@ CameraSystem::CameraSystem() {
 void CameraSystem::tick(double dt) {
     float deltaT = static_cast<float>(dt);
 
-    Scene::componentView<CameraComponent>().each([this, deltaT](CameraComponent& camera) {
+    Scene::componentForEach([this, deltaT](CameraComponent& camera) {
         if (camera.active()) {
             static constexpr float mouseSensitivity = 360.0f;
             static constexpr float movementSensitivity = 4.0f;
@@ -104,11 +104,13 @@ void CameraSystem::tick(double dt) {
             if (m_mouseDown)
                 camera.lookAround(deltaPosition * mouseSensitivity);
 
-            mat4& view = Scene::view();
-            mat4& projection = Scene::projection();
+            mat4 view = Scene::view();
+            mat4 projection = Scene::projection();
             camera.apply(&view, &projection, Engine::window().aspectRatio());
+
             Scene::setView(view);
             Scene::setProjection(projection);
+            Scene::setCameraPosition(camera.position());
         }
     });
 }

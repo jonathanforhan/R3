@@ -129,7 +129,7 @@ Renderer::Renderer(const RendererSpecification& spec)
         m_inFlight[i] = Fence({m_logicalDevice});
     }
 
-    // --- Model Loader
+    //--- Model Loader
     m_modelLoader = ModelLoader({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
@@ -169,15 +169,30 @@ void Renderer::render() {
     {
         Scene::componentForEach([&](TransformComponent& transform, ModelComponent& model) {
             for (Mesh& mesh : model.meshes()) {
-                auto& pipeline = GlobalResourceManager().getGraphicsPipelineById(mesh.pipeline);
-                auto& uniform = GlobalResourceManager().getUniformById(mesh.material.uniforms[m_currentFrame]);
-                auto& descriptorPool = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool);
-                auto& vertexBuffer = GlobalResourceManager().getVertexBufferById(mesh.vertexBuffer);
-                auto& indexBuffer = GlobalResourceManager().getIndexBufferById(mesh.indexBuffer);
+                auto& pipeline = GlobalResourceManager.getGraphicsPipelineById(mesh.pipeline);
+                auto& uniform = GlobalResourceManager.getUniformById(mesh.material.uniforms[m_currentFrame]);
+                auto& lightUniform = GlobalResourceManager.getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
+                auto& descriptorPool = GlobalResourceManager.getDescriptorPoolById(mesh.material.descriptorPool);
+                auto& vertexBuffer = GlobalResourceManager.getVertexBufferById(mesh.vertexBuffer);
+                auto& indexBuffer = GlobalResourceManager.getIndexBufferById(mesh.indexBuffer);
 
                 commandBuffer.bindPipeline(pipeline);
                 commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
+                vulkan::LightBufferObject lbo = {
+                    .cameraPosition = Scene::cameraPosition(),
+                    .pointLights =
+                        {
+                            vulkan::PointLight{
+                                .position = vec3(0.5f, 0.8f, 0.0f),
+                                .color = vec3(1.0f, 0, 0),
+                                .intensity = vec3(0.5f),
+                            },
+                        },
+                    .lightCount = 1,
+                    .pbrFlags = mesh.material.pbrFlags,
+                };
+                lightUniform.update(&lbo, sizeof(lbo), 0);
                 uniform.update(&transform, sizeof(transform), 0);
 
                 commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),

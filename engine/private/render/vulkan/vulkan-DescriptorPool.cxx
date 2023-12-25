@@ -9,30 +9,31 @@ namespace R3 {
 
 DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    m_layout = DescriptorSetLayout({*m_logicalDevice});
+    m_layout = DescriptorSetLayout({
+        .logicalDevice = *m_logicalDevice,
+        .layoutBindings = spec.layoutBindings,
+    });
 
-    const vk::DescriptorPoolSize uboDescriptorPoolSize = {
-        .type = vk::DescriptorType::eUniformBuffer,
-        .descriptorCount = spec.descriptorSetCount,
-    };
+    std::vector<vk::DescriptorPoolSize> poolSizes;
 
-    const vk::DescriptorPoolSize samplerDescriptorPoolSize = {
-        .type = vk::DescriptorType::eCombinedImageSampler,
-        .descriptorCount = spec.descriptorSetCount,
-    };
+    for (const auto& binding : spec.layoutBindings) {
+        auto it = std::find_if(poolSizes.begin(), poolSizes.end(), [&](auto& poolSize) {
+            return uint32(poolSize.type) == uint32(binding.type);
+        });
 
-    const vk::DescriptorPoolSize poolSizes[] = {
-        uboDescriptorPoolSize,
-        samplerDescriptorPoolSize,
-    };
+        if (it == poolSizes.end())
+            poolSizes.emplace_back(vk::DescriptorType(binding.type), binding.count * spec.descriptorSetCount);
+        else
+            it->descriptorCount += binding.count * spec.descriptorSetCount;
+    }
 
     const vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = {
         .sType = vk::StructureType::eDescriptorPoolCreateInfo,
         .pNext = nullptr,
         .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
         .maxSets = spec.descriptorSetCount,
-        .poolSizeCount = static_cast<uint32>(std::size(poolSizes)),
-        .pPoolSizes = poolSizes,
+        .poolSizeCount = static_cast<uint32>(poolSizes.size()),
+        .pPoolSizes = poolSizes.data(),
     };
 
     setHandle(m_logicalDevice->as<vk::Device>().createDescriptorPool(descriptorPoolCreateInfo));

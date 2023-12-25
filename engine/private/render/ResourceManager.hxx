@@ -2,10 +2,10 @@
 
 #include <unordered_set>
 #include <vector>
-#include "api/Types.hpp"
 #include "render/DescriptorPool.hpp"
 #include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"
+#include "render/RenderApi.hpp"
 #include "render/TextureBuffer.hpp"
 #include "render/UniformBuffer.hpp"
 #include "render/VertexBuffer.hpp"
@@ -20,13 +20,13 @@ struct ResourcePool {
     std::unordered_set<usize> freeList;
 };
 
-ResourceManager& GlobalResourceManager();
+extern ResourceManager GlobalResourceManager;
 
 class ResourceManager {
 public:
-    ResourceManager() = default;
-    ResourceManager(const ResourceManager&) = delete;
-    ResourceManager(ResourceManager&&) = delete;
+    DEFAULT_CONSTRUCT(ResourceManager);
+    NO_COPY(ResourceManager);
+    NO_MOVE(ResourceManager);
 
     TextureBuffer::ID allocateTexture(const TextureBufferSpecification& spec);
     void freeTexture(TextureBuffer::ID index);

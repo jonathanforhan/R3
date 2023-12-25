@@ -5,9 +5,9 @@
 namespace R3 {
 
 void Mesh::destroy() {
-    GlobalResourceManager().freeVertexBuffer(vertexBuffer);
-    GlobalResourceManager().freeIndexBuffer(indexBuffer);
-    GlobalResourceManager().freeGraphicsPipeline(pipeline);
+    GlobalResourceManager.freeVertexBuffer(vertexBuffer);
+    GlobalResourceManager.freeIndexBuffer(indexBuffer);
+    GlobalResourceManager.freeGraphicsPipeline(pipeline);
 
     material.destroy();
 }

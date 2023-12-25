@@ -37,6 +37,8 @@ void runScene() {
     Scene::bindEventListener([&](const KeyPressEvent& e) {
         if (e.payload.key == Key::Space && helmet.valid())
             rotate = !rotate;
+        if (e.payload.key == Key::Enter && helmet.valid())
+            helmet.destroy();
     });
 
     Engine::loop();

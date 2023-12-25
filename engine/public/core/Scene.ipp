@@ -84,12 +84,20 @@ inline void Scene::setProjection(const mat4& projection) {
     Engine::activeScene().m_projection = projection;
 }
 
-inline mat4& Scene::view() {
+inline void Scene::setCameraPosition(vec3 position) {
+    Engine::activeScene().m_cameraPosition = position;
+}
+
+inline const mat4& Scene::view() {
     return Engine::activeScene().m_view;
 }
 
-inline mat4& Scene::projection() {
+inline const mat4& Scene::projection() {
     return Engine::activeScene().m_projection;
+}
+
+inline vec3 Scene::cameraPosition() {
+    return Engine::activeScene().m_cameraPosition;
 }
 
 inline void Scene::runSystems(double dt) {

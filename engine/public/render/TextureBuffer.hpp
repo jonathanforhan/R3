@@ -14,8 +14,8 @@ namespace R3 {
 enum class TextureType : uint8 {
     Nil = 0,
     Albedo = 1,
-    Normal = 2,
-    MetallicRoughness = 3,
+    MetallicRoughness = 2,
+    Normal = 3,
     AmbientOcclusion = 4,
     Emissive = 5,
 };
@@ -26,10 +26,11 @@ struct TextureBufferSpecification {
     const LogicalDevice& logicalDevice;   ///< LogicalDevice
     const Swapchain& swapchain;           ///< Swapchain
     const CommandBuffer& commandBuffer;   ///< CommandBuffer
-    uint32 width;                         ///< Texture width
-    uint32 height;                        ///< Texture width
-    const void* data;                     ///< Texture data (must be included if filepath null)
-    const char* path;                     ///< Texture filepath (must be included if data null)
+    uint32 width;                         ///< Texture width (ignored if path is null)
+    uint32 height;                        ///< Texture height (ignored if path is null)
+    const uint8* data;                    ///< Texture compressed data (exclusive)
+    const uint8* raw;                     ///< Texture raw data (exclusive)
+    const char* path;                     ///< Texture filepath (exclusive)
     TextureType type;                     ///< TextureType
 };
 
@@ -48,7 +49,6 @@ public:
     ~TextureBuffer();
 
     TextureType type() const { return m_type; }                  ///< Query type
-    constexpr uint8 typeIndex() const { return (uint8)m_type; }  ///< Query shader index
     const ImageView& textureView() const { return m_imageView; } ///< Query Texture ImageView
     const Sampler& sampler() const { return m_sampler; }         ///< Query Texture Sampler
 

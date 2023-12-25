@@ -13,12 +13,17 @@ namespace R3 {
 /// Materials a DescriptorPool for binding
 /// All the IDs are so we can free it later
 struct Material {
+    DEFAULT_CONSTRUCT(Material);
+    NO_COPY(Material);
+    DEFAULT_MOVE(Material);
+
     /// @brief Manually destroy Material, used by ModelComponent
     void destroy();
 
-    DescriptorPool::ID descriptorPool;                ///< Desciptor ID gotten on allocation
-    PBRTextureResource textures;                      ///< PBR Texture IDs
-    UniformBuffer::ID uniforms[MAX_FRAMES_IN_FLIGHT]; ///< Uniform IDs
+    DescriptorPool::ID descriptorPool;                    ///< Desciptor ID gotten on allocation
+    PBRTextureResource textures;                          ///< PBR Texture IDs
+    UniformBuffer::ID uniforms[MAX_FRAMES_IN_FLIGHT * 2]; ///< Uniform IDs
+    uint32 pbrFlags = 0;                                  ///< Flags indicating pbr textures present
 };
 
 } // namespace R3

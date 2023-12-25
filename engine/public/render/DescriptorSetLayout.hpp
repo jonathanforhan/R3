@@ -3,13 +3,22 @@
 /// @file DescriptorSetLayout.hpp
 /// @brief Provides Shader Layout info for rendering
 
+#include <span>
 #include "render/RenderApi.hpp"
 
 namespace R3 {
 
+struct DescriptorSetLayoutBinding {
+    uint32 binding;
+    DescriptorType type;
+    uint32 count;
+    ShaderStage::Flags stage;
+};
+
 /// @brief Descriptor Set Layout Specification
 struct DescriptorSetLayoutSpecification {
-    const LogicalDevice& logicalDevice; ///< LogicalDevice
+    const LogicalDevice& logicalDevice;                         ///< LogicalDevice
+    std::span<const DescriptorSetLayoutBinding> layoutBindings; ///< DescriptorSetLayoutBinding
 };
 
 /// @brief DescriptorSetLayout holds Shader Layout information for the binding or resources

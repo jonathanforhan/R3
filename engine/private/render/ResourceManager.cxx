@@ -2,10 +2,7 @@
 
 namespace R3 {
 
-ResourceManager& GlobalResourceManager() {
-    static ResourceManager s_resourceManager;
-    return s_resourceManager;
-}
+ResourceManager GlobalResourceManager;
 
 TextureBuffer::ID ResourceManager::allocateTexture(const TextureBufferSpecification& spec) {
     if (m_texturePool.freeList.empty()) {

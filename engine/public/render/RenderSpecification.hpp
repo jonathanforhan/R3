@@ -246,6 +246,7 @@ struct MemoryAccessor : public Flag {
     };
 };
 
+/// @brief PipelineStage
 struct PipelineStage : public Flag {
     enum {
         TopOfPipe = 0x0000'0001,
@@ -281,6 +282,7 @@ struct PipelineStage : public Flag {
     };
 };
 
+/// @brief BufferUsage
 struct BufferUsage : public Flag {
     enum {
         TransferSrc = 0x0000'0001,
@@ -306,6 +308,7 @@ struct BufferUsage : public Flag {
     };
 };
 
+/// @brief MemoryProperty
 struct MemoryProperty : public Flag {
     enum {
         DeviceLocal = 0x0000'0001,
@@ -317,6 +320,45 @@ struct MemoryProperty : public Flag {
         DeviceCoherentAMD = 0x0000'0040,
         DeviceUncachedAMD = 0x0000'0080,
         RdmaCapableNV = 0x0000'0100,
+    };
+};
+
+/// @brief DescriptorType
+enum class DescriptorType {
+    Sampler = 0,
+    CombinedImageSampler = 1,
+    SampledImage = 2,
+    StorageImage = 3,
+    UniformTexelBuffer = 4,
+    StorageTexelBuffer = 5,
+    UniformBuffer = 6,
+    StorageBuffer = 7,
+    UniformBufferDynamic = 8,
+    StorageBufferDynamic = 9,
+    InputAttachment = 10,
+    InlineUniformBlock = 1000138000,
+};
+
+struct ShaderStage : public Flag {
+    enum {
+        Vertex = 0x00000001,
+        TessellationControl = 0x00000002,
+        TessellationEvaluation = 0x00000004,
+        Geometry = 0x00000008,
+        Fragment = 0x00000010,
+        Compute = 0x00000020,
+        AllGraphics = 0x0000001F,
+        All = 0x7FFFFFFF,
+        Raygen = 0x00000100,
+        AnyHit = 0x00000200,
+        ClosestHit = 0x00000400,
+        Miss = 0x00000800,
+        Intersection = 0x00001000,
+        Callable = 0x00002000,
+        RaygenNV = 0x00000040,
+        AnyHitNV = 0x00000080,
+        ClosestHitNV = 0x00004000,
+        MissNV = 0x00080000,
     };
 };
 

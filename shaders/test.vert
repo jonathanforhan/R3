@@ -15,14 +15,14 @@ layout (set = 0, binding = 0) uniform UniformBufferObject {
 };
 
 layout (push_constant) uniform ViewProjection {
-    mat4 view;
-    mat4 projection;
-} c_ViewProjection;
+    mat4 c_View;
+    mat4 c_Projection;
+};
 
 void main() {
 	v_Position = vec3(u_Model * vec4(a_Position, 1.0));
     v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
 	v_TexCoords = a_TexCoords;
 
-	gl_Position = c_ViewProjection.projection * c_ViewProjection.view * vec4(v_Position, 1.0);
+	gl_Position = c_Projection * c_View * vec4(v_Position, 1.0);
 }

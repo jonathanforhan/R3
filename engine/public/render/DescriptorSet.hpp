@@ -31,6 +31,7 @@ struct UniformDescriptor {
 /// @brief Descriptor Describing Texture Data
 struct TextureDescriptor {
     TextureBuffer::ID texture; ///< ID given by GlobalResourceManager
+    uint32 binding;            ///< Descriptor Shader binding
 };
 
 /// @brief Descriptor Set Binding Specification

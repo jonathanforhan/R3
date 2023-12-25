@@ -11,6 +11,10 @@ namespace R3 {
 
 /// @brief Mesh is a POD struct that contains Buffer IDs,
 struct Mesh {
+    DEFAULT_CONSTRUCT(Mesh);
+    NO_COPY(Mesh);
+    DEFAULT_MOVE(Mesh);
+
     /// @brief Destroy allocated buffers manually
     /// Used by ModelComponent
     void destroy();

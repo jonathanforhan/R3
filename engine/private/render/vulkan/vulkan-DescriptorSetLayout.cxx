@@ -8,57 +8,22 @@ namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    constexpr vk::DescriptorSetLayoutBinding descriptorSetLayoutBindings[] = {
-        // UBO
-        vk::DescriptorSetLayoutBinding{
-            .binding = 0,
-            .descriptorType = vk::DescriptorType::eUniformBuffer,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        },
-        // Ambedo Sampler
-        vk::DescriptorSetLayoutBinding{
-            .binding = 1,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-        // Normal Sampler
-        vk::DescriptorSetLayoutBinding{
-            .binding = 2,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-        // Metallic Roughness Sampler
-        vk::DescriptorSetLayoutBinding{
-            .binding = 3,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-        // Ambient Occlusion Sampler
-        vk::DescriptorSetLayoutBinding{
-            .binding = 4,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
-        // Emission Sampler
-        vk::DescriptorSetLayoutBinding{
-            .binding = 5,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        },
+    std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
+
+    for (const auto& binding : spec.layoutBindings) {
+        auto& vkBinding = descriptorSetLayoutBindings.emplace_back();
+        vkBinding.binding = binding.binding;
+        vkBinding.descriptorType = vk::DescriptorType(binding.type);
+        vkBinding.descriptorCount = binding.count;
+        vkBinding.stageFlags = vk::ShaderStageFlagBits(binding.stage);
     };
 
     const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
         .sType = vk::StructureType::eDescriptorSetLayoutCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .bindingCount = static_cast<uint32>(std::size(descriptorSetLayoutBindings)),
-        .pBindings = descriptorSetLayoutBindings,
+        .bindingCount = static_cast<uint32>(descriptorSetLayoutBindings.size()),
+        .pBindings = descriptorSetLayoutBindings.data(),
     };
 
     setHandle(m_logicalDevice->as<vk::Device>().createDescriptorSetLayout(descriptorSetLayoutCreateInfo));

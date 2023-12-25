@@ -73,13 +73,21 @@ public:
     /// @param projection
     static void setProjection(const mat4& projection);
 
+    /// @brief Set Camera Position
+    /// @return position
+    static void setCameraPosition(vec3 position);
+
     /// @brief Query View Matrix
-    /// @return
-    static mat4& view();
+    /// @return view
+    static const mat4& view();
 
     /// @brief Query Projection Matrix
-    /// @return
-    static mat4& projection();
+    /// @return projection
+    static const mat4& projection();
+
+    /// @brief Query Camera Position
+    /// @return position
+    static vec3 cameraPosition();
 
 private:
     void runSystems(double dt);
@@ -91,6 +99,7 @@ private:
     //--- Graphics
     mat4 m_view = mat4(1.0f);
     mat4 m_projection = mat4(1.0f);
+    vec3 m_cameraPosition = vec3(0.0f);
 
     //--- ECS
     entt::registry m_registry;

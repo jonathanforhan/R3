@@ -48,7 +48,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
-        auto& uniform = GlobalResourceManager().getUniformById(it.uniform);
+        auto& uniform = GlobalResourceManager.getUniformById(it.uniform);
 
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
             .buffer = uniform.as<vk::Buffer>(),
@@ -75,7 +75,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorImageInfos.reserve(spec.textureDescriptors.size());
 
     for (const auto& it : spec.textureDescriptors) {
-        auto& texture = GlobalResourceManager().getTextureById(it.texture);
+        auto& texture = GlobalResourceManager.getTextureById(it.texture);
 
         auto& info = descriptorImageInfos.emplace_back(vk::DescriptorImageInfo{
             .sampler = texture.sampler().as<vk::Sampler>(),
@@ -87,7 +87,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
             .sType = vk::StructureType::eWriteDescriptorSet,
             .pNext = nullptr,
             .dstSet = as<vk::DescriptorSet>(),
-            .dstBinding = texture.typeIndex(),
+            .dstBinding = it.binding,
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eCombinedImageSampler,

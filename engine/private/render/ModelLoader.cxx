@@ -25,7 +25,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
     }
 
     for (auto& prototype : m_prototypes) {
-        auto mesh = Mesh();
+        Mesh mesh;
 
         // Vertex Buffer
         mesh.vertexBuffer = prototype.vertexBuffer;
@@ -33,29 +33,88 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         // Index Buffer
         mesh.indexBuffer = prototype.indexBuffer;
 
+        // Descriptor Set Layout Bindings
+        std::vector<DescriptorSetLayoutBinding> layoutBindings = {
+            {
+                // Uniform Buffer Object
+                .binding = 0,
+                .type = DescriptorType::UniformBuffer,
+                .count = 1,
+                .stage = ShaderStage::Vertex,
+            },
+            {
+                // Albedo
+                .binding = 1,
+                .type = DescriptorType::CombinedImageSampler,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+            {
+                // Metallic Roughness
+                .binding = 2,
+                .type = DescriptorType::CombinedImageSampler,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+            {
+                // Normal
+                .binding = 3,
+                .type = DescriptorType::CombinedImageSampler,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+            {
+                // Ambient Occlusion
+                .binding = 4,
+                .type = DescriptorType::CombinedImageSampler,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+            {
+                // Emissive
+                .binding = 5,
+                .type = DescriptorType::CombinedImageSampler,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+            {
+                // Lighting
+                .binding = 6,
+                .type = DescriptorType::UniformBuffer,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
+        };
+
         // Descriptor Pool
-        mesh.material.descriptorPool = GlobalResourceManager().allocateDescriptorPool({
+        mesh.material.descriptorPool = GlobalResourceManager.allocateDescriptorPool({
             .logicalDevice = *m_logicalDevice,
             .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
+            .layoutBindings = layoutBindings,
         });
 
         // Pipeline
-        mesh.pipeline = GlobalResourceManager().allocateGraphicsPipeline({
+        mesh.pipeline = GlobalResourceManager.allocateGraphicsPipeline({
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
             .swapchain = *m_swapchain,
             .renderPass = *m_renderPass,
-            .descriptorSetLayout = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool).layout(),
+            .descriptorSetLayout = GlobalResourceManager.getDescriptorPoolById(mesh.material.descriptorPool).layout(),
             .vertexShaderPath = "spirv/test.vert.spv",
             .fragmentShaderPath = "spirv/test.frag.spv",
         });
 
         // Uniform
-        for (auto& uniform : mesh.material.uniforms) {
-            uniform = GlobalResourceManager().allocateUniform({
+        for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            mesh.material.uniforms[i] = GlobalResourceManager.allocateUniform({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .bufferSize = sizeof(vulkan::UniformBufferObject),
+            });
+            mesh.material.uniforms[i + 3] = GlobalResourceManager.allocateUniform({
+                .physicalDevice = *m_physicalDevice,
+                .logicalDevice = *m_logicalDevice,
+                .bufferSize = sizeof(vulkan::LightBufferObject),
             });
         }
 
@@ -63,39 +122,60 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         std::vector<TextureDescriptor> textureDescriptors;
 
         for (usize index : prototype.textureIndices) {
-            switch (GlobalResourceManager().getTextureById(m_textures[index]).type()) {
+            auto type = GlobalResourceManager.getTextureById(m_textures[index]).type();
+            mesh.material.pbrFlags |= (1 << (uint32(type) - 1));
+
+            switch (type) {
                 case TextureType::Albedo:
                     mesh.material.textures.albedo = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index]});
+                    textureDescriptors.push_back({m_textures[index], 1});
                     break;
                 case TextureType::MetallicRoughness:
                     mesh.material.textures.metallicRoughness = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index]});
+                    textureDescriptors.push_back({m_textures[index], 2});
                     break;
                 case TextureType::Normal:
                     mesh.material.textures.normal = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index]});
+                    textureDescriptors.push_back({m_textures[index], 3});
                     break;
                 case TextureType::AmbientOcclusion:
                     mesh.material.textures.ambientOcclusion = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index]});
+                    textureDescriptors.push_back({m_textures[index], 4});
                     break;
                 case TextureType::Emissive:
                     mesh.material.textures.emissive = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index]});
+                    textureDescriptors.push_back({m_textures[index], 5});
                     break;
                 default:
                     break;
             }
         }
 
+        const uint32 data = 0xFFFF'FFFF;
+        const TextureBufferSpecification nilTextureSpec = {
+            .physicalDevice = *m_physicalDevice,
+            .logicalDevice = *m_logicalDevice,
+            .swapchain = *m_swapchain,
+            .commandBuffer = m_commandPool->commandBuffers().front(),
+            .width = 1,
+            .height = 1,
+            .raw = (const uint8*)&data,
+            .type = TextureType::Nil,
+        };
+
+        for (auto i = 0U; i < PBR_TEXTURE_COUNT; i++) {
+            if (!(mesh.material.pbrFlags & (1 << i)))
+                textureDescriptors.push_back({GlobalResourceManager.allocateTexture(nilTextureSpec), i + 1});
+        }
+
         // Bindings
         std::vector<UniformDescriptor> uniformDescriptors;
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             uniformDescriptors.push_back({mesh.material.uniforms[i], 0});
+            uniformDescriptors.push_back({mesh.material.uniforms[i + 3], 6});
         };
 
-        auto& descriptorPool = GlobalResourceManager().getDescriptorPoolById(mesh.material.descriptorPool);
+        auto& descriptorPool = GlobalResourceManager.getDescriptorPoolById(mesh.material.descriptorPool);
         auto& descriptorSets = descriptorPool.descriptorSets();
 
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -160,11 +240,11 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
         populateVertexAttrib(primitive, positions, glTF::POSITION);
 
         for (auto& position : positions) {
-            // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS) properties.
-            // TRS properties are converted to matrices and postmultiplied in the T * R * S order to compose the
-            // transformation matrix; first the scale is applied to the vertices, then the rotation, and then the
-            // translation. If none are provided, the transform is the identity. When a node is targeted for animation
-            // (referenced by an animation.channel.target), matrix MUST NOT be present
+            // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
+            // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
+            // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
+            // and then the translation. If none are provided, the transform is the identity. When a node is
+            // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
             mat4 t;
             for (uint32 i = 0; i < 16; i++)
                 t[i / 4][i % 4] = node->matrix[i];
@@ -227,13 +307,13 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
         }
 
         m_prototypes.emplace_back(MeshPrototype{
-            .vertexBuffer = GlobalResourceManager().allocateVertexBuffer({
+            .vertexBuffer = GlobalResourceManager.allocateVertexBuffer({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
                 .vertices = vertices,
             }),
-            .indexBuffer = GlobalResourceManager().allocateIndexBuffer({
+            .indexBuffer = GlobalResourceManager.allocateIndexBuffer({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
@@ -281,21 +361,22 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
     if (texture.source != glTF::UNDEFINED) {
         m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
         glTF::Image& image = model->images[texture.source];
+        auto path = std::string(m_directory + image.uri);
 
         if (!image.uri.empty()) {
-            m_textures.push_back(GlobalResourceManager().allocateTexture({
+            m_textures.push_back(GlobalResourceManager.allocateTexture({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .swapchain = *m_swapchain,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
-                .path = std::string(m_directory + image.uri).c_str(),
+                .path = path.c_str(),
                 .type = type,
             }));
         } else {
             glTF::BufferView& bufferView = model->bufferViews[image.bufferView];
             const uint8* data = model->buffer().data() + bufferView.byteOffset;
 
-            m_textures.push_back(GlobalResourceManager().allocateTexture({
+            m_textures.push_back(GlobalResourceManager.allocateTexture({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .swapchain = *m_swapchain,

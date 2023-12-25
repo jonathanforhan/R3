@@ -4,6 +4,7 @@
 #include "api/Profile.hxx"
 #include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
+#include "render/ResourceManager.hxx"
 #include "systems/InputSystem.hpp"
 #include "ui/UserInterface.hpp"
 

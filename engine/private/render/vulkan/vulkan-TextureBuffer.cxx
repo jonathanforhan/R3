@@ -17,20 +17,33 @@ namespace R3 {
 TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice),
       m_type(spec.type) {
-    CHECK((spec.path != nullptr) ^ (spec.data != nullptr));
+    CHECK((spec.path != nullptr) ^ (spec.data != nullptr) ^ (spec.raw != nullptr));
 
     // check for blitting capability
-    const auto& gpu = spec.physicalDevice.as<vk::PhysicalDevice>();
+    [[maybe_unused]] const auto& gpu = spec.physicalDevice.as<vk::PhysicalDevice>();
     CHECK(gpu.getFormatProperties(vk::Format::eR8G8B8A8Srgb).optimalTilingFeatures &
           vk::FormatFeatureFlagBits::eSampledImageFilterLinear);
 
-    int32 w, h, channels;
-    uint32 len = spec.height ? spec.width * spec.height : spec.width;
-    const uint8* bytes = spec.data ? stbi_load_from_memory((const stbi_uc*)spec.data, len, &w, &h, &channels, 0)
-                                   : stbi_load(spec.path, &w, &h, &channels, 0);
+    // defaults
+    int32 w = spec.width;
+    int32 h = spec.height;
+    int32 channels = 4;
+    const int32 len = spec.height ? spec.width * spec.height : spec.width;
+
+    const uint8* bytes;
+
+    if (spec.path) {
+        // modifies defaults
+        bytes = stbi_load(spec.path, &w, &h, &channels, 0);
+    } else if (spec.data) {
+        // modifies defaults
+        bytes = stbi_load_from_memory((const stbi_uc*)spec.data, len, &w, &h, &channels, 0);
+    } else if (spec.raw) {
+        bytes = spec.raw;
+    }
+
     CHECK(bytes != nullptr);
     const usize imageSize = usize(w * h * 4);
-
     auto mipLevels = static_cast<uint32>(std::floor(std::log2(std::max(w, h)))) + 1;
 
     // staging buffer for wriring
@@ -63,7 +76,10 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
         }
     }
     m_logicalDevice->as<vk::Device>().unmapMemory(stagingMemory.as<vk::DeviceMemory>());
-    stbi_image_free((void*)bytes);
+
+    if (!spec.raw) {
+        stbi_image_free((void*)bytes);
+    }
 
     // real image we use to store data
     const ImageAllocateSpecification imageAllocateSpecification = {
