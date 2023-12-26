@@ -1,4 +1,4 @@
-#include "ui/UserInterface.hpp"
+#include "ui/UserInterface.hxx"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -44,7 +44,6 @@ UserInterface::UserInterface() {
     m_descriptorPool = Ref<void>(renderer.m_logicalDevice.as<vk::Device>().createDescriptorPool(descriptorPoolInfo));
 
     ImGui::CreateContext();
-
     ImGui_ImplGlfw_InitForVulkan(renderer.m_window.handle<GLFWwindow*>(), true);
 
     ImGui_ImplVulkan_InitInfo initInfo = {
@@ -57,7 +56,6 @@ UserInterface::UserInterface() {
         .ImageCount = MAX_FRAMES_IN_FLIGHT,
         .MSAASamples = (VkSampleCountFlagBits)renderer.m_physicalDevice.sampleCount(),
     };
-
     ImGui_ImplVulkan_Init(&initInfo, renderer.m_renderPass.as<vk::RenderPass>());
 
     auto& io = ImGui::GetIO();
@@ -71,6 +69,18 @@ UserInterface::~UserInterface() {
     ImGui_ImplVulkan_DestroyFontsTexture();
     Engine::renderer().m_logicalDevice.as<vk::Device>().destroyDescriptorPool((VkDescriptorPool)m_descriptorPool.get());
     ImGui_ImplVulkan_Shutdown();
+}
+
+void UserInterface::newFrame() {
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+    ImGui::ShowDemoWindow();
+    ImGui::Render();
+}
+
+void UserInterface::draw(const CommandBuffer& commandBuffer) {
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.as<vk::CommandBuffer>());
 }
 
 } // namespace R3

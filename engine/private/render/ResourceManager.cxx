@@ -4,20 +4,37 @@ namespace R3 {
 
 ResourceManager GlobalResourceManager;
 
-TextureBuffer::ID ResourceManager::allocateTexture(const TextureBufferSpecification& spec) {
-    if (m_texturePool.freeList.empty()) {
-        m_texturePool.resources.emplace_back(spec);
-        return m_texturePool.resources.size() - 1;
+namespace local {
+
+template <typename T, typename S>
+auto allocate(ResourcePool<T>& resourcePool, const S& spec) -> T::ID {
+    static_assert(std::is_base_of_v<NativeRenderObject, T>);
+    static_assert(std::is_move_assignable_v<T>);
+    static_assert(not std::is_copy_assignable_v<T>);
+
+    auto resource = T(spec);
+
+    std::scoped_lock<std::mutex> lock(resourcePool.mutex);
+
+    if (resourcePool.freeList.empty()) {
+        resourcePool.resources.emplace_back(std::move(resource));
+        return resourcePool.resources.size() - 1;
     } else {
-        auto it = m_texturePool.freeList.begin();
+        auto it = resourcePool.freeList.begin();
         usize i = *it;
 
-        m_texturePool.resources[i].~TextureBuffer();
-        m_texturePool.resources[i] = TextureBuffer(spec);
+        resourcePool.resources[i].~T();
+        resourcePool.resources[i] = std::move(resource);
 
-        m_texturePool.freeList.erase(it);
+        resourcePool.freeList.erase(it);
         return i;
     }
+}
+
+} // namespace local
+
+TextureBuffer::ID ResourceManager::allocateTexture(const TextureBufferSpecification& spec) {
+    return local::allocate(m_texturePool, spec);
 }
 
 void ResourceManager::freeTexture(TextureBuffer::ID index) {
@@ -29,19 +46,7 @@ TextureBuffer& ResourceManager::getTextureById(TextureBuffer::ID id) {
 }
 
 UniformBuffer::ID ResourceManager::allocateUniform(const UniformBufferSpecification& spec) {
-    if (m_uniformPool.freeList.empty()) {
-        m_uniformPool.resources.emplace_back(spec);
-        return m_uniformPool.resources.size() - 1;
-    } else {
-        auto it = m_uniformPool.freeList.begin();
-        usize i = *it;
-
-        m_uniformPool.resources[i].~UniformBuffer();
-        m_uniformPool.resources[i] = UniformBuffer(spec);
-
-        m_uniformPool.freeList.erase(it);
-        return i;
-    }
+    return local::allocate(m_uniformPool, spec);
 }
 
 void ResourceManager::freeUniform(UniformBuffer::ID index) {
@@ -53,19 +58,7 @@ UniformBuffer& ResourceManager::getUniformById(UniformBuffer::ID id) {
 }
 
 VertexBuffer::ID ResourceManager::allocateVertexBuffer(const VertexBufferSpecification& spec) {
-    if (m_vertexPool.freeList.empty()) {
-        m_vertexPool.resources.emplace_back(spec);
-        return m_vertexPool.resources.size() - 1;
-    } else {
-        auto it = m_vertexPool.freeList.begin();
-        usize i = *it;
-
-        m_vertexPool.resources[i].~VertexBuffer();
-        m_vertexPool.resources[i] = VertexBuffer(spec);
-
-        m_vertexPool.freeList.erase(it);
-        return i;
-    }
+    return local::allocate(m_vertexPool, spec);
 }
 
 void ResourceManager::freeVertexBuffer(VertexBuffer::ID index) {
@@ -77,19 +70,7 @@ VertexBuffer& ResourceManager::getVertexBufferById(VertexBuffer::ID id) {
 }
 
 IndexBuffer<uint32>::ID ResourceManager::allocateIndexBuffer(const IndexBufferSpecification<uint32>& spec) {
-    if (m_indexPool.freeList.empty()) {
-        m_indexPool.resources.emplace_back(spec);
-        return m_indexPool.resources.size() - 1;
-    } else {
-        auto it = m_indexPool.freeList.begin();
-        usize i = *it;
-
-        m_indexPool.resources[i].~IndexBuffer();
-        m_indexPool.resources[i] = IndexBuffer(spec);
-
-        m_indexPool.freeList.erase(it);
-        return i;
-    }
+    return local::allocate(m_indexPool, spec);
 }
 
 void ResourceManager::freeIndexBuffer(IndexBuffer<uint32>::ID index) {
@@ -101,19 +82,7 @@ IndexBuffer<uint32>& ResourceManager::getIndexBufferById(IndexBuffer<uint32>::ID
 }
 
 DescriptorPool::ID ResourceManager::allocateDescriptorPool(const DescriptorPoolSpecification& spec) {
-    if (m_descriptorPool.freeList.empty()) {
-        m_descriptorPool.resources.emplace_back(spec);
-        return m_descriptorPool.resources.size() - 1;
-    } else {
-        auto it = m_descriptorPool.freeList.begin();
-        usize i = *it;
-
-        m_descriptorPool.resources[i].~DescriptorPool();
-        m_descriptorPool.resources[i] = DescriptorPool(spec);
-
-        m_descriptorPool.freeList.erase(it);
-        return i;
-    }
+    return local::allocate(m_descriptorPool, spec);
 }
 
 void ResourceManager::freeDescriptorPool(DescriptorPool::ID index) {
@@ -125,19 +94,7 @@ DescriptorPool& ResourceManager::getDescriptorPoolById(DescriptorPool::ID id) {
 }
 
 GraphicsPipeline::ID ResourceManager::allocateGraphicsPipeline(const GraphicsPipelineSpecification& spec) {
-    if (m_graphicsPipelinePool.freeList.empty()) {
-        m_graphicsPipelinePool.resources.emplace_back(spec);
-        return m_graphicsPipelinePool.resources.size() - 1;
-    } else {
-        auto it = m_graphicsPipelinePool.freeList.begin();
-        usize i = *it;
-
-        m_graphicsPipelinePool.resources[i].~GraphicsPipeline();
-        m_graphicsPipelinePool.resources[i] = GraphicsPipeline(spec);
-
-        m_graphicsPipelinePool.freeList.erase(it);
-        return i;
-    }
+    return local::allocate(m_graphicsPipelinePool, spec);
 }
 
 void ResourceManager::freeGraphicsPipeline(GraphicsPipeline::ID index) {

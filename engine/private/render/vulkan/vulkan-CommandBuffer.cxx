@@ -6,11 +6,13 @@
 #include "api/Check.hpp"
 #include "render/CommandPool.hpp"
 #include "render/DescriptorSet.hpp"
+#include "render/Fence.hpp"
 #include "render/Framebuffer.hpp"
 #include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/RenderPass.hpp"
+#include "render/Semaphore.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
 
@@ -162,6 +164,29 @@ void CommandBuffer::bindDescriptorSet(const PipelineLayout& pipelineLayout, cons
         vk::PipelineBindPoint::eGraphics, pipelineLayout.as<vk::PipelineLayout>(), 0, descriptors, {});
 }
 
+void CommandBuffer::submit(const CommandBufferSumbitSpecification& spec) const {
+    static_assert(sizeof(NativeRenderObject) == sizeof(vk::Semaphore));
+
+    vk::PipelineStageFlags waitStage(spec.waitStages);
+
+    const auto commandBuffer = as<vk::CommandBuffer>();
+
+    const vk::SubmitInfo submitInfo = {
+        .sType = vk::StructureType::eSubmitInfo,
+        .pNext = nullptr,
+        .waitSemaphoreCount = uint32(spec.waitSemaphores.size()),
+        .pWaitSemaphores = (const vk::Semaphore*)spec.waitSemaphores.data(),
+        .pWaitDstStageMask = &waitStage,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &commandBuffer,
+        .signalSemaphoreCount = uint32(spec.waitSemaphores.size()),
+        .pSignalSemaphores = (const vk::Semaphore*)spec.signalSemaphores.data(),
+    };
+
+    spec.fence ? m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo, spec.fence->as<vk::Fence>())
+               : m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
+}
+
 void CommandBuffer::oneTimeSubmit() const {
     const auto vkCommandBuffer = as<vk::CommandBuffer>();
     const vk::SubmitInfo submitInfo = {
@@ -171,6 +196,26 @@ void CommandBuffer::oneTimeSubmit() const {
     };
     m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
     m_logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
+}
+
+int32 CommandBuffer::present(const CommandBufferPresentSpecification& spec) const {
+    static_assert(sizeof(NativeRenderObject) == sizeof(vk::Semaphore));
+
+    const auto swapchain = m_swapchain->as<vk::SwapchainKHR>();
+
+    const vk::PresentInfoKHR presentInfo = {
+        .sType = vk::StructureType::ePresentInfoKHR,
+        .pNext = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = (const vk::Semaphore*)spec.waitSemaphores.data(),
+        .swapchainCount = 1,
+        .pSwapchains = &swapchain,
+        .pImageIndices = &spec.currentImageIndex,
+        .pResults = nullptr,
+    };
+
+    // MAY THROW !
+    return (int32)m_logicalDevice->presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
 }
 
 } // namespace R3

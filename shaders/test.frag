@@ -98,9 +98,9 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(1.0);
+	vec3 ambientOcclusion = vec3(0.04);
 	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
-		ambientOcclusion = texture(u_AmbientOcclusion, v_TexCoords).rgb;
+		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
 
 	vec3 N = calcTangentNormal();
@@ -142,7 +142,7 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.002) * albedo * ambientOcclusion;
+	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
 
 	vec3 color = ambient + Lo;
 

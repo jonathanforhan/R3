@@ -1,5 +1,6 @@
 #include "render/ModelLoader.hpp"
 
+#include <thread>
 #include "api/Check.hpp"
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
@@ -104,7 +105,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .fragmentShaderPath = "spirv/test.frag.spv",
         });
 
-        // Uniform
+        // Uniforms
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             mesh.material.uniforms[i] = GlobalResourceManager.allocateUniform({
                 .physicalDevice = *m_physicalDevice,
@@ -151,7 +152,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             }
         }
 
-        const uint32 data = 0xFFFF'FFFF;
+        const uint8 raw[4] = {0xFF, 0xFF, 0xFF, 0xFF};
         const TextureBufferSpecification nilTextureSpec = {
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
@@ -159,13 +160,15 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .commandBuffer = m_commandPool->commandBuffers().front(),
             .width = 1,
             .height = 1,
-            .raw = (const uint8*)&data,
+            .raw = raw,
             .type = TextureType::Nil,
         };
 
+        // Initialize missing Textures to the 0xFFFF'FFFF texture
         for (auto i = 0U; i < PBR_TEXTURE_COUNT; i++) {
-            if (!(mesh.material.pbrFlags & (1 << i)))
+            if (!(mesh.material.pbrFlags & (1 << i))) {
                 textureDescriptors.push_back({GlobalResourceManager.allocateTexture(nilTextureSpec), i + 1});
+            }
         }
 
         // Bindings

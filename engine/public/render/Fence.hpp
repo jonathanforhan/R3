@@ -27,6 +27,9 @@ public:
     /// @brief Destroy Fence
     ~Fence();
 
+    /// @brief Reset the signal of the fence
+    void reset();
+
 private:
     Ref<const LogicalDevice> m_logicalDevice;
 };

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <mutex>
 #include <unordered_set>
 #include <vector>
 #include "render/DescriptorPool.hpp"
@@ -18,6 +19,7 @@ template <typename T>
 struct ResourcePool {
     std::vector<T> resources;
     std::unordered_set<usize> freeList;
+    std::mutex mutex;
 };
 
 extern ResourceManager GlobalResourceManager;

@@ -2,10 +2,12 @@
 
 #include "render/Instance.hpp"
 
+// clang-format off
 #include <vulkan/vulkan.hpp>
+#include <GLFW/glfw3.h>
+// clang-format on
 #include "api/Check.hpp"
 #include "api/Log.hpp"
-#include "api/Types.hpp"
 #include "api/Version.hpp"
 
 #define R3_VK_VERSION (VK_MAKE_API_VERSION(0, VULKAN_VERSION_MAJOR, VULKAN_VERSION_MINOR, 0))
@@ -106,6 +108,13 @@ Instance::~Instance() {
     if (validHandle()) {
         as<vk::Instance>().destroy();
     }
+}
+
+std::vector<const char*> Instance::queryRequiredExtensions() {
+    uint32 extensionCount = 0;
+    const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
+    CHECK(extensions_ != nullptr);
+    return std::vector<const char*>(extensions_, extensions_ + extensionCount);
 }
 
 bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) const {

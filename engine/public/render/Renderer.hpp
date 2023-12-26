@@ -69,10 +69,6 @@ public:
     ModelLoader& modelLoader() { return m_modelLoader; }
 
 private:
-    // prepares ui frame
-    void newFrame();
-
-private:
     Window& m_window;
     Instance m_instance;
     Surface m_surface;

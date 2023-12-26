@@ -5,6 +5,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <vulkan/vulkan.hpp>
+#include "api/Check.hpp"
 #include "render/CommandPool.hpp"
 #include "render/Image.hpp"
 #include "render/LogicalDevice.hpp"
@@ -30,7 +31,7 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     int32 channels = 4;
     const int32 len = spec.height ? spec.width * spec.height : spec.width;
 
-    const uint8* bytes;
+    const uint8* bytes = nullptr;
 
     if (spec.path) {
         // modifies defaults

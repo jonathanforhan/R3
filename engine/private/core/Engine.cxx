@@ -6,7 +6,7 @@
 #include "input/WindowEvent.hpp"
 #include "render/ResourceManager.hxx"
 #include "systems/InputSystem.hpp"
-#include "ui/UserInterface.hpp"
+#include "ui/UserInterface.hxx"
 
 namespace R3 {
 
@@ -32,9 +32,7 @@ void Engine::loop() {
     while (!s_window.shouldClose() || !s_engine.m_activeScene->m_eventQueue.empty()) {
         R3_PROFILE(FRAME, "MainThread");
 
-        R3_PROFILE(PUSH, "Delta Time");
         double dt = deltaTime();
-        R3_PROFILE(POP);
 
         R3_PROFILE(PUSH, "Events");
         dispatchEvents();
@@ -51,9 +49,7 @@ void Engine::loop() {
         s_renderer.render();
         R3_PROFILE(POP);
 
-        R3_PROFILE(PUSH, "GLFW");
         s_window.update();
-        R3_PROFILE(POP);
     }
 
     // sync

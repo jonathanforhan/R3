@@ -2,21 +2,15 @@
 
 #include "render/Renderer.hpp"
 
-#include <chrono>
-// clang-format off
-#include <vulkan/vulkan.hpp>
-#include <GLFW/glfw3.h>
-// clang-format on
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-#include <imgui.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "components/ModelComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
 #include "render/ResourceManager.hxx"
+#include "ui/UserInterface.hxx"
 #include "vulkan-PushConstant.hxx"
 #include "vulkan-UniformBufferObject.hxx"
 
@@ -25,9 +19,7 @@ namespace R3 {
 Renderer::Renderer(const RendererSpecification& spec)
     : m_window(spec.window) {
     //--- Instance Extensions
-    uint32 extensionCount = 0;
-    const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
-    std::vector<const char*> extensions(extensions_, extensions_ + extensionCount);
+    std::vector<const char*> extensions(Instance::queryRequiredExtensions());
     std::vector<const char*> validationLayers;
 
     //--- Validation
@@ -53,10 +45,7 @@ Renderer::Renderer(const RendererSpecification& spec)
     m_physicalDevice = PhysicalDevice({
         .instance = m_instance,
         .surface = m_surface,
-        .extensions =
-            {
-                VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-            },
+        .extensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME},
     });
 
     //--- Logical Device and Queues
@@ -140,15 +129,17 @@ Renderer::Renderer(const RendererSpecification& spec)
 }
 
 void Renderer::render() {
-    newFrame();
+    UserInterface::newFrame();
 
-    const vk::Fence inFlight = m_inFlight[m_currentFrame].as<vk::Fence>();
-    auto r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight, vk::False, UINT64_MAX);
+    Fence& inFlight = m_inFlight[m_currentFrame];
+
+    vk::Result r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, ~0ULL);
     CHECK(r == vk::Result::eSuccess);
 
-    const vk::Semaphore imageAvailable = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
+    Semaphore& imageAvailable = m_imageAvailable[m_currentFrame];
+
     auto [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
-        m_swapchain.as<vk::SwapchainKHR>(), UINT64_MAX, imageAvailable);
+        m_swapchain.as<vk::SwapchainKHR>(), ~0ULL, imageAvailable.as<vk::Semaphore>());
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
@@ -159,7 +150,7 @@ void Renderer::render() {
         }
     }
 
-    m_logicalDevice.as<vk::Device>().resetFences(inFlight);
+    inFlight.reset();
 
     const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
 
@@ -186,7 +177,7 @@ void Renderer::render() {
                             vulkan::PointLight{
                                 .position = vec3(0.5f, 0.8f, 0.0f),
                                 .color = vec3(1.0f, 0, 0),
-                                .intensity = vec3(0.5f),
+                                .intensity = vec3(0.2f),
                             },
                         },
                     .lightCount = 1,
@@ -207,43 +198,29 @@ void Renderer::render() {
             }
         });
 
-        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.as<vk::CommandBuffer>());
+        UserInterface::draw(commandBuffer);
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
 
-    const vk::Semaphore waitSemaphore = m_imageAvailable[m_currentFrame].as<vk::Semaphore>();
-    const vk::Semaphore singalSemaphore = m_renderFinished[m_currentFrame].as<vk::Semaphore>();
-    constexpr vk::PipelineStageFlags waitStage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
-    const vk::SwapchainKHR swapchain = m_swapchain.as<vk::SwapchainKHR>();
-    const vk::CommandBuffer commandBuf = commandBuffer.as<vk::CommandBuffer>();
+    const NativeRenderObject imageReady[] = {imageAvailable.handle()};
+    NativeRenderObject renderFinished[] = {m_renderFinished[m_currentFrame].handle()};
 
-    const vk::SubmitInfo submitInfo = {
-        .sType = vk::StructureType::eSubmitInfo,
-        .pNext = nullptr,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &waitSemaphore,
-        .pWaitDstStageMask = &waitStage,
-        .commandBufferCount = 1,
-        .pCommandBuffers = &commandBuf,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &singalSemaphore,
+    const CommandBufferSumbitSpecification commandBufferSumbitSpecification = {
+        .waitStages = PipelineStage::ColorAttachmentOutput,
+        .waitSemaphores = imageReady,
+        .signalSemaphores = renderFinished,
+        .fence = &inFlight,
     };
-    m_logicalDevice.graphicsQueue().as<vk::Queue>().submit(submitInfo, inFlight);
+    commandBuffer.submit(commandBufferSumbitSpecification);
 
-    const vk::PresentInfoKHR presentInfo = {
-        .sType = vk::StructureType::ePresentInfoKHR,
-        .pNext = nullptr,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &singalSemaphore,
-        .swapchainCount = 1,
-        .pSwapchains = &swapchain,
-        .pImageIndices = &imageIndex,
-        .pResults = nullptr,
+    const CommandBufferPresentSpecification commandBufferPresentSpecification = {
+        .waitSemaphores = renderFinished,
+        .currentImageIndex = imageIndex,
     };
 
     try {
-        result = m_logicalDevice.presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
+        result = vk::Result(commandBuffer.present(commandBufferPresentSpecification));
     } catch (std::exception& e) {
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
             m_window.shouldResize()) {
@@ -268,14 +245,6 @@ void Renderer::resize() {
 
 void Renderer::waitIdle() const {
     m_logicalDevice.as<vk::Device>().waitIdle();
-}
-
-void Renderer::newFrame() {
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-    ImGui::ShowDemoWindow();
-    ImGui::Render();
 }
 
 } // namespace R3

@@ -24,6 +24,10 @@ Fence::~Fence() {
     }
 }
 
+void Fence::reset() {
+    m_logicalDevice->as<vk::Device>().resetFences(as<vk::Fence>());
+}
+
 } // namespace R3
 
 #endif // R3_VULKAN

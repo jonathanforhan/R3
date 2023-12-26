@@ -33,6 +33,8 @@ Window::Window(const WindowSpecification& spec) {
     glfwMaximizeWindow(handle<GLFWwindow*>());
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
+    glfwSetErrorCallback([](int errorCode, const char* errorMessage) { LOG(Error, errorMessage); });
+
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
         if (Scene::topEvent() == HASH32("on-window-resize"))
             Scene::popEvent();

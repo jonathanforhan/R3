@@ -4,6 +4,7 @@
 
 #include <span>
 #include <string_view>
+#include <vector>
 #include "render/RenderApi.hpp"
 
 /// @def R3_VALIDATION_LAYERS_ENABLED
@@ -32,6 +33,10 @@ public:
 
     /// @brief free instance
     ~Instance();
+
+    /// @brief Query the Extensions required by the Render Instance
+    /// @return Extensions required
+    [[nodiscard]] static std::vector<const char*> queryRequiredExtensions();
 
 private:
     bool checkExtensionSupport(std::span<const char*> requiredExtensions) const;

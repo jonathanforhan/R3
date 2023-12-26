@@ -3,7 +3,9 @@
 /// @file CommandBuffer.hpp
 /// CommandBuffer is used to store commands, operations or recorded on them and them sumbitted to a queue
 
+#include <span>
 #include <vector>
+#include "render/Fence.hpp"
 #include "render/RenderApi.hpp"
 
 namespace R3 {
@@ -16,12 +18,27 @@ enum class CommandBufferUsage {
     SimultaneousUse,
 };
 
+/// @brief CommandBuffer Sumbit Specification
+/// Accepts spans of the handles to the R3 Semaphores to not have to convert and dynamically allocate memory
+struct CommandBufferSumbitSpecification {
+    PipelineStage::Flags waitStages;                    ///< Wait on these Pipeline stages (bitwise | the flags)
+    std::span<const NativeRenderObject> waitSemaphores; ///< Wait on these Semaphores
+    std::span<NativeRenderObject> signalSemaphores;     ///< Trigger Semaphores when complete
+    Ref<Fence> fence;                                   ///< (optional) Signal this Fence when complete
+};
+
+/// @brief CommandBuffer Present Specification
+struct CommandBufferPresentSpecification {
+    std::span<const NativeRenderObject> waitSemaphores; ///< Wait on these Semaphores
+    uint32 currentImageIndex;                           ///< Index of current Image being drawn to
+};
+
 /// @brief Command Buffer Specification
 struct CommandBufferSpecification {
-    const LogicalDevice& logicalDevice;
-    const Swapchain& swapchain;
-    const CommandPool& commandPool;
-    uint32 commandBufferCount;
+    const LogicalDevice& logicalDevice; ///< LogicalDevice
+    const Swapchain& swapchain;         ///< Swapchain
+    const CommandPool& commandPool;     ///< Parent CommandPool
+    uint32 commandBufferCount;          ///< Number of CommandBuffers to allocate
 };
 
 /// @brief CommandBuffer used to record operations
@@ -84,9 +101,20 @@ public:
     /// @param descriptorSets
     void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;
 
+    /// @brief Submit to the CommandBuffer's LogicalDevice's Graphics Queue from given spec
+    /// @param spec
+    void submit(const CommandBufferSumbitSpecification& spec) const;
+
     /// @brief A convience function to easily do a blocking one-time submit on a CommandBuffer
     /// This is used mainly for Copies, Transitions, Blitting etc
     void oneTimeSubmit() const;
+
+    /// @brief Present to CommandBuffer's LogicalDevice's Present Queue
+    /// @note THIS FUNCTION MAT THROW. This function will throw if there is a presentation error
+    /// Check the return value get error code
+    /// @param spec
+    /// @return Error code (per platform) vulkan -> VkResult
+    int32 present(const CommandBufferPresentSpecification& spec) const;
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;
