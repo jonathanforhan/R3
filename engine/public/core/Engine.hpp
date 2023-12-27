@@ -9,6 +9,7 @@
 #include "input/Event.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"
+#include "ui/Widget.hpp"
 
 namespace R3 {
 
@@ -42,6 +43,10 @@ public:
     /// @brief Starts main game loop
     /// @warning this function will not return until the gameloop (i.e. the game) is over
     static void loop();
+
+    /// @brief Get the Engine's root widget which acts as the root of the ui tree
+    /// @return Root Widget instance
+    static Ref<ui::Widget> rootWidget();
 
 private:
     /// @brief Add scene, automatically assigns it an id

@@ -6,7 +6,12 @@
 #include "input/WindowEvent.hpp"
 #include "render/ResourceManager.hxx"
 #include "systems/InputSystem.hpp"
+#include "ui/RootWidget.hxx"
 #include "ui/UserInterface.hxx"
+
+#if R3_BUILD_EDITOR and R3_VULKAN
+#include "editor/Editor.hxx"
+#endif // R3_BUILD_EDITOR
 
 namespace R3 {
 
@@ -24,9 +29,11 @@ Engine::~Engine() {
 }
 
 void Engine::loop() {
-    UserInterface ui;
+    ui::UserInterface ui;
+#if R3_BUILD_EDITOR and R3_VULKAN
+    editor::Editor editor;
+#endif
 
-    s_renderer.render();
     s_window.show();
 
     while (!s_window.shouldClose() || !s_engine.m_activeScene->m_eventQueue.empty()) {
@@ -46,6 +53,12 @@ void Engine::loop() {
         s_renderer.setProjection(s_engine.m_activeScene->projection());
 
         R3_PROFILE(PUSH, "Render");
+        ui::UserInterface::beginFrame();
+#if R3_BUILD_EDITOR and R3_VULKAN
+        editor.draw();
+#endif
+        ui::UserInterface::endFrame();
+
         s_renderer.render();
         R3_PROFILE(POP);
 
@@ -59,6 +72,11 @@ void Engine::loop() {
     for (auto& scene : s_engine.m_scenes) {
         scene.second->m_registry.clear();
     }
+}
+
+Ref<ui::Widget> Engine::rootWidget() {
+    static ui::RootWidget root;
+    return &root;
 }
 
 Ref<Scene> Engine::addScene(bool setActive) {

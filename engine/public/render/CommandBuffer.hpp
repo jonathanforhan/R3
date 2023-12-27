@@ -110,7 +110,7 @@ public:
     void oneTimeSubmit() const;
 
     /// @brief Present to CommandBuffer's LogicalDevice's Present Queue
-    /// @note THIS FUNCTION MAT THROW. This function will throw if there is a presentation error
+    /// @note THIS FUNCTION MAY THROW. This function will throw if there is a presentation error
     /// Check the return value get error code
     /// @param spec
     /// @return Error code (per platform) vulkan -> VkResult

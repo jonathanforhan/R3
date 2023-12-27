@@ -4,7 +4,9 @@
 /// @brief Provid Scene control for the API
 
 #include <entt/entt.hpp>
+#include <set>
 #include <unordered_map>
+#include <vector>
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
 #include "systems/System.hpp"

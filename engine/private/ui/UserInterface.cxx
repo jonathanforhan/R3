@@ -13,7 +13,7 @@
 #include "render/RenderPass.hpp"
 #include "render/Window.hpp"
 
-namespace R3 {
+namespace R3::ui {
 
 UserInterface::UserInterface() {
     vk::DescriptorPoolSize poolSizes[] = {
@@ -43,6 +43,7 @@ UserInterface::UserInterface() {
 
     m_descriptorPool = Ref<void>(renderer.m_logicalDevice.as<vk::Device>().createDescriptorPool(descriptorPoolInfo));
 
+    IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForVulkan(renderer.m_window.handle<GLFWwindow*>(), true);
 
@@ -59,6 +60,9 @@ UserInterface::UserInterface() {
     ImGui_ImplVulkan_Init(&initInfo, renderer.m_renderPass.as<vk::RenderPass>());
 
     auto& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     io.Fonts->AddFontFromFileTTF("fonts/Cascadia/CascadiaCode.ttf", 16.0f);
     io.Fonts->Build();
 
@@ -71,11 +75,13 @@ UserInterface::~UserInterface() {
     ImGui_ImplVulkan_Shutdown();
 }
 
-void UserInterface::newFrame() {
+void UserInterface::beginFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
-    ImGui::ShowDemoWindow();
+}
+
+void UserInterface::endFrame() {
     ImGui::Render();
 }
 
@@ -83,4 +89,4 @@ void UserInterface::draw(const CommandBuffer& commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.as<vk::CommandBuffer>());
 }
 
-} // namespace R3
+} // namespace R3::ui

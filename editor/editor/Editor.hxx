@@ -1,14 +1,15 @@
 #pragma once
 
-#include "render/RenderFwd.hpp"
+#include "ui/MainWindow.hpp"
 
 namespace R3::editor {
 
-class Editor {
+class Editor : public ui::MainWindow {
 public:
+    NO_COPY(Editor);
+    DEFAULT_MOVE(Editor);
+
     Editor();
-    Editor(const Editor&) = delete;
-    Editor(Editor&&) = delete;
     ~Editor();
 
 private:

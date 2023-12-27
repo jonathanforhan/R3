@@ -25,15 +25,14 @@ Window::Window(const WindowSpecification& spec) {
     const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
 
     setHandle(glfwCreateWindow(vidmode->width / 2, vidmode->height / 2, spec.title.data(), nullptr, nullptr));
-    if (handle() == nullptr) {
+    if (!validHandle()) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);
     }
-    glfwMakeContextCurrent(handle<GLFWwindow*>());
     glfwMaximizeWindow(handle<GLFWwindow*>());
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
-    glfwSetErrorCallback([](int errorCode, const char* errorMessage) { LOG(Error, errorMessage); });
+    glfwSetErrorCallback([](int errorCode, const char* errorMessage) { LOG(Error, "code", errorCode, errorMessage); });
 
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
         if (Scene::topEvent() == HASH32("on-window-resize"))

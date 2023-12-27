@@ -13,7 +13,7 @@ if (MSVC)
 endif ()
 
 
-file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/editor/*.cxx")
 
 #[[ R3 EDITOR ]]
 add_library(R3_EDITOR STATIC ${CXX_SOURCES})
@@ -25,7 +25,8 @@ else ()
 endif ()
 
 #[[ R3 EDITOR INCLUDES ]]
-target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(R3_ENGINE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/editor")
 
 #[[ R3 EXTERNAL DEPENDECIES ]]
 add_subdirectory(extern)

@@ -19,10 +19,10 @@ class Lock:
                 json.dump(self.__data, lock, indent=2)
 
 
-    def is_invalid(self, shader: str) -> bool:
+    def is_valid(self, shader: str) -> bool:
         """ query lock.json to see if shader needs to be updated """
         uuid = self.__uuid(shader)
-        return not (shader in self.__data and self.__data[shader] == uuid)
+        return shader in self.__data and self.__data[shader] == uuid
 
 
     def update_hash(self, shader: str):
@@ -51,6 +51,11 @@ def main(glslc: str, in_dir: str, out_dir: str, force: bool):
     os.chdir(in_dir)
     shader_lock = ".shader.lock.json"
 
+    # if out_dir is empty directory, invalidate cache
+    if not os.listdir(out_dir):
+        os.remove(shader_lock)
+
+    # read in shader cache
     lock = Lock(shader_lock)
 
     for shader in os.listdir():
@@ -59,7 +64,7 @@ def main(glslc: str, in_dir: str, out_dir: str, force: bool):
         in_shader = os.path.join(in_dir, shader).replace("\\", "/")
         out_shader = os.path.join(out_dir, shader).replace("\\", "/")
 
-        if lock.is_invalid(in_shader) or force:
+        if not lock.is_valid(in_shader) or force:
             print(f"compiling {in_shader}...")
             lock.update_hash(in_shader)
 

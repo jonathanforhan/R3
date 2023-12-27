@@ -129,8 +129,6 @@ Renderer::Renderer(const RendererSpecification& spec)
 }
 
 void Renderer::render() {
-    UserInterface::newFrame();
-
     Fence& inFlight = m_inFlight[m_currentFrame];
 
     vk::Result r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, ~0ULL);
@@ -198,7 +196,7 @@ void Renderer::render() {
             }
         });
 
-        UserInterface::draw(commandBuffer);
+        ui::UserInterface::draw(commandBuffer);
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();

@@ -31,6 +31,10 @@
 
 namespace R3 {
 
+namespace ui {
+class UserInterface;
+}
+
 /// @brief Renderer Specification
 struct RendererSpecification {
     Window& window; ///< Window
@@ -95,7 +99,7 @@ private:
 
     ModelLoader m_modelLoader;
 
-    friend class UserInterface;
+    friend ui::UserInterface;
 };
 
 } // namespace R3

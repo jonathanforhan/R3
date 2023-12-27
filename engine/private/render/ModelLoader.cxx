@@ -101,8 +101,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .swapchain = *m_swapchain,
             .renderPass = *m_renderPass,
             .descriptorSetLayout = GlobalResourceManager.getDescriptorPoolById(mesh.material.descriptorPool).layout(),
-            .vertexShaderPath = "spirv/test.vert.spv",
-            .fragmentShaderPath = "spirv/test.frag.spv",
+            .vertexShaderPath = "spirv/pbr.vert.spv",
+            .fragmentShaderPath = "spirv/pbr.frag.spv",
         });
 
         // Uniforms
@@ -207,8 +207,10 @@ void ModelLoader::processNode(glTF::Model* model, glTF::Node* node) {
 void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh) {
     auto datatypeSize = [](uint32 datatype) -> usize {
         switch (datatype) {
+            case glTF::BYTE:
             case glTF::UNSIGNED_BYTE:
                 return sizeof(uint8);
+            case glTF::SHORT:
             case glTF::UNSIGNED_SHORT:
                 return sizeof(uint16);
             case glTF::UNSIGNED_INT:

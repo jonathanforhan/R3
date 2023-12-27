@@ -1,24 +1,21 @@
 #version 460
 
 #define M_PI 3.14159265359
-#define MAX_LIGHTS 32
-
+#define MAX_LIGHTS 1
 #define ALBEDO_FLAG_BIT				(1 << 0)
-#define NORMAL_FLAG_BIT				(1 << 1)
-#define METALLIC_ROUGHNESS_FLAG_BIT	(1 << 2)
+#define METALLIC_ROUGHNESS_FLAG_BIT	(1 << 1)
+#define NORMAL_FLAG_BIT				(1 << 2)
 #define AMBIENT_OCCULSION_FLAG_BIT	(1 << 3)
 #define EMISSIVE_FLAG_BIT			(1 << 4)
 #define HAS_BIT(X, BIT) ((X & BIT) != 0)
 
-layout(location = 0) in vec3 v_Position;
-layout(location = 1) in vec3 v_Normal;
-layout(location = 2) in vec2 v_TexCoords;
-layout(location = 3) in flat highp uint v_Flags;
+layout (location = 0) in vec3 v_Position;
+layout (location = 1) in vec3 v_Normal;
+layout (location = 2) in vec2 v_TexCoords;
 
-layout(location = 0) out vec4 f_Color;
+layout (location = 0) out vec4 f_Color;
 
-// point light
-struct Light {
+struct PointLight {
 	vec3 position;
 	vec3 color;
 	vec3 intensity;
@@ -31,18 +28,16 @@ struct DirectionalLight {
 	vec3 specular;
 };
 
-uniform	layout(binding = 0) sampler2D u_Albedo;
-uniform	layout(binding = 1) sampler2D u_Normal;
-uniform	layout(binding = 2) sampler2D u_MetallicRoughness; // metalness B channel, roughness G channel
-uniform	layout(binding = 3) sampler2D u_AmbientOcclusion;
-uniform	layout(binding = 4) sampler2D u_Emissive;
-
-layout(set = 0, binding = 0) uniform Lighting {
-	uniform vec3 u_ViewPosition;
-	uniform DirectionalLight u_DirectionalLight;
-	uniform Light u_Lights[MAX_LIGHTS];
-	uniform lowp uint u_NumLights;
-	uniform float u_EmissiveIntensity;
+layout (binding = 1) uniform sampler2D u_Albedo;
+layout (binding = 2) uniform sampler2D u_MetallicRoughness; // metalness B channel, roughness G channel
+layout (binding = 3) uniform sampler2D u_Normal;
+layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
+layout (binding = 5) uniform sampler2D u_Emissive;
+layout (set = 0, binding = 6) uniform LightBuffer {
+	vec3 u_ViewPosition;
+	PointLight u_Lights[MAX_LIGHTS];
+	uint u_NumLights;
+    uint u_Flags;
 };
 
 vec3 calcTangentNormal() {
@@ -103,9 +98,9 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(1.0);
-	if (HAS_BIT(v_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
-		ambientOcclusion = texture(u_AmbientOcclusion, v_TexCoords).rgb;
+	vec3 ambientOcclusion = vec3(0.04);
+	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
+		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
 
 	vec3 N = calcTangentNormal();
@@ -147,20 +142,13 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	//--- sunlight
-	vec3 directionalLight = normalize(-u_DirectionalLight.direction);
-	float diff = max(dot(normalize(v_Normal), directionalLight), 0.0);
-
-	vec3 ambient = vec3(0.05) * albedo * ambientOcclusion;
-
-	//--- sunlight
-	ambient = ambient * clamp(diff, 0.05, 1.0) * u_DirectionalLight.diffuse;
+	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
 
 	vec3 color = ambient + Lo;
 
 	// emission
-	if (HAS_BIT(v_Flags, EMISSIVE_FLAG_BIT)) {
-		color += pow(texture(u_Emissive, v_TexCoords).rgb, vec3(2.2)) * u_EmissiveIntensity;
+	if (HAS_BIT(u_Flags, EMISSIVE_FLAG_BIT)) {
+		color += pow(texture(u_Emissive, v_TexCoords).rgb, vec3(2.2));
 	}
 
 	// HDR tonemapping
