@@ -4,6 +4,7 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
+#include "core/Scene.hpp"
 #include "render/DescriptorPool.hxx"
 #include "render/DescriptorSetLayout.hxx"
 #include "render/LogicalDevice.hxx"
@@ -48,7 +49,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
-        auto& uniform = GlobalResourceManager.getUniformById(it.uniform);
+        auto& uniform = ((ResourceManager*)CurrentScene->resourceManager)->getUniformById(it.uniform);
 
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
             .buffer = uniform.as<vk::Buffer>(),
@@ -75,7 +76,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorImageInfos.reserve(spec.textureDescriptors.size());
 
     for (const auto& it : spec.textureDescriptors) {
-        auto& texture = GlobalResourceManager.getTextureById(it.texture);
+        auto& texture = ((ResourceManager*)CurrentScene->resourceManager)->getTextureById(it.texture);
 
         auto& info = descriptorImageInfos.emplace_back(vk::DescriptorImageInfo{
             .sampler = texture.sampler().as<vk::Sampler>(),

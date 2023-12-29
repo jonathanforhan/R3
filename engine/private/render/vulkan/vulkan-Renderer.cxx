@@ -2,10 +2,10 @@
 
 #include "render/Renderer.hxx"
 
+#include <R3>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "components/ModelComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
@@ -155,46 +155,48 @@ void Renderer::render() {
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        Scene::componentView<TransformComponent, ModelComponent>().each([&](TransformComponent& transform,
-                                                                            ModelComponent& model) {
-            for (Mesh& mesh : model.meshes()) {
-                auto& pipeline = GlobalResourceManager.getGraphicsPipelineById(mesh.pipeline);
-                auto& uniform = GlobalResourceManager.getUniformById(mesh.material.uniforms[m_currentFrame]);
-                auto& lightUniform = GlobalResourceManager.getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
-                auto& descriptorPool = GlobalResourceManager.getDescriptorPoolById(mesh.material.descriptorPool);
-                auto& vertexBuffer = GlobalResourceManager.getVertexBufferById(mesh.vertexBuffer);
-                auto& indexBuffer = GlobalResourceManager.getIndexBufferById(mesh.indexBuffer);
+        Scene::componentView<TransformComponent, ModelComponent>().each(
+            [&](TransformComponent& transform, ModelComponent& model) {
+                for (Mesh& mesh : model.meshes()) {
+                    auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
 
-                commandBuffer.bindPipeline(pipeline);
-                commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+                    auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);
+                    auto& uniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame]);
+                    auto& lightUniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
+                    auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
+                    auto& vertexBuffer = resourceManager->getVertexBufferById(mesh.vertexBuffer);
+                    auto& indexBuffer = resourceManager->getIndexBufferById(mesh.indexBuffer);
 
-                vulkan::LightBufferObject lbo = {
-                    .cameraPosition = Scene::cameraPosition(),
-                    .pointLights =
-                        {
-                            vulkan::PointLight{
-                                .position = vec3(0.5f, 0.8f, 0.0f),
-                                .color = vec3(1.0f, 0, 0),
-                                .intensity = vec3(0.2f),
+                    commandBuffer.bindPipeline(pipeline);
+                    commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+
+                    vulkan::LightBufferObject lbo = {
+                        .cameraPosition = Scene::cameraPosition(),
+                        .pointLights =
+                            {
+                                vulkan::PointLight{
+                                    .position = vec3(0.5f, 0.8f, 0.0f),
+                                    .color = vec3(1.0f, 0, 0),
+                                    .intensity = vec3(0.2f),
+                                },
                             },
-                        },
-                    .lightCount = 1,
-                    .pbrFlags = mesh.material.pbrFlags,
-                };
-                lightUniform.update(&lbo, sizeof(lbo), 0);
-                uniform.update(&transform, sizeof(transform), 0);
+                        .lightCount = 1,
+                        .pbrFlags = mesh.material.pbrFlags,
+                    };
+                    lightUniform.update(&lbo, sizeof(lbo), 0);
+                    uniform.update(&transform, sizeof(transform), 0);
 
-                commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
-                                                                    vk::ShaderStageFlagBits::eVertex,
-                                                                    0,
-                                                                    sizeof(ViewProjection),
-                                                                    &m_viewProjection);
+                    commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
+                                                                        vk::ShaderStageFlagBits::eVertex,
+                                                                        0,
+                                                                        sizeof(ViewProjection),
+                                                                        &m_viewProjection);
 
-                commandBuffer.bindVertexBuffer(vertexBuffer);
-                commandBuffer.bindIndexBuffer(indexBuffer);
-                commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
-            }
-        });
+                    commandBuffer.bindVertexBuffer(vertexBuffer);
+                    commandBuffer.bindIndexBuffer(indexBuffer);
+                    commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
+                }
+            });
 
         // ui::UserInterface::draw(commandBuffer);
     }

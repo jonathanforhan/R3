@@ -28,3 +28,5 @@
 #define R3_API __declspec(dllimport)
 #define R3_API
 #define R3_DLL __declspec(dllexport)
+#define LOG(_Level, __VA_ARGS__) do { R3_LOG_##_Level("R3 " #_Level ":", __VA_ARGS__); } while (0)
+#define LOG(_Level, __VA_ARGS__) void(0)

@@ -45,7 +45,7 @@ inline void Entity::destroy() {
 template <typename T, typename... Args>
 requires std::is_constructible_v<T, Args...>
 inline T& Entity::emplace(Args&&... args) {
-    static_assert(std::is_same_v<TransformComponent, T>, "Entities are already initialized with a Transform");
+    static_assert(not std::is_same_v<TransformComponent, T>, "Entities are already initialized with a Transform");
     return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
 }
 

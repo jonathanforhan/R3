@@ -13,16 +13,12 @@
 
 namespace R3 {
 
-class ResourceManager;
-
 template <typename T>
 struct ResourcePool {
     std::vector<T> resources;
     std::unordered_set<usize> freeList;
     std::mutex mutex;
 };
-
-extern ResourceManager GlobalResourceManager;
 
 class ResourceManager {
 public:

@@ -43,7 +43,7 @@ public:
 
     /// @brief Query the Window size
     /// @return Window dimensions in pixels
-    std::tuple<int32, int32> size() const;
+    ivec2 size() const;
 
     /// @brief Query the Window size
     /// @param[out] width return the window width in pixels

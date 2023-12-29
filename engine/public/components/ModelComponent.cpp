@@ -1,14 +1,14 @@
 #include "components/ModelComponent.hpp"
 
-#include "api/Log.hpp"
+#include "core/Engine.hpp"
 #include "core/Scene.hpp"
-// #include "render/ModelLoader.hpp"
+#include "render/Renderer.hxx"
 #include "systems/ModelSystem.hpp"
 
 namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& path) {
-    // Engine::renderer().modelLoader().load(path, *this);
+    reinterpret_cast<Renderer*>(EngineInstance->renderView().handle())->modelLoader().load(path, *this);
     Scene::addSystem<ModelSystem>();
 }
 

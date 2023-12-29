@@ -3,13 +3,13 @@
 #include "render/Window.hxx"
 
 #include <R3>
+#include <R3_input>
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
 #include "core/Scene.hpp"
-#include "input/WindowEvent.hpp"
 
 namespace R3 {
 
@@ -29,8 +29,10 @@ Window::Window(const WindowSpecification& spec) {
     glfwMaximizeWindow(handle<GLFWwindow*>());
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
+    //--- Error Handling Callback
     glfwSetErrorCallback([](int errorCode, const char* errorMessage) { LOG(Error, "code", errorCode, errorMessage); });
 
+    //--- Resize Callback
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
         if (Scene::topEvent() == HASH32("on-window-resize"))
             Scene::popEvent();
@@ -40,6 +42,49 @@ Window::Window(const WindowSpecification& spec) {
         _this->m_shouldResize = true;
     });
 
+    //--- Keyboard Input Callback
+    glfwSetKeyCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int key, int, int action, int mods) {
+        // if (ImGui::GetIO().WantCaptureKeyboard) return;
+
+        switch (action) {
+            case GLFW_PRESS:
+                Scene::pushEvent<KeyPressEvent>(Key(key), InputModifier::Mask(mods));
+                return;
+            case GLFW_REPEAT:
+                Scene::pushEvent<KeyRepeatEvent>(Key(key), InputModifier::Mask(mods));
+                return;
+            case GLFW_RELEASE:
+                Scene::pushEvent<KeyReleaseEvent>(Key(key), InputModifier::Mask(mods));
+                return;
+        }
+    });
+
+    //--- MouseButton Callback
+    glfwSetMouseButtonCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int button, int action, int mods) {
+        // if (ImGui::GetIO().WantCaptureMouse) return;
+
+        switch (action) {
+            case GLFW_PRESS:
+                Scene::pushEvent<MouseButtonPressEvent>(MouseButton(button), InputModifier::Mask(mods));
+                return;
+            case GLFW_RELEASE:
+                Scene::pushEvent<MouseButtonReleaseEvent>(MouseButton(button), InputModifier::Mask(mods));
+                return;
+        }
+    });
+
+    //--- Cursor Input Callback
+    glfwSetCursorPosCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, double x, double y) {
+        // if (ImGui::GetIO().WantCaptureMouse) return;
+
+        int w, h;
+        glfwGetFramebufferSize(window, &w, &h);
+        float posX = static_cast<float>(x) / static_cast<float>(w);
+        float posY = static_cast<float>(y) / static_cast<float>(h);
+        Scene::pushEvent<MouseCursorEvent>(vec2(posX, posY));
+    });
+
+    //--- Window Close Callback
     glfwSetWindowCloseCallback(handle<GLFWwindow*>(), [](GLFWwindow*) { Scene::pushEvent<WindowCloseEvent>(); });
 }
 
@@ -64,10 +109,10 @@ void Window::resize(int32 width, int32 height) {
     glfwSetWindowSize(handle<GLFWwindow*>(), width, height);
 }
 
-std::tuple<int32, int32> Window::size() const {
+ivec2 Window::size() const {
     int32 w, h;
     glfwGetFramebufferSize(handle<GLFWwindow*>(), &w, &h);
-    return {w, h};
+    return ivec2(w, h);
 }
 
 void Window::size(int32& width, int32& height) const {
@@ -75,8 +120,8 @@ void Window::size(int32& width, int32& height) const {
 }
 
 float Window::aspectRatio() const {
-    auto [width, height] = size();
-    return static_cast<float>(width) / static_cast<float>(height);
+    ivec2 extent = size();
+    return static_cast<float>(extent.x) / static_cast<float>(extent.y);
 }
 
 bool Window::shouldClose() const {

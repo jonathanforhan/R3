@@ -2,8 +2,6 @@
 
 namespace R3 {
 
-ResourceManager GlobalResourceManager;
-
 namespace local {
 
 template <typename T, typename S>

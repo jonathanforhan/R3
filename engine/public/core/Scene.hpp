@@ -14,10 +14,14 @@ namespace R3 {
 
 class R3_API Scene {
 public:
+    using ResourceManagerImpl = void*;
+
     /// @brief Create Scene with uuid
     /// @param id uuid
-    explicit Scene(uuid32 id)
-        : id(id) {}
+    explicit Scene(uuid32 id);
+
+    /// @brief Free resource manager
+    ~Scene();
 
     /// @brief Query Component View from entt
     /// @tparam ...T Type of Components to Query
@@ -35,6 +39,9 @@ public:
     requires requires { FunctionTraits<F>::Arity::value <= 2; }
     static void componentForEach(F&& callback);
 #endif
+
+    /// @brief clear the Scene's ECS Registry of all entities and components
+    void clearRegistry();
 
     /// @brief Add a System to the Scene, will only add if not already present
     /// @tparam T System
@@ -58,6 +65,10 @@ public:
     /// @return Top Event ID
     static uuid32 topEvent();
 
+    /// @brief Query whether the event queues holds any events
+    /// @return t/f
+    static bool isEventQueueEmpty();
+
 #if not R3_ENGINE
     /// @brief Bind an Event listener to the current Scene
     /// Uses FunctionTraits type deduction to deduce the Event
@@ -74,6 +85,15 @@ public:
     /// @param callback
     template <typename E>
     static void bindEventListener(std::function<void(const E&)> callback);
+
+#if R3_ENGINE
+    /// @brief Dispath the all the events callbacks in the queue
+    static void dispatchEvents();
+
+    /// @brief Run the systems bound to scene
+    /// @param dt
+    static void runSystems(double dt);
+#endif
 
     /// @brief Set View Matrix of Entire Scene
     /// Used by CameraSystem
@@ -101,11 +121,9 @@ public:
     /// @return position
     static vec3 cameraPosition();
 
-private:
-    void runSystems(double dt);
-
 public:
-    const uuid32 id; ///< Scene id
+    const uuid32 id;                     ///< Scene id
+    ResourceManagerImpl resourceManager; ///< Handle to Scene ResourceManager
 
 private:
     //--- Graphics

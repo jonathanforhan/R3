@@ -8,9 +8,7 @@
 namespace R3 {
 
 CameraComponent::CameraComponent(CameraType type)
-    : m_cameraType(type) {
-    Scene::addSystem<CameraSystem>();
-}
+    : m_cameraType(type) {}
 
 void CameraComponent::translateForward(float magnitude) {
     m_position += magnitude * glm::normalize(vec3(m_front.x, 0, m_front.z));
@@ -52,10 +50,10 @@ void CameraComponent::apply(mat4* view, mat4* projection, float aspectRatio) con
     if (m_cameraType == CameraType::Perspective) {
         *projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
     } else {
-        auto [width, height] = std::tuple(1920, 1080); // Engine::window().size();
-        float denom = std::max(width, height) / 2.0f;
-        float w = width / denom;
-        float h = height / denom;
+        ivec2 extent = EngineInstance->windowView().size();
+        float denom = std::max(extent.x, extent.y) / 2.0f;
+        float w = extent.x / denom;
+        float h = extent.y / denom;
         *projection = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
     }
     *view = glm::lookAt(m_position, m_position + m_front, m_up);

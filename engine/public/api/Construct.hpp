@@ -28,3 +28,9 @@
 #define NO_MOVE(_Class)                 \
     _Class(_Class&&) noexcept = delete; \
     _Class& operator=(_Class&&) noexcept = delete
+
+#if R3_DLL_IMPL
+#define HIDDEN_CONSTRUCT(_Class, ...) _Class() = delete
+#else
+#define HIDDEN_CONSTRUCT(_Class, ...) _Class(__VA_ARGS__)
+#endif

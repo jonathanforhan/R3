@@ -9,6 +9,7 @@
 #include "components/ModelComponent.hpp"
 #include "render/IndexBuffer.hxx"
 #include "render/RenderApi.hxx"
+#include "render/ResourceManager.hxx"
 #include "render/TextureBuffer.hxx"
 #include "render/VertexBuffer.hxx"
 
@@ -49,14 +50,8 @@ public:
     DEFAULT_MOVE(ModelLoader);
 
     /// @brief Construct ModelLoader from spec
-    /// Renderer is the only one who should have valid info for spec
     /// @param spec
-    ModelLoader(const ModelLoaderSpecification& spec)
-        : m_physicalDevice(&spec.physicalDevice),
-          m_logicalDevice(&spec.logicalDevice),
-          m_swapchain(&spec.swapchain),
-          m_renderPass(&spec.renderPass),
-          m_commandPool(&spec.commandPool) {}
+    ModelLoader(const ModelLoaderSpecification& spec);
 
     /// @brief Load in a glTF Model from path
     /// @param path

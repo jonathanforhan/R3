@@ -52,6 +52,10 @@ inline constexpr void Scene::pushEvent(Args&&... args) {
     eventQueue.push(std::span<std::byte>(&eventArena[iEnd], sizeof(event))); // add payload addr and size to queue
 }
 
+inline void Scene::clearRegistry() {
+    m_registry.clear();
+}
+
 inline void Scene::popEvent() {
     auto& eventArena = CurrentScene->m_eventArena;
     auto& eventQueue = CurrentScene->m_eventQueue;
@@ -66,6 +70,10 @@ inline void Scene::popEvent() {
 inline uuid32 Scene::topEvent() {
     auto& eventQueue = CurrentScene->m_eventQueue;
     return eventQueue.empty() ? 0 : *(uuid32*)eventQueue.front().data();
+}
+
+inline bool Scene::isEventQueueEmpty() {
+    return CurrentScene->m_eventQueue.empty();
 }
 
 #if not R3_ENGINE
@@ -87,6 +95,29 @@ inline void Scene::bindEventListener(std::function<void(const E&)> callback) {
     EventCallback wrapper = [callback](const void* event) { callback((const E&)(*(const E*)event)); };
     eventRegistery.insert(std::make_pair(E::SingalType::value, wrapper));
 }
+
+#if R3_ENGINE
+inline void Scene::dispatchEvents() {
+    while (!Scene::isEventQueueEmpty()) {
+        void* const p = CurrentScene->m_eventQueue.front().data();
+        const uuid32 id = *(uuid32*)p;
+
+        auto range = CurrentScene->m_eventRegistery.equal_range(id);
+        for (auto& it = range.first; it != range.second; ++it) {
+            it->second(p);
+        }
+
+        Scene::popEvent();
+    }
+}
+
+inline void Scene::runSystems(double dt) {
+    // tick our systems
+    for (const auto& system : CurrentScene->m_systems) {
+        system->tick(dt);
+    }
+}
+#endif
 
 inline void Scene::setView(const mat4& view) {
     CurrentScene->m_view = view;
@@ -110,13 +141,6 @@ inline const mat4& Scene::projection() {
 
 inline vec3 Scene::cameraPosition() {
     return CurrentScene->m_cameraPosition;
-}
-
-inline void Scene::runSystems(double dt) {
-    // tick our systems
-    for (const auto& system : m_systems) {
-        system->tick(dt);
-    }
 }
 
 } // namespace R3

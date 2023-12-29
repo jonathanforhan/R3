@@ -1,0 +1,5 @@
+#pragma once
+
+#include "public/core/Engine.hpp"
+#include "public/core/Entity.hpp"
+#include "public/core/Scene.hpp"

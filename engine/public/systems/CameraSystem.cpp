@@ -113,7 +113,7 @@ void CameraSystem::tick(double dt) {
 
             mat4 view = Scene::view();
             mat4 projection = Scene::projection();
-            camera.apply(&view, &projection, 1.7777f);
+            camera.apply(&view, &projection, EngineInstance->windowView().aspectRatio());
 
             Scene::setView(view);
             Scene::setProjection(projection);

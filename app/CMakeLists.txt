@@ -11,5 +11,5 @@ else ()
 endif ()
 
 target_include_directories(R3_APP PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_definitions(R3_APP PUBLIC -DR3_APP=1)
 target_link_libraries(R3_APP PRIVATE R3_ENGINE)
-target_compile_definitions(R3_APP PRIVATE -DR3_DLL_IMPL=1)
