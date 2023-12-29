@@ -75,11 +75,7 @@ add_custom_target(COMPILE_SHADERS ALL COMMAND
 
 add_subdirectory(engine)
 
-if (R3_BUILD_EDITOR)
-	add_subdirectory(editor)
-	target_link_libraries(R3_EDITOR PUBLIC R3_ENGINE)
-	target_link_libraries(R3_ENGINE PUBLIC R3_EDITOR)
-endif ()
+add_subdirectory(app)
 
 if(R3_BUILD_TESTS)
 	add_subdirectory(tests)

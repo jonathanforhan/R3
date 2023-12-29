@@ -1,17 +1,19 @@
 #pragma once
+#pragma warning(push)
+#pragma warning(disable : 4251)
 
 /// @file ModelComponent.hpp
 /// @brief Provides Component for attaching mesh and material data to entity
 
-#include "api/Construct.hpp"
-#include "api/Types.hpp"
+#include <R3>
+#include <vector>
 #include "render/Mesh.hpp"
 
 namespace R3 {
 
 /// @brief ModelComponent holds Mesh data
 /// A ModelComponent is constructed through the ModelLoader owned by the Renderer
-class ModelComponent {
+class R3_API ModelComponent {
 public:
     DEFAULT_CONSTRUCT(ModelComponent);
     NO_COPY(ModelComponent);
@@ -33,3 +35,5 @@ private:
 };
 
 } // namespace R3
+
+#pragma warning(pop)

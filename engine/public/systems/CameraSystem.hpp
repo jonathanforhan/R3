@@ -2,12 +2,13 @@
 
 /// @file CameraSystem.hpp
 
+#include <R3>
 #include "InputSystem.hpp"
 
 namespace R3 {
 
 /// @brief System for manipulating Camera (View and Projection)
-class CameraSystem : public InputSystem {
+class R3_API CameraSystem : public InputSystem {
 public:
     /// @brief Create New System, binds event callbacks for Camera response
     CameraSystem();

@@ -1,15 +1,15 @@
 #if R3_VULKAN
 
-#include "render/GraphicsPipeline.hpp"
+#include "render/GraphicsPipeline.hxx"
 
 #include <vulkan/vulkan.hpp>
 #include "api/Ensure.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/PipelineLayout.hpp"
-#include "render/RenderPass.hpp"
-#include "render/Swapchain.hpp"
-#include "render/Vertex.hpp"
+#include "render/LogicalDevice.hxx"
+#include "render/PhysicalDevice.hxx"
+#include "render/PipelineLayout.hxx"
+#include "render/RenderPass.hxx"
+#include "render/Swapchain.hxx"
+#include "render/Vertex.hxx"
 
 namespace R3 {
 

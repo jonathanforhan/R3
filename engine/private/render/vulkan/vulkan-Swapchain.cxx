@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Swapchain.hpp"
+#include "render/Swapchain.hxx"
 
 // clang-format off
 #include <vulkan/vulkan.hpp>
@@ -8,13 +8,13 @@
 // clang-format on
 #include "api/Check.hpp"
 #include "api/Log.hpp"
-#include "render/ColorBuffer.hpp"
-#include "render/DepthBuffer.hpp"
-#include "render/Framebuffer.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/Surface.hpp"
-#include "render/Window.hpp"
+#include "render/ColorBuffer.hxx"
+#include "render/DepthBuffer.hxx"
+#include "render/Framebuffer.hxx"
+#include "render/LogicalDevice.hxx"
+#include "render/PhysicalDevice.hxx"
+#include "render/Surface.hxx"
+#include "render/Window.hxx"
 #include "vulkan-SwapchainSupportDetails.hxx"
 
 namespace R3 {

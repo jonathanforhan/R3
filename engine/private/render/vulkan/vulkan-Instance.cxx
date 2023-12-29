@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Instance.hpp"
+#include "render/Instance.hxx"
 
 // clang-format off
 #include <vulkan/vulkan.hpp>

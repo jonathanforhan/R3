@@ -8,7 +8,7 @@ namespace R3 {
 /// they live in the Scene as a unique_ptrs and their virtual method
 /// will be called each frame. The virtual overhead doesn't matter as
 /// there will be few systems compared to Entities.
-struct System {
+struct R3_API System {
     System() = default;
 
     /// @brief Base class virtual destructor

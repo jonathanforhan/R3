@@ -1,12 +1,12 @@
 #if R3_VULKAN
 
-#include "render/Shader.hpp"
+#include "render/Shader.hxx"
 
 #include <fstream>
 #include <vector>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/LogicalDevice.hpp"
+#include "render/LogicalDevice.hxx"
 
 namespace R3 {
 

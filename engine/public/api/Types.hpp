@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
+#include "api/Api.hpp"
 
 namespace R3 {
 
@@ -68,4 +69,40 @@ using usize = std::size_t;    ///< usize
 using uuid32 = uint32; ///< uuid32
 using uuid64 = uint64; ///< uuid64
 
+using id = usize;
+
 } // namespace R3
+
+// vec export
+template class R3_EXPORT glm::vec<1, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<1, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<1, glm::i32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::i32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::i32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::i32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<1, glm::i64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::i64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::i64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::i64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<1, glm::u32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::u32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::u32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::u32, glm::packed_highp>;
+template class R3_EXPORT glm::vec<1, glm::u64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<2, glm::u64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<3, glm::u64, glm::packed_highp>;
+template class R3_EXPORT glm::vec<4, glm::u64, glm::packed_highp>;
+
+// mat export
+template class R3_EXPORT glm::mat<2, 2, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::mat<3, 3, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::mat<4, 4, glm::f32, glm::packed_highp>;
+template class R3_EXPORT glm::mat<2, 2, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::mat<3, 3, glm::f64, glm::packed_highp>;
+template class R3_EXPORT glm::mat<4, 4, glm::f64, glm::packed_highp>;

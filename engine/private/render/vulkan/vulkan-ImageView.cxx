@@ -1,11 +1,11 @@
 #if R3_VULKAN
 
-#include "render/ImageView.hpp"
+#include "render/ImageView.hxx"
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/Image.hpp"
-#include "render/LogicalDevice.hpp"
+#include "render/Image.hxx"
+#include "render/LogicalDevice.hxx"
 
 namespace R3 {
 

@@ -6,7 +6,7 @@ function(TEST_PROJECT)
 	file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
 
 	get_filename_component(DIRNAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-	add_executable(${DIRNAME})
+	add_library(${DIRNAME} SHARED)
 
 	if (MSVC)
 		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
@@ -14,10 +14,10 @@ function(TEST_PROJECT)
 		set_target_properties(${DIRNAME} PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
 	endif ()
 
-	target_sources(${DIRNAME} PRIVATE ${C_SOURCES} ${CXX_SOURCES})
-	target_include_directories(${DIRNAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-	target_link_libraries(${DIRNAME} PRIVATE R3_ENGINE)
-	target_link_libraries(${DIRNAME} PRIVATE R3_EDITOR)
+	target_sources(${DIRNAME} PUBLIC ${C_SOURCES} ${CXX_SOURCES})
+	target_include_directories(${DIRNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+	target_link_libraries(${DIRNAME} PUBLIC R3_ENGINE)
+	add_dependencies(R3_APP ${DIRNAME})
 	add_dependencies(${DIRNAME} COMPILE_SHADERS)
 endfunction()
 

@@ -1,9 +1,9 @@
 #if R3_VULKAN
 
-#include "render/DescriptorPool.hpp"
+#include "render/DescriptorPool.hxx"
 
 #include <vulkan/vulkan.hpp>
-#include "render/LogicalDevice.hpp"
+#include "render/LogicalDevice.hxx"
 
 namespace R3 {
 

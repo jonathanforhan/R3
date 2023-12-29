@@ -3,8 +3,8 @@
 /// @file Entity.hpp
 /// @brief Provides the Entity part of the Entity Component System
 
+#include <R3>
 #include <entt/entt.hpp>
-#include "api/Construct.hpp"
 #include "components/TransformComponent.hpp"
 #include "core/Scene.hpp"
 #include "systems/TickSystem.hpp"
@@ -22,7 +22,7 @@ concept Initializable = requires(T t) { t.init(); };
 /// we add a TickSystem for the entity and it's tick function gets called every frame
 /// there is no virtual function overhead with the tick system just a normal c++ method call
 /// if the class is `Initializable` (implements init() method) that will be called as well
-class Entity {
+class R3_API Entity {
 public:
     DEFAULT_CONSTRUCT(Entity);
     NO_COPY(Entity);
@@ -110,7 +110,7 @@ public:
 
 private:
     entt::entity m_id = entt::null;
-    Scene* m_parentScene;
+    Scene* m_parentScene = nullptr;
 };
 
 } // namespace R3

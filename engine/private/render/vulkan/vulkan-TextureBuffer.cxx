@@ -1,17 +1,17 @@
 #if R3_VULKAN
 
-#include "render/TextureBuffer.hpp"
+#include "render/TextureBuffer.hxx"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/CommandPool.hpp"
-#include "render/Image.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/Queue.hpp"
-#include "render/Swapchain.hpp"
+#include "render/CommandPool.hxx"
+#include "render/Image.hxx"
+#include "render/LogicalDevice.hxx"
+#include "render/PhysicalDevice.hxx"
+#include "render/Queue.hxx"
+#include "render/Swapchain.hxx"
 
 namespace R3 {
 

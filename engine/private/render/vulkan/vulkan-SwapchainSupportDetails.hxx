@@ -6,7 +6,7 @@
 #include <GLFW/glfw3.h>
 // clang-format on
 #include "api/Types.hpp"
-#include "render/RenderSpecification.hpp"
+#include "render/RenderSpecification.hxx"
 
 namespace R3::vulkan {
 

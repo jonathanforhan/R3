@@ -4,10 +4,8 @@
 /// @brief Event is a container for Event Payloads
 /// Events are listened to by binding an event listener to the scene
 
+#include <R3>
 #include <functional>
-#include "api/Function.hpp"
-#include "api/Hash.hpp"
-#include "api/Types.hpp"
 
 /// @def EVENT(_Signal, _Payload) hashes _Signal and binds _Payload to a new Event
 #define EVENT(_Signal, _Payload) Event<::R3::HASH32(_Signal), _Payload>
@@ -47,7 +45,7 @@ concept EventListener = std::is_const_v<EventTypeDeduced<F>> and requires {
 /// @tparam Signal A Hash of what Event Signal you are binding to
 template <uuid32 Signal, typename Payload>
 requires std::is_trivially_destructible_v<Payload>
-class Event final {
+class R3_API Event final {
 public:
     using PayloadType = Payload;
     using SingalType = std::integral_constant<uuid32, Signal>;

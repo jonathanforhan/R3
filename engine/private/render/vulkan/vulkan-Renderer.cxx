@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Renderer.hpp"
+#include "render/Renderer.hxx"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -10,7 +10,6 @@
 #include "core/Entity.hpp"
 #include "core/Scene.hpp"
 #include "render/ResourceManager.hxx"
-#include "ui/UserInterface.hxx"
 #include "vulkan-PushConstant.hxx"
 #include "vulkan-UniformBufferObject.hxx"
 
@@ -156,7 +155,8 @@ void Renderer::render() {
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     {
-        Scene::componentForEach([&](TransformComponent& transform, ModelComponent& model) {
+        Scene::componentView<TransformComponent, ModelComponent>().each([&](TransformComponent& transform,
+                                                                            ModelComponent& model) {
             for (Mesh& mesh : model.meshes()) {
                 auto& pipeline = GlobalResourceManager.getGraphicsPipelineById(mesh.pipeline);
                 auto& uniform = GlobalResourceManager.getUniformById(mesh.material.uniforms[m_currentFrame]);
@@ -196,7 +196,7 @@ void Renderer::render() {
             }
         });
 
-        ui::UserInterface::draw(commandBuffer);
+        // ui::UserInterface::draw(commandBuffer);
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();

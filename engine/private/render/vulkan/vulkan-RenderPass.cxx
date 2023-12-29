@@ -1,11 +1,11 @@
 #if R3_VULKAN
 
-#include "render/RenderPass.hpp"
+#include "render/RenderPass.hxx"
 
 #include <vulkan/vulkan.hpp>
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/Swapchain.hpp"
+#include "render/LogicalDevice.hxx"
+#include "render/PhysicalDevice.hxx"
+#include "render/Swapchain.hxx"
 #include "vulkan-DepthBufferFormat.hxx"
 
 namespace R3 {

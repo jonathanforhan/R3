@@ -1,16 +1,13 @@
 #if R3_VULKAN
 
-#include "render/Window.hpp"
+#include "render/Window.hxx"
 
+#include <R3>
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
 // clang-format on
-#include "api/Ensure.hpp"
-#include "api/Hash.hpp"
-#include "api/Log.hpp"
-#include "api/Version.hpp"
 #include "core/Scene.hpp"
 #include "input/WindowEvent.hpp"
 

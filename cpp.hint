@@ -22,3 +22,9 @@
 #define NO_MOVE(_Class)                 \
     _Class(_Class&&) noexcept = delete; \
     _Class& operator=(_Class&&) noexcept = delete
+#define R3_EXPORT __declspec(dllexport)
+#define R3_EXPORT
+#define R3_API __declspec(dllexport)
+#define R3_API __declspec(dllimport)
+#define R3_API
+#define R3_DLL __declspec(dllexport)

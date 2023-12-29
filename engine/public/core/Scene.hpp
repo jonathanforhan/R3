@@ -1,24 +1,23 @@
 #pragma once
+#pragma warning(push)
+#pragma warning(disable : 4251) // dll-interface warning
 
-/// @file Scene.hpp
-/// @brief Provid Scene control for the API
-
+#include <R3>
 #include <entt/entt.hpp>
-#include <set>
-#include <unordered_map>
-#include <vector>
-#include "api/Types.hpp"
+#include <queue>
+#include <span>
 #include "core/Engine.hpp"
+#include "input/Event.hpp"
 #include "systems/System.hpp"
 
 namespace R3 {
 
-/// @brief A Scene handle Events and has an ECS Registry ties to it
-class Scene {
+class R3_API Scene {
 public:
     /// @brief Create Scene with uuid
     /// @param id uuid
-    explicit Scene(uuid32 id);
+    explicit Scene(uuid32 id)
+        : id(id) {}
 
     /// @brief Query Component View from entt
     /// @tparam ...T Type of Components to Query
@@ -26,6 +25,7 @@ public:
     template <typename... T>
     [[nodiscard]] static decltype(auto) componentView();
 
+#if not R3_ENGINE
     /// @brief Iterate Components from View
     /// This will use the FunctionTraits<F> type deduction
     /// Limited to two Components
@@ -34,6 +34,7 @@ public:
     template <typename F>
     requires requires { FunctionTraits<F>::Arity::value <= 2; }
     static void componentForEach(F&& callback);
+#endif
 
     /// @brief Add a System to the Scene, will only add if not already present
     /// @tparam T System
@@ -57,6 +58,7 @@ public:
     /// @return Top Event ID
     static uuid32 topEvent();
 
+#if not R3_ENGINE
     /// @brief Bind an Event listener to the current Scene
     /// Uses FunctionTraits type deduction to deduce the Event
     /// @tparam F Functor
@@ -64,6 +66,14 @@ public:
     template <typename F>
     requires EventListener<F>
     static void bindEventListener(F&& callback);
+#endif
+
+    /// @brief Bind an Event listener to the current Scene
+    /// Uses std::function so that it can be dll exported
+    /// @tparam F Functor
+    /// @param callback
+    template <typename E>
+    static void bindEventListener(std::function<void(const E&)> callback);
 
     /// @brief Set View Matrix of Entire Scene
     /// Used by CameraSystem
@@ -118,9 +128,10 @@ private:
     // a lot of entity management is done through Entity
     // this provides cleaner api at cost of being non-local
     friend class Entity;
-    friend class Engine;
 };
 
 } // namespace R3
+
+#pragma warning(pop)
 
 #include "core/Scene.ipp"

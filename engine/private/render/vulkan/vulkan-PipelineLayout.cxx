@@ -1,10 +1,10 @@
 #if R3_VULKAN
 
-#include "render/PipelineLayout.hpp"
+#include "render/PipelineLayout.hxx"
 
 #include <vulkan/vulkan.hpp>
-#include "render/DescriptorSetLayout.hpp"
-#include "render/LogicalDevice.hpp"
+#include "render/DescriptorSetLayout.hxx"
+#include "render/LogicalDevice.hxx"
 #include "vulkan-PushConstant.hxx"
 
 namespace R3 {

@@ -4,7 +4,10 @@ project(R3_ENGINE LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-file(GLOB_RECURSE CXX_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx")
+file(GLOB_RECURSE CXX_SOURCES
+	"${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx"
+	"${CMAKE_CURRENT_SOURCE_DIR}/public/*.cpp"
+)
 
 # [[ EXCLUDE RENDERERS NOT IN USE ]]
 if (NOT R3_OPENGL)
@@ -19,7 +22,7 @@ endif ()
 list(APPEND R3_ENGINE_SOURCES ${CXX_SOURCES})
 
 #[[ R3 ENGINE ]]
-add_library(R3_ENGINE STATIC ${R3_ENGINE_SOURCES})
+add_library(R3_ENGINE SHARED ${R3_ENGINE_SOURCES})
 
 if (MSVC)
 	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} /W4")
@@ -33,12 +36,6 @@ endif ()
 file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
 target_precompile_headers(R3_ENGINE PUBLIC
 	"${PRE_COMPILE_API}"
-	"public/render/DeviceMemory.hpp"
-	"public/render/LogicalDevice.hpp"
-	"public/render/NativeRenderObject.hpp"
-	"public/render/RenderApi.hpp"
-	"public/render/RenderFwd.hpp"
-	"public/render/RenderSpecification.hpp"
 )
 
 #[[ SANITY CHECK ]]
@@ -113,6 +110,10 @@ target_compile_definitions(R3_ENGINE PUBLIC
 	-DVULKAN_HPP_NO_STRUCT_SETTERS=1
 	-DVULKAN_HPP_NO_SPACESHIP_OPERATOR=1
 	-DVULKAN_HPP_NO_TO_STRING=1
+)
+
+target_compile_definitions(R3_ENGINE PRIVATE
+	-DR3_ENGINE=1
 )
 
 if (WIN32)

@@ -2,6 +2,7 @@
 
 #include "vulkan-SwapchainSupportDetails.hxx"
 #include <algorithm>
+#include <ranges>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "api/Log.hpp"
@@ -17,32 +18,26 @@ SwapchainSupportDetails SwapchainSupportDetails::query(vk::PhysicalDevice physic
 }
 
 std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() const {
-    for (const auto& surfaceFormat : surfaceFormats) {
-        if (surfaceFormat.format == vk::Format::eR8G8B8A8Srgb &&
-            surfaceFormat.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear) {
-            return {
-                Format(surfaceFormat.format),
-                ColorSpace(surfaceFormat.colorSpace),
-            };
-        }
+    static constinit auto optimalFormat = vk::Format::eR8G8B8A8Srgb;
+    static constinit auto optimalColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+
+    auto it = std::ranges::find_if(surfaceFormats, [](const auto& surfaceFormat) {
+        return surfaceFormat.format == optimalFormat && surfaceFormat.colorSpace == optimalColorSpace;
+    });
+
+    if (it != surfaceFormats.end()) {
+        return {Format(optimalFormat), ColorSpace(optimalColorSpace)};
     }
 
     LOG(Warning, "surface format 32-bit SRGB is NOT available on this device, using sub-optimal format");
-
-    return {
-        Format(surfaceFormats.front().format),
-        ColorSpace(surfaceFormats.front().colorSpace),
-    };
+    return {Format(surfaceFormats.front().format), ColorSpace(surfaceFormats.front().colorSpace)};
 }
 
 PresentMode SwapchainSupportDetails::optimalPresentMode() const {
-    for (const auto& presentMode : presentModes) {
-        if (presentMode == vk::PresentModeKHR::eMailbox) {
-            return PresentMode(presentMode);
-        }
-    }
+    static constinit auto optimalPresentMode = vk::PresentModeKHR::eMailbox;
 
-    return PresentMode(vk::PresentModeKHR::eFifo);
+    auto it = std::ranges::find_if(presentModes, [](auto& presentMode) { return presentMode == optimalPresentMode; });
+    return PresentMode(it != presentModes.end() ? optimalPresentMode : vk::PresentModeKHR::eFifo);
 }
 
 uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {

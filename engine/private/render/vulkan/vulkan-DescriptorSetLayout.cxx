@@ -1,8 +1,8 @@
 #if R3_VULKAN
 
 #include <vulkan/vulkan.hpp>
-#include "render/DescriptorSetLayout.hpp"
-#include "render/LogicalDevice.hpp"
+#include "render/DescriptorSetLayout.hxx"
+#include "render/LogicalDevice.hxx"
 
 namespace R3 {
 

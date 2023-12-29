@@ -65,7 +65,7 @@ add_subdirectory(rapidjson SYSTEM)
 list(APPEND EXTERN_INCLUDE_DIRS_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include")
 
 #[[ Optick ]]
-if (NOT R3_BUILD_DIST)
+if (NOT R3_BUILD_DIST AND MSVC)
 add_subdirectory(optick)
 list(APPEND EXTERN_LIBS_PRIVATE "OptickCore")
 endif ()

@@ -1,29 +1,21 @@
 #pragma once
 
-/// @file Material.hpp
-
-#include "render/DescriptorPool.hpp"
-#include "render/RenderApi.hpp"
-#include "render/TextureBuffer.hpp"
-#include "render/UniformBuffer.hpp"
+#include <R3>
+#include "render/Texture.hpp"
 
 namespace R3 {
 
-/// @brief Materials are POD owned by Meshes
-/// Materials a DescriptorPool for binding
-/// All the IDs are so we can free it later
-struct Material {
+struct R3_API Material {
     DEFAULT_CONSTRUCT(Material);
     NO_COPY(Material);
     DEFAULT_MOVE(Material);
 
-    /// @brief Manually destroy Material, used by ModelComponent
-    void destroy();
+    void destroy() {}
 
-    DescriptorPool::ID descriptorPool;                    ///< Desciptor ID gotten on allocation
-    PBRTextureResource textures;                          ///< PBR Texture IDs
-    UniformBuffer::ID uniforms[MAX_FRAMES_IN_FLIGHT * 2]; ///< Uniform IDs
-    uint32 pbrFlags = 0;                                  ///< Flags indicating pbr textures present
+    id descriptorPool;
+    PBRTextureResource textures;
+    id uniforms[3 /*MAX_FRAMES_IN_FLIGHT*/ * 2];
+    uint32 pbrFlags = 0;
 };
 
 } // namespace R3

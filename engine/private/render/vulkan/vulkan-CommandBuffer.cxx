@@ -1,20 +1,20 @@
 #if R3_VULKAN
 
-#include "render/CommandBuffer.hpp"
+#    include "render/CommandBuffer.hxx"
 
-#include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
-#include "render/CommandPool.hpp"
-#include "render/DescriptorSet.hpp"
-#include "render/Fence.hpp"
-#include "render/Framebuffer.hpp"
-#include "render/GraphicsPipeline.hpp"
-#include "render/IndexBuffer.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/RenderPass.hpp"
-#include "render/Semaphore.hpp"
-#include "render/Swapchain.hpp"
-#include "render/VertexBuffer.hpp"
+#    include <vulkan/vulkan.hpp>
+#    include "api/Check.hpp"
+#    include "render/CommandPool.hxx"
+#    include "render/DescriptorSet.hxx"
+#    include "render/Fence.hxx"
+#    include "render/Framebuffer.hxx"
+#    include "render/GraphicsPipeline.hxx"
+#    include "render/IndexBuffer.hxx"
+#    include "render/LogicalDevice.hxx"
+#    include "render/RenderPass.hxx"
+#    include "render/Semaphore.hxx"
+#    include "render/Swapchain.hxx"
+#    include "render/VertexBuffer.hxx"
 
 namespace R3 {
 

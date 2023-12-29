@@ -11,20 +11,18 @@ inline bool Entity::valid() const {
 template <typename T, typename... Args>
 requires std::is_base_of_v<Entity, T> and std::is_constructible_v<T, Args...>
 inline T& Entity::create(Args&&... args) {
-    Scene& parentScene = Engine::activeScene();
-
     // add to registry
-    entt::entity id = parentScene.m_registry.create();
+    entt::entity id = CurrentScene->m_registry.create();
 
     // add Entity derived component, what the api thinks of as 'an entity'
-    T& entity = parentScene.m_registry.emplace<T>(id, std::forward<Args>(args)...);
+    T& entity = CurrentScene->m_registry.emplace<T>(id, std::forward<Args>(args)...);
 
     // every Entity gets a transform
-    parentScene.m_registry.emplace<TransformComponent>(id, mat4(1.0f));
+    CurrentScene->m_registry.emplace<TransformComponent>(id, mat4(1.0f));
 
     // setup fields
     entity.m_id = id;
-    entity.m_parentScene = &parentScene;
+    entity.m_parentScene = CurrentScene;
 
     // if entity is has init() method call it
     if constexpr (Initializable<T>) {
@@ -33,7 +31,7 @@ inline T& Entity::create(Args&&... args) {
 
     // if entity has tick(double) add TickSystem (Scene ensures no duplicate systems)
     if constexpr (Tickable<T>) {
-        Engine::activeScene().addSystem<TickSystem<T>>();
+        CurrentScene->addSystem<TickSystem<T>>();
     }
 
     return entity;
@@ -47,6 +45,7 @@ inline void Entity::destroy() {
 template <typename T, typename... Args>
 requires std::is_constructible_v<T, Args...>
 inline T& Entity::emplace(Args&&... args) {
+    static_assert(std::is_same_v<TransformComponent, T>, "Entities are already initialized with a Transform");
     return m_parentScene->m_registry.emplace<T>(m_id, std::forward<Args>(args)...);
 }
 

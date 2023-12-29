@@ -3,20 +3,19 @@
 /// @file CameraComponent.hpp
 /// @brief Component for viewing scenes
 
-#include "api/Construct.hpp"
-#include "api/Types.hpp"
+#include <R3>
 
 namespace R3 {
 
 /// @brief Types of Camera Projections
-enum class CameraType {
+enum class R3_API CameraType {
     Perspective,  ///< Perspective Projection
     Orthographic, ///< Orthographic Projection
 };
 
 /// @brief Camera Component
 /// On creation if the Scene does not have a CameraSystem one will be bound to it
-class CameraComponent {
+class R3_API CameraComponent {
 public:
     NO_COPY(CameraComponent);
 

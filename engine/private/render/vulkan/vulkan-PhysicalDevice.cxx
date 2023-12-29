@@ -1,13 +1,13 @@
 #if R3_VULKAN
 
-#include "render/PhysicalDevice.hpp"
+#include "render/PhysicalDevice.hxx"
 
 #include <cstring>
 #include <vulkan/vulkan.hpp>
 #include "api/Ensure.hpp"
-#include "render/Instance.hpp"
-#include "render/Queue.hpp"
-#include "render/Surface.hpp"
+#include "render/Instance.hxx"
+#include "render/Queue.hxx"
+#include "render/Surface.hxx"
 #include "vulkan-SwapchainSupportDetails.hxx"
 
 namespace R3 {

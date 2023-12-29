@@ -5,6 +5,7 @@
 /// used in various applications like the Event system
 /// https://stackoverflow.com/questions/7943525/is-it-possible-to-figure-out-the-parameter-type-and-return-type-of-a-lambda
 
+#include <R3>
 #include <tuple>
 
 namespace R3 {
@@ -13,14 +14,14 @@ namespace R3 {
 
 /// @brief For generic types, directly use the result of the signature of its 'operator()'
 template <typename T>
-struct FunctionTraits : public FunctionTraits<decltype(&T::operator())> {};
+struct R3_API FunctionTraits : public FunctionTraits<decltype(&T::operator())> {};
 
 /// @brief Deduce FunctionTraits for given Functor
 /// @tparam ClassType Function type
 /// @tparam ReturnType Function Return Type
 /// @tparam ...Args Variadic Arguements
 template <typename ClassType, typename ReturnType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...)> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...)> {
     /// @brief Number of Arguments
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
 
@@ -38,7 +39,7 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...)> {
 /// @tparam ReturnType Function Return Type
 /// @tparam ...Args Variadic Arguements
 template <typename ClassType, typename ReturnType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
     /// @brief Number of Arguments
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
 
@@ -56,7 +57,7 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
 /// @tparam ReturnType Function Return Type
 /// @tparam ...Args Variadic Arguements
 template <typename ClassType, typename ReturnType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args..., ...)> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args..., ...)> {
     /// @brief Number of Arguments
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
 
@@ -74,7 +75,7 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args..., ...)> {
 /// @tparam ReturnType Function Return Type
 /// @tparam ...Args Variadic Arguements
 template <typename ClassType, typename ReturnType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args..., ...) const> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args..., ...) const> {
     /// @brief Number of Arguments
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
 

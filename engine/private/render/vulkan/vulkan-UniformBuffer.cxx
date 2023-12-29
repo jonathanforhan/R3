@@ -2,9 +2,9 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/LogicalDevice.hpp"
-#include "render/PhysicalDevice.hpp"
-#include "render/UniformBuffer.hpp"
+#include "render/LogicalDevice.hxx"
+#include "render/PhysicalDevice.hxx"
+#include "render/UniformBuffer.hxx"
 
 namespace R3 {
 
