@@ -33,10 +33,10 @@ R3_DLL void Run() {
         auto& cameraEntity = Entity::create<Entity>();
         auto& camera = cameraEntity.emplace<CameraComponent>();
         camera.setActive(true);
-        camera.setPosition(vec3(0, 0, -2));
+        camera.setPosition(vec3(0, 0, 0));
 
 //--- Model
-#if 1
+#if 0
         auto& helmet = Entity::create<Helmet>();
 
         Scene::bindEventListener([&](const KeyPressEvent& e) {

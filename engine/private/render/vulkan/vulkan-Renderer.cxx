@@ -186,7 +186,7 @@ void Renderer::render() {
                         .pointLights =
                             {
                                 vulkan::PointLight{
-                                    .position = vec3(1.0f, 0.3f, 1.0f),
+                                    .position = vec3(0.0f, 0.3f, 0.0f),
                                     .color = vec3(0.83f, 0.1f, 0.1f),
                                     .intensity = vec3(0.3f),
                                 },

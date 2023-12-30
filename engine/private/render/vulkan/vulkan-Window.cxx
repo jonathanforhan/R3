@@ -45,7 +45,7 @@ Window::Window(const WindowSpecification& spec) {
 
     //--- Keyboard Input Callback
     glfwSetKeyCallback(handle<GLFWwindow*>(), [](GLFWwindow*, int key, int, int action, int mods) {
-        if (ImGui::GetIO().WantCaptureKeyboard)
+        if (ImGui::GetIO().WantCaptureKeyboard && action != GLFW_RELEASE)
             return;
 
         switch (action) {
