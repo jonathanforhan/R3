@@ -53,7 +53,10 @@ def main(glslc: str, in_dir: str, out_dir: str, force: bool):
 
     # if out_dir is empty directory, invalidate cache
     if not os.listdir(out_dir):
-        os.remove(shader_lock)
+        try:
+            os.remove(shader_lock)
+        except:
+            ...
 
     # read in shader cache
     lock = Lock(shader_lock)
