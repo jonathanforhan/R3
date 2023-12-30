@@ -112,21 +112,6 @@
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "MSVC-OpenGL-Debug",
-      "inherits": [ "base", "debug-base", "msvc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "MSVC-OpenGL-Release",
-      "inherits": [ "base", "release-base", "msvc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "MSVC-OpenGL-Dist",
-      "inherits": [ "base", "dist-base", "msvc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
       "name": "GCC-Vulkan-Debug",
       "inherits": [ "base", "debug-base", "gcc-base" ],
       "cacheVariables": { "R3_VULKAN": true }
@@ -142,21 +127,6 @@
       "cacheVariables": { "R3_VULKAN": true }
     },
     {
-      "name": "GCC-OpenGL-Debug",
-      "inherits": [ "base", "debug-base", "gcc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "GCC-OpenGL-Release",
-      "inherits": [ "base", "release-base", "gcc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "GCC-OpenGL-Dist",
-      "inherits": [ "base", "dist-base", "gcc-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
       "name": "Clang-Vulkan-Debug",
       "inherits": [ "base", "debug-base", "clang-base" ],
       "cacheVariables": { "R3_VULKAN": true }
@@ -170,21 +140,6 @@
       "name": "Clang-Vulkan-Dist",
       "inherits": [ "base", "dist-base", "clang-base" ],
       "cacheVariables": { "R3_VULKAN": true }
-    },
-    {
-      "name": "Clang-OpenGL-Debug",
-      "inherits": [ "base", "debug-base", "clang-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "Clang-OpenGL-Release",
-      "inherits": [ "base", "release-base", "clang-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
-    },
-    {
-      "name": "Clang-OpenGL-Dist",
-      "inherits": [ "base", "dist-base", "clang-base" ],
-      "cacheVariables": { "R3_OPENGL": true }
     }
   ]
 }

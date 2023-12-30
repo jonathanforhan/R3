@@ -19,9 +19,9 @@ struct PointLight {
 
 struct LightBufferObject {
     alignas(16) vec3 cameraPosition;
-    PointLight pointLights[1];
     alignas(4) uint32 lightCount;
     alignas(4) uint32 pbrFlags;
+    PointLight pointLights[1];
 };
 
 } // namespace R3::vulkan

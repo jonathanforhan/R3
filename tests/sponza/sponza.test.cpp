@@ -1,49 +1,60 @@
 #include <R3>
-#include <chrono>
-#include "components/CameraComponent.hpp"
-#include "components/LightComponent.hpp"
-#include "components/ModelComponent.hpp"
-#include "components/CubeMapComponent.hpp"
-#include "systems/CameraSystem.hpp"
-#include "systems/ModelSystem.hpp"
+#include <R3_components>
+#include <R3_core>
+#include <R3_input>
 
 using namespace R3;
 
-struct AnyAsset : Entity {};
+bool rotate = true;
 
-void runScene() {
-    Scene& defaultScene = Engine::addScene("default", true);
+class Helmet : public Entity {
+public:
+    void init() { emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"); }
 
-    Shader shader(ShaderType::GLSL, "shaders/pbr.vert", "shaders/pbr.frag");
-    Shader skyboxShader(ShaderType::GLSL, "shaders/cubemap.vert", "shaders/cubemap.frag");
+    void tick(double dt) {
+        if (rotate) {
+            auto& transform = get<TransformComponent>();
+            transform = glm::rotate(transform, (float)dt, vec3(0.0f, 1.0f, 0.0f));
+        }
+    }
+};
 
-    AnyAsset& sponza = Entity::create<AnyAsset>(&defaultScene);
-    ModelComponent& sponzaComponent = sponza.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf", shader);
+extern "C" {
 
-    AnyAsset& player = Entity::create<AnyAsset>(&defaultScene);
-    CameraComponent& camera = player.emplace<CameraComponent>(CameraType::Perspective);
-    camera.setActive();
-    camera.setPosition(vec3(0, 2, 0));
-
-    AnyAsset& skybox = Entity::create<AnyAsset>(&defaultScene);
-    TextureCubeMap skyboxTexture = TextureCubeMap(TextureCubeMapCreateInfo{
-        .right = "textures/skybox/right.jpg",
-        .left = "textures/skybox/left.jpg",
-        .top = "textures/skybox/top.jpg",
-        .bottom = "textures/skybox/bottom.jpg",
-        .front = "textures/skybox/front.jpg",
-        .back = "textures/skybox/back.jpg",
-    });
-    skybox.emplace<CubeMapComponent>(skyboxTexture, skyboxShader);
-
-    Engine::loop();
+R3_DLL void* Entry() {
+    static Scene scene = Scene(HASH32("foobar"));
+    CurrentScene = &scene;
+    return CurrentScene;
 }
 
-int main() {
+R3_DLL void Run() {
     try {
-        runScene();
-    } catch (std::exception& e) {
+        //--- Camera
+        auto& cameraEntity = Entity::create<Entity>();
+        auto& camera = cameraEntity.emplace<CameraComponent>();
+        camera.setActive(true);
+        camera.setPosition(vec3(0, 0, -2));
+
+//--- Model
+#if 1
+        auto& helmet = Entity::create<Helmet>();
+
+        Scene::bindEventListener([&](const KeyPressEvent& e) {
+            if (e.payload.key == Key::Space && helmet.valid())
+                rotate = !rotate;
+            if (e.payload.key == Key::Enter && helmet.valid())
+                helmet.destroy();
+        });
+#else
+        auto& entity = Entity::create<Entity>();
+        entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
+        auto& transform = entity.get<TransformComponent>();
+        transform = glm::translate(transform, vec3(0, -2, 0));
+#endif
+
+    } catch (std::exception const& e) {
         LOG(Error, e.what());
     }
-    return 0;
 }
+
+} // extern "C"

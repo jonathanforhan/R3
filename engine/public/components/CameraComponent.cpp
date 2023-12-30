@@ -8,7 +8,9 @@
 namespace R3 {
 
 CameraComponent::CameraComponent(CameraType type)
-    : m_cameraType(type) {}
+    : m_cameraType(type) {
+    Scene::addSystem<CameraSystem>();
+}
 
 void CameraComponent::translateForward(float magnitude) {
     m_position += magnitude * glm::normalize(vec3(m_front.x, 0, m_front.z));

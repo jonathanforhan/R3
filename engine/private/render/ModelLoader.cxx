@@ -160,7 +160,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             }
         }
 
-        const uint32 data = 0xFFFF'FFFF;
+        const uint32 data = 0x0000'0000;
         const TextureBufferSpecification nilTextureSpec = {
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
@@ -359,7 +359,7 @@ void ModelLoader::processMaterial(glTF::Model* model, glTF::Material* material) 
 
 void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type) {
     if (m_loadedTextures.contains(textureInfo->index)) {
-        m_prototypes.back().textureIndices.emplace_back(textureInfo->index);
+        m_prototypes.back().textureIndices.emplace_back(m_loadedTextures[textureInfo->index]);
         return;
     } else {
         m_loadedTextures.emplace(textureInfo->index, m_textures.size());

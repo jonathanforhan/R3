@@ -33,11 +33,11 @@ layout (binding = 2) uniform sampler2D u_MetallicRoughness; // metalness B chann
 layout (binding = 3) uniform sampler2D u_Normal;
 layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
 layout (binding = 5) uniform sampler2D u_Emissive;
-layout (set = 0, binding = 6) uniform LightBuffer {
+layout (binding = 6) uniform LightBuffer {
 	vec3 u_ViewPosition;
-	PointLight u_Lights[MAX_LIGHTS];
 	uint u_NumLights;
     uint u_Flags;
+	PointLight u_Lights[MAX_LIGHTS];
 };
 
 vec3 calcTangentNormal() {
@@ -98,7 +98,7 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(0.04);
+	vec3 ambientOcclusion = vec3(0.7);
 	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
 		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
@@ -142,7 +142,7 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
+	vec3 ambient = vec3(0.001) * albedo * ambientOcclusion;
 
 	vec3 color = ambient + Lo;
 

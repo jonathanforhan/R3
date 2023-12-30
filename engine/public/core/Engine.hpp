@@ -12,6 +12,11 @@ class R3_API Scene;
 R3_EXPORT extern Engine* EngineInstance;
 R3_EXPORT extern Scene* CurrentScene;
 
+enum class R3_API EngineStatusCode {
+    Success = 0,
+    DlOutOfData = 1,
+};
+
 class R3_API Engine final {
 public:
     HIDDEN_CONSTRUCT(Engine);
@@ -20,7 +25,9 @@ public:
 
     [[nodiscard]] RenderView& renderView() { return m_renderView; }
 
-    void loop();
+    EngineStatusCode loop(const char* dlName);
+
+    void resetRenderer();
 
     double deltaTime();
 

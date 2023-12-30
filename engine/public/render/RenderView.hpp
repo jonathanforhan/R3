@@ -15,6 +15,8 @@ public:
 
     RenderView(const RenderImpl renderer);
 
+    void recreate();
+
     RenderImpl handle() { return m_renderer; }
 
 private:

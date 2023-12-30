@@ -51,11 +51,18 @@ public:
     /// @param spec
     Renderer(const RendererSpecification& spec);
 
+    /// @brief Destroys the User interface, rest is RAII
+    ~Renderer();
+
     /// @brief Render a frame, this renders new UI frame, records commands and submits to present
     void render();
 
     /// @brief Resize Framebuffers through Swapchain Recreatation
     void resize();
+
+    void initializeUserInterface();
+
+    void destroyUserInterface();
 
     /// @brief Setter from Renderer View Matrix
     /// @param view
@@ -85,6 +92,8 @@ private:
     CommandPool m_commandPool;      // used for the render command buffers
     ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
+
+    Ref<void> m_uiDescriptorPool; // for ImGui UI (gets cleaned up by ImGui so opaque type is fine)
 
     // mirrors shader push constant layout
     struct ViewProjection {
