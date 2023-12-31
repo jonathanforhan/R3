@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.hpp>
 #include "render/DescriptorSetLayout.hxx"
 #include "render/LogicalDevice.hxx"
-#include "vulkan-PushConstant.hxx"
+#include "render/ShaderObjects.hxx"
 
 namespace R3 {
 
@@ -18,7 +18,7 @@ PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
     vk::PushConstantRange pushConstant = {
         .stageFlags = vk::ShaderStageFlagBits::eVertex,
         .offset = 0,
-        .size = sizeof(vulkan::PushConstant),
+        .size = sizeof(VertexPushConstant),
     };
 
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <R3>
+#include <vector>
 #include "render/RenderApi.hxx"
+#include "render/ShaderObjects.hxx"
 
 namespace R3 {
 
@@ -31,7 +33,9 @@ public:
 
     static void displayDeltaTime(double dt);
 
-    static void populate();
+    static void lightEditor();
+
+    static void transformEditor();
 
 private:
     Ref<void> m_descriptorPool; // void Handle because it's non-owning

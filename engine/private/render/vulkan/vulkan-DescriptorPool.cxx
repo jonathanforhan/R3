@@ -21,10 +21,11 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
             return uint32(poolSize.type) == uint32(binding.type);
         });
 
-        if (it == poolSizes.end())
+        if (it == poolSizes.end()) {
             poolSizes.emplace_back(vk::DescriptorType(binding.type), binding.count * spec.descriptorSetCount);
-        else
+        } else {
             it->descriptorCount += binding.count * spec.descriptorSetCount;
+        }
     }
 
     const vk::DescriptorPoolCreateInfo descriptorPoolCreateInfo = {

@@ -12,6 +12,8 @@
 
 namespace R3 {
 
+class EntityView;
+
 class R3_API Scene {
 public:
     using ResourceManagerImpl = void*;
@@ -22,23 +24,6 @@ public:
 
     /// @brief Free resource manager
     ~Scene();
-
-    /// @brief Query Component View from entt
-    /// @tparam ...T Type of Components to Query
-    /// @return Component View
-    template <typename... T>
-    [[nodiscard]] static decltype(auto) componentView();
-
-#if not R3_ENGINE
-    /// @brief Iterate Components from View
-    /// This will use the FunctionTraits<F> type deduction
-    /// Limited to two Components
-    /// @tparam F Functor
-    /// @param callback
-    template <typename F>
-    requires requires { FunctionTraits<F>::Arity::value <= 2; }
-    static void componentForEach(F&& callback);
-#endif
 
     /// @brief clear the Scene's ECS Registry of all entities and components
     void clearRegistry();

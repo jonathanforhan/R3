@@ -7,7 +7,6 @@
 #include <entt/entt.hpp>
 #include "components/TransformComponent.hpp"
 #include "core/Scene.hpp"
-#include "systems/TickSystem.hpp"
 
 namespace R3 {
 
@@ -24,9 +23,16 @@ concept Initializable = requires(T t) { t.init(); };
 /// if the class is `Initializable` (implements init() method) that will be called as well
 class R3_API Entity {
 public:
+    template <typename... T>
+    using Exclude = entt::exclude_t<T...>;
+
     DEFAULT_CONSTRUCT(Entity);
     NO_COPY(Entity);
     DEFAULT_MOVE(Entity);
+
+    /// @brief Get Entity ID
+    /// @return id
+    uuid32 id() const { return uuid32(m_id); }
 
     /// @brief Get the Entity's owning scene
     /// @return parent scene
@@ -108,9 +114,45 @@ public:
     template <typename... T>
     [[nodiscard]] auto tryGet() const;
 
-private:
+    /// @brief Iterate over all the entities in current Scene
+    /// @param callback
+    template <typename F>
+    requires requires(F&& f) { f(std::declval<EntityView&>()); }
+    static void forEach(F&& callback);
+
+    /// @brief Query Component View from entt of Current Scene
+    /// @tparam ...T Type of Components to Query
+    /// @tparam ...Exclude Components to exclude
+    /// @return Component View
+    template <typename... T, typename... Ex>
+    [[nodiscard]] static decltype(auto) componentView(Exclude<Ex...> = entt::exclude_t{});
+
+#if not R3_ENGINE
+    /// @brief Iterate Components from View of Current Scene
+    /// This will use the FunctionTraits<F> type deduction
+    /// Limited to four Components
+    /// @tparam F Functor
+    /// @param callback
+    template <typename F>
+    requires requires { FunctionTraits<F>::Arity::value <= 4; }
+    static void forEachComponent(F&& callback);
+#endif
+
+protected:
     entt::entity m_id = entt::null;
     Scene* m_parentScene = nullptr;
+};
+
+class EntityView : public Entity {
+public:
+    DEFAULT_COPY(EntityView);
+    DEFAULT_MOVE(EntityView);
+
+    EntityView(uuid32 id, Scene* parentScene)
+        : Entity() {
+        m_id = entt::entity(id);
+        m_parentScene = parentScene;
+    }
 };
 
 } // namespace R3

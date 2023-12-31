@@ -49,7 +49,8 @@ EngineStatusCode Engine::loop(const char* dlName) {
 
         UserInterface::beginFrame();
         UserInterface::displayDeltaTime(dt);
-        UserInterface::populate();
+        UserInterface::lightEditor();
+        UserInterface::transformEditor();
         UserInterface::endFrame();
 
         renderer.render();

@@ -30,6 +30,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...)> {
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
 
+    using ArgPack = std::tuple<Args...>;
+
     /// @brief Result type alias
     using ResultType = ReturnType;
 };
@@ -47,6 +49,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
     /// @tparam i ith element
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
+    using ArgPack = std::tuple<Args...>;
 
     /// @brief Result type alias
     using ResultType = ReturnType;
@@ -66,6 +70,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args..., ...)> {
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
 
+    using ArgPack = std::tuple<Args...>;
+
     /// @brief Result type alias
     using ResultType = ReturnType;
 };
@@ -83,6 +89,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args..., ...) const> {
     /// @tparam i ith element
     template <std::size_t i>
     using ArgType = typename std::tuple_element_t<i, std::tuple<Args...>>;
+
+    using ArgPack = std::tuple<Args...>;
 
     /// @brief Result type alias
     using ResultType = ReturnType;

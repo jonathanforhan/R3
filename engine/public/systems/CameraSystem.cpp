@@ -1,6 +1,7 @@
 #include "systems/CameraSystem.hpp"
 
 #include "components/CameraComponent.hpp"
+#include "core/Entity.hpp"
 #include "core/Scene.hpp"
 #include "input/KeyboardEvent.hpp"
 #include "input/MouseEvent.hpp"
@@ -81,7 +82,7 @@ CameraSystem::CameraSystem() {
 void CameraSystem::tick(double dt) {
     float deltaT = static_cast<float>(dt);
 
-    Scene::componentView<CameraComponent>().each([this, deltaT](CameraComponent& camera) {
+    Entity::componentView<CameraComponent>().each([this, deltaT](CameraComponent& camera) {
         if (camera.active()) {
             static constexpr float mouseSensitivity = 360.0f;
             static constexpr float movementSensitivity = 4.0f;

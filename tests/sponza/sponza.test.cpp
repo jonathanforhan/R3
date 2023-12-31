@@ -39,11 +39,29 @@ R3_DLL void Run() {
 #if 1
         auto& helmet = Entity::create<Helmet>();
 
+        auto& red = Entity::create<Entity>().emplace<LightComponent>();
+        red.position = vec3(2, 1, 0);
+        red.color = vec3(1, 0, 0);
+        red.intensity = 0.8f;
+
+        auto& green = Entity::create<Entity>().emplace<LightComponent>();
+        green.position = vec3(-2, 1, 0);
+        green.color = vec3(0, 1, 0);
+        green.intensity = 0.8f;
+
+        auto& blue = Entity::create<Entity>().emplace<LightComponent>();
+        blue.position = vec3(0, 1, 2);
+        blue.color = vec3(0, 0, 1);
+        blue.intensity = 0.8f;
+
         Scene::bindEventListener([&](const KeyPressEvent& e) {
-            if (e.payload.key == Key::Space && helmet.valid())
+            if (e.payload.key == Key::Space && helmet.valid()) {
                 rotate = !rotate;
-            if (e.payload.key == Key::Enter && helmet.valid())
+            } else if (e.payload.key == Key::Enter && helmet.valid()) {
                 helmet.destroy();
+            } else if (e.payload.key == Key::J) {
+                Entity::forEach([](const EntityView& e) { LOG(Info, e.id()); });
+            }
         });
 #else
         auto& entity = Entity::create<Entity>();

@@ -2,6 +2,8 @@
 
 #include "core/Entity.hpp"
 
+#include "systems/TickSystem.hpp"
+
 namespace R3 {
 
 inline bool Entity::valid() const {
@@ -85,5 +87,51 @@ template <typename... T>
 inline auto Entity::tryGet() const {
     return m_parentScene->m_registry.try_get<T...>(m_id);
 }
+
+template <typename F>
+requires requires(F&& f) { f(std::declval<EntityView&>()); }
+inline void Entity::forEach(F&& callback) {
+    auto view = CurrentScene->m_registry.view<entt::entity>();
+
+    for (auto entity : view) {
+        EntityView entityView(uuid32(entity), CurrentScene);
+        callback(entityView);
+    }
+}
+
+template <typename... T, typename... Ex>
+inline decltype(auto) Entity::componentView(Exclude<Ex...> exclude) {
+    return CurrentScene->m_registry.view<T...>(exclude);
+}
+
+#if not R3_ENGINE
+template <typename F>
+requires requires { FunctionTraits<F>::Arity::value <= 4; }
+inline void Entity::forEachComponent(F&& callback) {
+    using Traits = FunctionTraits<F>;
+
+    static_assert(Traits::Arity::value != 0, "need a component to iterate through");
+
+    if constexpr (Traits::Arity::value == 1) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        CurrentScene->m_registry.view<Arg0>().each(callback);
+    } else if constexpr (Traits::Arity::value == 2) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        using Arg1 = std::remove_reference_t<typename Traits::template ArgType<1>>;
+        CurrentScene->m_registry.view<Arg0, Arg1>().each(callback);
+    } else if constexpr (Traits::Arity::value == 3) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        using Arg1 = std::remove_reference_t<typename Traits::template ArgType<1>>;
+        using Arg2 = std::remove_reference_t<typename Traits::template ArgType<2>>;
+        CurrentScene->m_registry.view<Arg0, Arg1, Arg2>().each(callback);
+    } else if constexpr (Traits::Arity::value == 4) {
+        using Arg0 = std::remove_reference_t<typename Traits::template ArgType<0>>;
+        using Arg1 = std::remove_reference_t<typename Traits::template ArgType<1>>;
+        using Arg2 = std::remove_reference_t<typename Traits::template ArgType<2>>;
+        using Arg3 = std::remove_reference_t<typename Traits::template ArgType<3>>;
+        CurrentScene->m_registry.view<Arg0, Arg1, Arg2, Arg3>().each(callback);
+    }
+}
+#endif
 
 } // namespace R3

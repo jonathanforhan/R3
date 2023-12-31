@@ -24,6 +24,7 @@
 #include "render/RenderApi.hxx"
 #include "render/RenderPass.hxx"
 #include "render/Semaphore.hxx"
+#include "render/ShaderObjects.hxx"
 #include "render/Surface.hxx"
 #include "render/Swapchain.hxx"
 #include "render/Window.hxx"
@@ -73,6 +74,9 @@ public:
     ModelLoader& modelLoader() { return m_modelLoader; }
 
 private:
+    void updateLighting();
+
+private:
     Window& m_window;
     Instance m_instance;
     Surface m_surface;
@@ -86,16 +90,13 @@ private:
     ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
 
-    // mirrors shader push constant layout
-    struct ViewProjection {
-        alignas(16) mat4 view = mat4(1.0f);
-        alignas(16) mat4 projection = mat4(1.0f);
-    } m_viewProjection;
-
     Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
+
+    ViewProjection m_viewProjection;
+    std::vector<PointLightShaderObject> m_pointLights;
 
     UserInterface m_ui;
     ModelLoader m_modelLoader;

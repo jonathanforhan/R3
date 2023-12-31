@@ -1,6 +1,5 @@
 #pragma once
 
 #include "public/systems/CameraSystem.hpp"
-#include "public/systems/ModelSystem.hpp"
 #include "public/systems/System.hpp"
 #include "public/systems/TickSystem.hpp"

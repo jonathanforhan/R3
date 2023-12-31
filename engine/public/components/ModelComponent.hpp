@@ -26,7 +26,7 @@ public:
 
     /// @brief vector<Mesh> getter
     /// @return meshes
-    std::vector<Mesh>& meshes() { return m_meshes; }
+    const std::vector<Mesh>& meshes() const { return m_meshes; }
 
 private:
     std::vector<Mesh> m_meshes;

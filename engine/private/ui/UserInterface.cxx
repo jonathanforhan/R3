@@ -3,6 +3,9 @@
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
+#include <R3_components>
+#include <R3_core>
+#include <format>
 #include <vulkan/vulkan.hpp>
 #include "render/Renderer.hxx"
 
@@ -97,8 +100,38 @@ void UserInterface::displayDeltaTime(double dt) {
     ImGui::End();
 }
 
-void UserInterface::populate() {
-    ImGui::ShowDemoWindow();
+void UserInterface::lightEditor() {
+    static_assert(sizeof(vec3) == 3 * sizeof(float), "need this property for casting");
+    uint32 i = 0;
+
+    ImGui::Begin("Light Editor");
+    Entity::componentView<LightComponent>().each([&](LightComponent& light) {
+        ImGui::PushID(i);
+        ImGui::Text("Light %d", i + 1);
+        ImGui::DragFloat3("position", glm::value_ptr(light.position), 0.01f);
+        ImGui::DragFloat3("color", glm::value_ptr(light.color), 0.005f, 0.0f, 1.0f);
+        ImGui::DragFloat("intensity", &light.intensity, 0.005f, 0.0f, 1.0f);
+        ImGui::Dummy(ImVec2(0, 10));
+        ImGui::PopID();
+        i++;
+    });
+    ImGui::End();
+}
+
+void UserInterface::transformEditor() {
+    static_assert(sizeof(vec3) == 3 * sizeof(float), "need this property for casting");
+    uint32 i = 0;
+
+    ImGui::Begin("Transform Editor");
+    Entity::componentView<TransformComponent>().each([&](TransformComponent& transform) {
+        ImGui::PushID(i);
+        ImGui::Text("Entity %d", i + 1);
+        ImGui::DragFloat3("transform", glm::value_ptr(transform[3]), 0.01f);
+        ImGui::Dummy(ImVec2(0, 10));
+        ImGui::PopID();
+        i++;
+    });
+    ImGui::End();
 }
 
 } // namespace R3

@@ -12,9 +12,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
 #include "render/ResourceManager.hxx"
+#include "render/ShaderObjects.hxx"
 #include "ui/UserInterface.hxx"
-#include "vulkan-PushConstant.hxx"
-#include "vulkan-UniformBufferObject.hxx"
 
 namespace R3 {
 
@@ -137,6 +136,12 @@ Renderer::Renderer(const RendererSpecification& spec)
         .renderPass = m_renderPass,
         .commandPool = m_commandPool,
     });
+
+    //--- Shader View Projection
+    m_viewProjection = {
+        .view = mat4(1.0f),
+        .projection = mat4(1.0f),
+    };
 }
 
 void Renderer::render() {
@@ -147,7 +152,7 @@ void Renderer::render() {
 
     Semaphore& imageAvailable = m_imageAvailable[m_currentFrame];
 
-    auto [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
+    auto&& [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
         m_swapchain.as<vk::SwapchainKHR>(), ~0ULL, imageAvailable.as<vk::Semaphore>());
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
@@ -161,58 +166,53 @@ void Renderer::render() {
 
     inFlight.reset();
 
-    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
+    //****************************************** SETUP BEGIN ******************************************//
 
+    updateLighting();
+
+    //******************************************* SETUP END *******************************************//
+
+    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
     commandBuffer.resetCommandBuffer();
     commandBuffer.beginCommandBuffer();
     commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
-    {
-        Scene::componentView<TransformComponent, ModelComponent>().each(
-            [&](TransformComponent& transform, ModelComponent& model) {
-                for (Mesh& mesh : model.meshes()) {
-                    auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
+    //*************************************** RENDER PASS BEGIN ***************************************//
 
-                    auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);
-                    auto& uniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame]);
-                    auto& lightUniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
-                    auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
-                    auto& vertexBuffer = resourceManager->getVertexBufferById(mesh.vertexBuffer);
-                    auto& indexBuffer = resourceManager->getIndexBufferById(mesh.indexBuffer);
+    // draw every mesh of every model
+    auto draw = [&](const TransformComponent& transform, const ModelComponent& model) {
+        for (const Mesh& mesh : model.meshes()) {
+            auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
 
-                    commandBuffer.bindPipeline(pipeline);
-                    commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+            auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);
+            auto& uniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame]);
+            auto& lightUniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
+            auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
+            auto& vertexBuffer = resourceManager->getVertexBufferById(mesh.vertexBuffer);
+            auto& indexBuffer = resourceManager->getIndexBufferById(mesh.indexBuffer);
 
-                    vulkan::LightBufferObject lbo = {
-                        .cameraPosition = Scene::cameraPosition(),
-                        .lightCount = 1,
-                        .pbrFlags = mesh.material.pbrFlags,
-                        .pointLights =
-                            {
-                                vulkan::PointLight{
-                                    .position = vec3(0.0f, 0.3f, 0.0f),
-                                    .color = vec3(0.83f, 0.1f, 0.1f),
-                                    .intensity = vec3(0.3f),
-                                },
-                            },
-                    };
+            commandBuffer.bindPipeline(pipeline);
+            commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
-                    uniform.update(&transform, sizeof(transform), 0);
-                    lightUniform.update(&lbo, sizeof(lbo), 0);
+            commandBuffer.pushConstants(
+                pipeline.layout(), ShaderStage::Vertex, &m_viewProjection, sizeof(m_viewProjection));
+            uniform.update(&transform, sizeof(transform));
+            FragmentUniformBufferObject fubo = {
+                .cameraPosition = Scene::cameraPosition(),
+                .pbrFlags = mesh.material.pbrFlags,
+                .lightCount = static_cast<uint32>(m_pointLights.size()),
+            };
+            std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
+            lightUniform.update(&fubo, sizeof(fubo));
 
-                    commandBuffer.as<vk::CommandBuffer>().pushConstants(pipeline.layout().as<vk::PipelineLayout>(),
-                                                                        vk::ShaderStageFlagBits::eVertex,
-                                                                        0,
-                                                                        sizeof(ViewProjection),
-                                                                        &m_viewProjection);
+            commandBuffer.bindVertexBuffer(vertexBuffer);
+            commandBuffer.bindIndexBuffer(indexBuffer);
+            commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
+        }
+    };
+    Entity::componentView<TransformComponent, ModelComponent>().each(draw);
+    m_ui.drawFrame(commandBuffer);
 
-                    commandBuffer.bindVertexBuffer(vertexBuffer);
-                    commandBuffer.bindIndexBuffer(indexBuffer);
-                    commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
-                }
-            });
-
-        m_ui.drawFrame(commandBuffer);
-    }
+    //**************************************** RENDER PASS END ****************************************//
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
 
@@ -258,6 +258,20 @@ void Renderer::resize() {
 
 void Renderer::waitIdle() const {
     m_logicalDevice.as<vk::Device>().waitIdle();
+}
+
+void Renderer::updateLighting() {
+    m_pointLights.clear();
+
+    Entity::componentView<LightComponent>().each([&, this](LightComponent& light) {
+        if (m_pointLights.size() < MAX_LIGHTS) {
+            m_pointLights.emplace_back(PointLightShaderObject{
+                .position = light.position,
+                .color = light.color,
+                .intensity = light.intensity,
+            });
+        }
+    });
 }
 
 } // namespace R3

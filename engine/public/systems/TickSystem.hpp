@@ -3,7 +3,7 @@
 /// @file TickSystem.hpp
 
 #include "System.hpp"
-#include "core/Engine.hpp"
+#include "core/Entity.hpp"
 
 namespace R3 {
 
@@ -19,7 +19,7 @@ struct TickSystem : public System {
     /// @brief Standard R3 tick method
     /// @param dt delta time in milliseconds
     void tick(double dt) override {
-        CurrentScene->componentView<T>().each([=](T& component) { component.tick(dt); });
+        Entity::componentView<T>().each([=](T& component) { component.tick(dt); });
     }
 };
 

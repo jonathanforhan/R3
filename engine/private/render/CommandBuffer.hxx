@@ -101,6 +101,18 @@ public:
     /// @param descriptorSets
     void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;
 
+    /// @brief Push Constants to a Shader Stage
+    /// @param layout
+    /// @param stage Shader Stage that contains push constant
+    /// @param data push constant data pointer
+    /// @param size size in bytes of data
+    /// @param offset offset into push constant to push
+    void pushConstants(const PipelineLayout& layout,
+                       ShaderStage::Flags stage,
+                       const void* data,
+                       usize size,
+                       usize offset = 0) const;
+
     /// @brief Submit to the CommandBuffer's LogicalDevice's Graphics Queue from given spec
     /// @param spec
     void submit(const CommandBufferSumbitSpecification& spec) const;

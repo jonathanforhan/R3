@@ -31,8 +31,8 @@ class Buffer;
 class VertexBuffer;
 template <std::integral T>
 class IndexBuffer;
-struct UniformBufferObject;
 class UniformBuffer;
+class StorageBuffer;
 class TextureBuffer;
 class Sampler;
 class ColorBuffer;

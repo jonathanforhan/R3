@@ -1,20 +1,20 @@
 #if R3_VULKAN
 
-#    include "render/CommandBuffer.hxx"
+#include "render/CommandBuffer.hxx"
 
-#    include <vulkan/vulkan.hpp>
-#    include "api/Check.hpp"
-#    include "render/CommandPool.hxx"
-#    include "render/DescriptorSet.hxx"
-#    include "render/Fence.hxx"
-#    include "render/Framebuffer.hxx"
-#    include "render/GraphicsPipeline.hxx"
-#    include "render/IndexBuffer.hxx"
-#    include "render/LogicalDevice.hxx"
-#    include "render/RenderPass.hxx"
-#    include "render/Semaphore.hxx"
-#    include "render/Swapchain.hxx"
-#    include "render/VertexBuffer.hxx"
+#include <vulkan/vulkan.hpp>
+#include "api/Check.hpp"
+#include "render/CommandPool.hxx"
+#include "render/DescriptorSet.hxx"
+#include "render/Fence.hxx"
+#include "render/Framebuffer.hxx"
+#include "render/GraphicsPipeline.hxx"
+#include "render/IndexBuffer.hxx"
+#include "render/LogicalDevice.hxx"
+#include "render/RenderPass.hxx"
+#include "render/Semaphore.hxx"
+#include "render/Swapchain.hxx"
+#include "render/VertexBuffer.hxx"
 
 namespace R3 {
 
@@ -162,6 +162,18 @@ void CommandBuffer::bindDescriptorSet(const PipelineLayout& pipelineLayout, cons
     vk::DescriptorSet descriptors[]{descriptorSet.as<vk::DescriptorSet>()};
     as<vk::CommandBuffer>().bindDescriptorSets(
         vk::PipelineBindPoint::eGraphics, pipelineLayout.as<vk::PipelineLayout>(), 0, descriptors, {});
+}
+
+void CommandBuffer::pushConstants(const PipelineLayout& layout,
+                                  ShaderStage::Flags stage,
+                                  const void* data,
+                                  usize size,
+                                  usize offset) const {
+    as<vk::CommandBuffer>().pushConstants(layout.as<vk::PipelineLayout>(),
+                                          vk::ShaderStageFlags(stage),
+                                          static_cast<uint32>(offset),
+                                          static_cast<uint32>(size),
+                                          data);
 }
 
 void CommandBuffer::submit(const CommandBufferSumbitSpecification& spec) const {

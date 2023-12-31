@@ -1,9 +1,9 @@
 #pragma once
 
-#include <windows.h>
 #include <R3>
 
 #if _WIN32
+#include <windows.h>
 using DlModule = HMODULE;
 #else
 #error "Windows is currently the only platform supported"
@@ -19,11 +19,11 @@ struct DynamicLibrary {
     DynamicLibrary() = default;
     ~DynamicLibrary();
 
-    void loadLib(char const* libpath);
+    void loadLib(const char* libpath);
 
-    DlEntry loadEntry(char const* funcname);
+    DlEntry loadEntry(const char* funcname);
 
-    DlRun loadRunner(char const* funcname);
+    DlRun loadRunner(const char* funcname);
 
     DlModule mod = nullptr;
 };

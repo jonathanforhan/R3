@@ -1,7 +1,8 @@
 #version 460
 
 #define M_PI 3.14159265359
-#define MAX_LIGHTS 1
+#define MAX_LIGHTS 32
+
 #define ALBEDO_FLAG_BIT				(1 << 0)
 #define METALLIC_ROUGHNESS_FLAG_BIT	(1 << 1)
 #define NORMAL_FLAG_BIT				(1 << 2)
@@ -18,7 +19,7 @@ layout (location = 0) out vec4 f_Color;
 struct PointLight {
 	vec3 position;
 	vec3 color;
-	vec3 intensity;
+	float intensity;
 };
 
 struct DirectionalLight {
@@ -35,8 +36,8 @@ layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
 layout (binding = 5) uniform sampler2D u_Emissive;
 layout (binding = 6) uniform LightBuffer {
 	vec3 u_ViewPosition;
-	uint u_NumLights;
     uint u_Flags;
+	uint u_NumLights;
 	PointLight u_Lights[MAX_LIGHTS];
 };
 
@@ -119,7 +120,7 @@ void main() {
 		vec3 H = normalize(V + L);
 		float dist = length(u_Lights[i].position - v_Position);
 		float attenuation = 1.0 / (dist * dist);
-		vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation;
+		vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation * 0.2;
 
 		// cook-terrance BRDF
 		float NDF = distributionGGX(N, H, roughness);

@@ -5,7 +5,7 @@
 #include "ResourceManager.hxx"
 #include "core/Scene.hpp"
 #include "media/glTF/glTF-Model.hxx"
-#include "vulkan/vulkan-UniformBufferObject.hxx"
+#include "render/ShaderObjects.hxx"
 
 namespace R3 {
 
@@ -118,12 +118,12 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             mesh.material.uniforms[i] = resourceManager->allocateUniform({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
-                .bufferSize = sizeof(vulkan::UniformBufferObject),
+                .bufferSize = sizeof(VertexUniformBufferObject),
             });
             mesh.material.uniforms[i + 3] = resourceManager->allocateUniform({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
-                .bufferSize = sizeof(vulkan::LightBufferObject),
+                .bufferSize = sizeof(FragmentUniformBufferObject),
             });
         }
 
@@ -173,8 +173,9 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         };
 
         for (auto i = 0U; i < PBR_TEXTURE_COUNT; i++) {
-            if (!(mesh.material.pbrFlags & (1 << i)))
+            if (!(mesh.material.pbrFlags & (1 << i))) {
                 textureDescriptors.push_back({resourceManager->allocateTexture(nilTextureSpec), i + 1});
+            }
         }
 
         // Bindings
@@ -231,11 +232,12 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             glTF::Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
             glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
-            uint32 nComponents{};
-            if (accessor.type == glTF::VEC3)
+            uint32 nComponents = 0;
+            if (accessor.type == glTF::VEC3) {
                 nComponents = 3;
-            else if (accessor.type == glTF::VEC2)
+            } else if (accessor.type == glTF::VEC2) {
                 nComponents = 2;
+            }
 
             usize nBytes = usize(accessor.byteOffset) + bufferView.byteOffset;
             usize nSize = datatypeSize(accessor.componentType);
@@ -254,17 +256,19 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
             // and then the translation. If none are provided, the transform is the identity. When a node is
             // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
-            mat4 t;
-            for (uint32 i = 0; i < 16; i++)
+            mat4 t = {};
+            for (uint32 i = 0; i < 16; i++) {
                 t[i / 4][i % 4] = node->matrix[i];
+            }
 
             vec3 T = vec3(node->translation[0], node->translation[1], node->translation[2]);
             t *= glm::translate(t, T);
 
             vec3 R = vec3(node->rotation[0], node->rotation[1], node->rotation[2]);
             float theta = node->rotation[3];
-            if (R.x || R.y || R.z)
+            if (R.x || R.y || R.z) {
                 t *= glm::rotate(t, theta, R);
+            }
 
             vec3 S = vec3(node->scale[0], node->scale[1], node->scale[2]);
             t *= glm::scale(t, S);
@@ -288,17 +292,21 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 
             indices.resize(accessor.count);
             if (nSize == 1) {
-                for (uint32 i = 0; i < accessor.count; i++)
+                for (uint32 i = 0; i < accessor.count; i++) {
                     indices[i] = *(uint8*)(&model->buffer()[nBytes + i * nSize]);
+                }
             } else if (nSize == 2) {
-                for (uint32 i = 0; i < accessor.count; i++)
+                for (uint32 i = 0; i < accessor.count; i++) {
                     indices[i] = *(uint16*)(&model->buffer()[nBytes + i * nSize]);
+                }
             } else if (nSize == 4) {
-                for (uint32 i = 0; i < accessor.count; i++)
+                for (uint32 i = 0; i < accessor.count; i++) {
                     indices[i] = *(uint32*)(&model->buffer()[nBytes + i * nSize]);
+                }
             } else if (nSize == 8) {
-                for (uint32 i = 0; i < accessor.count; i++)
+                for (uint32 i = 0; i < accessor.count; i++) {
                     indices[i] = static_cast<uint32>(*(uint64*)(&model->buffer()[nBytes + i * nSize]));
+                }
             }
         }
 
@@ -308,11 +316,13 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
         for (usize i = 0; i < vertices.size(); i++) {
             vertices[i].position = positions[i];
 
-            if (i < normals.size())
+            if (i < normals.size()) {
                 vertices[i].normal = normals[i];
+            }
 
-            if (i < texCoords.size())
+            if (i < texCoords.size()) {
                 vertices[i].textureCoords = texCoords[i];
+            }
         }
 
         m_prototypes.emplace_back(MeshPrototype{
@@ -338,22 +348,27 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 }
 
 void ModelLoader::processMaterial(glTF::Model* model, glTF::Material* material) {
-    if (material->pbrMetallicRoughness.has_value()) {
-        if (material->emissiveTexture.has_value())
+    if (material->pbrMetallicRoughness) {
+        if (material->emissiveTexture) {
             processTexture(model, &*material->emissiveTexture, TextureType::Emissive);
+        }
 
-        if (material->occlusionTexture.has_value())
+        if (material->occlusionTexture) {
             processTexture(model, &*material->occlusionTexture, TextureType::AmbientOcclusion);
+        }
 
-        if (material->normalTexture.has_value())
+        if (material->normalTexture) {
             processTexture(model, &*material->normalTexture, TextureType::Normal);
+        }
 
-        if (material->pbrMetallicRoughness->metallicRoughnessTexture.has_value())
+        if (material->pbrMetallicRoughness->metallicRoughnessTexture) {
             processTexture(
                 model, &*material->pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness);
+        }
 
-        if (material->pbrMetallicRoughness->baseColorTexture.has_value())
+        if (material->pbrMetallicRoughness->baseColorTexture) {
             processTexture(model, &*material->pbrMetallicRoughness->baseColorTexture, TextureType::Albedo);
+        }
     }
 }
 

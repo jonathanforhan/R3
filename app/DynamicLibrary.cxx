@@ -8,7 +8,7 @@ DynamicLibrary::~DynamicLibrary() {
         return;
     }
 
-    // Window HMODULES are reference counted so if we free one in use somewhere else it's fine
+    // Windows DLLs are reference counted so if we free one in use somewhere else it's fine
     BOOL success = FreeLibrary(mod);
     mod = NULL;
 
