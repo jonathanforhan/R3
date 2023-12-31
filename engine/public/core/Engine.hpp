@@ -27,8 +27,6 @@ public:
 
     EngineStatusCode loop(const char* dlName);
 
-    void resetRenderer();
-
     double deltaTime();
 
 private:

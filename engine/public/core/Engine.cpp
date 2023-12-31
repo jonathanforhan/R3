@@ -30,13 +30,13 @@ EngineStatusCode Engine::loop(const char* dlName) {
     auto& window = *reinterpret_cast<Window*>(m_windowView.handle());
     auto& renderer = *reinterpret_cast<Renderer*>(m_renderView.handle());
 
-    window.show();
-
     EngineStatusCode code = EngineStatusCode::Success;
 
 #if not R3_BUILD_DIST
     int frameCounter = 0;
 #endif
+
+    window.show();
 
     while ((!window.shouldClose() && code == EngineStatusCode::Success) || !Scene::isEventQueueEmpty()) {
         double dt = deltaTime();
@@ -47,21 +47,19 @@ EngineStatusCode Engine::loop(const char* dlName) {
         renderer.setView(CurrentScene->view());
         renderer.setProjection(CurrentScene->projection());
 
+        UserInterface::beginFrame();
+        UserInterface::displayDeltaTime(dt);
+        UserInterface::populate();
+        UserInterface::endFrame();
+
         renderer.render();
 
         window.update();
 
 #if not R3_BUILD_DIST
-        frameCounter++;
-
-        // poll for new dl every 60 frames
-        if (frameCounter == 60) {
-            if (std::filesystem::exists(dlName)) {
-                LOG(Info, "new client dl detected");
-                code = EngineStatusCode::DlOutOfData;
-            }
-
-            frameCounter = 0;
+        frameCounter = (frameCounter + 1) % 60; // poll for new dl every 60 frames
+        if (frameCounter == 0 && std::filesystem::exists(dlName)) {
+            code = EngineStatusCode::DlOutOfData;
         }
 #endif
     }
@@ -71,12 +69,6 @@ EngineStatusCode Engine::loop(const char* dlName) {
     CurrentScene->clearRegistry();
 
     return code;
-}
-
-void Engine::resetRenderer() {
-    auto* renderer = reinterpret_cast<Renderer*>(m_renderView.handle());
-    delete renderer;
-    m_renderView = RenderView(new Renderer({*reinterpret_cast<Window*>(m_windowView.handle())}));
 }
 
 double Engine::deltaTime() {

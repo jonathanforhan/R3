@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Renderer.hxx
 /// Main R3 Renderer
 /// - Create Intance
 /// - Create Surface
@@ -28,6 +27,7 @@
 #include "render/Surface.hxx"
 #include "render/Swapchain.hxx"
 #include "render/Window.hxx"
+#include "ui/UserInterface.hxx"
 
 namespace R3 {
 
@@ -37,7 +37,7 @@ class UserInterface;
 
 /// @brief Renderer Specification
 struct RendererSpecification {
-    Window& window; ///< Window
+    Window& window;
 };
 
 /// @brief Main R3 Renderer
@@ -51,18 +51,11 @@ public:
     /// @param spec
     Renderer(const RendererSpecification& spec);
 
-    /// @brief Destroys the User interface, rest is RAII
-    ~Renderer();
-
     /// @brief Render a frame, this renders new UI frame, records commands and submits to present
     void render();
 
     /// @brief Resize Framebuffers through Swapchain Recreatation
     void resize();
-
-    void initializeUserInterface();
-
-    void destroyUserInterface();
 
     /// @brief Setter from Renderer View Matrix
     /// @param view
@@ -93,8 +86,6 @@ private:
     ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
 
-    Ref<void> m_uiDescriptorPool; // for ImGui UI (gets cleaned up by ImGui so opaque type is fine)
-
     // mirrors shader push constant layout
     struct ViewProjection {
         alignas(16) mat4 view = mat4(1.0f);
@@ -106,9 +97,8 @@ private:
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
 
+    UserInterface m_ui;
     ModelLoader m_modelLoader;
-
-    friend ui::UserInterface;
 };
 
 } // namespace R3

@@ -120,6 +120,15 @@ Renderer::Renderer(const RendererSpecification& spec)
         m_inFlight[i] = Fence({m_logicalDevice});
     }
 
+    //--- UserInterface
+    m_ui = UserInterface({
+        .window = m_window,
+        .instance = m_instance,
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .renderPass = m_renderPass,
+    });
+
     //--- Model Loader
     m_modelLoader = ModelLoader({
         .physicalDevice = m_physicalDevice,
@@ -128,12 +137,6 @@ Renderer::Renderer(const RendererSpecification& spec)
         .renderPass = m_renderPass,
         .commandPool = m_commandPool,
     });
-
-    initializeUserInterface();
-}
-
-Renderer::~Renderer() {
-    destroyUserInterface();
 }
 
 void Renderer::render() {
@@ -208,10 +211,7 @@ void Renderer::render() {
                 }
             });
 
-        UserInterface::beginFrame();
-        UserInterface::populate();
-        UserInterface::endFrame();
-        UserInterface::drawFrame(commandBuffer);
+        m_ui.drawFrame(commandBuffer);
     }
     commandBuffer.endRenderPass();
     commandBuffer.endCommandBuffer();
@@ -254,64 +254,6 @@ void Renderer::resize() {
         .depthBuffer = m_depthBuffer,
         .renderPass = m_renderPass,
     });
-}
-
-void Renderer::initializeUserInterface() {
-    vk::DescriptorPoolSize poolSizes[] = {
-        {vk::DescriptorType::eSampler, 1000},
-        {vk::DescriptorType::eCombinedImageSampler, 1000},
-        {vk::DescriptorType::eSampledImage, 1000},
-        {vk::DescriptorType::eStorageImage, 1000},
-        {vk::DescriptorType::eUniformTexelBuffer, 1000},
-        {vk::DescriptorType::eStorageTexelBuffer, 1000},
-        {vk::DescriptorType::eUniformBuffer, 1000},
-        {vk::DescriptorType::eStorageBuffer, 1000},
-        {vk::DescriptorType::eUniformBufferDynamic, 1000},
-        {vk::DescriptorType::eStorageBufferDynamic, 1000},
-        {vk::DescriptorType::eInputAttachment, 1000},
-    };
-
-    vk::DescriptorPoolCreateInfo descriptorPoolInfo = {
-        .sType = vk::StructureType::eDescriptorPoolCreateInfo,
-        .pNext = nullptr,
-        .flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet,
-        .maxSets = 1000,
-        .poolSizeCount = (uint32)std::size(poolSizes),
-        .pPoolSizes = poolSizes,
-    };
-
-    m_uiDescriptorPool = Ref<void>(m_logicalDevice.as<vk::Device>().createDescriptorPool(descriptorPoolInfo));
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui_ImplGlfw_InitForVulkan(m_window.handle<GLFWwindow*>(), true);
-
-    ImGui_ImplVulkan_InitInfo initInfo = {
-        .Instance = m_instance.as<vk::Instance>(),
-        .PhysicalDevice = m_physicalDevice.as<vk::PhysicalDevice>(),
-        .Device = m_logicalDevice.as<vk::Device>(),
-        .Queue = m_logicalDevice.graphicsQueue().as<vk::Queue>(),
-        .DescriptorPool = (VkDescriptorPool)m_uiDescriptorPool.get(),
-        .MinImageCount = MAX_FRAMES_IN_FLIGHT,
-        .ImageCount = MAX_FRAMES_IN_FLIGHT,
-        .MSAASamples = (VkSampleCountFlagBits)m_physicalDevice.sampleCount(),
-    };
-
-    ImGui_ImplVulkan_Init(&initInfo, m_renderPass.as<vk::RenderPass>());
-
-    auto& io = ImGui::GetIO();
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    io.Fonts->AddFontFromFileTTF("fonts/Cascadia/CascadiaCode.ttf", 16.0f);
-    io.Fonts->Build();
-
-    ImGui_ImplVulkan_CreateFontsTexture();
-}
-
-void Renderer::destroyUserInterface() {
-    ImGui_ImplVulkan_DestroyFontsTexture();
-    m_logicalDevice.as<vk::Device>().destroyDescriptorPool((VkDescriptorPool)m_uiDescriptorPool.get());
-    ImGui_ImplVulkan_Shutdown();
 }
 
 void Renderer::waitIdle() const {

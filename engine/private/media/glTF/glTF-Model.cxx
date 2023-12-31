@@ -117,24 +117,29 @@ void Model::populateRoot() {
 }
 
 void Model::populateExtensionsUsed() {
-    if (!m_document.HasMember("extensionsUsed"))
+    if (!m_document.HasMember("extensionsUsed")) {
         return;
+    }
 
-    for (auto& extension : m_document["extensionsUsed"].GetArray())
+    for (auto& extension : m_document["extensionsUsed"].GetArray()) {
         extensionsUsed.emplace_back(extension.GetString());
+    }
 }
 
 void Model::populateExtensionsRequired() {
-    if (!m_document.HasMember("extensionsRequired"))
+    if (!m_document.HasMember("extensionsRequired")) {
         return;
+    }
 
-    for (auto& extension : m_document["extensionsRequired"].GetArray())
+    for (auto& extension : m_document["extensionsRequired"].GetArray()) {
         extensionsRequired.emplace_back(extension.GetString());
+    }
 }
 
 void Model::populateAccessors() {
-    if (!m_document.HasMember("accessors"))
+    if (!m_document.HasMember("accessors")) {
         return;
+    }
 
     for (auto& itAccessor : m_document["accessors"].GetArray()) {
         Accessor& accessor = accessors.emplace_back();
@@ -159,36 +164,42 @@ void Model::populateAccessors() {
 
         // max
         if (itAccessor.HasMember("max")) {
-            for (auto& elem : itAccessor.GetObject()["max"].GetArray())
+            for (auto& elem : itAccessor.GetObject()["max"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
+            }
         }
 
         // min
         if (itAccessor.HasMember("min")) {
-            for (auto& elem : itAccessor.GetObject()["min"].GetArray())
+            for (auto& elem : itAccessor.GetObject()["min"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
+            }
         }
 
         // sparse
-        if (itAccessor.HasMember("sparse"))
+        if (itAccessor.HasMember("sparse")) {
             ENSURE(false);
+        }
 
         // name
         maybeAssign(accessor.name, itAccessor, "name");
 
         // extensions
-        if (itAccessor.HasMember("extensions"))
+        if (itAccessor.HasMember("extensions")) {
             accessor.extensions = std::move(itAccessor["extensions"]);
+        }
 
         // extras
-        if (itAccessor.HasMember("extras"))
+        if (itAccessor.HasMember("extras")) {
             accessor.extras = std::move(itAccessor["extras"]);
+        }
     }
 }
 
 void Model::populateAnimations() {
-    if (!m_document.HasMember("animations"))
+    if (!m_document.HasMember("animations")) {
         return;
+    }
 
     for (auto& itAnimation : m_document["animations"].GetArray()) {
         Animation& animation = animations.emplace_back();
@@ -211,21 +222,25 @@ void Model::populateAnimations() {
                 channel.target.path = jsTarget["path"].GetString();
 
                 // extensions
-                if (jsTarget.HasMember("extensions"))
+                if (jsTarget.HasMember("extensions")) {
                     channel.extensions = std::move(jsTarget["extensions"]);
+                }
 
                 // extras
-                if (jsTarget.HasMember("extras"))
+                if (jsTarget.HasMember("extras")) {
                     channel.extras = std::move(jsTarget["extras"]);
+                }
             }
 
             // extensions
-            if (itChannel.HasMember("extensions"))
+            if (itChannel.HasMember("extensions")) {
                 channel.extensions = std::move(itChannel["extensions"]);
+            }
 
             // extras
-            if (itChannel.HasMember("extras"))
+            if (itChannel.HasMember("extras")) {
                 channel.extras = std::move(itChannel["extras"]);
+            }
         }
 
         // samplers
@@ -242,24 +257,28 @@ void Model::populateAnimations() {
             sampler.output = itSampler["output"].GetUint();
 
             // extensions
-            if (itSampler.HasMember("extensions"))
+            if (itSampler.HasMember("extensions")) {
                 sampler.extensions = std::move(itSampler["extensions"]);
+            }
 
             // extras
-            if (itSampler.HasMember("extras"))
+            if (itSampler.HasMember("extras")) {
                 sampler.extras = std::move(itSampler["extras"]);
+            }
         }
 
         // name
         maybeAssign(animation.name, itAnimation, "name");
 
         // extensions
-        if (itAnimation.HasMember("extensions"))
+        if (itAnimation.HasMember("extensions")) {
             animation.extensions = std::move(itAnimation["extensions"]);
+        }
 
         // extras
-        if (itAnimation.HasMember("extras"))
+        if (itAnimation.HasMember("extras")) {
             animation.extras = std::move(itAnimation["extras"]);
+        }
     }
 }
 
@@ -278,17 +297,20 @@ void Model::populateAsset() {
     maybeAssign(asset.minVersion, jsAsset, "minVersion");
 
     // extensions
-    if (jsAsset.HasMember("extensions"))
+    if (jsAsset.HasMember("extensions")) {
         asset.extensions = std::move(jsAsset["extensions"]);
+    }
 
     // extras
-    if (jsAsset.HasMember("extras"))
+    if (jsAsset.HasMember("extras")) {
         asset.extras = std::move(jsAsset["extras"]);
+    }
 }
 
 void Model::populateBuffers() {
-    if (!m_document.HasMember("buffers"))
+    if (!m_document.HasMember("buffers")) {
         return;
+    }
 
     for (auto& itBuffer : m_document["buffers"].GetArray()) {
         Buffer& buffer = buffers.emplace_back();
@@ -303,12 +325,14 @@ void Model::populateBuffers() {
         maybeAssign(buffer.name, itBuffer, "name");
 
         // extensions
-        if (itBuffer.HasMember("extensions"))
+        if (itBuffer.HasMember("extensions")) {
             buffer.extensions = std::move(itBuffer["extensions"]);
+        }
 
         // extras
-        if (itBuffer.HasMember("extras"))
+        if (itBuffer.HasMember("extras")) {
             buffer.extras = std::move(itBuffer["extras"]);
+        }
 
         /* load in buffer if external file */
         if (!buffer.uri.empty()) {
@@ -330,8 +354,9 @@ void Model::populateBuffers() {
 }
 
 void Model::populateBufferViews() {
-    if (!m_document.HasMember("bufferViews"))
+    if (!m_document.HasMember("bufferViews")) {
         return;
+    }
 
     for (auto& itBufferView : m_document["bufferViews"].GetArray()) {
         BufferView& bufferView = bufferViews.emplace_back();
@@ -355,18 +380,21 @@ void Model::populateBufferViews() {
         maybeAssign(bufferView.name, itBufferView, "name");
 
         // extensions
-        if (itBufferView.HasMember("extensions"))
+        if (itBufferView.HasMember("extensions")) {
             bufferView.extensions = std::move(itBufferView["extensions"]);
+        }
 
         // extras
-        if (itBufferView.HasMember("extras"))
+        if (itBufferView.HasMember("extras")) {
             bufferView.extras = std::move(itBufferView["extras"]);
+        }
     }
 }
 
 void Model::populateCameras() {
-    if (!m_document.HasMember("cameras"))
+    if (!m_document.HasMember("cameras")) {
         return;
+    }
 
     LOG(Warning, "TODO cameras");
 }
@@ -391,18 +419,21 @@ void Model::populateImages() {
         maybeAssign(image.name, itImage, "name");
 
         // extensions
-        if (itImage.HasMember("extensions"))
+        if (itImage.HasMember("extensions")) {
             image.extensions = std::move(itImage["extensions"]);
+        }
 
         // extras
-        if (itImage.HasMember("extras"))
+        if (itImage.HasMember("extras")) {
             image.extras = std::move(itImage["extras"]);
+        }
     }
 }
 
 void Model::populateMaterials() {
-    if (!m_document.HasMember("materials"))
+    if (!m_document.HasMember("materials")) {
         return;
+    }
 
     for (auto& itMaterial : m_document["materials"].GetArray()) {
         Material& material = materials.emplace_back();
@@ -415,8 +446,9 @@ void Model::populateMaterials() {
 
             // baseColorFactor
             if (jsPbr.HasMember("baseColorFactor")) {
-                for (uint32 i = 0; auto& baseColorFactor : jsPbr["baseColorFactor"].GetArray())
+                for (uint32 i = 0; auto& baseColorFactor : jsPbr["baseColorFactor"].GetArray()) {
                     pbrMetallicRoughness.baseColorFactor[i++] = baseColorFactor.GetFloat();
+                }
             }
 
             // baseColorTexture
@@ -438,12 +470,14 @@ void Model::populateMaterials() {
             }
 
             // extensions
-            if (jsPbr.HasMember("extensions"))
+            if (jsPbr.HasMember("extensions")) {
                 pbrMetallicRoughness.metallicRoughnessTexture->extensions = std::move(jsPbr["extensions"]);
+            }
 
             // extras
-            if (jsPbr.HasMember("extras"))
+            if (jsPbr.HasMember("extras")) {
                 pbrMetallicRoughness.metallicRoughnessTexture->extras = std::move(jsPbr["extras"]);
+            }
         }
 
         // normalTexture
@@ -462,13 +496,14 @@ void Model::populateMaterials() {
             maybeAssign(normalTexture.scale, jsNormal, "scale");
 
             // extensions
-            if (jsNormal.HasMember("extensions"))
+            if (jsNormal.HasMember("extensions")) {
                 normalTexture.extensions = std::move(jsNormal["extensions"]);
-            ;
+            }
 
             // extras
-            if (jsNormal.HasMember("extras"))
+            if (jsNormal.HasMember("extras")) {
                 normalTexture.extras = std::move(jsNormal["extras"]);
+            }
         }
 
         // occlusionTexture
@@ -487,13 +522,14 @@ void Model::populateMaterials() {
             maybeAssign(occlusionTexture.strength, jsOcclusion, "strength");
 
             // extensions
-            if (jsOcclusion.HasMember("extensions"))
+            if (jsOcclusion.HasMember("extensions")) {
                 occlusionTexture.extensions = std::move(jsOcclusion["extensions"]);
-            ;
+            }
 
             // extras
-            if (jsOcclusion.HasMember("extras"))
+            if (jsOcclusion.HasMember("extras")) {
                 occlusionTexture.extras = std::move(jsOcclusion["extras"]);
+            }
         }
 
         // emissiveTexture
@@ -507,8 +543,9 @@ void Model::populateMaterials() {
 
         // emissiveFactor
         if (itMaterial.HasMember("emissiveFactor")) {
-            for (uint32 i = 0; auto& itEmissiveFactor : itMaterial["emissiveFactor"].GetArray())
+            for (uint32 i = 0; auto& itEmissiveFactor : itMaterial["emissiveFactor"].GetArray()) {
                 material.emissiveFactor[i++] = itEmissiveFactor.GetFloat();
+            }
         }
 
         // alphaMode
@@ -524,18 +561,21 @@ void Model::populateMaterials() {
         maybeAssign(material.name, itMaterial, "name");
 
         // extensions
-        if (itMaterial.HasMember("extensions"))
+        if (itMaterial.HasMember("extensions")) {
             material.extensions = std::move(itMaterial["extensions"]);
+        }
 
         // extras
-        if (itMaterial.HasMember("extras"))
+        if (itMaterial.HasMember("extras")) {
             material.extras = std::move(itMaterial["extras"]);
+        }
     }
 }
 
 void Model::populateMeshes() {
-    if (!m_document.HasMember("meshes"))
+    if (!m_document.HasMember("meshes")) {
         return;
+    }
 
     for (auto& itMesh : m_document["meshes"].GetArray()) {
         Mesh& mesh = meshes.emplace_back();
@@ -558,41 +598,48 @@ void Model::populateMeshes() {
 
             // targets
             if (itPrimitive.HasMember("targets")) {
-                for (auto& itTarget : itPrimitive["targets"].GetArray())
+                for (auto& itTarget : itPrimitive["targets"].GetArray()) {
                     primitive.targets.emplace_back(itTarget.GetObject());
+                }
             }
 
             // extensions
-            if (itPrimitive.HasMember("extensions"))
+            if (itPrimitive.HasMember("extensions")) {
                 primitive.extensions = std::move(itPrimitive["extensions"]);
+            }
 
             // extras
-            if (itPrimitive.HasMember("extras"))
+            if (itPrimitive.HasMember("extras")) {
                 primitive.extras = std::move(itPrimitive["extras"]);
+            }
         }
 
         // weights
         if (itMesh.HasMember("weights")) {
-            for (auto& itWeight : itMesh["weights"].GetArray())
+            for (auto& itWeight : itMesh["weights"].GetArray()) {
                 mesh.weights.push_back(itWeight.GetFloat());
+            }
         }
 
         // name
         maybeAssign(mesh.name, itMesh, "name");
 
         // extensions
-        if (itMesh.HasMember("extensions"))
+        if (itMesh.HasMember("extensions")) {
             mesh.extensions = std::move(itMesh["extensions"]);
+        }
 
         // extras
-        if (itMesh.HasMember("extras"))
+        if (itMesh.HasMember("extras")) {
             mesh.extras = std::move(itMesh["extras"]);
+        }
     }
 }
 
 void Model::populateNodes() {
-    if (!m_document.HasMember("nodes"))
+    if (!m_document.HasMember("nodes")) {
         return;
+    }
 
     for (auto& itNode : m_document["nodes"].GetArray()) {
         Node& node = nodes.emplace_back();
@@ -602,8 +649,9 @@ void Model::populateNodes() {
 
         // children
         if (itNode.HasMember("children")) {
-            for (auto& itChild : itNode["children"].GetArray())
+            for (auto& itChild : itNode["children"].GetArray()) {
                 node.children.push_back(itChild.GetUint());
+            }
         }
 
         // skin
@@ -611,8 +659,9 @@ void Model::populateNodes() {
 
         // matrix
         if (itNode.HasMember("matrix")) {
-            for (uint32 i = 0; auto& itMatrix : itNode["matrix"].GetArray())
+            for (uint32 i = 0; auto& itMatrix : itNode["matrix"].GetArray()) {
                 node.matrix[i++] = itMatrix.GetFloat();
+            }
         }
 
         // mesh
@@ -620,44 +669,51 @@ void Model::populateNodes() {
 
         // rotation
         if (itNode.HasMember("rotation")) {
-            for (uint32 i = 0; auto& itRotation : itNode["rotation"].GetArray())
+            for (uint32 i = 0; auto& itRotation : itNode["rotation"].GetArray()) {
                 node.rotation[i++] = itRotation.GetFloat();
+            }
         }
 
         // scale
         if (itNode.HasMember("scale")) {
-            for (uint32 i = 0; auto& itScale : itNode["scale"].GetArray())
+            for (uint32 i = 0; auto& itScale : itNode["scale"].GetArray()) {
                 node.scale[i++] = itScale.GetFloat();
+            }
         }
 
         // translation
         if (itNode.HasMember("translation")) {
-            for (uint32 i = 0; auto& itTranslation : itNode["translation"].GetArray())
+            for (uint32 i = 0; auto& itTranslation : itNode["translation"].GetArray()) {
                 node.translation[i++] = itTranslation.GetFloat();
+            }
         }
 
         // weights
         if (itNode.HasMember("weights")) {
-            for (auto& itWeight : itNode["weights"].GetArray())
+            for (auto& itWeight : itNode["weights"].GetArray()) {
                 node.weights.push_back(itWeight.GetFloat());
+            }
         }
 
         // name
         maybeAssign(node.name, itNode, "name");
 
         // extensions
-        if (itNode.HasMember("extensions"))
+        if (itNode.HasMember("extensions")) {
             node.extensions = std::move(itNode["extensions"]);
+        }
 
         // extras
-        if (itNode.HasMember("extras"))
+        if (itNode.HasMember("extras")) {
             node.extras = std::move(itNode["extras"]);
+        }
     }
 }
 
 void Model::populateSamplers() {
-    if (!m_document.HasMember("samplers"))
+    if (!m_document.HasMember("samplers")) {
         return;
+    }
 
     for (auto& itSampler : m_document["samplers"].GetArray()) {
         Sampler& sampler = samplers.emplace_back();
@@ -678,12 +734,14 @@ void Model::populateSamplers() {
         maybeAssign(sampler.name, itSampler, "name");
 
         // extensions
-        if (itSampler.HasMember("extensions"))
+        if (itSampler.HasMember("extensions")) {
             sampler.extensions = std::move(itSampler["extensions"]);
+        }
 
         // extras
-        if (itSampler.HasMember("extras"))
+        if (itSampler.HasMember("extras")) {
             sampler.extras = std::move(itSampler["extras"]);
+        }
     }
 }
 
@@ -692,34 +750,39 @@ void Model::populateScene() {
 }
 
 void Model::populateScenes() {
-    if (!m_document.HasMember("scenes"))
+    if (!m_document.HasMember("scenes")) {
         return;
+    }
 
     for (auto& itScene : m_document["scenes"].GetArray()) {
         Scene& nthScene = scenes.emplace_back();
 
         // nodes
         if (itScene.HasMember("nodes")) {
-            for (auto& itNode : itScene["nodes"].GetArray())
+            for (auto& itNode : itScene["nodes"].GetArray()) {
                 nthScene.nodes.push_back(itNode.GetUint());
+            }
         }
 
         // name
         maybeAssign(nthScene.name, itScene, "name");
 
         // extensions
-        if (itScene.HasMember("extensions"))
+        if (itScene.HasMember("extensions")) {
             nthScene.extensions = std::move(itScene["extensions"]);
+        }
 
         // extras
-        if (itScene.HasMember("extras"))
+        if (itScene.HasMember("extras")) {
             nthScene.extras = std::move(itScene["extras"]);
+        }
     }
 }
 
 void Model::populateSkins() {
-    if (!m_document.HasMember("skins"))
+    if (!m_document.HasMember("skins")) {
         return;
+    }
 
     for (auto& itSkin : m_document["skins"].GetArray()) {
         Skin& skin = skins.emplace_back();
@@ -731,25 +794,29 @@ void Model::populateSkins() {
         maybeAssign(skin.skeleton, itSkin, "skeleton");
 
         // joints
-        for (auto& itJoint : itSkin["joints"].GetArray())
+        for (auto& itJoint : itSkin["joints"].GetArray()) {
             skin.joints.push_back(itJoint.GetUint());
+        }
 
         // name
         maybeAssign(skin.name, itSkin, "name");
 
         // extensions
-        if (itSkin.HasMember("extensions"))
+        if (itSkin.HasMember("extensions")) {
             skin.extensions = std::move(itSkin["extensions"]);
+        }
 
         // extras
-        if (itSkin.HasMember("extras"))
+        if (itSkin.HasMember("extras")) {
             skin.extras = std::move(itSkin["extras"]);
+        }
     }
 }
 
 void Model::populateTextures() {
-    if (!m_document.HasMember("textures"))
+    if (!m_document.HasMember("textures")) {
         return;
+    }
 
     for (auto& itTexture : m_document["textures"].GetArray()) {
         Texture& texture = textures.emplace_back();
@@ -764,25 +831,29 @@ void Model::populateTextures() {
         maybeAssign(texture.name, itTexture, "name");
 
         // extensions
-        if (itTexture.HasMember("extensions"))
+        if (itTexture.HasMember("extensions")) {
             texture.extensions = std::move(itTexture["extensions"]);
+        }
 
         // extras
-        if (itTexture.HasMember("extras"))
+        if (itTexture.HasMember("extras")) {
             texture.extras = std::move(itTexture["extras"]);
+        }
     }
 }
 
 void Model::populateExtensions() {
-    if (!m_document.HasMember("extensions"))
+    if (!m_document.HasMember("extensions")) {
         return;
+    }
 
     extensions = std::move(m_document["extensions"]);
 }
 
 void Model::populateExtras() {
-    if (!m_document.HasMember("extras"))
+    if (!m_document.HasMember("extras")) {
         return;
+    }
 
     extras = std::move(m_document["extras"]);
 }
@@ -795,12 +866,14 @@ void Model::populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& valu
     maybeAssign(textureInfo.texCoord, value, "texCoord");
 
     // extensions
-    if (value.HasMember("extensions"))
+    if (value.HasMember("extensions")) {
         textureInfo.extensions = std::move(value["extensions"]);
+    }
 
     // extras
-    if (value.HasMember("extras"))
+    if (value.HasMember("extras")) {
         textureInfo.extras = std::move(value["extras"]);
+    }
 }
 
 void Model::checkVersion(std::string_view version) const {
