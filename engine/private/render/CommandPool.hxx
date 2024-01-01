@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file CommandPool.hxx
 /// @brief Pool from which CommandBuffers are allocated
 /// A thread can only write to 1 CommandPool at a time, so a thread has a CommandPool each
 
@@ -44,11 +43,11 @@ public:
 
     /// @brief Query CommandBuffers
     /// @return CommandBuffers
-    std::span<CommandBuffer> commandBuffers() { return m_commandBuffers; }
+    [[nodiscard]] constexpr std::span<CommandBuffer> commandBuffers() { return m_commandBuffers; }
 
     /// @brief Query CommandBuffers const
     /// @return CommandBuffers
-    std::span<const CommandBuffer> commandBuffers() const { return m_commandBuffers; }
+    [[nodiscard]] constexpr std::span<const CommandBuffer> commandBuffers() const { return m_commandBuffers; }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

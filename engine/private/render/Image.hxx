@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Image.hxx
 /// @brief Encompasses all Image operations like allocateion, copy, transition etc
 
 #include <vector>
@@ -81,7 +80,7 @@ public:
     /// @brief Construct set of Images from spec
     /// @param spec
     /// @return Images
-    static std::vector<Image> acquireImages(const ImageSpecification& spec);
+    [[nodiscard]] static std::vector<Image> acquireImages(const ImageSpecification& spec);
 
     /// @brief Allocate a Image with given flags
     /// @param spec

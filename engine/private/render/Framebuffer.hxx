@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Framebuffer.hxx
 /// A Framebuffer references all ImageViews that represent attachments like Color Attachment
 
 #include "render/RenderApi.hxx"

@@ -139,7 +139,9 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     spec.colorBuffer = ColorBuffer({
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .swapchain = *this,
+        .format = spec.colorBuffer.format(),
+        .extent = spec.colorBuffer.extent(),
+        .sampleCount = spec.colorBuffer.sampleCount(),
     });
 
     // recreate depth buffer with new extent
@@ -147,7 +149,9 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     spec.depthBuffer = DepthBuffer({
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .swapchain = *this,
+        .format = spec.depthBuffer.format(),
+        .extent = spec.depthBuffer.extent(),
+        .sampleCount = spec.depthBuffer.sampleCount(),
     });
 
     // restore images

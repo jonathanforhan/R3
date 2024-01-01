@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file DescriptorSet.hxx
 /// @brief DescriptorSets provide description of how shader memory is laid out and what we can write to
 /// the DescriptorSet is allocated with a layout given to it by the DescriptorPool
 
@@ -52,7 +51,7 @@ public:
     /// @brief Allocate a group of DescriptorSets, this is used by the DesciptorPool
     /// @param spec
     /// @return Descriptors
-    static std::vector<DescriptorSet> allocate(const DescriptorSetSpecification& spec);
+    [[nodiscard]] static std::vector<DescriptorSet> allocate(const DescriptorSetSpecification& spec);
 
     /// @brief Bind Shader resources to Descriptor like Uniform or Texture data
     /// @param spec

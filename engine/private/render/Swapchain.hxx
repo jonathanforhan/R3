@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file Swapchain.hxx
-
 #include <span>
 #include <vector>
 #include "render/Image.hxx"
@@ -45,12 +43,12 @@ public:
     /// @param spec
     void recreate(const SwapchainRecreationSpecification& spec);
 
-    Format surfaceFormat() const { return m_surfaceFormat; }               ///< @brief Query surface format
-    ColorSpace colorSpace() const { return m_colorSpace; }                 ///< @brief Query color space
-    PresentMode presentMode() const { return m_presentMode; }              ///< @brief Query present mode
-    uvec2 extent() const { return m_extent2D; }                            ///< @brief Query swapchain extent
-    std::span<const Image> images() const { return m_images; }             ///< @brief Query images
-    std::span<const ImageView> imageViews() const { return m_imageViews; } ///< @brief Query image views
+    [[nodiscard]] constexpr Format surfaceFormat() const { return m_surfaceFormat; }
+    [[nodiscard]] constexpr ColorSpace colorSpace() const { return m_colorSpace; }
+    [[nodiscard]] constexpr PresentMode presentMode() const { return m_presentMode; }
+    [[nodiscard]] constexpr uvec2 extent() const { return m_extent2D; }
+    [[nodiscard]] constexpr std::span<const Image> images() const { return m_images; }
+    [[nodiscard]] constexpr std::span<const ImageView> imageViews() const { return m_imageViews; }
 
 private:
     Ref<const PhysicalDevice> m_physicalDevice;

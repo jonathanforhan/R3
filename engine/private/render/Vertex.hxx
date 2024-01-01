@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file Vertex.hxx
-
 #include "api/Types.hpp"
 
 namespace R3 {

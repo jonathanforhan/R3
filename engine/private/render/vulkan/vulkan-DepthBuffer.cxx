@@ -12,21 +12,25 @@
 namespace R3 {
 
 DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
-    : m_logicalDevice(&spec.logicalDevice) {
-    const vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
-                                                                   vk::ImageTiling::eOptimal,
-                                                                   vk::FormatFeatureFlagBits::eDepthStencilAttachment);
-    const uvec2 extent = spec.swapchain.extent();
+    : m_logicalDevice(&spec.logicalDevice),
+      m_format(spec.format),
+      m_extent(spec.extent),
+      m_sampleCount(spec.sampleCount) {
+    if (m_format == Format::Undefined) {
+        m_format = Format(vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
+                                                          vk::ImageTiling::eOptimal,
+                                                          vk::FormatFeatureFlagBits::eDepthStencilAttachment));
+    }
 
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .size = extent.x * extent.y * sizeof(float),
-        .format = Format(depthFormat),
-        .width = extent.x,
-        .height = extent.y,
+        .size = m_extent.x * m_extent.y * sizeof(float),
+        .format = m_format,
+        .width = m_extent.x,
+        .height = m_extent.y,
         .mipLevels = 1,
-        .samples = spec.physicalDevice.sampleCount(),
+        .samples = m_sampleCount,
         .imageFlags = ImageUsage::DepthStencilAttachment,
         .memoryFlags = MemoryProperty::DeviceLocal,
     };
@@ -38,7 +42,7 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     m_imageView = ImageView({
         .logicalDevice = *m_logicalDevice,
         .image = Image(handle()),
-        .format = Format(depthFormat),
+        .format = m_format,
         .mipLevels = 1,
         .aspectMask = ImageAspect::Depth,
     });

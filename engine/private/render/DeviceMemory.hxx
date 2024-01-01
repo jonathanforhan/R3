@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file DeviceMemory.hxx
 /// @brief Base for classes that need to allocate GPU memory
 
 #include "render/NativeRenderObject.hxx"
@@ -25,7 +24,7 @@ protected:
     /// @tparam T cast to T type
     /// @return buffer handle
     template <typename T>
-    constexpr T deviceMemory() const {
+    [[nodiscard]] constexpr T deviceMemory() const {
         return reinterpret_cast<T>(m_deviceMemory.get());
     }
 
@@ -33,7 +32,7 @@ protected:
     /// @tparam T cast to T type
     /// @return Type T Object from Buffer::Handle
     template <typename T>
-    constexpr T deviceMemoryAs() const {
+    [[nodiscard]] constexpr T deviceMemoryAs() const {
         if constexpr (IsWrapper<T>) {
             return static_cast<T>(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
         } else {

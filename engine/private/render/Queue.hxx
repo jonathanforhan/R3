@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Queue.hxx
 /// @brief Provides means of querying and aquiring Queues
 
 #include "render/RenderApi.hxx"
@@ -25,13 +24,14 @@ public:
 
     /// @brief Query whether all queue indices are valid
     /// @return valid/invalid
-    bool isValid() const { return graphics >= 0 && presentation >= 0; }
+    [[nodiscard]] constexpr bool isValid() const { return graphics >= 0 && presentation >= 0; }
 
     /// @brief QueueFamilyIndices is not publicly constructable, must be queried
     /// @param physicalDeviceHandle Valid non-null handle to Physical Device
     /// @param surfaceHandle Valid non-null handle to Surface
     /// @return QueueFamilyIndices
-    static QueueFamilyIndices query(NativeRenderObject&& physicalDeviceHandle, NativeRenderObject&& surfaceHandle);
+    [[nodiscard]] static QueueFamilyIndices query(NativeRenderObject&& physicalDeviceHandle,
+                                                  NativeRenderObject&& surfaceHandle);
 };
 
 /// @brief Queue Specification
@@ -52,11 +52,11 @@ public:
 
     /// @brief Query type of queue family
     /// @return type
-    QueueType type() const { return m_queueType; }
+    [[nodiscard]] constexpr QueueType type() const { return m_queueType; }
 
     /// @brief Query index of queue family
     /// @return index
-    uint32 index() const { return m_queueIndex; }
+    [[nodiscard]] constexpr uint32 index() const { return m_queueIndex; }
 
 private:
     QueueType m_queueType;

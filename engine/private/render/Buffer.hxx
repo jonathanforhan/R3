@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Buffer.hxx
 /// Parent class used by buffers that allocate some memory on host or device
 
 #include "render/DeviceMemory.hxx"

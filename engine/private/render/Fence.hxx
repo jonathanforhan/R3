@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Fence.hxx
 /// @brief Provides Host synchonization
 
 #include "render/RenderApi.hxx"

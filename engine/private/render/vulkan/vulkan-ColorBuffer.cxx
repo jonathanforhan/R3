@@ -11,17 +11,17 @@
 namespace R3 {
 
 ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
-    : m_logicalDevice(&spec.logicalDevice) {
-    const Format colorFormat = spec.swapchain.surfaceFormat();
-    const uvec2 extent = spec.swapchain.extent();
-
+    : m_logicalDevice(&spec.logicalDevice),
+      m_format(spec.format),
+      m_extent(spec.extent),
+      m_sampleCount(spec.sampleCount) {
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .size = uint32(extent.x * extent.y * sizeof(float)),
-        .format = colorFormat,
-        .width = extent.x,
-        .height = extent.y,
+        .size = uint32(m_extent.x * m_extent.y * sizeof(float)),
+        .format = m_format,
+        .width = m_extent.x,
+        .height = m_extent.y,
         .mipLevels = 1,
         .samples = spec.physicalDevice.sampleCount(),
         .imageFlags = ImageUsage::TransientAttachment | ImageUsage::ColorAttachment,
@@ -35,7 +35,7 @@ ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
     m_imageView = ImageView({
         .logicalDevice = *m_logicalDevice,
         .image = Image(handle()),
-        .format = Format(colorFormat),
+        .format = m_format,
         .mipLevels = 1,
         .aspectMask = ImageAspect::Color,
     });

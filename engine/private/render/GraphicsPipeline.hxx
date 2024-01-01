@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file GraphicsPipeline.hxx
 /// GraphicsPipeline Describes the all stages of the Render Pipeline
 
 #include <string_view>
@@ -38,7 +37,7 @@ public:
 
     /// @brief Query PipelineLayout
     /// @return Layout
-    const PipelineLayout& layout() const { return m_layout; }
+    [[nodiscard]] constexpr const PipelineLayout& layout() const { return m_layout; }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

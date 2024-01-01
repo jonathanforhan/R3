@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file VertexBuffer.hxx
-
 #include <span>
 #include "render/Buffer.hxx"
 #include "render/RenderApi.hxx"
@@ -31,7 +29,7 @@ public:
     /// @brief Free VertexBuffer
     ~VertexBuffer();
 
-    uint32 count() const { return m_vertexCount; } ///< Query Vertex count
+    [[nodiscard]] constexpr uint32 count() const { return m_vertexCount; } ///< Query Vertex count
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

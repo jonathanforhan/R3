@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file Sampler.hxx
-
 #include "render/RenderApi.hxx"
 
 namespace R3 {

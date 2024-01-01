@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file ColorBuffer.hxx
-
 #include "render/Buffer.hxx"
 #include "render/ImageView.hxx"
 #include "render/RenderApi.hxx"
@@ -10,9 +8,11 @@ namespace R3 {
 
 /// @brief Color Buffer Specification
 struct ColorBufferSpecification {
-    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
-    const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const Swapchain& swapchain;           ///< Swapchain
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    Format format;
+    uvec2 extent;
+    uint8 sampleCount;
 };
 
 /// @brief ColorBuffer used for Color Operations like Mulitdsampling
@@ -29,13 +29,28 @@ public:
     /// @brief Free Buffer and it's DeviceMemory
     ~ColorBuffer();
 
-    /// @brief Query ColorBuffer ImageViews
+    /// @brief Query DepthBuffer ImageViews
     /// @return image views
-    const ImageView& imageView() const { return m_imageView; }
+    [[nodiscard]] constexpr const ImageView& imageView() const { return m_imageView; }
+
+    /// @brief Query Current Format in use
+    /// @return format
+    [[nodiscard]] constexpr Format format() const { return m_format; }
+
+    /// @brief Query Current Extent in use
+    /// @return extent
+    [[nodiscard]] constexpr uvec2 extent() const { return m_extent; }
+
+    /// @brief Query Current Sample Count in use
+    /// @return sample count
+    [[nodiscard]] constexpr uint8 sampleCount() const { return m_sampleCount; }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;
     ImageView m_imageView;
+    Format m_format = Format::Undefined;
+    uvec2 m_extent = uvec2(0);
+    uint8 m_sampleCount = 1;
 };
 
 } // namespace R3

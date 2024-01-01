@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Semaphore.hxx
 /// @brief Provides means of Device Synchronization
 
 #include "render/RenderApi.hxx"

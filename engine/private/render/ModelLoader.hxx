@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file ModelLoader.hxx
 /// Owned by Renderer and used to load in assets
 
 #include <string>

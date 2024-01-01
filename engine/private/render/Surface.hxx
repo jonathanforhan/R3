@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file Surface.hxx
 /// @brief Provides wrapper around navtive OS window surface
 
 #include "render/RenderApi.hxx"

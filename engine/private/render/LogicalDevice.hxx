@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file LogicalDevice.hxx
-
 #include "render/Queue.hxx"
 #include "render/RenderApi.hxx"
 
@@ -31,8 +29,13 @@ public:
     /// @brief Free LogicalDevice and Queues
     ~LogicalDevice();
 
-    const Queue& graphicsQueue() const { return m_graphicsQueue; }         ///< Query Graphics Queue
-    const Queue& presentationQueue() const { return m_presentationQueue; } ///< Query Presentation Queue
+    /// @brief Get Graphics Queue
+    /// @return Queue
+    [[nodiscard]] constexpr const Queue& graphicsQueue() const { return m_graphicsQueue; }
+
+    /// @brief Get Present Queue
+    /// @return Queue
+    [[nodiscard]] constexpr const Queue& presentationQueue() const { return m_presentationQueue; }
 
 private:
     Queue m_graphicsQueue;

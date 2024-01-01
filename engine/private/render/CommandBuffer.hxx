@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file CommandBuffer.hxx
 /// CommandBuffer is used to store commands, operations or recorded on them and them sumbitted to a queue
 
 #include <span>
@@ -126,7 +125,7 @@ public:
     /// Check the return value get error code
     /// @param spec
     /// @return Error code (per platform) vulkan -> VkResult
-    int32 present(const CommandBufferPresentSpecification& spec) const;
+    [[nodiscard]] int32 present(const CommandBufferPresentSpecification& spec) const;
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

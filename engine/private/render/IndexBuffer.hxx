@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file IndexBuffer.hxx
 /// @brief Conatains Handle to DeviceMemory where data is stored
 
 #include <span>
@@ -38,7 +37,7 @@ public:
 
     /// @brief Number of indices
     /// @return count
-    uint32 count() const { return m_indexCount; }
+    [[nodiscard]] constexpr uint32 count() const { return m_indexCount; }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

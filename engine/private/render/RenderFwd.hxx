@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file RenderFwd.hxx
 /// @brief Forward Declarations of render objects
 
 namespace R3 {

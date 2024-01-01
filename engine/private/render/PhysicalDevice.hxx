@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file PhysicalDevice.hxx
 /// Abstraction over Graphics Hardware
 
 #include <span>
@@ -32,22 +31,22 @@ public:
     /// @param typeFilter bitmask used to filter valid memory types
     /// @param propertyFlags flags that indicate desired memory type
     /// @return memory type index
-    uint32 queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const;
+    [[nodiscard]] uint32 queryMemoryType(uint32 typeFilter, uint64 propertyFlags) const;
 
     /// @brief Query GPU Extensions
     /// @return extensions
-    std::span<const char* const> extensions() const { return m_extensions; }
+    [[nodiscard]] constexpr std::span<const char* const> extensions() const { return m_extensions; }
 
     /// @brief Query Sample count
     /// @return Number of Samples
-    uint8 sampleCount() const { return m_sampleCount; }
+    [[nodiscard]] constexpr uint8 sampleCount() const { return m_sampleCount; }
 
 private:
     // ranks GPU based on several factor to determine best fit
-    int32 evaluateDevice(const NativeRenderObject& deviceHandle) const;
+    [[nodiscard]] int32 evaluateDevice(const NativeRenderObject& deviceHandle) const;
 
     // Ensures all required extensions from PhysicalDeviceSpecification are present on specified device
-    bool checkExtensionSupport(const NativeRenderObject& deviceHandle) const;
+    [[nodiscard]] bool checkExtensionSupport(const NativeRenderObject& deviceHandle) const;
 
 private:
     Ref<const Surface> m_surface;

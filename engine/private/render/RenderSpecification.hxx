@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file RenderSpecification.hxx
 /// @brief Copied from vulkan_core.h
 /// All values are Vulkan Native, convert for capability with other renderers
 
@@ -8,8 +7,8 @@
 
 namespace R3 {
 
-constexpr auto PBR_TEXTURE_COUNT = 5;    ///< Number of Textures used for PBR Renderering
-constexpr auto MAX_FRAMES_IN_FLIGHT = 3; ///< Maximum frames in queue at one time
+static constexpr auto PBR_TEXTURE_COUNT = 5;    ///< Number of Textures used for PBR Renderering
+static constexpr auto MAX_FRAMES_IN_FLIGHT = 3; ///< Maximum frames in queue at one time
 
 /// @brief Flags for Image Usage
 struct ImageUsage : public Flag {

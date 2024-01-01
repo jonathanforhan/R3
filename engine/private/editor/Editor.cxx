@@ -136,17 +136,17 @@ void Editor::displayProperties() {
 
             ImGui::Text(editorComponent.name);
 
-            const float sensivity = ImGui::GetIO().KeyShift ? 0.01f : 0.1f;
+            const float sensitivity = ImGui::GetIO().KeyShift ? 0.01f : 0.1f;
             const bool scaleLock = ImGui::GetIO().KeyCtrl;
 
             // Edit position
             auto& position = editorComponent.position;
-            ImGui::DragFloat3("position", glm::value_ptr(position), 0.1f);
+            ImGui::DragFloat3("position", glm::value_ptr(position), sensitivity);
             ImGui::Spacing();
 
             // Edit Rotation
             auto rotation = editorComponent.rotation;
-            ImGui::DragFloat3("rotation", glm::value_ptr(rotation), 0.1f);
+            ImGui::DragFloat3("rotation", glm::value_ptr(rotation), sensitivity);
             rotation.x = rotation.x < 0 ? 360 : rotation.x >= 360 ? 0 : rotation.x;
             rotation.y = rotation.y < 0 ? 360 : rotation.y >= 360 ? 0 : rotation.y;
             rotation.z = rotation.z < 0 ? 360 : rotation.z >= 360 ? 0 : rotation.z;
@@ -159,7 +159,7 @@ void Editor::displayProperties() {
 
             // Edit scale
             auto scale = editorComponent.scale;
-            ImGui::DragFloat3("scale", glm::value_ptr(scale), 0.1f);
+            ImGui::DragFloat3("scale", glm::value_ptr(scale), sensitivity);
             if (scaleLock) {
                 vec3 dscale = scale - editorComponent.scale;
                 // two of the components will be zero so we can sum them, no need to check

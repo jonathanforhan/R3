@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file DescriptorSetLayout.hxx
 /// @brief Provides Shader Layout info for rendering
 
 #include <span>

@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file TextureBuffer.hxx
-
 #include <string_view>
 #include "render/Buffer.hxx"
 #include "render/ImageView.hxx"
@@ -12,10 +10,10 @@
 namespace R3 {
 
 /// @brief Texture Buffer Specification
+/// Only ONE of (data|raw|path) can present, rest must be null
 struct TextureBufferSpecification {
     const PhysicalDevice& physicalDevice; ///< PhysicalDevice
     const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const Swapchain& swapchain;           ///< Swapchain
     const CommandBuffer& commandBuffer;   ///< CommandBuffer
     uint32 width;                         ///< Texture width (ignored if path is null)
     uint32 height;                        ///< Texture height (ignored if path is null)
@@ -39,15 +37,15 @@ public:
     /// @brief Free TextureBuffer
     ~TextureBuffer();
 
-    TextureType type() const { return m_type; }                  ///< Query type
-    const ImageView& textureView() const { return m_imageView; } ///< Query Texture ImageView
-    const Sampler& sampler() const { return m_sampler; }         ///< Query Texture Sampler
+    [[nodiscard]] const ImageView& textureView() const { return m_imageView; } ///< Query Texture ImageView
+    [[nodiscard]] const Sampler& sampler() const { return m_sampler; }         ///< Query Texture Sampler
+    [[nodiscard]] TextureType type() const { return m_type; }                  ///< Query type
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;
-    TextureType m_type;
     ImageView m_imageView;
     Sampler m_sampler;
+    TextureType m_type;
 };
 
 } // namespace R3

@@ -74,14 +74,18 @@ Renderer::Renderer(const RendererSpecification& spec)
     m_colorBuffer = ColorBuffer({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
-        .swapchain = m_swapchain,
+        .format = m_swapchain.surfaceFormat(),
+        .extent = m_swapchain.extent(),
+        .sampleCount = m_physicalDevice.sampleCount(),
     });
 
     //--- DepthBuffer
     m_depthBuffer = DepthBuffer({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
-        .swapchain = m_swapchain,
+        .format = Format::Undefined,
+        .extent = m_swapchain.extent(),
+        .sampleCount = m_physicalDevice.sampleCount(),
     });
 
     //--- Framebuffers
@@ -141,6 +145,26 @@ Renderer::Renderer(const RendererSpecification& spec)
         .view = mat4(1.0f),
         .projection = mat4(1.0f),
     };
+
+    /*
+    //--- Object Picker ColorBuffer
+    m_objectPickercolorBuffer = ColorBuffer({
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .format = Format::R32Uint,
+        .extent = m_swapchain.extent(),
+        .sampleCount = 1,
+    });
+
+    //--- Object Picker DepthBuffer
+    m_objectPickerdepthBuffer = DepthBuffer({
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .format = Format::R32Uint,
+        .extent = m_swapchain.extent(),
+        .sampleCount = 1,
+    });
+    */
 }
 
 void Renderer::render() {

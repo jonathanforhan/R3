@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file PipelineLayout.hxx
-
 #include "render/RenderApi.hxx"
 
 namespace R3 {

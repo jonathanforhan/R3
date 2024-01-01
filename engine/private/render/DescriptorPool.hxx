@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file DescriptorPool.hxx
-
 #include "render/DescriptorSet.hxx"
 #include "render/DescriptorSetLayout.hxx"
 #include "render/RenderApi.hxx"
@@ -32,11 +30,11 @@ public:
 
     /// @brief Query DesciptorSetLayout used by this pool
     /// @return Layout
-    const DescriptorSetLayout& layout() const { return m_layout; }
+    [[nodiscard]] constexpr const DescriptorSetLayout& layout() const { return m_layout; }
 
     /// @brief Query DescriptorSets owned by this pool
     /// @return sets
-    std::vector<DescriptorSet>& descriptorSets() { return m_descriptorSets; }
+    [[nodiscard]] constexpr std::vector<DescriptorSet>& descriptorSets() { return m_descriptorSets; }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

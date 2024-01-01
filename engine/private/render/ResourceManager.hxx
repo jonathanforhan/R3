@@ -26,29 +26,29 @@ public:
     NO_COPY(ResourceManager);
     NO_MOVE(ResourceManager);
 
-    TextureBuffer::ID allocateTexture(const TextureBufferSpecification& spec);
+    [[nodiscard]] TextureBuffer::ID allocateTexture(const TextureBufferSpecification& spec);
     void freeTexture(TextureBuffer::ID index);
-    TextureBuffer& getTextureById(TextureBuffer::ID id);
+    [[nodiscard]] TextureBuffer& getTextureById(TextureBuffer::ID id);
 
-    UniformBuffer::ID allocateUniform(const UniformBufferSpecification& spec);
+    [[nodiscard]] UniformBuffer::ID allocateUniform(const UniformBufferSpecification& spec);
     void freeUniform(UniformBuffer::ID index);
-    UniformBuffer& getUniformById(UniformBuffer::ID id);
+    [[nodiscard]] UniformBuffer& getUniformById(UniformBuffer::ID id);
 
-    VertexBuffer::ID allocateVertexBuffer(const VertexBufferSpecification& spec);
+    [[nodiscard]] VertexBuffer::ID allocateVertexBuffer(const VertexBufferSpecification& spec);
     void freeVertexBuffer(VertexBuffer::ID index);
-    VertexBuffer& getVertexBufferById(VertexBuffer::ID id);
+    [[nodiscard]] VertexBuffer& getVertexBufferById(VertexBuffer::ID id);
 
-    IndexBuffer<uint32>::ID allocateIndexBuffer(const IndexBufferSpecification<uint32>& spec);
+    [[nodiscard]] IndexBuffer<uint32>::ID allocateIndexBuffer(const IndexBufferSpecification<uint32>& spec);
     void freeIndexBuffer(IndexBuffer<uint32>::ID index);
-    IndexBuffer<uint32>& getIndexBufferById(IndexBuffer<uint32>::ID id);
+    [[nodiscard]] IndexBuffer<uint32>& getIndexBufferById(IndexBuffer<uint32>::ID id);
 
-    DescriptorPool::ID allocateDescriptorPool(const DescriptorPoolSpecification& spec);
+    [[nodiscard]] DescriptorPool::ID allocateDescriptorPool(const DescriptorPoolSpecification& spec);
     void freeDescriptorPool(DescriptorPool::ID index);
-    DescriptorPool& getDescriptorPoolById(DescriptorPool::ID id);
+    [[nodiscard]] DescriptorPool& getDescriptorPoolById(DescriptorPool::ID id);
 
-    GraphicsPipeline::ID allocateGraphicsPipeline(const GraphicsPipelineSpecification& spec);
+    [[nodiscard]] GraphicsPipeline::ID allocateGraphicsPipeline(const GraphicsPipelineSpecification& spec);
     void freeGraphicsPipeline(GraphicsPipeline::ID index);
-    GraphicsPipeline& getGraphicsPipelineById(GraphicsPipeline::ID id);
+    [[nodiscard]] GraphicsPipeline& getGraphicsPipelineById(GraphicsPipeline::ID id);
 
 private:
     ResourcePool<TextureBuffer> m_texturePool;

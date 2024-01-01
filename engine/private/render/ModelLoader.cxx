@@ -164,7 +164,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         const TextureBufferSpecification nilTextureSpec = {
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
-            .swapchain = *m_swapchain,
             .commandBuffer = m_commandPool->commandBuffers().front(),
             .width = 1,
             .height = 1,
@@ -391,7 +390,6 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
             m_textures.push_back(resourceManager->allocateTexture({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
-                .swapchain = *m_swapchain,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
                 .path = path.c_str(),
                 .type = type,
@@ -403,7 +401,6 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
             m_textures.push_back(resourceManager->allocateTexture({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
-                .swapchain = *m_swapchain,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
                 .width = bufferView.byteLength,
                 .height = 0,

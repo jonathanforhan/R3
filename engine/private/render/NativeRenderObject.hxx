@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file NativeRenderObject.hxx
 /// Wraps different Render API Handle
 
 #include "api/Ref.hpp"
@@ -50,7 +49,7 @@ public:
     /// @tparam T cast to T type
     /// @return Handle
     template <typename T = Handle>
-    constexpr T handle() const {
+    [[nodiscard]] constexpr T handle() const {
         return reinterpret_cast<T>(m_handle.get());
     }
 
@@ -58,7 +57,7 @@ public:
     /// @tparam T cast to T type
     /// @return Type T Object from Handle
     template <typename T>
-    constexpr T as() const {
+    [[nodiscard]] constexpr T as() const {
         CHECK(validHandle());
         if constexpr (IsWrapper<T>) {
             return static_cast<T>(reinterpret_cast<T::NativeType>(m_handle.get()));

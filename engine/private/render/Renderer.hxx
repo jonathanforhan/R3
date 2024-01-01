@@ -69,16 +69,19 @@ public:
     /// @brief Wait idle for synchronization
     void waitIdle() const;
 
+    /// @brief Render the Editor UI, this makes calls to the m_ui member
+    /// @param dt deltaTime gotten from Engine for displaying framerate and such
     void renderEditorInterface(double dt);
 
     /// @brief Get ModelLoader
     /// @return loader
-    ModelLoader& modelLoader() { return m_modelLoader; }
+    [[nodiscard]] constexpr ModelLoader& modelLoader() { return m_modelLoader; }
 
 private:
     void updateLighting();
 
 private:
+    //--- Render
     Window& m_window;
     Instance m_instance;
     Surface m_surface;
@@ -92,16 +95,22 @@ private:
     ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
 
+    //--- Sync
     Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
     Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];
     Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
     uint32 m_currentFrame = 0;
 
+    //--- Uniform / Push Constants
     ViewProjection m_viewProjection;
     std::vector<PointLightShaderObject> m_pointLights;
 
+    //--- Utility
+    // ColorBuffer m_objectPickerColorBuffer;
+    // DepthBuffer m_objectPickerDepthBuffer;
+
     editor::Editor m_editor;
-    ModelLoader m_modelLoader;
+    ModelLoader m_modelLoader; // ModelLoader needs to know certain info about renderer so it's a member
 };
 
 } // namespace R3

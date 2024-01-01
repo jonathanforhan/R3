@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file Shader.hxx
-
 #include <string_view>
 #include "render/RenderApi.hxx"
 

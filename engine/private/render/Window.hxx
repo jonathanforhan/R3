@@ -1,7 +1,5 @@
 #pragma once
 
-/// @file Window.hxx
-
 #include <atomic>
 #include <string_view>
 #include "render/RenderApi.hxx"
@@ -34,7 +32,7 @@ public:
 
     /// @brief Query whether Window is visible
     /// @return if window is visible
-    bool isVisible() const;
+    [[nodiscard]] bool isVisible() const;
 
     /// @brief Resize the application Window
     /// @param width width in pixels
@@ -43,7 +41,7 @@ public:
 
     /// @brief Query the Window size
     /// @return Window dimensions in pixels
-    ivec2 size() const;
+    [[nodiscard]] ivec2 size() const;
 
     /// @brief Query the Window size
     /// @param[out] width return the window width in pixels
@@ -52,7 +50,7 @@ public:
 
     /// @brief Query the aspect ratio of the application window
     /// @return aspect ratio
-    float aspectRatio() const;
+    [[nodiscard]] float aspectRatio() const;
 
     /// @brief Query the Window state for if it should close
     /// @return true if the window should close
@@ -63,14 +61,14 @@ public:
 
     /// @brief Query the Window's native ID
     /// @return native OS Window ID
-    void* nativeId() const;
+    [[nodiscard]] void* nativeId() const;
 
     /// @brief Set the window should close to true
     void kill();
 
     /// @brief Query resize state
     /// @return true if needs to resize
-    bool shouldResize() const { return m_shouldResize; }
+    [[nodiscard]] bool shouldResize() const { return m_shouldResize; }
 
     /// @brief Set resize state
     /// @param b

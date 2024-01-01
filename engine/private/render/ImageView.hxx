@@ -1,6 +1,5 @@
 #pragma once
 
-/// @file ImageView.hxx
 /// @brief Provides a view into and Image buffer
 
 #include "render/RenderApi.hxx"
