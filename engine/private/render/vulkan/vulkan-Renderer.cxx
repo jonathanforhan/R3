@@ -90,13 +90,18 @@ Renderer::Renderer(const RendererSpecification& spec)
 
     //--- Framebuffers
     for (const auto& swapchainImageView : m_swapchain.imageViews()) {
+        // NOTE this format [ COLOR, DEPTH, SWAPCHAIN_IMAGE ]
+        // is important. It is mirrored in the layout of the renderpass attachments
+        const ImageView* attachments[] = {
+            &m_colorBuffer.imageView(),
+            &m_depthBuffer.imageView(),
+            &swapchainImageView,
+        };
         m_framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = m_logicalDevice,
-            .swapchain = m_swapchain,
-            .swapchainImageView = swapchainImageView,
-            .colorBufferImageView = m_colorBuffer.imageView(),
-            .depthBufferImageView = m_depthBuffer.imageView(),
             .renderPass = m_renderPass,
+            .attachments = attachments,
+            .extent = m_swapchain.extent(),
         });
     }
 
@@ -146,9 +151,8 @@ Renderer::Renderer(const RendererSpecification& spec)
         .projection = mat4(1.0f),
     };
 
-    /*
     //--- Object Picker ColorBuffer
-    m_objectPickercolorBuffer = ColorBuffer({
+    m_objectPickerColorBuffer = ColorBuffer({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
         .format = Format::R32Uint,
@@ -156,13 +160,26 @@ Renderer::Renderer(const RendererSpecification& spec)
         .sampleCount = 1,
     });
 
+    /*
     //--- Object Picker DepthBuffer
-    m_objectPickerdepthBuffer = DepthBuffer({
+    m_objectPickerDepthBuffer = DepthBuffer({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
         .format = Format::R32Uint,
         .extent = m_swapchain.extent(),
         .sampleCount = 1,
+    });
+
+    //--- Object Picker Framebuffer
+    const ImageView* attachments[] = {
+        &m_objectPickerColorBuffer.imageView(),
+        &m_objectPickerDepthBuffer.imageView(),
+    };
+    m_objectPickerFrameBuffer = Framebuffer({
+        .logicalDevice = m_logicalDevice,
+        .renderPass = m_renderPass,
+        .attachments = attachments,
+        .extent = m_swapchain.extent(),
     });
     */
 }

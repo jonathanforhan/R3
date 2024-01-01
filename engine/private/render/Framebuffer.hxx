@@ -2,18 +2,17 @@
 
 /// A Framebuffer references all ImageViews that represent attachments like Color Attachment
 
+#include <span>
 #include "render/RenderApi.hxx"
 
 namespace R3 {
 
 /// @brief Framebuffer Specification
 struct FramebufferSpecification {
-    const LogicalDevice& logicalDevice;    ///< LogicalDevice
-    const Swapchain& swapchain;            ///< Swapchain
-    const ImageView& swapchainImageView;   ///< Swapchain ImageView
-    const ImageView& colorBufferImageView; ///< ColorBuffer ImageView
-    const ImageView& depthBufferImageView; ///< DepthBuffer ImageView
-    const RenderPass& renderPass;          ///< RenderPass
+    const LogicalDevice& logicalDevice;
+    const RenderPass& renderPass;
+    std::span<const ImageView*> attachments; ///< Image View attachments
+    uvec2 extent;                            ///< Framebuffer extent
 };
 
 /// @brief Framebuffer is created per Image in Swapchain
@@ -31,8 +30,13 @@ public:
     /// @brief Destroy Framebuffer (ImageViews are not destroyed by Framebuffer)
     ~Framebuffer();
 
+    /// @brief Query Current extent
+    /// @return extent
+    [[nodiscard]] constexpr uvec2 extent() const { return m_extent; }
+
 private:
     Ref<const LogicalDevice> m_logicalDevice;
+    uvec2 m_extent = uvec2(0);
 };
 
 } // namespace R3

@@ -106,8 +106,9 @@ private:
     std::vector<PointLightShaderObject> m_pointLights;
 
     //--- Utility
-    // ColorBuffer m_objectPickerColorBuffer;
-    // DepthBuffer m_objectPickerDepthBuffer;
+    ColorBuffer m_objectPickerColorBuffer;
+    DepthBuffer m_objectPickerDepthBuffer;
+    Framebuffer m_objectPickerFrameBuffer;
 
     editor::Editor m_editor;
     ModelLoader m_modelLoader; // ModelLoader needs to know certain info about renderer so it's a member

@@ -11,24 +11,20 @@
 namespace R3 {
 
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
-    : m_logicalDevice(&spec.logicalDevice) {
-    // NOTE this format [ COLOR, DEPTH, SWAPCHAIN_IMAGE ]
-    // IS important. It is mirrored in the layout of the renderpass attachments
-    const vk::ImageView attachments[] = {
-        spec.colorBufferImageView.as<vk::ImageView>(),
-        spec.depthBufferImageView.as<vk::ImageView>(),
-        spec.swapchainImageView.as<vk::ImageView>(),
-    };
+    : m_logicalDevice(&spec.logicalDevice),
+      m_extent(spec.extent) {
+    std::vector<vk::ImageView> attachments(spec.attachments.size());
+    std::ranges::transform(spec.attachments, attachments.begin(), [](const auto* x) { return x->as<vk::ImageView>(); });
 
     const vk::FramebufferCreateInfo framebufferCreateInfo = {
         .sType = vk::StructureType::eFramebufferCreateInfo,
         .pNext = nullptr,
         .flags = {},
         .renderPass = spec.renderPass.as<vk::RenderPass>(),
-        .attachmentCount = static_cast<uint32>(std::size(attachments)),
-        .pAttachments = attachments,
-        .width = spec.swapchain.extent().x,
-        .height = spec.swapchain.extent().y,
+        .attachmentCount = static_cast<uint32>(attachments.size()),
+        .pAttachments = attachments.data(),
+        .width = spec.extent.x,
+        .height = spec.extent.y,
         .layers = 1,
     };
 

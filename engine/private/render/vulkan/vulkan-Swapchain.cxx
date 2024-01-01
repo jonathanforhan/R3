@@ -31,7 +31,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     m_surfaceFormat = std::get<0>(format);
     m_colorSpace = std::get<1>(format);
     m_presentMode = swapchainSupportDetails.optimalPresentMode();
-    m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
+    m_extent = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
 
     swapchainSupportDetails.capabilities.minImageCount == swapchainSupportDetails.capabilities.maxImageCount
         ? m_imageCount = swapchainSupportDetails.capabilities.maxImageCount
@@ -51,7 +51,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .minImageCount = m_imageCount,
         .imageFormat = vk::Format(m_surfaceFormat),
         .imageColorSpace = vk::ColorSpaceKHR(m_colorSpace),
-        .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
+        .imageExtent = vk::Extent2D(m_extent.x, m_extent.y),
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
         .imageSharingMode = sameQueueFamily ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
@@ -92,13 +92,13 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
 
     // query
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
-    m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
+    m_extent = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
-    while (m_extent2D.x == 0 || m_extent2D.y == 0) {
+    while (m_extent.x == 0 || m_extent.y == 0) {
         glfwWaitEvents();
         swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(vkPhysicalDevice, vkSurface);
-        m_extent2D = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
+        m_extent = swapchainSupportDetails.optimalExtent(m_window->handle<GLFWwindow*>());
     }
 
     const uint32 queueFamilyIndices[] = {
@@ -118,7 +118,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .minImageCount = m_imageCount,
         .imageFormat = vk::Format(m_surfaceFormat),
         .imageColorSpace = vk::ColorSpaceKHR(m_colorSpace),
-        .imageExtent = vk::Extent2D(m_extent2D.x, m_extent2D.y),
+        .imageExtent = vk::Extent2D(m_extent.x, m_extent.y),
         .imageArrayLayers = 1,
         .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
         .imageSharingMode = sameQueueFamily ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent,
@@ -140,7 +140,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .format = spec.colorBuffer.format(),
-        .extent = spec.colorBuffer.extent(),
+        .extent = m_extent,
         .sampleCount = spec.colorBuffer.sampleCount(),
     });
 
@@ -150,7 +150,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .format = spec.depthBuffer.format(),
-        .extent = spec.depthBuffer.extent(),
+        .extent = m_extent,
         .sampleCount = spec.depthBuffer.sampleCount(),
     });
 
@@ -173,13 +173,16 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
             .aspectMask = ImageAspect::Color,
         });
 
+        std::array<const ImageView*, 3> attachments = {
+            &spec.colorBuffer.imageView(),
+            &spec.depthBuffer.imageView(),
+            &m_imageViews[i],
+        };
         spec.framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = *m_logicalDevice,
-            .swapchain = *this,
-            .swapchainImageView = m_imageViews[i],
-            .colorBufferImageView = spec.colorBuffer.imageView(),
-            .depthBufferImageView = spec.depthBuffer.imageView(),
             .renderPass = spec.renderPass,
+            .attachments = attachments,
+            .extent = m_extent,
         });
     }
 }

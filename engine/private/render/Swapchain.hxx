@@ -46,7 +46,7 @@ public:
     [[nodiscard]] constexpr Format surfaceFormat() const { return m_surfaceFormat; }
     [[nodiscard]] constexpr ColorSpace colorSpace() const { return m_colorSpace; }
     [[nodiscard]] constexpr PresentMode presentMode() const { return m_presentMode; }
-    [[nodiscard]] constexpr uvec2 extent() const { return m_extent2D; }
+    [[nodiscard]] constexpr uvec2 extent() const { return m_extent; }
     [[nodiscard]] constexpr std::span<const Image> images() const { return m_images; }
     [[nodiscard]] constexpr std::span<const ImageView> imageViews() const { return m_imageViews; }
 
@@ -59,7 +59,7 @@ private:
     Format m_surfaceFormat = Format::Undefined;
     ColorSpace m_colorSpace = ColorSpace::SrgbNonlinear;
     PresentMode m_presentMode = PresentMode::Fifo;
-    uvec2 m_extent2D = {};
+    uvec2 m_extent = uvec2(0);
     uint32 m_imageCount = 0;
 
     std::vector<Image> m_images;
