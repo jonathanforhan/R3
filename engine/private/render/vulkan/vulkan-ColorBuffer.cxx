@@ -12,15 +12,14 @@ namespace R3 {
 
 ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    Format colorFormat = spec.swapchain.surfaceFormat();
-
+    const Format colorFormat = spec.swapchain.surfaceFormat();
     const uvec2 extent = spec.swapchain.extent();
 
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .size = uint32(extent.x * extent.y * sizeof(float)),
-        .format = Format(colorFormat),
+        .format = colorFormat,
         .width = extent.x,
         .height = extent.y,
         .mipLevels = 1,

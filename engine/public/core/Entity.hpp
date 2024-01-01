@@ -115,6 +115,10 @@ public:
     [[nodiscard]] auto tryGet() const;
 
     /// @brief Iterate over all the entities in current Scene
+    /// Pass this a lambda with an EntityView ref as the argument you would like to iterate through as arguments
+    /// @code
+    /// Entity::forEach([](EntityView& ev){ LOG(Info, ev.id()); });
+    /// @endcode
     /// @param callback
     template <typename F>
     requires requires(F&& f) { f(std::declval<EntityView&>()); }
@@ -129,8 +133,11 @@ public:
 
 #if not R3_ENGINE
     /// @brief Iterate Components from View of Current Scene
-    /// This will use the FunctionTraits<F> type deduction
-    /// Limited to four Components
+    /// This will use the FunctionTraits<F> type deduction, Limited to four Components
+    /// Pass the components you would like to iterate as arguements
+    /// @code
+    /// Entity::forEachComponent([](TransformComponent& t){ t = mat4(1.0f); });
+    /// @endcode
     /// @tparam F Functor
     /// @param callback
     template <typename F>

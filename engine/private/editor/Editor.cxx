@@ -147,9 +147,9 @@ void Editor::displayProperties() {
             // Edit Rotation
             auto rotation = editorComponent.rotation;
             ImGui::DragFloat3("rotation", glm::value_ptr(rotation), 0.1f);
-            rotation.x = rotation.x < 0 ? 360 : rotation.x > 360 ? 0 : rotation.x;
-            rotation.y = rotation.y < 0 ? 360 : rotation.y > 360 ? 0 : rotation.y;
-            rotation.z = rotation.z < 0 ? 360 : rotation.z > 360 ? 0 : rotation.z;
+            rotation.x = rotation.x < 0 ? 360 : rotation.x >= 360 ? 0 : rotation.x;
+            rotation.y = rotation.y < 0 ? 360 : rotation.y >= 360 ? 0 : rotation.y;
+            rotation.z = rotation.z < 0 ? 360 : rotation.z >= 360 ? 0 : rotation.z;
             editorComponent.rotation = rotation;
             mat4 rotationMatrix = mat4(1.0f);
             rotationMatrix = glm::rotate(rotationMatrix, glm::radians(rotation.x), vec3(1, 0, 0));
@@ -161,24 +161,21 @@ void Editor::displayProperties() {
             auto scale = editorComponent.scale;
             ImGui::DragFloat3("scale", glm::value_ptr(scale), 0.1f);
             if (scaleLock) {
-                // two of these will be zero so we can sum them, no need to check
-                float dx = scale.x - editorComponent.scale.x;
-                float dy = scale.y - editorComponent.scale.y;
-                float dz = scale.z - editorComponent.scale.z;
-                float delta = dx + dy + dz;
+                vec3 dscale = scale - editorComponent.scale;
+                // two of the components will be zero so we can sum them, no need to check
+                float delta = dscale.x + dscale.y + dscale.z;
                 scale = editorComponent.scale + vec3(delta);
             }
             scale.x = scale.x <= 0 ? 0.0001f : scale.x;
             scale.y = scale.y <= 0 ? 0.0001f : scale.y;
             scale.z = scale.z <= 0 ? 0.0001f : scale.z;
-            auto deltaScale = scale / editorComponent.scale;
             editorComponent.scale = scale;
             ImGui::Spacing();
 
             mat4& transform = entityView.get<TransformComponent>();
             transform = rotationMatrix;
             transform[3] = vec4(position, transform[3][3]);
-            transform = glm::scale(transform, deltaScale);
+            transform = glm::scale(transform, scale);
         }
     }
     ImGui::End();
