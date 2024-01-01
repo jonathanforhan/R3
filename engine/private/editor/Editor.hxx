@@ -5,9 +5,9 @@
 #include "render/RenderApi.hxx"
 #include "render/ShaderObjects.hxx"
 
-namespace R3 {
+namespace R3::editor {
 
-struct UserInterfaceSpecification {
+struct EditorSpecification {
     const Window& window;
     const Instance& instance;
     const PhysicalDevice& physicalDevice;
@@ -15,31 +15,34 @@ struct UserInterfaceSpecification {
     const RenderPass& renderPass;
 };
 
-class UserInterface {
+class Editor {
 public:
-    DEFAULT_CONSTRUCT(UserInterface);
-    NO_COPY(UserInterface);
-    DEFAULT_MOVE(UserInterface);
+    DEFAULT_CONSTRUCT(Editor);
+    NO_COPY(Editor);
+    DEFAULT_MOVE(Editor);
 
-    UserInterface(const UserInterfaceSpecification& spec);
+    Editor(const EditorSpecification& spec);
 
-    ~UserInterface();
+    ~Editor();
 
-    static void beginFrame();
+    void beginFrame();
 
-    static void endFrame();
+    void endFrame();
 
     void drawFrame(const CommandBuffer& commandBuffer);
 
-    static void displayDeltaTime(double dt);
+    void displayDeltaTime(double dt);
 
-    static void lightEditor();
+    void initializeDocking();
 
-    static void transformEditor();
+    void displayHierarchy();
+
+    void displayProperties();
 
 private:
     Ref<void> m_descriptorPool; // void Handle because it's non-owning
     Ref<const LogicalDevice> m_logicalDevice;
+    int64 m_currentEntity = -1;
 };
 
-} // namespace R3
+} // namespace R3::editor

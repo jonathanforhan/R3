@@ -20,7 +20,7 @@ public:
 
     /// @brief Create Scene with uuid
     /// @param id uuid
-    explicit Scene(uuid32 id);
+    explicit Scene(uuid32 id, const char* name);
 
     /// @brief Free resource manager
     ~Scene();
@@ -108,6 +108,7 @@ public:
 
 public:
     const uuid32 id;                     ///< Scene id
+    const char* name;                    ///< Scene name
     ResourceManagerImpl resourceManager; ///< Handle to Scene ResourceManager
 
 private:

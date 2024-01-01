@@ -90,11 +90,15 @@ inline auto Entity::tryGet() const {
 
 template <typename F>
 requires requires(F&& f) { f(std::declval<EntityView&>()); }
-inline void Entity::forEach(F&& callback) {
-    auto view = CurrentScene->m_registry.view<entt::entity>();
+inline void Entity::forEach(F&& callback, Scene* scene) {
+    if (scene == nullptr) {
+        scene = CurrentScene;
+    }
+
+    auto view = scene->m_registry.view<entt::entity>();
 
     for (auto entity : view) {
-        EntityView entityView(uuid32(entity), CurrentScene);
+        EntityView entityView(uuid32(entity), scene);
         callback(entityView);
     }
 }

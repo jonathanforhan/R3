@@ -18,8 +18,8 @@ SwapchainSupportDetails SwapchainSupportDetails::query(vk::PhysicalDevice physic
 }
 
 std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() const {
-    static constinit auto optimalFormat = vk::Format::eR8G8B8A8Srgb;
-    static constinit auto optimalColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
+    static constexpr auto optimalFormat = vk::Format::eR8G8B8A8Srgb;
+    static constexpr auto optimalColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 
     auto it = std::ranges::find_if(surfaceFormats, [](const auto& surfaceFormat) {
         return surfaceFormat.format == optimalFormat && surfaceFormat.colorSpace == optimalColorSpace;
@@ -34,7 +34,7 @@ std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() c
 }
 
 PresentMode SwapchainSupportDetails::optimalPresentMode() const {
-    static constinit auto optimalPresentMode = vk::PresentModeKHR::eMailbox;
+    static constexpr auto optimalPresentMode = vk::PresentModeKHR::eMailbox;
 
     auto it = std::ranges::find_if(presentModes, [](auto& presentMode) { return presentMode == optimalPresentMode; });
     return PresentMode(it != presentModes.end() ? optimalPresentMode : vk::PresentModeKHR::eFifo);

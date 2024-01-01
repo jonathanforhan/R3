@@ -47,12 +47,7 @@ EngineStatusCode Engine::loop(const char* dlName) {
         renderer.setView(CurrentScene->view());
         renderer.setProjection(CurrentScene->projection());
 
-        UserInterface::beginFrame();
-        UserInterface::displayDeltaTime(dt);
-        UserInterface::lightEditor();
-        UserInterface::transformEditor();
-        UserInterface::endFrame();
-
+        renderer.renderEditorInterface(dt);
         renderer.render();
 
         window.update();

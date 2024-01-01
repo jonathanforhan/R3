@@ -1,9 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(R3_ENGINE LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 file(GLOB_RECURSE CXX_SOURCES
 	"${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx"
 	"${CMAKE_CURRENT_SOURCE_DIR}/public/*.cpp"
@@ -34,8 +31,12 @@ else ()
 endif ()
 
 file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
+file(GLOB PRE_COMPILE_CORE "${CMAKE_CURRENT_SOURCE_DIR}/public/core/*.hpp")
+# file(GLOB PRE_COMPILE_RENDER "${CMAKE_CURRENT_SOURCE_DIR}/private/render/*.hxx")
 target_precompile_headers(R3_ENGINE PUBLIC
 	"${PRE_COMPILE_API}"
+	"${PRE_COMPILE_CORE}"
+	# "${PRE_COMPILE_RENDER}"
 )
 
 #[[ SANITY CHECK ]]

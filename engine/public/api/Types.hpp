@@ -48,6 +48,8 @@ using glm::dmat2; ///< dmat2
 using glm::dmat3; ///< dmat3
 using glm::dmat4; ///< dmat4
 
+using glm::quat; ///< quat
+
 using int8 = std::int8_t;   ///< int8
 using int16 = std::int16_t; ///< int16
 using int32 = std::int32_t; ///< int32
@@ -106,3 +108,6 @@ template class R3_API glm::mat<4, 4, glm::f32, glm::packed_highp>;
 template class R3_API glm::mat<2, 2, glm::f64, glm::packed_highp>;
 template class R3_API glm::mat<3, 3, glm::f64, glm::packed_highp>;
 template class R3_API glm::mat<4, 4, glm::f64, glm::packed_highp>;
+
+// quat export
+template class R3_API glm::qua<glm::f64, glm::packed_highp>;

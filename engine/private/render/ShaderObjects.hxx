@@ -6,7 +6,7 @@
 
 namespace R3 {
 
-static constinit uint32 MAX_LIGHTS = 32;
+static constexpr uint32 MAX_LIGHTS = 32;
 
 struct VertexUniformBufferObject {
     alignas(16) mat4 model;
@@ -31,8 +31,9 @@ struct FragmentUniformBufferObject {
     alignas(16) vec3 cameraPosition;
     alignas(4) uint32 pbrFlags;
     alignas(4) uint32 lightCount;
-    PointLightShaderObject pointLights[32];
+    PointLightShaderObject pointLights[MAX_LIGHTS];
 };
 
 } // namespace R3
+
 #pragma warning(pop)

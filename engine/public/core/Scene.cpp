@@ -5,10 +5,11 @@
 
 namespace R3 {
 
-Scene::Scene(uuid32 id)
+Scene::Scene(uuid32 id, const char* name)
     : id(id),
+      name(name),
       resourceManager(new ResourceManager) {
-    static constinit usize MB = 1024 * 1024;
+    static constexpr usize MB = 1024 * 1024;
     m_eventArena.reserve(MB);
 }
 

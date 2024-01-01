@@ -118,7 +118,7 @@ public:
     /// @param callback
     template <typename F>
     requires requires(F&& f) { f(std::declval<EntityView&>()); }
-    static void forEach(F&& callback);
+    static void forEach(F&& callback, Scene* scene = nullptr);
 
     /// @brief Query Component View from entt of Current Scene
     /// @tparam ...T Type of Components to Query
@@ -146,7 +146,7 @@ protected:
 class EntityView : public Entity {
 public:
     DEFAULT_COPY(EntityView);
-    DEFAULT_MOVE(EntityView);
+    NO_MOVE(EntityView);
 
     EntityView(uuid32 id, Scene* parentScene)
         : Entity() {

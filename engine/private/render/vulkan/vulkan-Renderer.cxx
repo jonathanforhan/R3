@@ -13,7 +13,6 @@
 #include <vulkan/vulkan.hpp>
 #include "render/ResourceManager.hxx"
 #include "render/ShaderObjects.hxx"
-#include "ui/UserInterface.hxx"
 
 namespace R3 {
 
@@ -119,8 +118,8 @@ Renderer::Renderer(const RendererSpecification& spec)
         m_inFlight[i] = Fence({m_logicalDevice});
     }
 
-    //--- UserInterface
-    m_ui = UserInterface({
+    //--- Editor
+    m_editor = editor::Editor({
         .window = m_window,
         .instance = m_instance,
         .physicalDevice = m_physicalDevice,
@@ -210,7 +209,7 @@ void Renderer::render() {
         }
     };
     Entity::componentView<TransformComponent, ModelComponent>().each(draw);
-    m_ui.drawFrame(commandBuffer);
+    m_editor.drawFrame(commandBuffer);
 
     //**************************************** RENDER PASS END ****************************************//
     commandBuffer.endRenderPass();
@@ -258,6 +257,15 @@ void Renderer::resize() {
 
 void Renderer::waitIdle() const {
     m_logicalDevice.as<vk::Device>().waitIdle();
+}
+
+void Renderer::renderEditorInterface(double dt) {
+    m_editor.beginFrame();
+    m_editor.initializeDocking();
+    m_editor.displayHierarchy();
+    m_editor.displayProperties();
+    m_editor.displayDeltaTime(dt);
+    m_editor.endFrame();
 }
 
 void Renderer::updateLighting() {

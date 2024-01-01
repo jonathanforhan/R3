@@ -1,6 +1,7 @@
 #pragma once
 
 #include "public/components/CameraComponent.hpp"
+#include "public/components/EditorComponent.hpp"
 #include "public/components/LightComponent.hpp"
 #include "public/components/ModelComponent.hpp"
 #include "public/components/TransformComponent.hpp"

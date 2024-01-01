@@ -12,6 +12,7 @@
 /// - Create Render CommandPool and Local CommandPool
 /// - Build Synchronization Resources
 
+#include "editor/Editor.hxx"
 #include "render/ColorBuffer.hxx"
 #include "render/CommandPool.hxx"
 #include "render/DepthBuffer.hxx"
@@ -28,7 +29,6 @@
 #include "render/Surface.hxx"
 #include "render/Swapchain.hxx"
 #include "render/Window.hxx"
-#include "ui/UserInterface.hxx"
 
 namespace R3 {
 
@@ -69,6 +69,8 @@ public:
     /// @brief Wait idle for synchronization
     void waitIdle() const;
 
+    void renderEditorInterface(double dt);
+
     /// @brief Get ModelLoader
     /// @return loader
     ModelLoader& modelLoader() { return m_modelLoader; }
@@ -98,7 +100,7 @@ private:
     ViewProjection m_viewProjection;
     std::vector<PointLightShaderObject> m_pointLights;
 
-    UserInterface m_ui;
+    editor::Editor m_editor;
     ModelLoader m_modelLoader;
 };
 
