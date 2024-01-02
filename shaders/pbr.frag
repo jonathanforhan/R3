@@ -123,7 +123,7 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(0.7);
+	vec3 ambientOcclusion = vec3(1.0);
 	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
 		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
@@ -144,7 +144,7 @@ void main() {
 		vec3 H = normalize(V + L);
 		float dist = length(u_Lights[i].position - v_Position);
 		float attenuation = 1.0 / (dist * dist);
-		vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation * 0.2;
+		vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation;
 
 		// cook-terrance BRDF
 		float NDF = distributionGGX(N, H, roughness);
@@ -167,7 +167,7 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.001) * albedo * ambientOcclusion;
+	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
 
 	vec3 color = ambient + Lo;
 

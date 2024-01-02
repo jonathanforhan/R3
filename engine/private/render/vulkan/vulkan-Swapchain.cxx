@@ -76,7 +76,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         m_imageViews[i] = ImageView({
             .logicalDevice = *m_logicalDevice,
             .image = m_images[i],
-            .format = Format::R8G8B8A8Srgb,
+            .format = m_surfaceFormat,
             .mipLevels = 1,
             .aspectMask = ImageAspect::Color,
         });
@@ -167,7 +167,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         m_imageViews.emplace_back(ImageViewSpecification{
             .logicalDevice = *m_logicalDevice,
             .image = m_images[i],
-            .format = Format::R8G8B8A8Srgb,
+            .format = m_surfaceFormat,
             .mipLevels = 1,
             .aspectMask = ImageAspect::Color,
         });

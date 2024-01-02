@@ -21,21 +21,21 @@ R3_DLL void Run() {
         editorCamera.setActive(true);
 
         auto& red = Entity::create<Entity>().emplace<LightComponent>();
-        red.position = vec3(2, 1, 0);
-        red.color = vec3(1, 0, 0);
-        red.intensity = 0.8f;
+        red.position = vec3(0, 1, -1);
+        red.color = vec3(1, 1, 1);
+        red.intensity = 1.0f;
 
         auto& green = Entity::create<Entity>().emplace<LightComponent>();
-        green.position = vec3(-2, 1, 0);
-        green.color = vec3(0, 1, 0);
-        green.intensity = 0.8f;
+        green.position = vec3(0, 1, 0);
+        green.color = vec3(1, 1, 1);
+        green.intensity = 1.0f;
 
         auto& blue = Entity::create<Entity>().emplace<LightComponent>();
-        blue.position = vec3(0, 1, 2);
-        blue.color = vec3(0, 0, 1);
-        blue.intensity = 0.8f;
+        blue.position = vec3(0, 1, 1);
+        blue.color = vec3(1, 1, 1);
+        blue.intensity = 1.0f;
 
-#if 1
+#if 0
         auto& helmet = Entity::create<Entity>();
         helmet.emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         helmet.emplace<EditorComponent>("Helmet");
