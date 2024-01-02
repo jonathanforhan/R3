@@ -17,10 +17,8 @@ R3_DLL void Run() {
     try {
         //--- Camera
         auto& cameraEntity = Entity::create<Entity>();
-        cameraEntity.emplace<EditorComponent>("Editor Camera");
         auto& editorCamera = cameraEntity.emplace<CameraComponent>();
         editorCamera.setActive(true);
-        editorCamera.setPosition(vec3(0, 0, -3));
 
         auto& red = Entity::create<Entity>().emplace<LightComponent>();
         red.position = vec3(2, 1, 0);
@@ -37,25 +35,19 @@ R3_DLL void Run() {
         blue.color = vec3(0, 0, 1);
         blue.intensity = 0.8f;
 
-#if 0
+#if 1
         auto& helmet = Entity::create<Entity>();
         helmet.emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         helmet.emplace<EditorComponent>("Helmet");
-
-#if 0
-        auto& camera = Entity::create<Entity>();
-        camera.emplace<ModelComponent>("assets/AntiqueCamera/glTF-Binary/AntiqueCamera.glb");
-        camera.emplace<EditorComponent>("Camera");
-
-        auto& fox = Entity::create<Entity>();
-        fox.emplace<ModelComponent>("assets/Fox/glTF-Binary/Fox.glb");
-        fox.emplace<EditorComponent>("Fox");
-#endif
+        auto& htransform = helmet.get<TransformComponent>();
+        htransform = glm::translate(htransform, vec3(3.0f, 0, 0));
 
         auto& duck = Entity::create<Entity>();
         duck.emplace<ModelComponent>("assets/Duck/glTF-Binary/Duck.glb");
         duck.emplace<EditorComponent>("Duck");
-        duck.get<TransformComponent>() = mat4(0.01f);
+        auto& transform = duck.get<TransformComponent>();
+        transform = mat4(0.01f);
+        transform = glm::translate(transform, vec3(0, -1, 3.0f));
 #else
         auto& entity = Entity::create<Entity>();
         entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");

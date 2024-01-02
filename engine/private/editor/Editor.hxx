@@ -41,6 +41,8 @@ public:
 
     void setCurrentEntity(uuid32 id) { m_currentEntity = id; }
 
+    [[nodiscard]] constexpr uuid32 currentEntity() const { return m_currentEntity; }
+
 private:
     Ref<void> m_descriptorPool; // void Handle because it's non-owning
     Ref<const LogicalDevice> m_logicalDevice;

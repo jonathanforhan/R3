@@ -55,6 +55,7 @@ layout (set = 0, binding = 7) buffer SSBO {
 layout (push_constant) uniform FragmentPushConstant {
     vec2 c_MousePosition;
     uint c_Uid;
+    uint c_Selected;
 };
 
 vec3 calcTangentNormal() {
@@ -182,4 +183,8 @@ void main() {
 	color = pow(color, vec3(1.0 / 2.2));
 
 	f_Color = vec4(color, 1.0);
+
+	if (c_Uid == c_Selected) {
+		f_Color = f_Color + vec4(0.08, 0.05, 0.0, 0.0);
+	}
 }

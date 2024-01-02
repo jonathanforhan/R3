@@ -22,6 +22,7 @@ struct VertexUniformBufferObject {
 struct FragmentPushConstant {
     alignas(8) vec2 cursorPosition;
     alignas(4) uint32 uid;
+    alignas(4) uint32 selected;
 };
 
 struct PointLightShaderObject {

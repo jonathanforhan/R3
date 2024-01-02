@@ -171,11 +171,22 @@ Renderer::Renderer(const RendererSpecification& spec)
 }
 
 void Renderer::preLoop() {
-    const std::function<void(const MouseButtonPressEvent&)> getSelectedEntity = [this](const MouseButtonPressEvent& e) {
-        if (e.payload.button == MouseButton::Left) {
-            if (auto id = getHoveredEntity(); id != ~uuid32(0)) {
-                m_editor.setCurrentEntity(getHoveredEntity());
-            }
+    using MouseReleaseCallback = std::function<void(const MouseButtonReleaseEvent&)>;
+    using MousePressCallback = std::function<void(const MouseButtonPressEvent&)>;
+
+    static vec2 prevMousePosition = m_cursorPosition;
+
+    const MousePressCallback setMousePosition = [this](const MouseButtonPressEvent& e) {
+        prevMousePosition = m_cursorPosition;
+    };
+    Scene::bindEventListener(setMousePosition);
+
+    const MouseReleaseCallback getSelectedEntity = [this](const MouseButtonReleaseEvent& e) {
+        float localityX = glm::abs(prevMousePosition.x - m_cursorPosition.x);
+        float localityY = glm::abs(prevMousePosition.y - m_cursorPosition.y);
+
+        if (e.payload.button == MouseButton::Left && (localityY + localityX) < 5.0f) {
+            m_editor.setCurrentEntity(getHoveredEntity());
         }
     };
     Scene::bindEventListener(getSelectedEntity);
@@ -235,6 +246,7 @@ void Renderer::render() {
             FragmentPushConstant fragmentPushConstant = {
                 .cursorPosition = m_cursorPosition,
                 .uid = uint32(entity),
+                .selected = m_editor.currentEntity(),
             };
             cmd.pushConstants(
                 pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));

@@ -143,30 +143,34 @@ void Editor::displayProperties() {
 
             ImGui::Text(editorComponent.name);
 
-            const float sensitivity = ImGui::GetIO().KeyShift ? 0.01f : 0.1f;
+            const float sensitivity = ImGui::GetIO().KeyShift ? 0.0001f : 0.1f;
             const bool scaleLock = ImGui::GetIO().KeyCtrl;
+            const auto sliderFlags = scaleLock ? ImGuiSliderFlags_NoInput : ImGuiSliderFlags_None;
 
             // Edit position
-            auto& position = editorComponent.position;
-            ImGui::DragFloat3("position", glm::value_ptr(position), sensitivity);
+            vec3 position = editorComponent.position;
+            ImGui::DragFloat3("position", glm::value_ptr(position), sensitivity, 0, 0, "%.4f", sliderFlags);
+            vec3 deltaPosition = position - editorComponent.position;
+            editorComponent.position = position;
             ImGui::Spacing();
 
             // Edit Rotation
-            auto rotation = editorComponent.rotation;
-            ImGui::DragFloat3("rotation", glm::value_ptr(rotation), sensitivity);
+            vec3 rotation = editorComponent.rotation;
+            ImGui::DragFloat3("rotation", glm::value_ptr(rotation), sensitivity, 0, 0, "%.4f", sliderFlags);
+            vec3 deltaRotation = rotation - editorComponent.rotation;
             rotation.x = rotation.x < 0 ? 360 : rotation.x >= 360 ? 0 : rotation.x;
             rotation.y = rotation.y < 0 ? 360 : rotation.y >= 360 ? 0 : rotation.y;
             rotation.z = rotation.z < 0 ? 360 : rotation.z >= 360 ? 0 : rotation.z;
             editorComponent.rotation = rotation;
             mat4 rotationMatrix = mat4(1.0f);
-            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(rotation.x), vec3(1, 0, 0));
-            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(rotation.y), vec3(0, 1, 0));
-            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(rotation.z), vec3(0, 0, 1));
+            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(deltaRotation.x), vec3(1, 0, 0));
+            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(deltaRotation.y), vec3(0, 1, 0));
+            rotationMatrix = glm::rotate(rotationMatrix, glm::radians(deltaRotation.z), vec3(0, 0, 1));
             ImGui::Spacing();
 
             // Edit scale
             auto scale = editorComponent.scale;
-            ImGui::DragFloat3("scale", glm::value_ptr(scale), sensitivity);
+            ImGui::DragFloat3("scale", glm::value_ptr(scale), sensitivity, 0, 0, "%.4f", sliderFlags);
             if (scaleLock) {
                 vec3 dscale = scale - editorComponent.scale;
                 // two of the components will be zero so we can sum them, no need to check
@@ -176,13 +180,14 @@ void Editor::displayProperties() {
             scale.x = scale.x <= 0 ? 0.0001f : scale.x;
             scale.y = scale.y <= 0 ? 0.0001f : scale.y;
             scale.z = scale.z <= 0 ? 0.0001f : scale.z;
+            vec3 deltaScale = scale / editorComponent.scale;
             editorComponent.scale = scale;
             ImGui::Spacing();
 
             mat4& transform = entityView.get<TransformComponent>();
-            transform = rotationMatrix;
-            transform[3] = vec4(position, transform[3][3]);
-            transform = glm::scale(transform, scale);
+            transform = transform * rotationMatrix;
+            transform[3] += vec4(deltaPosition, 0.0f);
+            transform = glm::scale(transform, deltaScale);
         }
     }
     ImGui::End();
