@@ -6,6 +6,7 @@
 #include <span>
 #include <vector>
 #include "render/RenderApi.hxx"
+#include "render/StorageBuffer.hxx"
 #include "render/TextureBuffer.hxx"
 #include "render/UniformBuffer.hxx"
 
@@ -27,6 +28,14 @@ struct UniformDescriptor {
     usize range;               ///< Size in bytes used for update, the entire buffer is updated if range=0
 };
 
+/// @brief Descriptor Describing Storage Data
+struct StorageDescriptor {
+    StorageBuffer::ID storage; ///< ID given by GlobalResourceManager
+    uint32 binding;            ///< Descriptor Shader binding
+    usize offset;              ///< Descriptor Shader offset
+    usize range;               ///< Size in bytes used for update, the entire buffer is updated if range=0
+};
+
 /// @brief Descriptor Describing Texture Data
 struct TextureDescriptor {
     TextureBuffer::ID texture; ///< ID given by GlobalResourceManager
@@ -36,6 +45,7 @@ struct TextureDescriptor {
 /// @brief Descriptor Set Binding Specification
 struct DescriptorSetBindingSpecification {
     std::span<const UniformDescriptor> uniformDescriptors; ///< UniformDescriptors
+    std::span<const StorageDescriptor> storageDescriptors; ///< StorageDescriptors
     std::span<const TextureDescriptor> textureDescriptors; ///< TextureDescriptors
 };
 

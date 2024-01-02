@@ -2,7 +2,7 @@
 
 /// @brief Base for classes that need to allocate GPU memory
 
-#include "render/NativeRenderObject.hxx"
+#include "NativeRenderObject.hxx"
 
 namespace R3 {
 

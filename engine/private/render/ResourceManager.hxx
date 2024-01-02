@@ -34,6 +34,10 @@ public:
     void freeUniform(UniformBuffer::ID index);
     [[nodiscard]] UniformBuffer& getUniformById(UniformBuffer::ID id);
 
+    [[nodiscard]] StorageBuffer::ID allocateStorageBuffer(const StorageBufferSpecification& spec);
+    void freeStorageBuffer(StorageBuffer::ID index);
+    [[nodiscard]] StorageBuffer& getStorageBufferById(StorageBuffer::ID id);
+
     [[nodiscard]] VertexBuffer::ID allocateVertexBuffer(const VertexBufferSpecification& spec);
     void freeVertexBuffer(VertexBuffer::ID index);
     [[nodiscard]] VertexBuffer& getVertexBufferById(VertexBuffer::ID id);
@@ -53,6 +57,7 @@ public:
 private:
     ResourcePool<TextureBuffer> m_texturePool;
     ResourcePool<UniformBuffer> m_uniformPool;
+    ResourcePool<StorageBuffer> m_storagePool;
     ResourcePool<VertexBuffer> m_vertexPool;
     ResourcePool<IndexBuffer<uint32>> m_indexPool;
     ResourcePool<DescriptorPool> m_descriptorPool;

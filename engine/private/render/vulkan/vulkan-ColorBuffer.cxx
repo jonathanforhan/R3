@@ -23,7 +23,7 @@ ColorBuffer::ColorBuffer(const ColorBufferSpecification& spec)
         .width = m_extent.x,
         .height = m_extent.y,
         .mipLevels = 1,
-        .samples = spec.physicalDevice.sampleCount(),
+        .samples = m_sampleCount,
         .imageFlags = ImageUsage::TransientAttachment | ImageUsage::ColorAttachment,
         .memoryFlags = MemoryProperty::DeviceLocal,
     };

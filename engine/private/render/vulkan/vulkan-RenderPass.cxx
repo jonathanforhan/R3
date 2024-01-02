@@ -14,8 +14,8 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
     const vk::AttachmentDescription colorAttachment = {
         .flags = {},
-        .format = vk::Format(spec.swapchain.surfaceFormat()),
-        .samples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
+        .format = vk::Format(spec.colorAttachment.format),
+        .samples = vk::SampleCountFlagBits(spec.colorAttachment.sampleCount),
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eStore,
         .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
@@ -28,12 +28,14 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .layout = vk::ImageLayout::eColorAttachmentOptimal,
     };
 
+    vk::Format depthFormat = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
+                                                             vk::ImageTiling::eOptimal,
+                                                             vk::FormatFeatureFlagBits::eDepthStencilAttachment);
+
     const vk::AttachmentDescription depthAttachment = {
         .flags = {},
-        .format = vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
-                                                  vk::ImageTiling::eOptimal,
-                                                  vk::FormatFeatureFlagBits::eDepthStencilAttachment),
-        .samples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
+        .format = depthFormat,
+        .samples = vk::SampleCountFlagBits(spec.depthAttachment.sampleCount),
         .loadOp = vk::AttachmentLoadOp::eClear,
         .storeOp = vk::AttachmentStoreOp::eDontCare,
         .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
@@ -46,22 +48,28 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal,
     };
 
-    // color resolve attachment, to convert color attach from MSAA to normal image
-    const vk::AttachmentDescription colorAttachmentResolve = {
-        .flags = {},
-        .format = vk::Format(spec.swapchain.surfaceFormat()),
-        .samples = vk::SampleCountFlagBits::e1,
-        .loadOp = vk::AttachmentLoadOp::eDontCare,
-        .storeOp = vk::AttachmentStoreOp::eStore,
-        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
-        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
-        .initialLayout = vk::ImageLayout::eUndefined,
-        .finalLayout = vk::ImageLayout::ePresentSrcKHR,
-    };
-    const vk::AttachmentReference colorAttachmentResolveReference = {
-        .attachment = 2,
-        .layout = vk::ImageLayout::eColorAttachmentOptimal,
-    };
+    // Color Attachment Resolve, only present if MSAA is enabled
+    const bool msaa = spec.colorAttachment.sampleCount > 1;
+    vk::AttachmentDescription colorAttachmentResolve;
+    vk::AttachmentReference colorAttachmentResolveReference;
+    if (msaa) {
+        // color resolve attachment, to convert color attach from MSAA to normal image
+        colorAttachmentResolve = {
+            .flags = {},
+            .format = vk::Format(spec.colorAttachment.format),
+            .samples = vk::SampleCountFlagBits::e1,
+            .loadOp = vk::AttachmentLoadOp::eDontCare,
+            .storeOp = vk::AttachmentStoreOp::eStore,
+            .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
+            .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
+            .initialLayout = vk::ImageLayout::eUndefined,
+            .finalLayout = vk::ImageLayout::ePresentSrcKHR,
+        };
+        colorAttachmentResolveReference = {
+            .attachment = 2,
+            .layout = vk::ImageLayout::eColorAttachmentOptimal,
+        };
+    }
 
     const vk::SubpassDescription subpassDescription = {
         .flags = {},
@@ -70,7 +78,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorAttachmentReference,
-        .pResolveAttachments = &colorAttachmentResolveReference,
+        .pResolveAttachments = msaa ? &colorAttachmentResolveReference : nullptr,
         .pDepthStencilAttachment = &depthAttachmentReference,
         .preserveAttachmentCount = 0,
         .pPreserveAttachments = nullptr,
@@ -88,21 +96,37 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyFlags = {},
     };
 
-    const vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment, colorAttachmentResolve};
+    if (msaa) {
+        vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment, colorAttachmentResolve};
 
-    const vk::RenderPassCreateInfo renderPassCreateInfo = {
-        .sType = vk::StructureType::eRenderPassCreateInfo,
-        .pNext = nullptr,
-        .flags = {},
-        .attachmentCount = static_cast<uint32>(std::size(attachments)),
-        .pAttachments = attachments,
-        .subpassCount = 1,
-        .pSubpasses = &subpassDescription,
-        .dependencyCount = 1,
-        .pDependencies = &subpassDependency,
-    };
+        const vk::RenderPassCreateInfo renderPassCreateInfo = {
+            .sType = vk::StructureType::eRenderPassCreateInfo,
+            .pNext = nullptr,
+            .flags = {},
+            .attachmentCount = static_cast<uint32>(std::size(attachments)),
+            .pAttachments = attachments,
+            .subpassCount = 1,
+            .pSubpasses = &subpassDescription,
+            .dependencyCount = 1,
+            .pDependencies = &subpassDependency,
+        };
+        setHandle(m_logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
+    } else {
+        vk::AttachmentDescription attachments[] = {colorAttachment, depthAttachment};
 
-    setHandle(m_logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
+        const vk::RenderPassCreateInfo renderPassCreateInfo = {
+            .sType = vk::StructureType::eRenderPassCreateInfo,
+            .pNext = nullptr,
+            .flags = {},
+            .attachmentCount = static_cast<uint32>(std::size(attachments)),
+            .pAttachments = attachments,
+            .subpassCount = 1,
+            .pSubpasses = &subpassDescription,
+            .dependencyCount = 1,
+            .pDependencies = &subpassDependency,
+        };
+        setHandle(m_logicalDevice->as<vk::Device>().createRenderPass(renderPassCreateInfo));
+    }
 }
 
 RenderPass::~RenderPass() {

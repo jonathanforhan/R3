@@ -46,7 +46,7 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
 
     // Buffer sets
     std::vector<vk::DescriptorBufferInfo> descriptorBufferInfos;
-    descriptorBufferInfos.reserve(spec.uniformDescriptors.size());
+    descriptorBufferInfos.reserve(spec.uniformDescriptors.size() + spec.storageDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
         auto& uniform = ((ResourceManager*)CurrentScene->resourceManager)->getUniformById(it.uniform);
@@ -65,6 +65,29 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
             .dstArrayElement = 0,
             .descriptorCount = 1,
             .descriptorType = vk::DescriptorType::eUniformBuffer,
+            .pImageInfo = nullptr,
+            .pBufferInfo = &info,
+            .pTexelBufferView = nullptr,
+        });
+    }
+
+    for (const auto& it : spec.storageDescriptors) {
+        auto& storage = ((ResourceManager*)CurrentScene->resourceManager)->getStorageBufferById(it.storage);
+
+        auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
+            .buffer = storage.as<vk::Buffer>(),
+            .offset = it.offset,
+            .range = it.range ? it.range : vk::WholeSize,
+        });
+
+        descriptorWrites.emplace_back(vk::WriteDescriptorSet{
+            .sType = vk::StructureType::eWriteDescriptorSet,
+            .pNext = nullptr,
+            .dstSet = as<vk::DescriptorSet>(),
+            .dstBinding = it.binding,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = vk::DescriptorType::eStorageBuffer,
             .pImageInfo = nullptr,
             .pBufferInfo = &info,
             .pTexelBufferView = nullptr,

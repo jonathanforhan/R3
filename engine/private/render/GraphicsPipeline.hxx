@@ -2,22 +2,27 @@
 
 /// GraphicsPipeline Describes the all stages of the Render Pipeline
 
+#include <span>
 #include <string_view>
 #include "render/PipelineLayout.hxx"
 #include "render/RenderApi.hxx"
 #include "render/Shader.hxx"
+#include "render/Vertex.hxx"
 
 namespace R3 {
 
 /// @brief Graphics Pipeline Specification
 struct GraphicsPipelineSpecification {
-    const PhysicalDevice& physicalDevice;           ///< PhysicalDevice
-    const LogicalDevice& logicalDevice;             ///< LogicalDevice
-    const Swapchain& swapchain;                     ///< Swapchain
-    const RenderPass& renderPass;                   ///< RenderPass
-    const DescriptorSetLayout& descriptorSetLayout; ///< DescriptorSetLayout
-    std::string_view vertexShaderPath;              ///< Vertex Shader filepath
-    std::string_view fragmentShaderPath;            ///< Fragment Shader filepath
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const RenderPass& renderPass;
+    const DescriptorSetLayout& descriptorSetLayout;
+    const VertexBindingSpecification& vertexBindingSpecification;
+    std::span<const VertexAttributeSpecification> vertexAttributeSpecification;
+    std::string_view vertexShaderPath;
+    std::string_view fragmentShaderPath;
+    bool msaa; ///< Multisample enable
 };
 
 /// @brief GraphicsPipeline created Pipeline from DescriptorLayout and genrates Shader Modules

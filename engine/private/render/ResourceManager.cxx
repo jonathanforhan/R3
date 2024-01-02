@@ -55,6 +55,18 @@ UniformBuffer& ResourceManager::getUniformById(UniformBuffer::ID id) {
     return m_uniformPool.resources[id];
 }
 
+StorageBuffer::ID ResourceManager::allocateStorageBuffer(const StorageBufferSpecification& spec) {
+    return local::allocate(m_storagePool, spec);
+}
+
+void ResourceManager::freeStorageBuffer(StorageBuffer::ID index) {
+    m_storagePool.freeList.insert(index);
+}
+
+StorageBuffer& ResourceManager::getStorageBufferById(StorageBuffer::ID id) {
+    return m_storagePool.resources[id];
+}
+
 VertexBuffer::ID ResourceManager::allocateVertexBuffer(const VertexBufferSpecification& spec) {
     return local::allocate(m_vertexPool, spec);
 }

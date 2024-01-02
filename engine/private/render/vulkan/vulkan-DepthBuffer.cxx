@@ -13,14 +13,11 @@ namespace R3 {
 
 DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice),
-      m_format(spec.format),
       m_extent(spec.extent),
       m_sampleCount(spec.sampleCount) {
-    if (m_format == Format::Undefined) {
-        m_format = Format(vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
-                                                          vk::ImageTiling::eOptimal,
-                                                          vk::FormatFeatureFlagBits::eDepthStencilAttachment));
-    }
+    m_format = Format(vulkan::getSupportedDepthFormat(spec.physicalDevice.as<vk::PhysicalDevice>(),
+                                                      vk::ImageTiling::eOptimal,
+                                                      vk::FormatFeatureFlagBits::eDepthStencilAttachment));
 
     const ImageAllocateSpecification imageAllocateSpecification = {
         .physicalDevice = spec.physicalDevice,

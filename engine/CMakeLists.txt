@@ -36,6 +36,8 @@ file(GLOB PRE_COMPILE_CORE "${CMAKE_CURRENT_SOURCE_DIR}/public/core/*.hpp")
 target_precompile_headers(R3_ENGINE PUBLIC
 	"${PRE_COMPILE_API}"
 	"${PRE_COMPILE_CORE}"
+	"${CMAKE_CURRENT_SOURCE_DIR}/private/render/NativeRenderObject.hxx"
+	"${CMAKE_CURRENT_SOURCE_DIR}/private/render/DeviceMemory.hxx"
 	# "${PRE_COMPILE_RENDER}"
 )
 

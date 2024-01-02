@@ -149,7 +149,6 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     spec.depthBuffer = DepthBuffer({
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
-        .format = spec.depthBuffer.format(),
         .extent = m_extent,
         .sampleCount = spec.depthBuffer.sampleCount(),
     });

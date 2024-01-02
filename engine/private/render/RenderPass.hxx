@@ -4,11 +4,21 @@
 
 namespace R3 {
 
+struct ColorAttachmentSpecification {
+    Format format;     ///< Color Attachment format
+    uint8 sampleCount; ///< MSAA samples
+};
+
+struct DepthAttachmentSpecification {
+    uint8 sampleCount; ///< MSAA samples
+};
+
 /// @brief Render Pass Specification
 struct RenderPassSpecification {
-    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
-    const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const Swapchain& swapchain;           ///< Swapchain
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const ColorAttachmentSpecification& colorAttachment;
+    const DepthAttachmentSpecification& depthAttachment;
 };
 
 /// @brief RenderPass represents a collection of attachments, subpasses and subpass dependencies

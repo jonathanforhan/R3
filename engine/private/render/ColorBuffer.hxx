@@ -11,8 +11,8 @@ struct ColorBufferSpecification {
     const PhysicalDevice& physicalDevice;
     const LogicalDevice& logicalDevice;
     Format format;
-    uvec2 extent;
-    uint8 sampleCount;
+    uvec2 extent;      ///< Image extent
+    uint8 sampleCount; ///< MSAA samples
 };
 
 /// @brief ColorBuffer used for Color Operations like Mulitdsampling

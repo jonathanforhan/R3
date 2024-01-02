@@ -27,11 +27,6 @@ R3_DLL void Run() {
         camera.setActive(true);
         camera.setPosition(vec3(0, 0, -3));
 
-//--- Model
-#if 1
-        auto& helmet = Entity::create<Helmet>();
-        helmet.emplace<EditorComponent>("Helmet");
-
         auto& red = Entity::create<Entity>().emplace<LightComponent>();
         red.position = vec3(2, 1, 0);
         red.color = vec3(1, 0, 0);
@@ -46,6 +41,10 @@ R3_DLL void Run() {
         blue.position = vec3(0, 1, 2);
         blue.color = vec3(0, 0, 1);
         blue.intensity = 0.8f;
+
+#if 1
+        auto& helmet = Entity::create<Helmet>();
+        helmet.emplace<EditorComponent>("Helmet");
 
         Scene::bindEventListener([&](const KeyPressEvent& e) {
             if (e.payload.key == Key::Enter && helmet.valid()) {

@@ -10,9 +10,8 @@ namespace R3 {
 struct DepthBufferSpecification {
     const PhysicalDevice& physicalDevice;
     const LogicalDevice& logicalDevice;
-    Format format; ///< If the format is Format::Undefined, a supported format for the DepthStencilBuffer is queried
-    uvec2 extent;
-    uint8 sampleCount;
+    uvec2 extent;      ///< Image extent
+    uint8 sampleCount; ///< MSAA samples
 };
 
 /// @brief DepthBuffer (or Z-Buffer) is used for Depth Operations

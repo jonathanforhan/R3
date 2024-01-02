@@ -361,4 +361,9 @@ struct ShaderStage : public Flag {
     };
 };
 
+enum class VertexInputRate {
+    Vertex = 0,
+    Instance = 1,
+};
+
 } // namespace R3

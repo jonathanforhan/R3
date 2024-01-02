@@ -77,6 +77,8 @@ public:
     /// @return loader
     [[nodiscard]] constexpr ModelLoader& modelLoader() { return m_modelLoader; }
 
+    // void setMousePick(bool b) { m_objectPicker.pick = b; }
+
 private:
     void updateLighting();
 
@@ -104,11 +106,6 @@ private:
     //--- Uniform / Push Constants
     ViewProjection m_viewProjection;
     std::vector<PointLightShaderObject> m_pointLights;
-
-    //--- Utility
-    ColorBuffer m_objectPickerColorBuffer;
-    DepthBuffer m_objectPickerDepthBuffer;
-    Framebuffer m_objectPickerFrameBuffer;
 
     editor::Editor m_editor;
     ModelLoader m_modelLoader; // ModelLoader needs to know certain info about renderer so it's a member

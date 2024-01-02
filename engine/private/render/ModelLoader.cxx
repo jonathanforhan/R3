@@ -109,8 +109,11 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .swapchain = *m_swapchain,
             .renderPass = *m_renderPass,
             .descriptorSetLayout = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool).layout(),
+            .vertexBindingSpecification = Vertex::vertexBindingSpecification(),
+            .vertexAttributeSpecification = Vertex::vertexAttributeSpecification(),
             .vertexShaderPath = "spirv/pbr.vert.spv",
             .fragmentShaderPath = "spirv/pbr.frag.spv",
+            .msaa = true,
         });
 
         // Uniform
@@ -188,7 +191,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         auto& descriptorSets = descriptorPool.descriptorSets();
 
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            descriptorSets[i].bindResources({uniformDescriptors, textureDescriptors});
+            descriptorSets[i].bindResources({uniformDescriptors, {}, textureDescriptors});
         }
 
         model.m_meshes.emplace_back(std::move(mesh));

@@ -67,7 +67,15 @@ Renderer::Renderer(const RendererSpecification& spec)
     m_renderPass = RenderPass({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
-        .swapchain = m_swapchain,
+        .colorAttachment =
+            {
+                .format = m_swapchain.surfaceFormat(),
+                .sampleCount = m_physicalDevice.sampleCount(),
+            },
+        .depthAttachment =
+            {
+                .sampleCount = m_physicalDevice.sampleCount(),
+            },
     });
 
     //--- ColorBuffer
@@ -83,7 +91,6 @@ Renderer::Renderer(const RendererSpecification& spec)
     m_depthBuffer = DepthBuffer({
         .physicalDevice = m_physicalDevice,
         .logicalDevice = m_logicalDevice,
-        .format = Format::Undefined,
         .extent = m_swapchain.extent(),
         .sampleCount = m_physicalDevice.sampleCount(),
     });
@@ -150,38 +157,6 @@ Renderer::Renderer(const RendererSpecification& spec)
         .view = mat4(1.0f),
         .projection = mat4(1.0f),
     };
-
-    //--- Object Picker ColorBuffer
-    m_objectPickerColorBuffer = ColorBuffer({
-        .physicalDevice = m_physicalDevice,
-        .logicalDevice = m_logicalDevice,
-        .format = Format::R32Uint,
-        .extent = m_swapchain.extent(),
-        .sampleCount = 1,
-    });
-
-    /*
-    //--- Object Picker DepthBuffer
-    m_objectPickerDepthBuffer = DepthBuffer({
-        .physicalDevice = m_physicalDevice,
-        .logicalDevice = m_logicalDevice,
-        .format = Format::R32Uint,
-        .extent = m_swapchain.extent(),
-        .sampleCount = 1,
-    });
-
-    //--- Object Picker Framebuffer
-    const ImageView* attachments[] = {
-        &m_objectPickerColorBuffer.imageView(),
-        &m_objectPickerDepthBuffer.imageView(),
-    };
-    m_objectPickerFrameBuffer = Framebuffer({
-        .logicalDevice = m_logicalDevice,
-        .renderPass = m_renderPass,
-        .attachments = attachments,
-        .extent = m_swapchain.extent(),
-    });
-    */
 }
 
 void Renderer::render() {
@@ -212,10 +187,10 @@ void Renderer::render() {
 
     //******************************************* SETUP END *******************************************//
 
-    const CommandBuffer& commandBuffer = m_commandPool.commandBuffers()[m_currentFrame];
-    commandBuffer.resetCommandBuffer();
-    commandBuffer.beginCommandBuffer();
-    commandBuffer.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
+    const CommandBuffer& cmd = m_commandPool.commandBuffers()[m_currentFrame];
+    cmd.resetCommandBuffer();
+    cmd.beginCommandBuffer();
+    cmd.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
     //*************************************** RENDER PASS BEGIN ***************************************//
 
     // draw every mesh of every model
@@ -230,11 +205,10 @@ void Renderer::render() {
             auto& vertexBuffer = resourceManager->getVertexBufferById(mesh.vertexBuffer);
             auto& indexBuffer = resourceManager->getIndexBufferById(mesh.indexBuffer);
 
-            commandBuffer.bindPipeline(pipeline);
-            commandBuffer.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+            cmd.bindPipeline(pipeline);
+            cmd.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
-            commandBuffer.pushConstants(
-                pipeline.layout(), ShaderStage::Vertex, &m_viewProjection, sizeof(m_viewProjection));
+            cmd.pushConstants(pipeline.layout(), ShaderStage::Vertex, &m_viewProjection, sizeof(m_viewProjection));
             uniform.update(&transform, sizeof(transform));
             FragmentUniformBufferObject fubo = {
                 .cameraPosition = Scene::cameraPosition(),
@@ -244,17 +218,17 @@ void Renderer::render() {
             std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
             lightUniform.update(&fubo, sizeof(fubo));
 
-            commandBuffer.bindVertexBuffer(vertexBuffer);
-            commandBuffer.bindIndexBuffer(indexBuffer);
-            commandBuffer.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
+            cmd.bindVertexBuffer(vertexBuffer);
+            cmd.bindIndexBuffer(indexBuffer);
+            cmd.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
         }
     };
     Entity::componentView<TransformComponent, ModelComponent>().each(draw);
-    m_editor.drawFrame(commandBuffer);
+    m_editor.drawFrame(cmd);
 
     //**************************************** RENDER PASS END ****************************************//
-    commandBuffer.endRenderPass();
-    commandBuffer.endCommandBuffer();
+    cmd.endRenderPass();
+    cmd.endCommandBuffer();
 
     const NativeRenderObject imageReady[] = {imageAvailable.handle()};
     NativeRenderObject renderFinished[] = {m_renderFinished[m_currentFrame].handle()};
@@ -265,7 +239,7 @@ void Renderer::render() {
         .signalSemaphores = renderFinished,
         .fence = &inFlight,
     };
-    commandBuffer.submit(commandBufferSumbitSpecification);
+    cmd.submit(commandBufferSumbitSpecification);
 
     const CommandBufferPresentSpecification commandBufferPresentSpecification = {
         .waitSemaphores = renderFinished,
@@ -273,7 +247,7 @@ void Renderer::render() {
     };
 
     try {
-        result = vk::Result(commandBuffer.present(commandBufferPresentSpecification));
+        result = vk::Result(cmd.present(commandBufferPresentSpecification));
     } catch (std::exception& e) {
         if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
             m_window.shouldResize()) {

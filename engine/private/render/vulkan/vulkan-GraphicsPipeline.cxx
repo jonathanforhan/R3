@@ -20,8 +20,15 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .descriptorSetLayout = spec.descriptorSetLayout,
     });
 
-    m_vertexShader = Shader({.logicalDevice = spec.logicalDevice, .path = spec.vertexShaderPath});
-    m_fragmentShader = Shader({.logicalDevice = spec.logicalDevice, .path = spec.fragmentShaderPath});
+    m_vertexShader = Shader({
+        .logicalDevice = spec.logicalDevice,
+        .path = spec.vertexShaderPath,
+    });
+
+    m_fragmentShader = Shader({
+        .logicalDevice = spec.logicalDevice,
+        .path = spec.fragmentShaderPath,
+    });
 
     const vk::PipelineShaderStageCreateInfo vertexShaderStageCreateInfo = {
         .sType = vk::StructureType::ePipelineShaderStageCreateInfo,
@@ -49,57 +56,23 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     };
 
     const vk::VertexInputBindingDescription bindingDescription = {
-        .binding = 0,
-        .stride = sizeof(Vertex),
-        .inputRate = vk::VertexInputRate::eVertex,
+        .binding = spec.vertexBindingSpecification.binding,
+        .stride = spec.vertexBindingSpecification.stride,
+        .inputRate = vk::VertexInputRate(spec.vertexBindingSpecification.inputRate),
     };
 
-    const vk::VertexInputAttributeDescription attributeDescriptions[] = {
-        {
-            .location = 0,
-            .binding = 0,
-            .format = vk::Format::eR32G32B32Sfloat,
-            .offset = offsetof(Vertex, position),
-        },
-        {
-            .location = 1,
-            .binding = 0,
-            .format = vk::Format::eR32G32B32Sfloat,
-            .offset = offsetof(Vertex, normal),
-        },
-        {
-            .location = 2,
-            .binding = 0,
-            .format = vk::Format::eR32G32B32Sfloat,
-            .offset = offsetof(Vertex, tangent),
-        },
-        {
-            .location = 3,
-            .binding = 0,
-            .format = vk::Format::eR32G32B32Sfloat,
-            .offset = offsetof(Vertex, tangent),
-        },
-        {
-            .location = 4,
-            .binding = 0,
-            .format = vk::Format::eR32G32Sfloat,
-            .offset = offsetof(Vertex, textureCoords),
-        },
-#if TODO_ANIMATION
-        {
-            .location = 5,
-            .binding = 0,
-            .format = VK_FORMAT_R32_SINT,
-            .offset = offsetof(Vertex, boneIDs),
-        },
-        {
-            .location = 6,
-            .binding = 0,
-            .format = VK_FORMAT_R32_SFLOAT,
-            .offset = offsetof(Vertex, weights),
-        },
-#endif
+    // transform R3 attribute to vk descriptor
+    auto vertexAttributeToDescription = [](const VertexAttributeSpecification& attribute) {
+        return vk::VertexInputAttributeDescription{
+            .location = attribute.location,
+            .binding = attribute.binding,
+            .format = vk::Format(attribute.format),
+            .offset = attribute.offset,
+        };
     };
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(spec.vertexAttributeSpecification.size());
+    std::ranges::transform(
+        spec.vertexAttributeSpecification, attributeDescriptions.begin(), vertexAttributeToDescription);
 
     const vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,
@@ -108,7 +81,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .vertexBindingDescriptionCount = 1,
         .pVertexBindingDescriptions = &bindingDescription,
         .vertexAttributeDescriptionCount = static_cast<uint32>(std::size(attributeDescriptions)),
-        .pVertexAttributeDescriptions = attributeDescriptions,
+        .pVertexAttributeDescriptions = attributeDescriptions.data(),
     };
 
     const vk::PipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
@@ -163,8 +136,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .sType = vk::StructureType::ePipelineMultisampleStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .rasterizationSamples = vk::SampleCountFlagBits(spec.physicalDevice.sampleCount()),
-        .sampleShadingEnable = vk::True,
+        .rasterizationSamples = vk::SampleCountFlagBits(spec.msaa ? spec.physicalDevice.sampleCount() : 1),
+        .sampleShadingEnable = spec.msaa ? vk::True : vk::False,
         .minSampleShading = 1.0f,
         .pSampleMask = nullptr,
         .alphaToCoverageEnable = vk::False,
