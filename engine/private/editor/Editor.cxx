@@ -6,6 +6,7 @@
 #include <imgui_internal.h>
 #include <R3_components>
 #include <R3_core>
+#include <R3_input>
 #include <format>
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
@@ -130,9 +131,15 @@ void Editor::displayHierarchy() {
 
 void Editor::displayProperties() {
     if (ImGui::Begin("Properties")) {
-        if (m_currentEntity >= 0) {
+        if (m_currentEntity != ~uuid32(0)) {
             EntityView entityView(uuid32(m_currentEntity), CurrentScene);
-            auto& editorComponent = entityView.get<EditorComponent>();
+
+            auto* maybeEditorComponent = entityView.tryGet<EditorComponent>();
+            if (!maybeEditorComponent) {
+                ImGui::End();
+                return;
+            }
+            auto& editorComponent = *maybeEditorComponent;
 
             ImGui::Text(editorComponent.name);
 

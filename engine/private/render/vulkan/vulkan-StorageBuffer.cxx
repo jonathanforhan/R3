@@ -35,7 +35,7 @@ StorageBuffer::~StorageBuffer() {
     }
 }
 
-void StorageBuffer::update(const void* data, usize size, usize offset) {
+void StorageBuffer::write(const void* data, usize size, usize offset) {
     CHECK(data != nullptr);
     CHECK(size + offset <= m_bufferSize);
     memcpy(reinterpret_cast<uint8*>(m_mappedMemory) + offset, data, size);

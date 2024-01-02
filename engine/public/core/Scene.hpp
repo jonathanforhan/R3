@@ -94,17 +94,25 @@ public:
     /// @return position
     static void setCameraPosition(vec3 position);
 
+    /// @brief Set Cursor Position (normalized)
+    /// @return position
+    static void setCursorPosition(vec2 position);
+
     /// @brief Query View Matrix
     /// @return view
-    static const mat4& view();
+    [[nodiscard]] static const mat4& view();
 
     /// @brief Query Projection Matrix
     /// @return projection
-    static const mat4& projection();
+    [[nodiscard]] static const mat4& projection();
 
     /// @brief Query Camera Position
     /// @return position
-    static vec3 cameraPosition();
+    [[nodiscard]] static vec3 cameraPosition();
+
+    /// @brief Query Cursor Position
+    /// @return position
+    [[nodiscard]] static vec2 cursorPosition();
 
 public:
     const uuid32 id;                     ///< Scene id
@@ -116,6 +124,7 @@ private:
     mat4 m_view = mat4(1.0f);
     mat4 m_projection = mat4(1.0f);
     vec3 m_cameraPosition = vec3(0.0f);
+    vec2 m_cursorPosition = vec2(0);
 
     //--- ECS
     entt::registry m_registry;

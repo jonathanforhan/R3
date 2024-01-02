@@ -11,10 +11,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
+#include "input/MouseEvent.hpp"
 #include "render/ResourceManager.hxx"
 #include "render/ShaderObjects.hxx"
 
 namespace R3 {
+
+static constexpr auto DEPTH_ARRAY_SCALE = 2048;
 
 Renderer::Renderer(const RendererSpecification& spec)
     : m_window(spec.window) {
@@ -150,6 +153,7 @@ Renderer::Renderer(const RendererSpecification& spec)
         .swapchain = m_swapchain,
         .renderPass = m_renderPass,
         .commandPool = m_commandPool,
+        .storageBuffer = m_storageBuffer,
     });
 
     //--- Shader View Projection
@@ -157,6 +161,24 @@ Renderer::Renderer(const RendererSpecification& spec)
         .view = mat4(1.0f),
         .projection = mat4(1.0f),
     };
+
+    //--- StorageBuffer
+    m_storageBuffer = StorageBuffer({
+        .physicalDevice = m_physicalDevice,
+        .logicalDevice = m_logicalDevice,
+        .bufferSize = sizeof(uint32) * DEPTH_ARRAY_SCALE,
+    });
+}
+
+void Renderer::preLoop() {
+    const std::function<void(const MouseButtonPressEvent&)> getSelectedEntity = [this](const MouseButtonPressEvent& e) {
+        if (e.payload.button == MouseButton::Left) {
+            if (auto id = getHoveredEntity(); id != ~uuid32(0)) {
+                m_editor.setCurrentEntity(getHoveredEntity());
+            }
+        }
+    };
+    Scene::bindEventListener(getSelectedEntity);
 }
 
 void Renderer::render() {
@@ -184,6 +206,8 @@ void Renderer::render() {
     //****************************************** SETUP BEGIN ******************************************//
 
     updateLighting();
+    constexpr uint32 zeros[DEPTH_ARRAY_SCALE] = {};
+    m_storageBuffer.write(zeros, sizeof(zeros), 0);
 
     //******************************************* SETUP END *******************************************//
 
@@ -194,7 +218,7 @@ void Renderer::render() {
     //*************************************** RENDER PASS BEGIN ***************************************//
 
     // draw every mesh of every model
-    auto draw = [&](const TransformComponent& transform, const ModelComponent& model) {
+    auto draw = [&](auto entity, const TransformComponent& transform, const ModelComponent& model) {
         for (const Mesh& mesh : model.meshes()) {
             auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
 
@@ -208,15 +232,27 @@ void Renderer::render() {
             cmd.bindPipeline(pipeline);
             cmd.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
 
-            cmd.pushConstants(pipeline.layout(), ShaderStage::Vertex, &m_viewProjection, sizeof(m_viewProjection));
-            uniform.update(&transform, sizeof(transform));
+            FragmentPushConstant fragmentPushConstant = {
+                .cursorPosition = m_cursorPosition,
+                .uid = uint32(entity),
+            };
+            cmd.pushConstants(
+                pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));
+
+            VertexUniformBufferObject vubo = {
+                .model = transform,
+                .view = m_viewProjection.view,
+                .projection = m_viewProjection.projection,
+            };
+            uniform.write(&vubo, sizeof(vubo));
+
             FragmentUniformBufferObject fubo = {
                 .cameraPosition = Scene::cameraPosition(),
                 .pbrFlags = mesh.material.pbrFlags,
                 .lightCount = static_cast<uint32>(m_pointLights.size()),
             };
             std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
-            lightUniform.update(&fubo, sizeof(fubo));
+            lightUniform.write(&fubo, sizeof(fubo));
 
             cmd.bindVertexBuffer(vertexBuffer);
             cmd.bindIndexBuffer(indexBuffer);
@@ -270,8 +306,16 @@ void Renderer::resize() {
     });
 }
 
-void Renderer::waitIdle() const {
-    m_logicalDevice.as<vk::Device>().waitIdle();
+uuid32 Renderer::getHoveredEntity() const {
+    auto* buf = m_storageBuffer.read<uint32>();
+
+    for (auto i = 0; i < DEPTH_ARRAY_SCALE; i++) {
+        if (buf[i] != 0) {
+            return buf[i];
+        }
+    }
+
+    return ~uuid32(0);
 }
 
 void Renderer::renderEditorInterface(double dt) {
@@ -295,6 +339,10 @@ void Renderer::updateLighting() {
             });
         }
     });
+}
+
+void Renderer::waitIdle() const {
+    m_logicalDevice.as<vk::Device>().waitIdle();
 }
 
 } // namespace R3

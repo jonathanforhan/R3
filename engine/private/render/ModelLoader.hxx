@@ -38,6 +38,7 @@ struct ModelLoaderSpecification {
     const Swapchain& swapchain;           ///< Swapchain
     const RenderPass& renderPass;         ///< RenderPass
     const CommandPool& commandPool;       ///< CommandPool
+    const StorageBuffer& storageBuffer;   ///< Storage Buffer used for mouse picking
 };
 
 /// @brief ModelLoader used to load glTF Models
@@ -71,6 +72,7 @@ private:
     Ref<const Swapchain> m_swapchain;
     Ref<const RenderPass> m_renderPass;
     Ref<const CommandPool> m_commandPool;
+    Ref<const StorageBuffer> m_storageBuffer;
 
     std::vector<MeshPrototype> m_prototypes;
     std::vector<TextureBuffer::ID> m_textures;

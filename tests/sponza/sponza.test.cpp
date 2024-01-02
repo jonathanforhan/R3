@@ -5,11 +5,6 @@
 
 using namespace R3;
 
-class Helmet : public Entity {
-public:
-    void init() { emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb"); }
-};
-
 extern "C" {
 
 R3_DLL void* Entry() {
@@ -23,9 +18,9 @@ R3_DLL void Run() {
         //--- Camera
         auto& cameraEntity = Entity::create<Entity>();
         cameraEntity.emplace<EditorComponent>("Editor Camera");
-        auto& camera = cameraEntity.emplace<CameraComponent>();
-        camera.setActive(true);
-        camera.setPosition(vec3(0, 0, -3));
+        auto& editorCamera = cameraEntity.emplace<CameraComponent>();
+        editorCamera.setActive(true);
+        editorCamera.setPosition(vec3(0, 0, -3));
 
         auto& red = Entity::create<Entity>().emplace<LightComponent>();
         red.position = vec3(2, 1, 0);
@@ -42,17 +37,25 @@ R3_DLL void Run() {
         blue.color = vec3(0, 0, 1);
         blue.intensity = 0.8f;
 
-#if 1
-        auto& helmet = Entity::create<Helmet>();
+#if 0
+        auto& helmet = Entity::create<Entity>();
+        helmet.emplace<ModelComponent>("assets/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
         helmet.emplace<EditorComponent>("Helmet");
 
-        Scene::bindEventListener([&](const KeyPressEvent& e) {
-            if (e.payload.key == Key::Enter && helmet.valid()) {
-                helmet.destroy();
-            } else if (e.payload.key == Key::J) {
-                Entity::forEach([](const EntityView& e) { LOG(Info, e.id()); });
-            }
-        });
+#if 0
+        auto& camera = Entity::create<Entity>();
+        camera.emplace<ModelComponent>("assets/AntiqueCamera/glTF-Binary/AntiqueCamera.glb");
+        camera.emplace<EditorComponent>("Camera");
+
+        auto& fox = Entity::create<Entity>();
+        fox.emplace<ModelComponent>("assets/Fox/glTF-Binary/Fox.glb");
+        fox.emplace<EditorComponent>("Fox");
+#endif
+
+        auto& duck = Entity::create<Entity>();
+        duck.emplace<ModelComponent>("assets/Duck/glTF-Binary/Duck.glb");
+        duck.emplace<EditorComponent>("Duck");
+        duck.get<TransformComponent>() = mat4(0.01f);
 #else
         auto& entity = Entity::create<Entity>();
         entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");

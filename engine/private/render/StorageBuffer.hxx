@@ -30,11 +30,16 @@ public:
     /// @param data Buffer of data to write
     /// @param size Size of data in bytes
     /// @param offset Offset of StorageBuffer to write to
-    void update(const void* data, usize size, usize offset);
+    void write(const void* data, usize size, usize offset);
+
+    template <std::integral T>
+    [[nodiscard]] const T* read() const {
+        return static_cast<T*>(m_mappedMemory);
+    }
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;
-    usize m_bufferSize;
+    usize m_bufferSize = 0;
     void* m_mappedMemory = nullptr;
 };
 

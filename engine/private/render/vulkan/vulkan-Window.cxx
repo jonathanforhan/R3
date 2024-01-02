@@ -86,6 +86,7 @@ Window::Window(const WindowSpecification& spec) {
         float posX = static_cast<float>(x) / static_cast<float>(w);
         float posY = static_cast<float>(y) / static_cast<float>(h);
         Scene::pushEvent<MouseCursorEvent>(vec2(posX, posY));
+        Scene::setCursorPosition(vec2(x, y));
     });
 
     //--- Window Close Callback

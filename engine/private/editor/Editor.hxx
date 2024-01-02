@@ -39,10 +39,12 @@ public:
 
     void displayProperties();
 
+    void setCurrentEntity(uuid32 id) { m_currentEntity = id; }
+
 private:
     Ref<void> m_descriptorPool; // void Handle because it's non-owning
     Ref<const LogicalDevice> m_logicalDevice;
-    int64 m_currentEntity = -1;
+    uuid32 m_currentEntity = ~uuid32(0);
 };
 
 } // namespace R3::editor

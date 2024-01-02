@@ -175,7 +175,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .sType = vk::StructureType::ePipelineColorBlendStateCreateInfo,
         .pNext = nullptr,
         .flags = {},
-        .logicOpEnable = VK_FALSE,
+        .logicOpEnable = vk::False,
         .logicOp = vk::LogicOp::eCopy,
         .attachmentCount = 1,
         .pAttachments = &colorBlendAttachmentState,

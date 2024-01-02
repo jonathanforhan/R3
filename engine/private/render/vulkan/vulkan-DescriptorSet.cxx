@@ -72,10 +72,8 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     }
 
     for (const auto& it : spec.storageDescriptors) {
-        auto& storage = ((ResourceManager*)CurrentScene->resourceManager)->getStorageBufferById(it.storage);
-
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
-            .buffer = storage.as<vk::Buffer>(),
+            .buffer = it.storageBuffer.as<vk::Buffer>(),
             .offset = it.offset,
             .range = it.range ? it.range : vk::WholeSize,
         });

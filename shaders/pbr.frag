@@ -1,5 +1,7 @@
 #version 460
 
+#define DEPTH_ARRAY_SCALE 2048
+
 #define M_PI 3.14159265359
 #define MAX_LIGHTS 32
 
@@ -29,16 +31,30 @@ struct DirectionalLight {
 	vec3 specular;
 };
 
+// textures
 layout (binding = 1) uniform sampler2D u_Albedo;
 layout (binding = 2) uniform sampler2D u_MetallicRoughness; // metalness B channel, roughness G channel
 layout (binding = 3) uniform sampler2D u_Normal;
 layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
 layout (binding = 5) uniform sampler2D u_Emissive;
+
+// uniform
 layout (binding = 6) uniform LightBuffer {
 	vec3 u_ViewPosition;
     uint u_Flags;
 	uint u_NumLights;
 	PointLight u_Lights[MAX_LIGHTS];
+};
+
+// ssbo
+layout (set = 0, binding = 7) buffer SSBO {
+    uint s_Data[DEPTH_ARRAY_SCALE];
+};
+
+// push constant
+layout (push_constant) uniform FragmentPushConstant {
+    vec2 c_MousePosition;
+    uint c_Uid;
 };
 
 vec3 calcTangentNormal() {
@@ -94,6 +110,13 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 }
 
 void main() {
+	// Mouse Picking
+	uint zIndex = uint(gl_FragCoord.z * DEPTH_ARRAY_SCALE);
+	if (length(c_MousePosition - gl_FragCoord.xy) < 1) {
+		s_Data[zIndex] = c_Uid;
+	}
+
+	// Render
 	vec3 albedo = pow(texture(u_Albedo, v_TexCoords).rgb, vec3(2.2));
 	vec4 mr = texture(u_MetallicRoughness, v_TexCoords);
 	float metallic = mr.b;

@@ -8,17 +8,20 @@ namespace R3 {
 
 static constexpr uint32 MAX_LIGHTS = 32;
 
-struct VertexUniformBufferObject {
-    alignas(16) mat4 model;
-};
-
 struct ViewProjection {
     alignas(16) mat4 view;
     alignas(16) mat4 projection;
 };
 
-struct VertexPushConstant {
-    ViewProjection viewProjection;
+struct VertexUniformBufferObject {
+    alignas(16) mat4 model;
+    alignas(16) mat4 view;
+    alignas(16) mat4 projection;
+};
+
+struct FragmentPushConstant {
+    alignas(8) vec2 cursorPosition;
+    alignas(4) uint32 uid;
 };
 
 struct PointLightShaderObject {

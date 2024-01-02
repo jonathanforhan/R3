@@ -16,7 +16,8 @@ ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
       m_logicalDevice(&spec.logicalDevice),
       m_swapchain(&spec.swapchain),
       m_renderPass(&spec.renderPass),
-      m_commandPool(&spec.commandPool) {}
+      m_commandPool(&spec.commandPool),
+      m_storageBuffer(&spec.storageBuffer) {}
 
 void ModelLoader::load(const std::string& path, ModelComponent& model) {
     usize split = path.find_last_of('/') + 1;
@@ -93,6 +94,13 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
                 .count = 1,
                 .stage = ShaderStage::Fragment,
             },
+            {
+                // MousePicker
+                .binding = 7,
+                .type = DescriptorType::StorageBuffer,
+                .count = 1,
+                .stage = ShaderStage::Fragment,
+            },
         };
 
         // Descriptor Pool
@@ -134,29 +142,30 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         std::vector<TextureDescriptor> textureDescriptors;
 
         for (usize index : prototype.textureIndices) {
-            auto type = resourceManager->getTextureById(m_textures[index]).type();
+            auto& texture = resourceManager->getTextureById(m_textures[index]);
+            auto type = texture.type();
             mesh.material.pbrFlags |= (1 << (uint32(type) - 1));
 
             switch (type) {
                 case TextureType::Albedo:
                     mesh.material.textures.albedo = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index], 1});
+                    textureDescriptors.emplace_back(m_textures[index], 1);
                     break;
                 case TextureType::MetallicRoughness:
                     mesh.material.textures.metallicRoughness = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index], 2});
+                    textureDescriptors.emplace_back(m_textures[index], 2);
                     break;
                 case TextureType::Normal:
                     mesh.material.textures.normal = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index], 3});
+                    textureDescriptors.emplace_back(m_textures[index], 3);
                     break;
                 case TextureType::AmbientOcclusion:
                     mesh.material.textures.ambientOcclusion = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index], 4});
+                    textureDescriptors.emplace_back(m_textures[index], 4);
                     break;
                 case TextureType::Emissive:
                     mesh.material.textures.emissive = m_textures[index];
-                    textureDescriptors.push_back({m_textures[index], 5});
+                    textureDescriptors.emplace_back(m_textures[index], 5);
                     break;
                 default:
                     break;
@@ -176,22 +185,29 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         for (auto i = 0U; i < PBR_TEXTURE_COUNT; i++) {
             if (!(mesh.material.pbrFlags & (1 << i))) {
-                textureDescriptors.push_back({resourceManager->allocateTexture(nilTextureSpec), i + 1});
+                TextureBuffer::ID textureID = resourceManager->allocateTexture(nilTextureSpec);
+                textureDescriptors.emplace_back(textureID, i + 1);
             }
         }
 
         // Bindings
         std::vector<UniformDescriptor> uniformDescriptors;
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            uniformDescriptors.push_back({mesh.material.uniforms[i], 0});
-            uniformDescriptors.push_back({mesh.material.uniforms[i + 3], 6});
+            uniformDescriptors.emplace_back(mesh.material.uniforms[i], 0);
+            uniformDescriptors.emplace_back(mesh.material.uniforms[i + 3], 6);
+        };
+
+        StorageDescriptor storageDescriptors[] = {
+            {*m_storageBuffer, 7},
+            {*m_storageBuffer, 7},
+            {*m_storageBuffer, 7},
         };
 
         auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
         auto& descriptorSets = descriptorPool.descriptorSets();
 
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            descriptorSets[i].bindResources({uniformDescriptors, {}, textureDescriptors});
+            descriptorSets[i].bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
         }
 
         model.m_meshes.emplace_back(std::move(mesh));

@@ -5,11 +5,11 @@
 namespace R3 {
 
 struct PBRTextureResource {
-    id albedo = usize(~0);
-    id metallicRoughness = usize(~0);
-    id normal = usize(~0);
-    id ambientOcclusion = usize(~0);
-    id emissive = usize(~0);
+    id albedo = ~usize(0);
+    id metallicRoughness = ~usize(0);
+    id normal = ~usize(0);
+    id ambientOcclusion = ~usize(0);
+    id emissive = ~usize(0);
 };
 
 enum class TextureType : uint8 {

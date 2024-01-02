@@ -107,6 +107,10 @@ inline void Scene::setCameraPosition(vec3 position) {
     CurrentScene->m_cameraPosition = position;
 }
 
+inline void Scene::setCursorPosition(vec2 position) {
+    CurrentScene->m_cursorPosition = position;
+}
+
 inline const mat4& Scene::view() {
     return CurrentScene->m_view;
 }
@@ -117,6 +121,10 @@ inline const mat4& Scene::projection() {
 
 inline vec3 Scene::cameraPosition() {
     return CurrentScene->m_cameraPosition;
+}
+
+inline vec2 Scene::cursorPosition() {
+    return CurrentScene->m_cursorPosition;
 }
 
 } // namespace R3

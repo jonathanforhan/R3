@@ -3,7 +3,6 @@
 #include <chrono>
 #include <filesystem>
 #include "core/Scene.hpp"
-#include "input/WindowEvent.hpp"
 #include "render/Renderer.hxx"
 #include "render/ResourceManager.hxx"
 #include "render/Window.hxx"
@@ -30,6 +29,8 @@ EngineStatusCode Engine::loop(const char* dlName) {
     auto& window = *reinterpret_cast<Window*>(m_windowView.handle());
     auto& renderer = *reinterpret_cast<Renderer*>(m_renderView.handle());
 
+    renderer.preLoop();
+
     EngineStatusCode code = EngineStatusCode::Success;
 
 #if not R3_BUILD_DIST
@@ -46,6 +47,7 @@ EngineStatusCode Engine::loop(const char* dlName) {
 
         renderer.setView(CurrentScene->view());
         renderer.setProjection(CurrentScene->projection());
+        renderer.setCursorPosition(CurrentScene->cursorPosition());
 
         renderer.renderEditorInterface(dt);
         renderer.render();

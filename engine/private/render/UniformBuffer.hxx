@@ -30,7 +30,7 @@ public:
     /// @param data Buffer of data to write
     /// @param size Size of data in bytes
     /// @param offset Offset of UniformBuffer to write to
-    void update(const void* data, usize size, usize offset = 0);
+    void write(const void* data, usize size, usize offset = 0);
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

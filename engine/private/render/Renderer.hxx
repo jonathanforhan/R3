@@ -52,6 +52,9 @@ public:
     /// @param spec
     Renderer(const RendererSpecification& spec);
 
+    /// @brief Do any initialize needed now that we have connected to client code and have an Active Scene
+    void preLoop();
+
     /// @brief Render a frame, this renders new UI frame, records commands and submits to present
     void render();
 
@@ -66,8 +69,11 @@ public:
     /// @param projection
     void setProjection(const mat4& projection) { m_viewProjection.projection = projection; }
 
-    /// @brief Wait idle for synchronization
-    void waitIdle() const;
+    /// @brief Setter for Renderer Cursor Position
+    /// @param position
+    void setCursorPosition(vec2 position) { m_cursorPosition = position; }
+
+    [[nodiscard]] uuid32 getHoveredEntity() const;
 
     /// @brief Render the Editor UI, this makes calls to the m_ui member
     /// @param dt deltaTime gotten from Engine for displaying framerate and such
@@ -77,7 +83,8 @@ public:
     /// @return loader
     [[nodiscard]] constexpr ModelLoader& modelLoader() { return m_modelLoader; }
 
-    // void setMousePick(bool b) { m_objectPicker.pick = b; }
+    /// @brief Wait idle for synchronization
+    void waitIdle() const;
 
 private:
     void updateLighting();
@@ -106,6 +113,8 @@ private:
     //--- Uniform / Push Constants
     ViewProjection m_viewProjection;
     std::vector<PointLightShaderObject> m_pointLights;
+    vec2 m_cursorPosition = vec2(0); // normalized
+    StorageBuffer m_storageBuffer;
 
     editor::Editor m_editor;
     ModelLoader m_modelLoader; // ModelLoader needs to know certain info about renderer so it's a member

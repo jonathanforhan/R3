@@ -9,11 +9,6 @@ compile_commands.json
 CMakeUserPresets.json
 R3.proj.DotSettings
 
-assets/*
-!assets/DamagedHelmet
-!assets/Lantern
-!assets/Sponza
-
 docs/*
 !docs/docs.html
 !docs/package.json

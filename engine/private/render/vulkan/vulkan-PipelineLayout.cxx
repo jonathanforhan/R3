@@ -15,10 +15,12 @@ PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
         spec.descriptorSetLayout.as<vk::DescriptorSetLayout>(),
     };
 
-    vk::PushConstantRange pushConstant = {
-        .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        .offset = 0,
-        .size = sizeof(VertexPushConstant),
+    vk::PushConstantRange pushConstants[] = {
+        {
+            .stageFlags = vk::ShaderStageFlagBits::eFragment,
+            .offset = 0,
+            .size = sizeof(FragmentPushConstant),
+        },
     };
 
     vk::PipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
@@ -27,8 +29,8 @@ PipelineLayout::PipelineLayout(const PipelineLayoutSpecification& spec)
         .flags = {},
         .setLayoutCount = 1,
         .pSetLayouts = descriptorSetLayouts,
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges = &pushConstant,
+        .pushConstantRangeCount = uint32(std::size(pushConstants)),
+        .pPushConstantRanges = pushConstants,
     };
 
     setHandle(m_logicalDevice->as<vk::Device>().createPipelineLayout(pipelineLayoutCreateInfo));

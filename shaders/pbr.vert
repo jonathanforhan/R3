@@ -12,11 +12,8 @@ layout(location = 2) out vec2 v_TexCoords;
 
 layout (set = 0, binding = 0) uniform UniformBufferObject {
     mat4 u_Model;
-};
-
-layout (push_constant) uniform ViewProjection {
-    mat4 c_View;
-    mat4 c_Projection;
+    mat4 u_View;
+    mat4 u_Projection;
 };
 
 void main() {
@@ -24,5 +21,5 @@ void main() {
     v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
 	v_TexCoords = a_TexCoords;
 
-	gl_Position = c_Projection * c_View * vec4(v_Position, 1.0);
+	gl_Position = u_Projection * u_View * vec4(v_Position, 1.0);
 }

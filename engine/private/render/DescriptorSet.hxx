@@ -22,24 +22,24 @@ struct DescriptorSetSpecification {
 
 /// @brief Descriptor Describing Uniform Data
 struct UniformDescriptor {
-    UniformBuffer::ID uniform; ///< ID given by GlobalResourceManager
-    uint32 binding;            ///< Descriptor Shader binding
-    usize offset;              ///< Descriptor Shader offset
-    usize range;               ///< Size in bytes used for update, the entire buffer is updated if range=0
+    UniformBuffer::ID uniform;
+    uint32 binding; ///< Descriptor Shader binding
+    usize offset;   ///< Descriptor Shader offset
+    usize range;    ///< Size in bytes used for update, the entire buffer is updated if range=0
 };
 
 /// @brief Descriptor Describing Storage Data
 struct StorageDescriptor {
-    StorageBuffer::ID storage; ///< ID given by GlobalResourceManager
-    uint32 binding;            ///< Descriptor Shader binding
-    usize offset;              ///< Descriptor Shader offset
-    usize range;               ///< Size in bytes used for update, the entire buffer is updated if range=0
+    const StorageBuffer& storageBuffer; // TODO match other API
+    uint32 binding;                     ///< Descriptor Shader binding
+    usize offset;                       ///< Descriptor Shader offset
+    usize range;                        ///< Size in bytes used for update, the entire buffer is updated if range=0
 };
 
 /// @brief Descriptor Describing Texture Data
 struct TextureDescriptor {
-    TextureBuffer::ID texture; ///< ID given by GlobalResourceManager
-    uint32 binding;            ///< Descriptor Shader binding
+    TextureBuffer::ID texture;
+    uint32 binding; ///< Descriptor Shader binding
 };
 
 /// @brief Descriptor Set Binding Specification
