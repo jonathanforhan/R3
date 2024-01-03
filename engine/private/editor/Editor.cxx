@@ -65,7 +65,8 @@ Editor::Editor(const EditorSpecification& spec)
     auto& io = ImGui::GetIO();
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-    // io.Fonts->AddFontFromFileTTF("fonts/Cascadia/CascadiaCode.ttf", 16.0f);
+
+    // setup fonts
     io.Fonts->AddFontFromFileTTF("fonts/Roboto/Roboto-Medium.ttf", 16.5f);
     io.Fonts->Build();
 
@@ -84,6 +85,12 @@ void Editor::beginFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+
+    auto& io = ImGui::GetIO();
+    float scaleFactor = io.DisplayFramebufferScale.x;
+    ImGui::GetStyle().ScaleAllSizes(scaleFactor);
+
+    ImGui::ShowDemoWindow();
 }
 
 void Editor::endFrame() {
@@ -96,10 +103,14 @@ void Editor::drawFrame(const CommandBuffer& commandBuffer) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer.as<vk::CommandBuffer>());
 }
 
+void Editor::setContentScale(float scale) {
+    ImGui::GetIO().FontGlobalScale = scale;
+}
+
 void Editor::displayDeltaTime(double dt) {
     ImGui::Begin("Delta Time", nullptr, GUI_BOARDERLESS);
     ImGui::SetWindowPos(ImVec2(10, 10));
-    ImGui::Text("%lf ms", dt * 1000);
+    ImGui::Text("%lf ms", dt);
     ImGui::End();
 }
 

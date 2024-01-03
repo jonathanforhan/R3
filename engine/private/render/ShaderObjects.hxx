@@ -6,7 +6,7 @@
 
 namespace R3 {
 
-static constexpr uint32 MAX_LIGHTS = 32;
+static constexpr uint32 MAX_LIGHTS = 128;
 
 struct ViewProjection {
     alignas(16) mat4 view;

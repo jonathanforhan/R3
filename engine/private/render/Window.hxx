@@ -35,6 +35,10 @@ public:
     [[nodiscard]] bool isVisible() const;
 
     /// @brief Resize the application Window
+    /// @param extent width x height in pixels
+    void resize(ivec2 extent);
+
+    /// @brief Resize the application Window
     /// @param width width in pixels
     /// @param height height in pixels
     void resize(int32 width, int32 height);
@@ -48,9 +52,31 @@ public:
     /// @param[out] height return the window height in pixels
     void size(int32& width, int32& height) const;
 
+    /// @brief Query Window position in pixels
+    /// @return position x by y
+    [[nodiscard]] ivec2 position() const;
+
+    /// @brief Query Window position in pixels
+    /// @param x[out] return window width
+    /// @param y[out] return window height
+    void position(int32& x, int32& y) const;
+
+    /// @brief Set Position of window in pixels
+    /// @param position
+    void setPosition(ivec2 position);
+
+    /// @brief Set Position of window in pixels
+    /// @param x
+    /// @param y
+    void setPosition(int32 x, int32 y);
+
     /// @brief Query the aspect ratio of the application window
     /// @return aspect ratio
     [[nodiscard]] float aspectRatio() const;
+
+    /// @brief Query content scale
+    /// @return a vec2 of scaleX and scaleY
+    [[nodiscard]] vec2 contentScale() const;
 
     /// @brief Query the Window state for if it should close
     /// @return true if the window should close

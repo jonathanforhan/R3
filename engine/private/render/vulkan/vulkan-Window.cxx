@@ -19,8 +19,7 @@ Window::Window(const WindowSpecification& spec) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
-    GLFWmonitor* monitor = glfwGetPrimaryMonitor();
-    const GLFWvidmode* vidmode = glfwGetVideoMode(monitor);
+    const GLFWvidmode* vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
     setHandle(glfwCreateWindow(vidmode->width / 2, vidmode->height / 2, spec.title.data(), nullptr, nullptr));
     if (!validHandle()) {
@@ -30,17 +29,22 @@ Window::Window(const WindowSpecification& spec) {
     glfwMaximizeWindow(handle<GLFWwindow*>());
     glfwSetWindowUserPointer(handle<GLFWwindow*>(), this);
 
+    //--- DPI change Callback
+    glfwSetWindowContentScaleCallback(handle<GLFWwindow*>(), [](GLFWwindow*, float scaleX, float scaleY) {
+        Scene::pushEvent<WindowContentScaleChangeEvent>(scaleX, scaleY);
+    });
+
     //--- Error Handling Callback
     glfwSetErrorCallback([](int errorCode, const char* errorMessage) { LOG(Error, "code", errorCode, errorMessage); });
 
     //--- Resize Callback
     glfwSetFramebufferSizeCallback(handle<GLFWwindow*>(), [](GLFWwindow* window, int width, int height) {
-        if (Scene::topEvent() == HASH32("on-window-resize"))
+        if (Scene::topEvent() == HASH32("on-window-resize")) {
             Scene::popEvent();
+        }
         Scene::pushEvent<WindowResizeEvent>(width, height);
-
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
-        _this->m_shouldResize = true;
+        _this->setShouldResize(true);
     });
 
     //--- Keyboard Input Callback
@@ -110,6 +114,10 @@ bool Window::isVisible() const {
     return glfwGetWindowAttrib(handle<GLFWwindow*>(), GLFW_VISIBLE);
 }
 
+void Window::resize(ivec2 extent) {
+    glfwSetWindowSize(handle<GLFWwindow*>(), extent.x, extent.y);
+}
+
 void Window::resize(int32 width, int32 height) {
     glfwSetWindowSize(handle<GLFWwindow*>(), width, height);
 }
@@ -124,9 +132,33 @@ void Window::size(int32& width, int32& height) const {
     glfwGetFramebufferSize(handle<GLFWwindow*>(), &width, &height);
 }
 
+ivec2 Window::position() const {
+    int x, y;
+    glfwGetWindowPos(handle<GLFWwindow*>(), &x, &y);
+    return ivec2(x, y);
+}
+
+void Window::position(int32& x, int32& y) const {
+    glfwGetWindowPos(handle<GLFWwindow*>(), &x, &y);
+}
+
+void Window::setPosition(ivec2 position) {
+    glfwSetWindowPos(handle<GLFWwindow*>(), position.x, position.y);
+}
+
+void Window::setPosition(int32 x, int32 y) {
+    glfwSetWindowPos(handle<GLFWwindow*>(), x, y);
+}
+
 float Window::aspectRatio() const {
     ivec2 extent = size();
     return static_cast<float>(extent.x) / static_cast<float>(extent.y);
+}
+
+vec2 Window::contentScale() const {
+    float x, y;
+    glfwGetWindowContentScale(handle<GLFWwindow*>(), &x, &y);
+    return vec2(x, y);
 }
 
 bool Window::shouldClose() const {

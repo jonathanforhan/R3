@@ -23,4 +23,15 @@ struct WindowClosePayload {};
 /// @brief Window Close Event "on-window-close"
 using WindowCloseEvent = EVENT("on-window-close", WindowClosePayload);
 
+/// @brief Window Content Scale Payload
+/// Contains the Content Scale of the window, useful for DPI adjustments
+struct WindowContentScalePayload {
+    float scaleX;
+    float scaleY;
+};
+
+/// @brief Event that is triggered when the current Window's content scale changes
+/// This can be because of a user settings change or a change in the current Monitor
+using WindowContentScaleChangeEvent = EVENT("on-window-content-scale-change", WindowContentScalePayload);
+
 } // namespace R3

@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <filesystem>
+#include <thread>
 #include "core/Scene.hpp"
 #include "render/Renderer.hxx"
 #include "render/ResourceManager.hxx"
@@ -26,10 +27,11 @@ Engine::Engine() {
 #endif
 
 EngineStatusCode Engine::loop(const char* dlName) {
+    using namespace std::chrono;
+    using namespace std::chrono_literals;
+
     auto& window = *reinterpret_cast<Window*>(m_windowView.handle());
     auto& renderer = *reinterpret_cast<Renderer*>(m_renderView.handle());
-
-    renderer.preLoop();
 
     EngineStatusCode code = EngineStatusCode::Success;
 
@@ -38,6 +40,8 @@ EngineStatusCode Engine::loop(const char* dlName) {
 #endif
 
     window.show();
+
+    renderer.preLoop();
 
     while ((!window.shouldClose() && code == EngineStatusCode::Success) || !Scene::isEventQueueEmpty()) {
         double dt = deltaTime();
@@ -60,6 +64,7 @@ EngineStatusCode Engine::loop(const char* dlName) {
             code = EngineStatusCode::DlOutOfData;
         }
 #endif
+        std::this_thread::sleep_for(microseconds(int64(8'333 - (dt * 1'000))));
     }
 
     renderer.waitIdle();

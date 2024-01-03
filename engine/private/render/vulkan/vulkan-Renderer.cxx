@@ -12,6 +12,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
 #include "input/MouseEvent.hpp"
+#include "input/WindowEvent.hpp"
 #include "render/ResourceManager.hxx"
 #include "render/ShaderObjects.hxx"
 
@@ -173,14 +174,16 @@ Renderer::Renderer(const RendererSpecification& spec)
 void Renderer::preLoop() {
     using MouseReleaseCallback = std::function<void(const MouseButtonReleaseEvent&)>;
     using MousePressCallback = std::function<void(const MouseButtonPressEvent&)>;
+    using WindowContentScaleCallback = std::function<void(const WindowContentScaleChangeEvent&)>;
+    using WindowResizeCallback = std::function<void(const WindowResizeEvent&)>;
 
     static vec2 prevMousePosition = m_cursorPosition;
 
-    const MousePressCallback setMousePosition = [this](const MouseButtonPressEvent& e) {
-        prevMousePosition = m_cursorPosition;
-    };
+    // Save position on mouse press for comparison
+    const MousePressCallback setMousePosition = [this](const auto&) { prevMousePosition = m_cursorPosition; };
     Scene::bindEventListener(setMousePosition);
 
+    // Change editor selected entity if pressed and not dragging the view
     const MouseReleaseCallback getSelectedEntity = [this](const MouseButtonReleaseEvent& e) {
         float localityX = glm::abs(prevMousePosition.x - m_cursorPosition.x);
         float localityY = glm::abs(prevMousePosition.y - m_cursorPosition.y);
@@ -190,6 +193,34 @@ void Renderer::preLoop() {
         }
     };
     Scene::bindEventListener(getSelectedEntity);
+
+    // Rescale the font and window size for High DPI
+    float prevScaleInit = (m_window.contentScale().x + m_window.contentScale().y) / 2.0f;
+    const WindowContentScaleCallback scaleCallback = [=, this](const WindowContentScaleChangeEvent& e) {
+        static float prevScale = prevScaleInit;
+        float scale = (e.payload.scaleX + e.payload.scaleY) / 2.0f;
+        m_editor.setContentScale(scale);
+
+        float deltaScale = scale / prevScale;
+        ivec2 windowSize = m_window.size();
+        ivec2 newSize(windowSize.x * deltaScale, windowSize.y * deltaScale);
+        m_window.resize(newSize);
+
+        ivec2 windowPosition = m_window.position();
+        windowPosition.x += (windowSize.x - newSize.x) / 4;
+        m_window.setPosition(windowPosition);
+
+        prevScale = scale;
+    };
+    Scene::bindEventListener(scaleCallback);
+
+    // Rescale on window resizes as well, glfw bug
+    const WindowResizeCallback resizeCallback = [this](const WindowResizeEvent&) {
+        vec2 scaleXY = m_window.contentScale();
+        float scale = (scaleXY.x + scaleXY.y) / 2.0f;
+        m_editor.setContentScale(scale);
+    };
+    Scene::bindEventListener(resizeCallback);
 }
 
 void Renderer::render() {

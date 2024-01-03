@@ -119,8 +119,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .descriptorSetLayout = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool).layout(),
             .vertexBindingSpecification = Vertex::vertexBindingSpecification(),
             .vertexAttributeSpecification = Vertex::vertexAttributeSpecification(),
-            .vertexShaderPath = "spirv/pbr.vert.spv",
-            .fragmentShaderPath = "spirv/pbr.frag.spv",
+            .vertexShaderPath = "spirv/test.vert.spv",
+            .fragmentShaderPath = "spirv/test.frag.spv",
             .msaa = true,
         });
 

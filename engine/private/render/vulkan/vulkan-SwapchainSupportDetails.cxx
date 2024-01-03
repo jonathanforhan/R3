@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <ranges>
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "api/Log.hpp"
 
 namespace R3::vulkan {
@@ -18,11 +17,11 @@ SwapchainSupportDetails SwapchainSupportDetails::query(vk::PhysicalDevice physic
 }
 
 std::tuple<Format, ColorSpace> SwapchainSupportDetails::optimalSurfaceFormat() const {
-    static constexpr auto optimalFormat = vk::Format::eR8G8B8A8Unorm;
+    static constexpr auto optimalFormat = vk::Format::eR8G8B8A8Srgb;
     static constexpr auto optimalColorSpace = vk::ColorSpaceKHR::eSrgbNonlinear;
 
     auto it = std::ranges::find_if(surfaceFormats, [](const auto& surfaceFormat) {
-        return surfaceFormat.format == optimalFormat && surfaceFormat.colorSpace == optimalColorSpace;
+        return (surfaceFormat.format == optimalFormat) && (surfaceFormat.colorSpace == optimalColorSpace);
     });
 
     if (it != surfaceFormats.end()) {

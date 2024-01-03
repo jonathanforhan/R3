@@ -3,7 +3,7 @@
 #define DEPTH_ARRAY_SCALE 2048
 
 #define M_PI 3.14159265359
-#define MAX_LIGHTS 32
+#define MAX_LIGHTS 128
 
 #define ALBEDO_FLAG_BIT				(1 << 0)
 #define METALLIC_ROUGHNESS_FLAG_BIT	(1 << 1)
@@ -118,7 +118,7 @@ void main() {
 	}
 
 	// Render
-	vec3 albedo = pow(texture(u_Albedo, v_TexCoords).rgb, vec3(2.2));
+	vec3 albedo = texture(u_Albedo, v_TexCoords).rgb;
 	vec4 mr = texture(u_MetallicRoughness, v_TexCoords);
 	float metallic = mr.b;
 	float roughness = mr.g;
@@ -180,7 +180,7 @@ void main() {
 	color = color / (color + vec3(1.0));
 
 	// gamma correction
-	color = pow(color, vec3(1.0 / 2.2));
+	// color = pow(color, vec3(1.0 / 2.2));
 
 	f_Color = vec4(color, 1.0);
 

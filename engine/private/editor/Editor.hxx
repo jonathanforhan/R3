@@ -31,6 +31,8 @@ public:
 
     void drawFrame(const CommandBuffer& commandBuffer);
 
+    void setContentScale(float scale);
+
     void displayDeltaTime(double dt);
 
     void initializeDocking();
