@@ -13,6 +13,25 @@ namespace R3 {
 
 static ResourceManager* resourceManager;
 
+namespace local {
+
+static usize datatypeSize(uint32 datatype) {
+    switch (datatype) {
+        case glTF::UNSIGNED_BYTE:
+            return sizeof(uint8);
+        case glTF::UNSIGNED_SHORT:
+            return sizeof(uint16);
+        case glTF::UNSIGNED_INT:
+            return sizeof(uint32);
+        case glTF::FLOAT:
+            return sizeof(float);
+        default:
+            ENSURE(false);
+    }
+};
+
+} // namespace local
+
 ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
     : m_physicalDevice(&spec.physicalDevice),
       m_logicalDevice(&spec.logicalDevice),
@@ -32,9 +51,10 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
-            processNode(&gltf, &gltf.nodes[iNode]);
+            processNode(&gltf, &gltf.nodes[iNode], iNode);
         }
     }
+    processKeyFrames(&gltf);
 
     for (auto& prototype : m_prototypes) {
         Mesh mesh;
@@ -199,11 +219,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             uniformDescriptors.emplace_back(mesh.material.uniforms[i + 3], 6);
         };
 
-        StorageDescriptor storageDescriptors[] = {
-            {*m_storageBuffer, 7},
-            {*m_storageBuffer, 7},
-            {*m_storageBuffer, 7},
-        };
+        StorageDescriptor storageDescriptors[] = {{*m_storageBuffer, 7}};
 
         auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
         auto& descriptorSets = descriptorPool.descriptorSets();
@@ -215,52 +231,41 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         model.m_meshes.emplace_back(std::move(mesh));
     }
 
+    model.m_keyFrames = std::move(m_keyFrames);
+
     // save for reuse
     m_prototypes.clear();
     m_textures.clear();
+    m_keyFrames.clear();
+    m_nodeIdToMeshIndex.clear();
     m_loadedTextures.clear();
 }
 
-void ModelLoader::processNode(glTF::Model* model, glTF::Node* node) {
-    if (node->mesh != glTF::UNDEFINED) {
-        processMesh(model, node, &model->meshes[node->mesh]);
+void ModelLoader::processNode(glTF::Model* model, glTF::Node* node, uint32 nodeId) {
+    if (node->mesh != undefined) {
+        processMesh(model, node, &model->meshes[node->mesh], nodeId);
     }
 
     for (uint32 child : node->children) {
-        processNode(model, &model->nodes[child]);
+        processNode(model, &model->nodes[child], child);
     }
 }
 
-void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh) {
-    auto datatypeSize = [](uint32 datatype) -> usize {
-        switch (datatype) {
-            case glTF::UNSIGNED_BYTE:
-                return sizeof(uint8);
-            case glTF::UNSIGNED_SHORT:
-                return sizeof(uint16);
-            case glTF::UNSIGNED_INT:
-                return sizeof(uint32);
-            case glTF::FLOAT:
-                return sizeof(float);
-            default:
-                ENSURE(false);
-        }
-    };
-
+void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh, uint32 nodeId) {
     auto populateVertexAttrib = [=](const glTF::MeshPrimitive& primitive, auto& vec, const char* attrib) {
         if (primitive.attributes.HasMember(attrib)) {
             glTF::Accessor& accessor = model->accessors[primitive.attributes[attrib].GetUint()];
             glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
             uint32 nComponents = 0;
-            if (accessor.type == glTF::VEC3) {
-                nComponents = 3;
-            } else if (accessor.type == glTF::VEC2) {
+            if (accessor.type == glTF::VEC2) {
                 nComponents = 2;
+            } else if (accessor.type == glTF::VEC3) {
+                nComponents = 3;
             }
 
             usize nBytes = usize(accessor.byteOffset) + bufferView.byteOffset;
-            usize nSize = datatypeSize(accessor.componentType);
+            usize nSize = local::datatypeSize(accessor.componentType);
             vec.resize((usize)accessor.count);
             memcpy(vec.data(), model->buffer().data() + nBytes, accessor.count * nSize * nComponents);
         }
@@ -303,12 +308,12 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
         populateVertexAttrib(primitive, texCoords, glTF::TEXCOORD_0);
 
         std::vector<uint32> indices;
-        if (primitive.indices != glTF::UNDEFINED) {
+        if (primitive.indices != undefined) {
             glTF::Accessor& accessor = model->accessors[primitive.indices];
             glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
 
             usize nBytes = (usize)accessor.byteOffset + bufferView.byteOffset;
-            usize nSize = datatypeSize(accessor.componentType);
+            usize nSize = local::datatypeSize(accessor.componentType);
 
             indices.resize(accessor.count);
             if (nSize == 1) {
@@ -345,6 +350,8 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             }
         }
 
+        m_nodeIdToMeshIndex.emplace(nodeId, m_prototypes.size());
+
         m_prototypes.emplace_back(MeshPrototype{
             .vertexBuffer = resourceManager->allocateVertexBuffer({
                 .physicalDevice = *m_physicalDevice,
@@ -361,7 +368,7 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             .textureIndices = {},
         });
 
-        if (primitive.material != glTF::UNDEFINED) {
+        if (primitive.material != undefined) {
             processMaterial(model, &model->materials[primitive.material]);
         }
     }
@@ -397,9 +404,9 @@ void ModelLoader::processMaterial(glTF::Model* model, glTF::Material* material) 
     if (material->pbrMetallicRoughness.baseColorTexture) {
         processTexture(model, &*material->pbrMetallicRoughness.baseColorTexture, TextureType::Albedo);
     } else if (pbrSpecularGlossiness_ExtensionIndex >= 0) {
-        auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)&*material
-                        ->extensions[pbrSpecularGlossiness_ExtensionIndex]; processTexture(
-                            model, &ext->diffuseTexture.value(), TextureType::Albedo);
+        auto* ext =
+            (glTF::KHR_materials_pbrSpecularGlossiness*)&*material->extensions[pbrSpecularGlossiness_ExtensionIndex];
+        processTexture(model, &ext->diffuseTexture.value(), TextureType::Albedo);
     }
 }
 
@@ -413,7 +420,7 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::TextureInfo* textureI
 
     glTF::Texture& texture = model->textures[textureInfo->index];
 
-    if (texture.source != glTF::UNDEFINED) {
+    if (texture.source != undefined) {
         m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
         glTF::Image& image = model->images[texture.source];
         auto path = std::string(m_directory + image.uri);
@@ -451,6 +458,85 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::NormalTextureInfo* te
 void ModelLoader::processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo->index};
     processTexture(model, &adapter, type);
+}
+
+void ModelLoader::processKeyFrames(glTF::Model* model) {
+    auto populateSamplerInOut = [&]<typename T>(usize accessorIndex, std::vector<T>& vec) {
+        glTF::Accessor& accessor = model->accessors[accessorIndex];
+        glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
+        usize nBytes = usize(accessor.byteOffset + bufferView.byteOffset);
+
+        vec.resize(accessor.count);
+        for (uint32 i = 0; i < accessor.count; i++) {
+            vec[i] = *(T*)(&model->buffer()[nBytes + i * sizeof(T)]);
+        }
+    };
+
+    for (glTF::Animation& animation : model->animations) {
+        for (glTF::AnimationChannel& channel : animation.channels) {
+            // which TRS is it
+            KeyFrame::ModifierType modifierType;
+            if (channel.target.path == "translation") {
+                modifierType = KeyFrame::Translation;
+            } else if (channel.target.path == "rotation") {
+                modifierType = KeyFrame::Rotation;
+            } else if (channel.target.path == "scale") {
+                modifierType = KeyFrame::Scale;
+            } else {
+                ENSURE(false);
+            }
+
+            glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
+
+            // collect timestamp
+            std::vector<float> inputTimestamps;
+            populateSamplerInOut(sampler.input, inputTimestamps);
+
+            // populate vec3 translate data
+            if (modifierType == KeyFrame::Translation) {
+                CHECK(model->accessors[sampler.output].type == glTF::VEC3);
+                std::vector<vec3> outputTranslate;
+                populateSamplerInOut(sampler.output, outputTranslate);
+
+                for (usize i = 0; float timestamp : inputTimestamps) {
+                    m_keyFrames.emplace_back(KeyFrame{
+                        .timestamp = timestamp,
+                        .node = m_nodeIdToMeshIndex[channel.target.node],
+                        .modifierType = modifierType,
+                        .modifier = outputTranslate[i++],
+                    });
+                }
+                // populate vec4 rotation data
+            } else if (modifierType == KeyFrame::Rotation) {
+                CHECK(model->accessors[sampler.output].type == glTF::VEC4);
+                std::vector<quat> outputRotation;
+                populateSamplerInOut(sampler.output, outputRotation);
+
+                for (usize i = 0; float timestamp : inputTimestamps) {
+                    m_keyFrames.emplace_back(KeyFrame{
+                        .timestamp = timestamp,
+                        .node = m_nodeIdToMeshIndex[channel.target.node],
+                        .modifierType = modifierType,
+                        .modifier = outputRotation[i++],
+                    });
+                }
+                // populate vec3 scale data
+            } else if (modifierType == KeyFrame::Scale) {
+                CHECK(model->accessors[sampler.output].type == glTF::VEC3);
+                std::vector<vec3> outputScale;
+                populateSamplerInOut(sampler.output, outputScale);
+
+                for (usize i = 0; float timestamp : inputTimestamps) {
+                    m_keyFrames.emplace_back(KeyFrame{
+                        .timestamp = timestamp,
+                        .node = m_nodeIdToMeshIndex[channel.target.node],
+                        .modifierType = modifierType,
+                        .modifier = outputScale[i++],
+                    });
+                }
+            }
+        } // for (channel : animation.channels)
+    }     // for (animation : model->animations)
 }
 
 } // namespace R3

@@ -4,10 +4,11 @@
 
 #include <rapidjson/document.h>
 #include <optional>
+#include <vector>
 #include "api/Types.hpp"
 
 #if R3_GLTF_JSON_EXTRAS
-#define GLTF_EXTRAS std::optional<rapidjson::Value> extras(std::nullopt)
+#define GLTF_EXTRAS std::optional<rapidjson::Value> extras = std::nullopt
 #else
 #define GLTF_EXTRAS
 #endif
@@ -78,7 +79,7 @@
 [ ] NV_materials_mdl
 
     --- Archived ---
-[w] KHR_materials_pbrSpecularGlossiness (current only supports diffuse color)
+[w] KHR_materials_pbrSpecularGlossiness (currently only supports diffuse color)
 [ ] KHR_techniques_webgl
 [ ] KHR_xmp
 
@@ -163,8 +164,6 @@ constexpr auto SAMPLER_LINEAR = "LINEAR";
 constexpr auto SAMPLER_STEP = "STEP";
 constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
 
-constexpr auto UNDEFINED = (~0U);
-
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
 struct Header {
     alignas(4) uint32 magic;
@@ -222,7 +221,7 @@ struct AccessorSparseIndices {
     uint32 bufferView; // REQUIRED
     uint32 byteOffset = 0;
     uint32 componentType; // REQUIRED
-    std::vector<std::unique_ptr<glTF::Extension>> extensions;
+    std::optional<rapidjson::Value> extensions;
     GLTF_EXTRAS;
 };
 
@@ -245,7 +244,7 @@ struct AccessorSparse {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor
 struct Accessor {
-    uint32 bufferView = UNDEFINED;
+    uint32 bufferView = undefined;
     uint32 byteOffset = 0;
     uint32 componentType; // REQUIRED
     bool normalized = false;
@@ -261,7 +260,7 @@ struct Accessor {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel-target
 struct AnimationChannelTarget {
-    uint32 node = UNDEFINED;
+    uint32 node = undefined;
     std::string path; // REQUIRED
     std::optional<rapidjson::Value> extensions;
     GLTF_EXTRAS;
@@ -317,8 +316,8 @@ struct BufferView {
     uint32 buffer; // REQUIRED
     uint32 byteOffset = 0;
     uint32 byteLength; // REQUIRED
-    uint32 byteStride = UNDEFINED;
-    uint32 target = UNDEFINED;
+    uint32 byteStride = undefined;
+    uint32 target = undefined;
     std::string name;
     std::optional<rapidjson::Value> extensions;
     GLTF_EXTRAS;
@@ -364,7 +363,7 @@ struct Camera {
 struct Image {
     std::string uri;
     std::string mimeType;
-    uint32 bufferView = UNDEFINED;
+    uint32 bufferView = undefined;
     std::string name;
     std::optional<rapidjson::Value> extensions;
     GLTF_EXTRAS;
@@ -372,8 +371,8 @@ struct Image {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
 struct Texture {
-    uint32 sampler = UNDEFINED;
-    uint32 source = UNDEFINED;
+    uint32 sampler = undefined;
+    uint32 source = undefined;
     std::string name;
     std::optional<rapidjson::Value> extensions;
     GLTF_EXTRAS;
@@ -434,8 +433,8 @@ struct Material {
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
 struct MeshPrimitive {
     rapidjson::Value attributes; // REQUIRED
-    uint32 indices = UNDEFINED;
-    uint32 material = UNDEFINED;
+    uint32 indices = undefined;
+    uint32 material = undefined;
     uint32 mode{4};
     std::vector<rapidjson::Value> targets;
     std::optional<rapidjson::Value> extensions;
@@ -453,11 +452,11 @@ struct Mesh {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-node
 struct Node {
-    uint32 camera = UNDEFINED;
+    uint32 camera = undefined;
     std::vector<uint32> children;
-    uint32 skin = UNDEFINED;
+    uint32 skin = undefined;
     float matrix[16] = {1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f};
-    uint32 mesh = UNDEFINED;
+    uint32 mesh = undefined;
     float rotation[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     float scale[3] = {1.0f, 1.0f, 1.0f};
     float translation[3] = {0.0f, 0.0f, 0.0f};
@@ -469,8 +468,8 @@ struct Node {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-sampler
 struct Sampler {
-    uint32 magFilter = UNDEFINED;
-    uint32 minFilter = UNDEFINED;
+    uint32 magFilter = undefined;
+    uint32 minFilter = undefined;
     uint32 wrapS{REPEAT};
     uint32 wrapT{REPEAT};
     std::string name;
@@ -488,8 +487,8 @@ struct Scene {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-skin
 struct Skin {
-    uint32 inverseBindMatrices = UNDEFINED;
-    uint32 skeleton = UNDEFINED;
+    uint32 inverseBindMatrices = undefined;
+    uint32 skeleton = undefined;
     std::vector<uint32> joints; // REQUIRED
     std::string name;
     std::optional<rapidjson::Value> extensions;
@@ -511,7 +510,7 @@ struct Root {
     std::vector<Mesh> meshes;
     std::vector<Node> nodes;
     std::vector<Sampler> samplers;
-    uint32 scene = UNDEFINED;
+    uint32 scene = undefined;
     std::vector<Scene> scenes;
     std::vector<Skin> skins;
     std::vector<Texture> textures;

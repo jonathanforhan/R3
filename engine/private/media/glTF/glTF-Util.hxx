@@ -29,6 +29,7 @@ static constexpr void maybeAssign(T& dst, const rapidjson::Value& value, const c
     }
 }
 
+// TextureInfo helper
 static void populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value) {
     // index
     textureInfo.index = value["index"].GetUint();

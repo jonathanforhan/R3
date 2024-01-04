@@ -23,12 +23,12 @@ Model::Model(std::string_view path)
 
     populateRoot();
 
-    LOG(Verbose, "--- Extensions Used ---");
+    LOG(Verbose, "=== Extensions Used ===");
     for (auto& extension : extensionsUsed) {
         LOG(Verbose, "\t-", extension);
     }
 
-    LOG(Verbose, "--- Extensions Required ---");
+    LOG(Verbose, "=== Extensions Required ===");
     for (auto& extension : extensionsRequired) {
         LOG(Verbose, "\t-", extension);
     }
@@ -173,7 +173,7 @@ void Model::populateAccessors() {
 
         // sparse
         if (itAccessor.HasMember("sparse")) {
-            ENSURE(false);
+            LOG(Warning, "TODO Sparse Accessors");
         }
 
         // name

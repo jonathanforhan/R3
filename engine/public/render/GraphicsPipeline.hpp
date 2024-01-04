@@ -7,7 +7,6 @@
 #include "render/PipelineLayout.hpp"
 #include "render/RenderApi.hpp"
 #include "render/Shader.hpp"
-#include "render/Vertex.hpp"
 
 namespace R3 {
 

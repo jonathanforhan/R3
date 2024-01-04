@@ -6,8 +6,19 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include "api/Api.hpp"
+#include "api/Construct.hpp"
 
 namespace R3 {
+
+/// used to initial inegral types to -1 or XXX_MAX regardless of type
+static constexpr struct {
+    template <std::integral T>
+    consteval operator T() const {
+        return ~T{};
+    }
+    constexpr bool operator==(std::integral auto x) const { return x == ~decltype(x){}; }
+    constexpr bool operator!=(std::integral auto x) const { return x != ~decltype(x){}; }
+} undefined;
 
 // vecs are first class citizens
 using glm::vec1; ///< vec1
@@ -110,4 +121,5 @@ template class R3_API glm::mat<3, 3, glm::f64, glm::packed_highp>;
 template class R3_API glm::mat<4, 4, glm::f64, glm::packed_highp>;
 
 // quat export
+template class R3_API glm::qua<glm::f32, glm::packed_highp>;
 template class R3_API glm::qua<glm::f64, glm::packed_highp>;

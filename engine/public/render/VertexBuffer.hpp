@@ -3,7 +3,7 @@
 #include <span>
 #include "render/Buffer.hpp"
 #include "render/RenderApi.hpp"
-#include "render/Vertex.hpp"
+#include "render/ShaderObjects.hpp"
 
 namespace R3 {
 

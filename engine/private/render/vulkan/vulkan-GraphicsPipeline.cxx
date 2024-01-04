@@ -8,8 +8,8 @@
 #include "render/PhysicalDevice.hpp"
 #include "render/PipelineLayout.hpp"
 #include "render/RenderPass.hpp"
+#include "render/ShaderObjects.hpp"
 #include "render/Swapchain.hpp"
-#include "render/Vertex.hpp"
 
 namespace R3 {
 

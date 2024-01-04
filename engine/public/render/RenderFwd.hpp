@@ -27,6 +27,9 @@ class R3_API Semaphore;
 class R3_API Fence;
 class R3_API DeviceMemory;
 class R3_API Buffer;
+struct R3_API Vertex;
+struct R3_API VertexBindingSpecification;
+struct R3_API VertexAttributeSpecification;
 class R3_API VertexBuffer;
 template <std::integral T>
 class R3_API IndexBuffer;

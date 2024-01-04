@@ -1,4 +1,4 @@
-#include "render/Mesh.hpp"
+#include "render/model/Mesh.hpp"
 
 #include "core/Engine.hpp"
 #include "core/Scene.hpp"

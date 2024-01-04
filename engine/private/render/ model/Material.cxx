@@ -1,4 +1,4 @@
-#include "render/Material.hpp"
+#include "render/model/Material.hpp"
 
 #include "render/ResourceManager.hxx"
 

@@ -1,15 +1,15 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include <R3>
 
 namespace R3 {
 
 struct R3_API PBRTextureResource {
-    id albedo = ~id(0);
-    id metallicRoughness = ~id(0);
-    id normal = ~id(0);
-    id ambientOcclusion = ~id(0);
-    id emissive = ~id(0);
+    id albedo = undefined;
+    id metallicRoughness = undefined;
+    id normal = undefined;
+    id ambientOcclusion = undefined;
+    id emissive = undefined;
 };
 
 enum class R3_API TextureType : uint8 {

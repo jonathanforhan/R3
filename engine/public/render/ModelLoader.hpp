@@ -58,12 +58,13 @@ public:
     void load(const std::string& path, ModelComponent& model);
 
 private:
-    void processNode(glTF::Model* model, glTF::Node* node);
-    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh);
+    void processNode(glTF::Model* model, glTF::Node* node, uint32 nodeId);
+    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh, uint32 nodeId);
     void processMaterial(glTF::Model* model, glTF::Material* material);
     void processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type);
     void processTexture(glTF::Model* model, glTF::NormalTextureInfo* textureInfo, TextureType type);
     void processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type);
+    void processKeyFrames(glTF::Model* model);
 
 private:
     Ref<const PhysicalDevice> m_physicalDevice;
@@ -75,6 +76,8 @@ private:
 
     std::vector<MeshPrototype> m_prototypes;
     std::vector<TextureBuffer::ID> m_textures;
+    std::vector<KeyFrame> m_keyFrames;
+    std::unordered_map<usize, usize> m_nodeIdToMeshIndex;
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
 };

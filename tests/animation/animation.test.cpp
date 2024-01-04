@@ -21,10 +21,12 @@ R3_DLL void Exit(void* scene_) {
 R3_DLL void Run() {
     try {
         //--- Camera
-        Entity::create<Entity>().emplace<CameraComponent>().setActive(true);
+        auto& cam = Entity::create<Entity>().emplace<CameraComponent>();
+        cam.setActive(true);
+        cam.translateBackward(40);
 
         auto& entity = Entity::create<Entity>();
-        entity.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf");
+        entity.emplace<ModelComponent>("assets/WalkingRobot/glTF-Binary/WalkingRobot.glb");
     } catch (std::exception const& e) {
         LOG(Error, e.what());
     }

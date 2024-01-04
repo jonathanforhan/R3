@@ -7,6 +7,7 @@ namespace R3::glTF {
 
 static constexpr const char* EXTENSION_KHR_materials_pbrSpecularGlossiness = "KHR_materials_pbrSpecularGlossiness";
 
+// https://kcoley.github.io/glTF/extensions/2.0/Khronos/KHR_materials_pbrSpecularGlossiness/
 struct KHR_materials_pbrSpecularGlossiness : public Extension {
     KHR_materials_pbrSpecularGlossiness()
         : Extension(EXTENSION_KHR_materials_pbrSpecularGlossiness) {}

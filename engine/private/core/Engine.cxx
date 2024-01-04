@@ -54,7 +54,7 @@ EngineStatusCode Engine::loop(const char* dlName) {
             code = EngineStatusCode::DlOutOfData;
         }
 #endif
-        std::this_thread::sleep_for(microseconds(int64(8'333 - (dt * 1'000))));
+        // std::this_thread::sleep_for(microseconds(int64(8'333 - (dt * 1'000))));
     }
 
     m_renderer.waitIdle();

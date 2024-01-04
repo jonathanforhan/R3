@@ -21,7 +21,7 @@ Window::Window(const WindowSpecification& spec) {
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 
-    setHandle(glfwCreateWindow(vidmode->width / 2, vidmode->height / 2, spec.title.data(), nullptr, nullptr));
+    setHandle(glfwCreateWindow(int(vidmode->width / 1.5f), int(vidmode->height / 1.5f), spec.title.data(), NULL, NULL));
     if (!validHandle()) {
         LOG(Error, "Failed to create GLFW window");
         ENSURE(false);
