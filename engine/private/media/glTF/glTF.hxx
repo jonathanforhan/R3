@@ -11,9 +11,10 @@
 // glTF version minor : 0
 // glb container version : 2
 
-// TODO support ratified extensions
-
 /*
+    === Supported Extensions ===
+
+    --- Ratified ---
 [ ] KHR_draco_mesh_compression
 [ ] KHR_lights_punctual
 [ ] KHR_materials_anisotropy
@@ -34,6 +35,47 @@
 [ ] EXT_mesh_gpu_instancing
 [ ] EXT_meshopt_compression
 [ ] EXT_texture_webp
+
+    --- Multi-Vendor ---
+[ ] EXT_lights_ies
+[ ] EXT_lights_image_based
+[ ] EXT_mesh_manifold
+
+    --- Vendor ---
+[ ] ADOBE_materials_clearcoat_specular
+[ ] ADOBE_materials_clearcoat_tint
+[ ] ADOBE_materials_thin_transparency
+[ ] AGI_articulations
+[ ] AGI_stk_metadata
+[ ] CESIUM_primitive_outline
+[ ] FB_geometry_metadata
+[ ] GRIFFEL_bim_data
+[ ] MPEG_accessor_timed
+[ ] MPEG_animation_timing
+[ ] MPEG_audio_spatial
+[ ] MPEG_buffer_circular
+[ ] MPEG_media
+[ ] MPEG_mesh_linking
+[ ] MPEG_scene_dynamic
+[ ] MPEG_texture_video
+[ ] MPEG_viewport_recommended
+[ ] MSFT_lod
+[ ] MSFT_packing_normalRoughnessMetallic
+[ ] MSFT_packing_occlusionRoughnessMetallic
+[ ] MSFT_texture_dds
+[ ] NV_materials_mdl
+
+    --- Archived ---
+[ ] KHR_materials_pbrSpecularGlossiness
+[ ] KHR_techniques_webgl
+[ ] KHR_xmp
+
+    --- In-Progress ---
+[ ] KHR_animation_pointer
+[ ] KHR_audio
+[ ] KHR_materials_diffuse_transmission
+[ ] KHR_materials_dispersion
+[ ] KHR_materials_sss
 */
 
 namespace R3::glTF {
@@ -111,22 +153,18 @@ constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
 
 constexpr auto UNDEFINED = (~0U);
 
-#pragma pack(push, 1)
-
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
 struct Header {
-    uint32 magic;
-    uint32 version;
-    uint32 length;
+    alignas(4) uint32 magic;
+    alignas(4) uint32 version;
+    alignas(4) uint32 length;
 };
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#chunks
 struct ChunkHeader {
-    uint32 length;
-    uint32 type;
+    alignas(4) uint32 length;
+    alignas(4) uint32 type;
 };
-
-#pragma pack(pop)
 
 struct Accessor;
 struct AccessorSparse;

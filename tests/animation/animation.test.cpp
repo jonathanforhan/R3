@@ -8,7 +8,7 @@ using namespace R3;
 extern "C" {
 
 R3_DLL void* Entry() {
-    CurrentScene = new Scene(HASH32("Sponza"), "Sponza");
+    CurrentScene = new Scene(HASH32("Animation"), "Animation");
     return CurrentScene;
 }
 
@@ -24,9 +24,7 @@ R3_DLL void Run() {
         Entity::create<Entity>().emplace<CameraComponent>().setActive(true);
 
         auto& entity = Entity::create<Entity>();
-        entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
-        auto& transform = entity.get<TransformComponent>();
-        transform = glm::translate(transform, vec3(0, -2, 0));
+        entity.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf");
     } catch (std::exception const& e) {
         LOG(Error, e.what());
     }

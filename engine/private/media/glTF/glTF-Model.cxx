@@ -38,21 +38,33 @@ Model::Model(std::string_view path)
     std::ifstream ifs(path.data(), std::ios::binary);
     ENSURE(ifs.is_open() && ifs.good());
 
-    try {
-        parseGLB(ifs);
-    } catch (...) {
-        ifs.seekg(0);
-        parseGLTF(ifs);
-    }
+    bool glbSuccess = parseGLB(ifs);
+    bool gltfSuccess = parseGLTF(ifs);
+
+    CHECK(glbSuccess || gltfSuccess);
 
     populateRoot();
+
+    LOG(Verbose, "//--- Extensions Used ---//");
+    for (auto& extension : extensionsUsed) {
+        LOG(Verbose, "\t-", extension);
+    }
+
+    LOG(Verbose, "//--- Extensions Required ---//");
+    for (auto& extension : extensionsRequired) {
+        LOG(Verbose, "\t-", extension);
+    }
 }
 
-void Model::parseGLB(std::ifstream& ifs) {
+bool Model::parseGLB(std::ifstream& ifs) {
     Header header = {};
     ifs.read((char*)(&header), sizeof(header));
 
-    ENSURE(header.magic == HEADER_MAGIC); // its ok if this fails
+    if (header.magic != HEADER_MAGIC) {
+        ifs.seekg(0);
+        return false; // early exit, not glb file
+    }
+
     if (header.version > GLB_VERSION) {
         LOG(Warning, "glb version for", m_path, "is", header.version, "while R3 supports glb version", GLB_VERSION);
     }
@@ -76,6 +88,7 @@ void Model::parseGLB(std::ifstream& ifs) {
     } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
         readBin();
     } else {
+        LOG(Error, "invalid chunk header type");
         ENSURE(false);
     }
 
@@ -85,13 +98,15 @@ void Model::parseGLB(std::ifstream& ifs) {
     } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
         readBin();
     } else {
+        LOG(Error, "invalid chunk header type");
         ENSURE(false);
     }
 }
 
-void Model::parseGLTF(std::ifstream& ifs) {
+bool Model::parseGLTF(std::ifstream& ifs) {
     std::string json = (std::stringstream() << ifs.rdbuf()).str();
     m_document.Parse(json.c_str());
+    return true;
 }
 
 void Model::populateRoot() {

@@ -3,7 +3,7 @@
 #include <R3>
 #include "DynamicLibrary.hxx"
 
-#define USER_DL "sponza.dll"
+#define USER_DL "animation.dll"
 
 namespace R3 {
 

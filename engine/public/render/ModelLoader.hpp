@@ -32,12 +32,12 @@ struct MeshPrototype {
 
 /// @brief Model Loader Specification
 struct ModelLoaderSpecification {
-    const PhysicalDevice& physicalDevice; ///< PhysicalDevice
-    const LogicalDevice& logicalDevice;   ///< LogicalDevice
-    const Swapchain& swapchain;           ///< Swapchain
-    const RenderPass& renderPass;         ///< RenderPass
-    const CommandPool& commandPool;       ///< CommandPool
-    const StorageBuffer& storageBuffer;   ///< Storage Buffer used for mouse picking
+    const PhysicalDevice& physicalDevice;
+    const LogicalDevice& logicalDevice;
+    const Swapchain& swapchain;
+    const RenderPass& renderPass;
+    const CommandPool& commandPool;
+    const StorageBuffer& storageBuffer; ///< Storage Buffer used for mouse picking
 };
 
 /// @brief ModelLoader used to load glTF Models

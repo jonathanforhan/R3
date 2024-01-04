@@ -27,7 +27,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     glTF::Model gltf(m_directory + file);
 
-    resourceManager = (ResourceManager*)CurrentScene->resourceManager;
+    resourceManager = static_cast<ResourceManager*>(CurrentScene->resourceManager);
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {

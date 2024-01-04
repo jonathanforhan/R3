@@ -14,8 +14,8 @@ public:
     const std::vector<uint8>& buffer() const { return m_buffer; }
 
 private:
-    void parseGLB(std::ifstream& ifs);
-    void parseGLTF(std::ifstream& ifs);
+    bool parseGLB(std::ifstream& ifs);  // return true if success
+    bool parseGLTF(std::ifstream& ifs); // return true if success
 
     void populateRoot();
 
