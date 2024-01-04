@@ -3,13 +3,13 @@
 #include <mutex>
 #include <unordered_set>
 #include <vector>
-#include "render/DescriptorPool.hxx"
-#include "render/GraphicsPipeline.hxx"
-#include "render/IndexBuffer.hxx"
-#include "render/RenderApi.hxx"
-#include "render/TextureBuffer.hxx"
-#include "render/UniformBuffer.hxx"
-#include "render/VertexBuffer.hxx"
+#include "render/DescriptorPool.hpp"
+#include "render/GraphicsPipeline.hpp"
+#include "render/IndexBuffer.hpp"
+#include "render/RenderApi.hpp"
+#include "render/TextureBuffer.hpp"
+#include "render/UniformBuffer.hpp"
+#include "render/VertexBuffer.hpp"
 
 namespace R3 {
 

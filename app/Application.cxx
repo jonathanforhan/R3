@@ -6,6 +6,7 @@
 #include <filesystem>
 
 static char const* ENTRY_TAG = "Entry";
+static char const* EXIT_TAG = "Exit";
 static char const* RUN_TAG = "Run";
 static char const* CLIENT_DL = "R3_client.dll";
 
@@ -22,17 +23,20 @@ int Application::run() {
         }
 
         DynamicLibrary dl;
-        DlEntry entry;
-        DlRun run;
+        DlEntry dlEntry;
+        DlExit dlExit;
+        DlRun dlRun;
 
         try {
             dl.loadLib(CLIENT_DL);
 
-            entry = dl.loadEntry(ENTRY_TAG);
-            CurrentScene = reinterpret_cast<Scene*>(entry());
+            dlEntry = dl.loadEntry(ENTRY_TAG);
+            CurrentScene = reinterpret_cast<Scene*>(dlEntry());
 
-            run = dl.loadRunner(RUN_TAG);
-            run();
+            dlExit = dl.loadExit(EXIT_TAG);
+
+            dlRun = dl.loadRunner(RUN_TAG);
+            dlRun();
         } catch (std::exception& e) {
             LOG(Error, e.what());
             return EXIT_FAILURE;
@@ -50,7 +54,9 @@ int Application::run() {
                 break;
         }
 
-        EngineInstance->renderView().recreate();
+        dlExit(CurrentScene);
+
+        EngineInstance->renderer().recreate();
     }
 
     delete EngineInstance;

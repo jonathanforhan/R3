@@ -1,8 +1,8 @@
 #pragma once
 
 #include <R3>
-#include "render/RenderView.hpp"
-#include "render/WindowView.hpp"
+#include "render/Renderer.hpp"
+#include "render/Window.hpp"
 
 namespace R3 {
 
@@ -21,17 +21,17 @@ class R3_API Engine final {
 public:
     HIDDEN_CONSTRUCT(Engine);
 
-    [[nodiscard]] WindowView& windowView() { return m_windowView; }
+    [[nodiscard]] constexpr Window& window() { return m_window; }
 
-    [[nodiscard]] RenderView& renderView() { return m_renderView; }
+    [[nodiscard]] constexpr Renderer& renderer() { return m_renderer; }
 
-    EngineStatusCode loop(const char* dlName);
+    [[nodiscard]] EngineStatusCode loop(const char* dlName);
 
-    double deltaTime();
+    [[nodiscard]] double deltaTime();
 
 private:
-    WindowView m_windowView;
-    RenderView m_renderView;
+    Window m_window;
+    Renderer m_renderer;
 };
 
 } // namespace R3

@@ -1,11 +1,11 @@
 #if R3_VULKAN
 
-#include "render/Buffer.hxx"
+#include "render/Buffer.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "render/CommandPool.hxx"
-#include "render/LogicalDevice.hxx"
-#include "render/PhysicalDevice.hxx"
+#include "render/CommandPool.hpp"
+#include "render/LogicalDevice.hpp"
+#include "render/PhysicalDevice.hpp"
 
 namespace R3 {
 

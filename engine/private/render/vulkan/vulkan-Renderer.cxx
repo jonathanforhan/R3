@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Renderer.hxx"
+#include "render/Renderer.hpp"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -14,7 +14,7 @@
 #include "input/MouseEvent.hpp"
 #include "input/WindowEvent.hpp"
 #include "render/ResourceManager.hxx"
-#include "render/ShaderObjects.hxx"
+#include "render/ShaderObjects.hpp"
 
 namespace R3 {
 
@@ -347,6 +347,10 @@ void Renderer::resize() {
         .depthBuffer = m_depthBuffer,
         .renderPass = m_renderPass,
     });
+}
+
+void Renderer::recreate() {
+    resize();
 }
 
 uuid32 Renderer::getHoveredEntity() const {

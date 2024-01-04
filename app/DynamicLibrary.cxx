@@ -29,6 +29,13 @@ DlEntry DynamicLibrary::loadEntry(char const* funcname) {
     return entry;
 }
 
+DlExit DynamicLibrary::loadExit(const char* funcname) {
+    CHECK(mod != nullptr);
+    DlExit entry = (DlExit)GetProcAddress(mod, funcname);
+    CHECK(entry != nullptr);
+    return entry;
+}
+
 DlRun DynamicLibrary::loadRunner(char const* funcname) {
     CHECK(mod != nullptr);
     DlRun run = (DlRun)GetProcAddress(mod, funcname);

@@ -1,13 +1,13 @@
 #if R3_VULKAN
 
-#include "render/LogicalDevice.hxx"
+#include "render/LogicalDevice.hpp"
 
 #include <set>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/Instance.hxx"
-#include "render/PhysicalDevice.hxx"
-#include "render/Surface.hxx"
+#include "render/Instance.hpp"
+#include "render/PhysicalDevice.hpp"
+#include "render/Surface.hpp"
 
 namespace R3 {
 

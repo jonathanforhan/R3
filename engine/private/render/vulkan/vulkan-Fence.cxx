@@ -1,9 +1,9 @@
 #if R3_VULKAN
 
-#include "render/Fence.hxx"
+#include "render/Fence.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "render/LogicalDevice.hxx"
+#include "render/LogicalDevice.hpp"
 
 namespace R3 {
 

@@ -1,4 +1,4 @@
-#include "Editor.hxx"
+#include "editor/Editor.hpp"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_vulkan.h>
@@ -10,7 +10,7 @@
 #include <format>
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
-#include "render/Renderer.hxx"
+#include "render/Renderer.hpp"
 
 namespace R3::editor {
 

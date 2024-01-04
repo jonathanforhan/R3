@@ -3,7 +3,6 @@ project(R3_ENGINE LANGUAGES CXX)
 
 file(GLOB_RECURSE CXX_SOURCES
 	"${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx"
-	"${CMAKE_CURRENT_SOURCE_DIR}/public/*.cpp"
 )
 
 # [[ EXCLUDE RENDERERS NOT IN USE ]]
@@ -32,13 +31,12 @@ endif ()
 
 file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
 file(GLOB PRE_COMPILE_CORE "${CMAKE_CURRENT_SOURCE_DIR}/public/core/*.hpp")
-# file(GLOB PRE_COMPILE_RENDER "${CMAKE_CURRENT_SOURCE_DIR}/private/render/*.hxx")
 target_precompile_headers(R3_ENGINE PUBLIC
 	"${PRE_COMPILE_API}"
 	"${PRE_COMPILE_CORE}"
-	"${CMAKE_CURRENT_SOURCE_DIR}/private/render/NativeRenderObject.hxx"
-	"${CMAKE_CURRENT_SOURCE_DIR}/private/render/DeviceMemory.hxx"
-	# "${PRE_COMPILE_RENDER}"
+	"${CMAKE_CURRENT_SOURCE_DIR}/public/render/NativeRenderObject.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/public/render/DeviceMemory.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/public/render/LogicalDevice.hpp"
 )
 
 #[[ SANITY CHECK ]]

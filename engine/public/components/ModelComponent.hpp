@@ -1,8 +1,5 @@
 #pragma once
-#pragma warning(push)
-#pragma warning(disable : 4251)
 
-/// @file ModelComponent.hpp
 /// @brief Provides Component for attaching mesh and material data to entity
 
 #include <R3>
@@ -35,5 +32,3 @@ private:
 };
 
 } // namespace R3
-
-#pragma warning(pop)

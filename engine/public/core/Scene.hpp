@@ -1,6 +1,4 @@
 #pragma once
-#pragma warning(push)
-#pragma warning(disable : 4251) // dll-interface warning
 
 #include <R3>
 #include <entt/entt.hpp>
@@ -144,7 +142,5 @@ private:
 };
 
 } // namespace R3
-
-#pragma warning(pop)
 
 #include "core/Scene.ipp"

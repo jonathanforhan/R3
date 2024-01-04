@@ -10,6 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (MSVC)
 	add_compile_options("/EHsc")
+	add_definitions("/wd4251") # disable dll-interface warning, must compile engine with same compiler version as dll hot-reload
 endif ()
 
 set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})

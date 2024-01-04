@@ -1,12 +1,12 @@
 #if R3_VULKAN
 
-#include "render/ColorBuffer.hxx"
+#include "render/ColorBuffer.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "render/Image.hxx"
-#include "render/LogicalDevice.hxx"
-#include "render/PhysicalDevice.hxx"
-#include "render/Swapchain.hxx"
+#include "render/Image.hpp"
+#include "render/LogicalDevice.hpp"
+#include "render/PhysicalDevice.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 

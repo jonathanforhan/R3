@@ -1,11 +1,11 @@
 #if R3_VULKAN
 
-#include "render/PipelineLayout.hxx"
+#include "render/PipelineLayout.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "render/DescriptorSetLayout.hxx"
-#include "render/LogicalDevice.hxx"
-#include "render/ShaderObjects.hxx"
+#include "render/DescriptorSetLayout.hpp"
+#include "render/LogicalDevice.hpp"
+#include "render/ShaderObjects.hpp"
 
 namespace R3 {
 

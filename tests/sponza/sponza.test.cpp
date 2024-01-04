@@ -8,9 +8,14 @@ using namespace R3;
 extern "C" {
 
 R3_DLL void* Entry() {
-    static Scene scene = Scene(HASH32("Default"), "Default");
-    CurrentScene = &scene;
+    CurrentScene = new Scene(HASH32("Default"), "Default");
     return CurrentScene;
+}
+
+R3_DLL void Exit(void* scene_) {
+    auto* scene = ((Scene*)scene_);
+    scene->clearRegistry();
+    delete scene;
 }
 
 R3_DLL void Run() {

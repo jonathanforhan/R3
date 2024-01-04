@@ -1,14 +1,14 @@
 #if R3_VULKAN
 
-#include "render/Surface.hxx"
+#include "render/Surface.hpp"
 
 // clang-format off
 #include <vulkan/vulkan.hpp>
 #include <GLFW/glfw3.h>
 // clang-format on
 #include "api/Ensure.hpp"
-#include "render/Instance.hxx"
-#include "render/Window.hxx"
+#include "render/Instance.hpp"
+#include "render/Window.hpp"
 
 namespace R3 {
 

@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Window.hxx"
+#include "render/Window.hpp"
 
 #include <imgui.h>
 #include <R3>

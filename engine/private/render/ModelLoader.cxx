@@ -1,11 +1,12 @@
-#include "ModelLoader.hxx"
+#include "render/ModelLoader.hpp"
 
 #include <R3>
-#include "CommandPool.hxx"
 #include "ResourceManager.hxx"
 #include "core/Scene.hpp"
 #include "media/glTF/glTF-Model.hxx"
-#include "render/ShaderObjects.hxx"
+#include "private/render/ResourceManager.hxx"
+#include "render/CommandPool.hpp"
+#include "render/ShaderObjects.hpp"
 
 namespace R3 {
 

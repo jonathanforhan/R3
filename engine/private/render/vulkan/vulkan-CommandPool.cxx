@@ -1,10 +1,10 @@
 #if R3_VULKAN
 
-#include "render/CommandPool.hxx"
+#include "render/CommandPool.hpp"
 
 #include <vulkan/vulkan.hpp>
 #include "api/Ensure.hpp"
-#include "render/LogicalDevice.hxx"
+#include "render/LogicalDevice.hpp"
 
 namespace R3 {
 

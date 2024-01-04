@@ -1,14 +1,14 @@
 #if R3_VULKAN
 
-#include "render/Image.hxx"
+#include "render/Image.hpp"
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "render/CommandPool.hxx"
-#include "render/DeviceMemory.hxx"
-#include "render/LogicalDevice.hxx"
-#include "render/PhysicalDevice.hxx"
-#include "render/Swapchain.hxx"
+#include "render/CommandPool.hpp"
+#include "render/DeviceMemory.hpp"
+#include "render/LogicalDevice.hpp"
+#include "render/PhysicalDevice.hpp"
+#include "render/Swapchain.hpp"
 
 namespace R3 {
 
