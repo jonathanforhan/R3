@@ -101,6 +101,8 @@ bool Model::parseGLB(std::ifstream& ifs) {
         LOG(Error, "invalid chunk header type");
         ENSURE(false);
     }
+
+    return true;
 }
 
 bool Model::parseGLTF(std::ifstream& ifs) {
@@ -205,9 +207,11 @@ void Model::populateAccessors() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itAccessor.HasMember("extras")) {
             accessor.extras = std::move(itAccessor["extras"]);
         }
+#endif
     }
 }
 
@@ -242,9 +246,11 @@ void Model::populateAnimations() {
                 }
 
                 // extras
+#if R3_GLTF_JSON_EXTRAS
                 if (jsTarget.HasMember("extras")) {
                     channel.extras = std::move(jsTarget["extras"]);
                 }
+#endif
             }
 
             // extensions
@@ -253,9 +259,11 @@ void Model::populateAnimations() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (itChannel.HasMember("extras")) {
                 channel.extras = std::move(itChannel["extras"]);
             }
+#endif
         }
 
         // samplers
@@ -277,9 +285,11 @@ void Model::populateAnimations() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (itSampler.HasMember("extras")) {
                 sampler.extras = std::move(itSampler["extras"]);
             }
+#endif
         }
 
         // name
@@ -291,9 +301,11 @@ void Model::populateAnimations() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itAnimation.HasMember("extras")) {
             animation.extras = std::move(itAnimation["extras"]);
         }
+#endif
     }
 }
 
@@ -317,9 +329,11 @@ void Model::populateAsset() {
     }
 
     // extras
+#if R3_GLTF_JSON_EXTRAS
     if (jsAsset.HasMember("extras")) {
         asset.extras = std::move(jsAsset["extras"]);
     }
+#endif
 }
 
 void Model::populateBuffers() {
@@ -345,9 +359,11 @@ void Model::populateBuffers() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itBuffer.HasMember("extras")) {
             buffer.extras = std::move(itBuffer["extras"]);
         }
+#endif
 
         /* load in buffer if external file */
         if (!buffer.uri.empty()) {
@@ -400,9 +416,11 @@ void Model::populateBufferViews() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itBufferView.HasMember("extras")) {
             bufferView.extras = std::move(itBufferView["extras"]);
         }
+#endif
     }
 }
 
@@ -439,9 +457,11 @@ void Model::populateImages() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itImage.HasMember("extras")) {
             image.extras = std::move(itImage["extras"]);
         }
+#endif
     }
 }
 
@@ -490,9 +510,11 @@ void Model::populateMaterials() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (jsPbr.HasMember("extras")) {
                 pbrMetallicRoughness.metallicRoughnessTexture->extras = std::move(jsPbr["extras"]);
             }
+#endif
         }
 
         // normalTexture
@@ -516,9 +538,11 @@ void Model::populateMaterials() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (jsNormal.HasMember("extras")) {
                 normalTexture.extras = std::move(jsNormal["extras"]);
             }
+#endif
         }
 
         // occlusionTexture
@@ -542,9 +566,11 @@ void Model::populateMaterials() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (jsOcclusion.HasMember("extras")) {
                 occlusionTexture.extras = std::move(jsOcclusion["extras"]);
             }
+#endif
         }
 
         // emissiveTexture
@@ -581,9 +607,11 @@ void Model::populateMaterials() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itMaterial.HasMember("extras")) {
             material.extras = std::move(itMaterial["extras"]);
         }
+#endif
     }
 }
 
@@ -624,9 +652,11 @@ void Model::populateMeshes() {
             }
 
             // extras
+#if R3_GLTF_JSON_EXTRAS
             if (itPrimitive.HasMember("extras")) {
                 primitive.extras = std::move(itPrimitive["extras"]);
             }
+#endif
         }
 
         // weights
@@ -645,9 +675,11 @@ void Model::populateMeshes() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itMesh.HasMember("extras")) {
             mesh.extras = std::move(itMesh["extras"]);
         }
+#endif
     }
 }
 
@@ -719,9 +751,11 @@ void Model::populateNodes() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itNode.HasMember("extras")) {
             node.extras = std::move(itNode["extras"]);
         }
+#endif
     }
 }
 
@@ -754,9 +788,11 @@ void Model::populateSamplers() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itSampler.HasMember("extras")) {
             sampler.extras = std::move(itSampler["extras"]);
         }
+#endif
     }
 }
 
@@ -788,9 +824,11 @@ void Model::populateScenes() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itScene.HasMember("extras")) {
             nthScene.extras = std::move(itScene["extras"]);
         }
+#endif
     }
 }
 
@@ -822,9 +860,11 @@ void Model::populateSkins() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itSkin.HasMember("extras")) {
             skin.extras = std::move(itSkin["extras"]);
         }
+#endif
     }
 }
 
@@ -851,9 +891,11 @@ void Model::populateTextures() {
         }
 
         // extras
+#if R3_GLTF_JSON_EXTRAS
         if (itTexture.HasMember("extras")) {
             texture.extras = std::move(itTexture["extras"]);
         }
+#endif
     }
 }
 
@@ -866,11 +908,13 @@ void Model::populateExtensions() {
 }
 
 void Model::populateExtras() {
+#if R3_GLTF_JSON_EXTRAS
     if (!m_document.HasMember("extras")) {
         return;
     }
 
     extras = std::move(m_document["extras"]);
+#endif
 }
 
 void Model::populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value) {
@@ -886,9 +930,11 @@ void Model::populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& valu
     }
 
     // extras
+#if R3_GLTF_JSON_EXTRAS
     if (value.HasMember("extras")) {
         textureInfo.extras = std::move(value["extras"]);
     }
+#endif
 }
 
 void Model::checkVersion(std::string_view version) const {
