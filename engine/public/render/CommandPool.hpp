@@ -3,8 +3,6 @@
 /// @brief Pool from which CommandBuffers are allocated
 /// A thread can only write to 1 CommandPool at a time, so a thread has a CommandPool each
 
-#include <span>
-#include <vector>
 #include "render/CommandBuffer.hpp"
 #include "render/RenderApi.hpp"
 

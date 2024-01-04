@@ -2,8 +2,6 @@
 
 /// Abstraction over Graphics Hardware
 
-#include <span>
-#include <vector>
 #include "render/RenderApi.hpp"
 
 namespace R3 {

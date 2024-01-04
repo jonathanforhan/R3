@@ -2,7 +2,6 @@
 
 /// @brief Provides Shader Layout info for rendering
 
-#include <span>
 #include "render/RenderApi.hpp"
 
 namespace R3 {

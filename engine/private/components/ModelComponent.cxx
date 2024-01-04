@@ -8,17 +8,17 @@ namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& path) {
     EngineInstance->renderer().modelLoader().load(path, *this);
-    if (!m_keyFrames.empty()) {
+    if (!keyFrames.empty()) {
         Scene::addSystem<AnimationSystem>();
 
-        for (auto& keyFrame : m_keyFrames) {
+        for (auto& keyFrame : keyFrames) {
             maxTime = std::max(keyFrame.timestamp, maxTime);
         }
     }
 }
 
 ModelComponent::~ModelComponent() {
-    for (auto& mesh : m_meshes) {
+    for (auto& mesh : meshes) {
         mesh.destroy(CurrentScene);
     }
 }

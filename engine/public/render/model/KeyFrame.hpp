@@ -9,7 +9,7 @@ struct R3_API KeyFrame {
     enum ModifierType { Translation, Rotation, Scale };
 
     float timestamp;
-    usize node;
+    usize node = undefined;
     ModifierType modifierType;
     std::variant<vec3, quat> modifier;
 };

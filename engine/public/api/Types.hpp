@@ -5,6 +5,10 @@
 
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
 #include "api/Api.hpp"
 #include "api/Construct.hpp"
 
@@ -16,6 +20,7 @@ static constexpr struct {
     consteval operator T() const {
         return ~T{};
     }
+
     constexpr bool operator==(std::integral auto x) const { return x == ~decltype(x){}; }
     constexpr bool operator!=(std::integral auto x) const { return x != ~decltype(x){}; }
 } undefined;

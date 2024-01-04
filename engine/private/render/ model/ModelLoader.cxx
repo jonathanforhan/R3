@@ -1,4 +1,4 @@
-#include "render/ModelLoader.hpp"
+#include "render/model/ModelLoader.hpp"
 
 #include <R3>
 #include "ResourceManager.hxx"
@@ -66,63 +66,25 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         mesh.indexBuffer = prototype.indexBuffer;
 
         // Descriptor Set Layout Bindings
-        std::vector<DescriptorSetLayoutBinding> layoutBindings = {
-            {
-                // Uniform Buffer Object
-                .binding = 0,
-                .type = DescriptorType::UniformBuffer,
-                .count = 1,
-                .stage = ShaderStage::Vertex,
-            },
-            {
-                // Albedo
-                .binding = 1,
-                .type = DescriptorType::CombinedImageSampler,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // Metallic Roughness
-                .binding = 2,
-                .type = DescriptorType::CombinedImageSampler,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // Normal
-                .binding = 3,
-                .type = DescriptorType::CombinedImageSampler,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // Ambient Occlusion
-                .binding = 4,
-                .type = DescriptorType::CombinedImageSampler,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // Emissive
-                .binding = 5,
-                .type = DescriptorType::CombinedImageSampler,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // Lighting
-                .binding = 6,
-                .type = DescriptorType::UniformBuffer,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
-            {
-                // MousePicker
-                .binding = 7,
-                .type = DescriptorType::StorageBuffer,
-                .count = 1,
-                .stage = ShaderStage::Fragment,
-            },
+        static const std::vector<DescriptorSetLayoutBinding> layoutBindings = {
+            // { binding, type, count, stage }
+
+            // Uniform Buffer Object
+            {0, DescriptorType::UniformBuffer, 1, ShaderStage::Vertex},
+            // Albedo
+            {1, DescriptorType::CombinedImageSampler, 1, ShaderStage::Fragment},
+            // Metallic Roughness
+            {2, DescriptorType::CombinedImageSampler, 1, ShaderStage::Fragment},
+            // Normal
+            {3, DescriptorType::CombinedImageSampler, 1, ShaderStage::Fragment},
+            // Ambient Occlusion
+            {4, DescriptorType::CombinedImageSampler, 1, ShaderStage::Fragment},
+            // Emissive
+            {5, DescriptorType::CombinedImageSampler, 1, ShaderStage::Fragment},
+            // Lighting
+            {6, DescriptorType::UniformBuffer, 1, ShaderStage::Fragment},
+            // MousePicker
+            {7, DescriptorType::StorageBuffer, 1, ShaderStage::Fragment},
         };
 
         // Descriptor Pool
@@ -228,10 +190,10 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             descriptorSets[i].bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
         }
 
-        model.m_meshes.emplace_back(std::move(mesh));
+        model.meshes.emplace_back(std::move(mesh));
     }
 
-    model.m_keyFrames = std::move(m_keyFrames);
+    model.keyFrames = std::move(m_keyFrames);
 
     // save for reuse
     m_prototypes.clear();

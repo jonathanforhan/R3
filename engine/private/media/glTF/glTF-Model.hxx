@@ -1,8 +1,6 @@
 #pragma once
 
 #include <fstream>
-#include <string_view>
-#include <vector>
 #include "api/Types.hpp"
 #include "glTF.hxx"
 

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <span>
-#include <vector>
 #include "render/Image.hpp"
 #include "render/ImageView.hpp"
 #include "render/RenderApi.hpp"

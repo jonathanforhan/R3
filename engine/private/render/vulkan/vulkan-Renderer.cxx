@@ -261,7 +261,7 @@ void Renderer::render() {
 
     // draw every mesh of every model
     auto draw = [&](auto entity, const TransformComponent& transform, const ModelComponent& model) {
-        for (const Mesh& mesh : model.meshes()) {
+        for (const Mesh& mesh : model.meshes) {
             auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
 
             auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);

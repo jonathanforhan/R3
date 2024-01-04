@@ -2,9 +2,7 @@
 
 /// Owned by Renderer and used to load in assets
 
-#include <string>
 #include <unordered_map>
-#include <vector>
 #include "components/ModelComponent.hpp"
 #include "render/IndexBuffer.hpp"
 #include "render/RenderApi.hpp"

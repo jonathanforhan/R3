@@ -2,7 +2,6 @@
 
 #include <mutex>
 #include <unordered_set>
-#include <vector>
 #include "render/DescriptorPool.hpp"
 #include "render/GraphicsPipeline.hpp"
 #include "render/IndexBuffer.hpp"

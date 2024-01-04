@@ -2,7 +2,6 @@
 
 /// @brief Conatains Handle to DeviceMemory where data is stored
 
-#include <span>
 #include "render/Buffer.hpp"
 #include "render/RenderApi.hpp"
 

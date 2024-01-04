@@ -3,7 +3,6 @@
 #include <R3>
 #include <entt/entt.hpp>
 #include <queue>
-#include <span>
 #include "core/Engine.hpp"
 #include "input/Event.hpp"
 #include "systems/System.hpp"

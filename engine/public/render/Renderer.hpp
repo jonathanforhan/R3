@@ -20,7 +20,6 @@
 #include "render/Framebuffer.hpp"
 #include "render/Instance.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/ModelLoader.hpp"
 #include "render/PhysicalDevice.hpp"
 #include "render/RenderApi.hpp"
 #include "render/RenderPass.hpp"
@@ -30,6 +29,7 @@
 #include "render/Surface.hpp"
 #include "render/Swapchain.hpp"
 #include "render/Window.hpp"
+#include "render/model/ModelLoader.hpp"
 
 namespace R3 {
 

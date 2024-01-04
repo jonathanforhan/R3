@@ -1,8 +1,5 @@
 #pragma once
 
-#include <span>
-#include <string_view>
-#include <vector>
 #include "render/RenderApi.hpp"
 
 /// @def R3_VALIDATION_LAYERS_ENABLED

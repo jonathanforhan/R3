@@ -1,7 +1,6 @@
 #pragma once
 
 #include <R3>
-#include <vector>
 #include "render/RenderApi.hpp"
 #include "render/ShaderObjects.hpp"
 

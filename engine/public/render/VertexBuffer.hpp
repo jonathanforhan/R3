@@ -1,6 +1,5 @@
 #pragma once
 
-#include <span>
 #include "render/Buffer.hpp"
 #include "render/RenderApi.hpp"
 #include "render/ShaderObjects.hpp"

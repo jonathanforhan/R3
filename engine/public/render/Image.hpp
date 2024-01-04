@@ -2,7 +2,6 @@
 
 /// @brief Encompasses all Image operations like allocateion, copy, transition etc
 
-#include <vector>
 #include "render/RenderApi.hpp"
 
 namespace R3 {

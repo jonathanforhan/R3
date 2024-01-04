@@ -3,7 +3,6 @@
 #include "render/Shader.hpp"
 
 #include <fstream>
-#include <vector>
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"

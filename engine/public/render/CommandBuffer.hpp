@@ -2,8 +2,6 @@
 
 /// CommandBuffer is used to store commands, operations or recorded on them and them sumbitted to a queue
 
-#include <span>
-#include <vector>
 #include "render/Fence.hpp"
 #include "render/RenderApi.hpp"
 

@@ -4,7 +4,6 @@
 
 #include <rapidjson/document.h>
 #include <optional>
-#include <vector>
 #include "api/Types.hpp"
 
 #if R3_GLTF_JSON_EXTRAS
@@ -93,76 +92,76 @@
 
 namespace R3::glTF {
 
-constexpr auto HEADER_MAGIC = 0x46546C67;
+static constexpr auto HEADER_MAGIC = 0x46546C67;
 
-constexpr auto CHUNK_TYPE_JSON = 0x4E4F534A;
-constexpr auto CHUNK_TYPE_BIN = 0x004E4942;
+static constexpr auto CHUNK_TYPE_JSON = 0x4E4F534A;
+static constexpr auto CHUNK_TYPE_BIN = 0x004E4942;
 
-constexpr auto BYTE = 5120;
-constexpr auto UNSIGNED_BYTE = 5121;
-constexpr auto SHORT = 5122;
-constexpr auto UNSIGNED_SHORT = 5123;
-constexpr auto INT = 5124;
-constexpr auto UNSIGNED_INT = 5125;
-constexpr auto FLOAT = 5126;
+static constexpr auto BYTE = 5120;
+static constexpr auto UNSIGNED_BYTE = 5121;
+static constexpr auto SHORT = 5122;
+static constexpr auto UNSIGNED_SHORT = 5123;
+static constexpr auto INT = 5124;
+static constexpr auto UNSIGNED_INT = 5125;
+static constexpr auto FLOAT = 5126;
 
-constexpr auto SCALAR = "SCALAR";
-constexpr auto VEC2 = "VEC2";
-constexpr auto VEC3 = "VEC3";
-constexpr auto VEC4 = "VEC4";
-constexpr auto MAT2 = "MAT2";
-constexpr auto MAT3 = "MAT3";
-constexpr auto MAT4 = "MAT4";
+static constexpr auto SCALAR = "SCALAR";
+static constexpr auto VEC2 = "VEC2";
+static constexpr auto VEC3 = "VEC3";
+static constexpr auto VEC4 = "VEC4";
+static constexpr auto MAT2 = "MAT2";
+static constexpr auto MAT3 = "MAT3";
+static constexpr auto MAT4 = "MAT4";
 
-constexpr auto POINTS = 0;
-constexpr auto LINES = 1;
-constexpr auto LINE_LOOP = 2;
-constexpr auto LINE_STRIP = 3;
-constexpr auto TRIANGLES = 4;
-constexpr auto TRIANGLE_STRIP = 5;
-constexpr auto TRIANGLE_FAN = 6;
+static constexpr auto POINTS = 0;
+static constexpr auto LINES = 1;
+static constexpr auto LINE_LOOP = 2;
+static constexpr auto LINE_STRIP = 3;
+static constexpr auto TRIANGLES = 4;
+static constexpr auto TRIANGLE_STRIP = 5;
+static constexpr auto TRIANGLE_FAN = 6;
 
-constexpr auto NEAREST = 9728;
-constexpr auto LINEAR = 9729;
-constexpr auto NEAREST_MIPMAP_NEAREST = 9984;
-constexpr auto LINEAR_MIPMAP_NEAREST = 9985;
-constexpr auto NEAREST_MIPMAP_LINEAR = 9986;
-constexpr auto LINEAR_MIPMAP_LINEAR = 9987;
+static constexpr auto NEAREST = 9728;
+static constexpr auto LINEAR = 9729;
+static constexpr auto NEAREST_MIPMAP_NEAREST = 9984;
+static constexpr auto LINEAR_MIPMAP_NEAREST = 9985;
+static constexpr auto NEAREST_MIPMAP_LINEAR = 9986;
+static constexpr auto LINEAR_MIPMAP_LINEAR = 9987;
 
-constexpr auto CLAMP_TO_EDGE = 33071;
-constexpr auto MIRRORED_REPEAT = 33648;
-constexpr auto REPEAT = 10497;
+static constexpr auto CLAMP_TO_EDGE = 33071;
+static constexpr auto MIRRORED_REPEAT = 33648;
+static constexpr auto REPEAT = 10497;
 
-constexpr auto ARRAY_BUFFER = 34962;
-constexpr auto ELEMENT_ARRAY_BUFFER = 34963;
+static constexpr auto ARRAY_BUFFER = 34962;
+static constexpr auto ELEMENT_ARRAY_BUFFER = 34963;
 
-constexpr auto POSITION = "POSITION";
-constexpr auto NORMAL = "NORMAL";
-constexpr auto TANGENT = "TANGENT";
-constexpr auto TEXCOORD_0 = "TEXCOORD_0";
-constexpr auto TEXCOORD_1 = "TEXCOORD_1";
-constexpr auto TEXCOORD_2 = "TEXCOORD_2";
-constexpr auto TEXCOORD_3 = "TEXCOORD_3";
-constexpr auto COLOR_0 = "COLOR_0";
-constexpr auto COLOR_1 = "COLOR_1";
-constexpr auto COLOR_2 = "COLOR_2";
-constexpr auto COLOR_3 = "COLOR_3";
-constexpr auto JOINTS_0 = "JOINTS_0";
-constexpr auto JOINTS_1 = "JOINTS_1";
-constexpr auto JOINTS_2 = "JOINTS_2";
-constexpr auto JOINTS_3 = "JOINTS_3";
-constexpr auto WEIGHTS_0 = "WEIGHTS_0";
-constexpr auto WEIGHTS_1 = "WEIGHTS_1";
-constexpr auto WEIGHTS_2 = "WEIGHTS_2";
-constexpr auto WEIGHTS_3 = "WEIGHTS_3";
+static constexpr auto POSITION = "POSITION";
+static constexpr auto NORMAL = "NORMAL";
+static constexpr auto TANGENT = "TANGENT";
+static constexpr auto TEXCOORD_0 = "TEXCOORD_0";
+static constexpr auto TEXCOORD_1 = "TEXCOORD_1";
+static constexpr auto TEXCOORD_2 = "TEXCOORD_2";
+static constexpr auto TEXCOORD_3 = "TEXCOORD_3";
+static constexpr auto COLOR_0 = "COLOR_0";
+static constexpr auto COLOR_1 = "COLOR_1";
+static constexpr auto COLOR_2 = "COLOR_2";
+static constexpr auto COLOR_3 = "COLOR_3";
+static constexpr auto JOINTS_0 = "JOINTS_0";
+static constexpr auto JOINTS_1 = "JOINTS_1";
+static constexpr auto JOINTS_2 = "JOINTS_2";
+static constexpr auto JOINTS_3 = "JOINTS_3";
+static constexpr auto WEIGHTS_0 = "WEIGHTS_0";
+static constexpr auto WEIGHTS_1 = "WEIGHTS_1";
+static constexpr auto WEIGHTS_2 = "WEIGHTS_2";
+static constexpr auto WEIGHTS_3 = "WEIGHTS_3";
 
-constexpr auto OPAQUE = "OPAQUE";
-constexpr auto MASK = "MASK";
-constexpr auto BLEND = "BLEND";
+static constexpr auto OPAQUE = "OPAQUE";
+static constexpr auto MASK = "MASK";
+static constexpr auto BLEND = "BLEND";
 
-constexpr auto SAMPLER_LINEAR = "LINEAR";
-constexpr auto SAMPLER_STEP = "STEP";
-constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
+static constexpr auto SAMPLER_LINEAR = "LINEAR";
+static constexpr auto SAMPLER_STEP = "STEP";
+static constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
 struct Header {
