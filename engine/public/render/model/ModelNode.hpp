@@ -5,10 +5,10 @@
 namespace R3 {
 
 struct R3_API ModelNode {
-    usize skin;
-    usize mesh;
+    uint32 skin;
+    uint32 mesh;
     std::vector<float> weights;
-    std::vector<ModelNode> children;
+    std::vector<uint32> children;
 };
 
 } // namespace R3

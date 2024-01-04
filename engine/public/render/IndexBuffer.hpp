@@ -43,7 +43,4 @@ private:
     uint32 m_indexCount = 0;
 };
 
-extern template class IndexBuffer<uint32>; ///< Forward Declaration
-extern template class IndexBuffer<uint16>; ///< Forward Declaration
-
 } // namespace R3

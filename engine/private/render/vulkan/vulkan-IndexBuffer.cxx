@@ -63,8 +63,8 @@ IndexBuffer<T>::~IndexBuffer() {
     }
 }
 
-template class IndexBuffer<uint32>;
-template class IndexBuffer<uint16>;
+template class R3_API IndexBuffer<uint32>;
+template class R3_API IndexBuffer<uint16>;
 
 } // namespace R3
 

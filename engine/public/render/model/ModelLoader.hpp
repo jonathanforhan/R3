@@ -4,10 +4,7 @@
 
 #include <unordered_map>
 #include "components/ModelComponent.hpp"
-#include "render/IndexBuffer.hpp"
 #include "render/RenderApi.hpp"
-#include "render/TextureBuffer.hpp"
-#include "render/VertexBuffer.hpp"
 
 namespace R3 {
 
@@ -18,14 +15,14 @@ struct Material;             ///< @private
 struct TextureInfo;          ///< @private
 struct NormalTextureInfo;    ///< @private
 struct OcclusionTextureInfo; ///< @private
+struct Skin;                 ///< @private
 class Model;                 ///< @private
 } // namespace glTF
 
-/// @brief Prototype used to build meshes
 struct MeshPrototype {
-    VertexBuffer::ID vertexBuffer;       ///< Allocated VertexBuffer
-    IndexBuffer<uint32>::ID indexBuffer; ///< Allocated IndexBuffer
-    std::vector<usize> textureIndices;   ///< index of model-loader interal textures, not global pool
+    id vertexBuffer = undefined;
+    id indexBuffer = undefined;
+    std::vector<id> textureIndices;
 };
 
 /// @brief Model Loader Specification
@@ -56,8 +53,9 @@ public:
     void load(const std::string& path, ModelComponent& model);
 
 private:
-    void processNode(glTF::Model* model, glTF::Node* node, uint32 nodeId);
-    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh, uint32 nodeId);
+    void processNode(glTF::Model* model, glTF::Node* node);
+    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh);
+    void processSkin(glTF::Model* model, glTF::Skin* skin);
     void processMaterial(glTF::Model* model, glTF::Material* material);
     void processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type);
     void processTexture(glTF::Model* model, glTF::NormalTextureInfo* textureInfo, TextureType type);
@@ -72,10 +70,12 @@ private:
     Ref<const CommandPool> m_commandPool;
     Ref<const StorageBuffer> m_storageBuffer;
 
+    std::vector<ModelNode> m_nodes;
     std::vector<MeshPrototype> m_prototypes;
-    std::vector<TextureBuffer::ID> m_textures;
     std::vector<KeyFrame> m_keyFrames;
-    std::unordered_map<usize, usize> m_nodeIdToMeshIndex;
+    std::vector<Skin> m_skins;
+    std::vector<id> m_textures;
+
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
 };
