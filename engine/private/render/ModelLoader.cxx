@@ -3,6 +3,7 @@
 #include <R3>
 #include "ResourceManager.hxx"
 #include "core/Scene.hpp"
+#include "media/glTF/glTF-Extensions.hxx"
 #include "media/glTF/glTF-Model.hxx"
 #include "private/render/ResourceManager.hxx"
 #include "render/CommandPool.hpp"
@@ -173,7 +174,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             }
         }
 
-        const uint32 data = 0x0000'0000;
+        const uint32 data = 0x00FF'FFFF; // forfills glTF spec of white base color on missing pbrMetallicRoughness
         const TextureBufferSpecification nilTextureSpec = {
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
@@ -367,27 +368,38 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 }
 
 void ModelLoader::processMaterial(glTF::Model* model, glTF::Material* material) {
-    if (material->pbrMetallicRoughness) {
-        if (material->emissiveTexture) {
-            processTexture(model, &*material->emissiveTexture, TextureType::Emissive);
-        }
+    int32 pbrSpecularGlossiness_ExtensionIndex = -1;
 
-        if (material->occlusionTexture) {
-            processTexture(model, &*material->occlusionTexture, TextureType::AmbientOcclusion);
+    for (int32 i = 0; auto& extension : material->extensions) {
+        if (std::strcmp(extension->name, glTF::EXTENSION_KHR_materials_pbrSpecularGlossiness) == 0) {
+            pbrSpecularGlossiness_ExtensionIndex = i;
         }
+        i++;
+    }
 
-        if (material->normalTexture) {
-            processTexture(model, &*material->normalTexture, TextureType::Normal);
-        }
+    if (material->emissiveTexture) {
+        processTexture(model, &material->emissiveTexture.value(), TextureType::Emissive);
+    }
 
-        if (material->pbrMetallicRoughness->metallicRoughnessTexture) {
-            processTexture(
-                model, &*material->pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness);
-        }
+    if (material->occlusionTexture) {
+        processTexture(model, &material->occlusionTexture.value(), TextureType::AmbientOcclusion);
+    }
 
-        if (material->pbrMetallicRoughness->baseColorTexture) {
-            processTexture(model, &*material->pbrMetallicRoughness->baseColorTexture, TextureType::Albedo);
-        }
+    if (material->normalTexture) {
+        processTexture(model, &material->normalTexture.value(), TextureType::Normal);
+    }
+
+    if (material->pbrMetallicRoughness.metallicRoughnessTexture) {
+        processTexture(
+            model, &material->pbrMetallicRoughness.metallicRoughnessTexture.value(), TextureType::MetallicRoughness);
+    }
+
+    if (material->pbrMetallicRoughness.baseColorTexture) {
+        processTexture(model, &*material->pbrMetallicRoughness.baseColorTexture, TextureType::Albedo);
+    } else if (pbrSpecularGlossiness_ExtensionIndex >= 0) {
+        auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)&*material
+                        ->extensions[pbrSpecularGlossiness_ExtensionIndex]; processTexture(
+                            model, &ext->diffuseTexture.value(), TextureType::Albedo);
     }
 }
 

@@ -4,34 +4,12 @@
 #include "api/Ensure.hpp"
 #include "api/Log.hpp"
 #include "api/Version.hpp"
+#include "glTF-Extensions.hxx"
+#include "glTF-Util.hxx"
 
 using namespace rapidjson;
 
 namespace R3::glTF {
-
-template <typename T>
-static constexpr void maybeAssign(T& dst, const Value& value, const char* key) {
-    if (!value.HasMember(key))
-        return;
-
-    if constexpr (std::is_same_v<T, bool>) {
-        dst = value[key].GetBool();
-    } else if constexpr (std::is_same_v<T, uint32>) {
-        dst = value[key].GetUint();
-    } else if constexpr (std::is_same_v<T, int32>) {
-        dst = value[key].GetInt();
-    } else if constexpr (std::is_same_v<T, uint64>) {
-        dst = value[key].GetUint64();
-    } else if constexpr (std::is_same_v<T, int64>) {
-        dst = value[key].GetInt64();
-    } else if constexpr (std::is_same_v<T, float>) {
-        dst = value[key].GetFloat();
-    } else if constexpr (std::is_same_v<T, double>) {
-        dst = value[key].GetDouble();
-    } else if constexpr (std::is_same_v<T, std::string>) {
-        dst = value[key].GetString();
-    }
-}
 
 Model::Model(std::string_view path)
     : m_path(path) {
@@ -45,12 +23,12 @@ Model::Model(std::string_view path)
 
     populateRoot();
 
-    LOG(Verbose, "//--- Extensions Used ---//");
+    LOG(Verbose, "--- Extensions Used ---");
     for (auto& extension : extensionsUsed) {
         LOG(Verbose, "\t-", extension);
     }
 
-    LOG(Verbose, "//--- Extensions Required ---//");
+    LOG(Verbose, "--- Extensions Required ---");
     for (auto& extension : extensionsRequired) {
         LOG(Verbose, "\t-", extension);
     }
@@ -477,7 +455,7 @@ void Model::populateMaterials() {
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
             auto& jsPbr = itMaterial["pbrMetallicRoughness"];
             material.pbrMetallicRoughness = PBRMetallicRoughness{};
-            PBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
+            PBRMetallicRoughness& pbrMetallicRoughness = material.pbrMetallicRoughness;
 
             // baseColorFactor
             if (jsPbr.HasMember("baseColorFactor")) {
@@ -603,7 +581,12 @@ void Model::populateMaterials() {
 
         // extensions
         if (itMaterial.HasMember("extensions")) {
-            material.extensions = std::move(itMaterial["extensions"]);
+            auto& jsExtensions = itMaterial["extensions"];
+            if (jsExtensions.HasMember(EXTENSION_KHR_materials_pbrSpecularGlossiness)) {
+                material.extensions.emplace_back(new KHR_materials_pbrSpecularGlossiness);
+                KHR_materials_pbrSpecularGlossiness::parse(material.extensions.back().get(),
+                                                           jsExtensions[EXTENSION_KHR_materials_pbrSpecularGlossiness]);
+            }
         }
 
         // extras
@@ -914,26 +897,6 @@ void Model::populateExtras() {
     }
 
     extras = std::move(m_document["extras"]);
-#endif
-}
-
-void Model::populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value) {
-    // index
-    textureInfo.index = value["index"].GetUint();
-
-    // texCoord
-    maybeAssign(textureInfo.texCoord, value, "texCoord");
-
-    // extensions
-    if (value.HasMember("extensions")) {
-        textureInfo.extensions = std::move(value["extensions"]);
-    }
-
-    // extras
-#if R3_GLTF_JSON_EXTRAS
-    if (value.HasMember("extras")) {
-        textureInfo.extras = std::move(value["extras"]);
-    }
 #endif
 }
 

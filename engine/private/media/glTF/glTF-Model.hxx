@@ -1,4 +1,5 @@
 #pragma once
+
 #include <fstream>
 #include <string_view>
 #include <vector>
@@ -39,9 +40,6 @@ private:
     void populateTextures();
     void populateExtensions();
     void populateExtras();
-
-    // helper populates
-    void populateTextureInfo(TextureInfo& textureInfo, rapidjson::Value& value);
 
     void checkVersion(std::string_view version) const;
     void checkVersion(uint32 major, uint32 minor) const;
