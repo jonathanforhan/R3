@@ -24,6 +24,7 @@ static usize datatypeSize(uint32 datatype) {
         case glTF::SHORT:
             return sizeof(uint16);
         case glTF::UNSIGNED_INT:
+        case glTF::INT:
             return sizeof(uint32);
         case glTF::FLOAT:
             return sizeof(float);
@@ -53,7 +54,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
-            LOG(Info, iNode);
             processNode(gltf, gltf.nodes[iNode]);
         }
     }
@@ -421,11 +421,36 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
 
     if (material.pbrMetallicRoughness.baseColorTexture) {
         processTexture(model, *material.pbrMetallicRoughness.baseColorTexture, TextureType::Albedo);
+    } else if (material.pbrMetallicRoughness.baseColorFactor[0] != 1.0f ||
+               material.pbrMetallicRoughness.baseColorFactor[1] != 1.0f ||
+               material.pbrMetallicRoughness.baseColorFactor[2] != 1.0f ||
+               material.pbrMetallicRoughness.baseColorFactor[3] != 1.0f) {
+        uint8 color[4] = {
+            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[0] * 255.0f),
+            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[1] * 255.0f),
+            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[2] * 255.0f),
+            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[3] * 255.0f),
+        };
+        processTexture(model, color, TextureType::Albedo);
     } else if (pbrSpecularGlossiness_ExtensionIndex != undefined) {
         auto* ext =
             (glTF::KHR_materials_pbrSpecularGlossiness*)&*material.extensions[pbrSpecularGlossiness_ExtensionIndex];
         processTexture(model, *ext->diffuseTexture, TextureType::Albedo);
     }
+}
+
+void ModelLoader::processTexture(glTF::Model& model, uint8 color[4], TextureType type) {
+    m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
+
+    m_textures.push_back(resourceManager->allocateTexture({
+        .physicalDevice = *m_physicalDevice,
+        .logicalDevice = *m_logicalDevice,
+        .commandBuffer = m_commandPool->commandBuffers().front(),
+        .width = 1,
+        .height = 1,
+        .raw = std::bit_cast<const std::byte*>(color),
+        .type = type,
+    }));
 }
 
 void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type) {

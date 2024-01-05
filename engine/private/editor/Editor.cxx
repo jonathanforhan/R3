@@ -142,7 +142,7 @@ void Editor::displayHierarchy() {
 
 void Editor::displayProperties() {
     if (ImGui::Begin("Properties")) {
-        if (m_currentEntity != ~uuid32(0)) {
+        if (m_currentEntity != undefined) {
             EntityView entityView(uuid32(m_currentEntity), CurrentScene);
 
             auto* maybeEditorComponent = entityView.tryGet<EditorComponent>();

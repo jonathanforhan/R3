@@ -59,6 +59,7 @@ private:
     void processSkin(glTF::Model& model, glTF::Skin& skin);
     void processKeyFrames(glTF::Model& model);
     void processMaterial(glTF::Model& model, glTF::Material& material);
+    void processTexture(glTF::Model& model, uint8 color[4], TextureType type);
     void processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type);
     void processTexture(glTF::Model& model, glTF::NormalTextureInfo& textureInfo, TextureType type);
     void processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type);

@@ -262,7 +262,7 @@ void Renderer::render() {
     // draw every mesh of every model
     auto draw = [&](auto entity, const TransformComponent& transform, const ModelComponent& model) {
         for (const Mesh& mesh : model.meshes) {
-            auto* resourceManager = reinterpret_cast<ResourceManager*>(CurrentScene->resourceManager);
+            auto* resourceManager = static_cast<ResourceManager*>(CurrentScene->resourceManager);
 
             auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);
             auto& uniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame]);
@@ -362,7 +362,7 @@ uuid32 Renderer::getHoveredEntity() const {
         }
     }
 
-    return ~uuid32(0);
+    return undefined;
 }
 
 void Renderer::renderEditorInterface(double dt) {
