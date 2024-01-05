@@ -17,8 +17,8 @@ struct R3_API TextureBufferSpecification {
     const CommandBuffer& commandBuffer;   ///< CommandBuffer
     uint32 width;                         ///< Texture width (ignored if path is null)
     uint32 height;                        ///< Texture height (ignored if path is null)
-    const uint8* data;                    ///< Texture compressed data (exclusive)
-    const uint8* raw;                     ///< Texture raw data (exclusive)
+    const std::byte* data;                ///< Texture compressed data (exclusive)
+    const std::byte* raw;                 ///< Texture raw data (exclusive)
     const char* path;                     ///< Texture filepath (exclusive)
     TextureType type;                     ///< TextureType
 };
@@ -45,7 +45,7 @@ private:
     Ref<const LogicalDevice> m_logicalDevice;
     ImageView m_imageView;
     Sampler m_sampler;
-    TextureType m_type;
+    TextureType m_type = {};
 };
 
 } // namespace R3

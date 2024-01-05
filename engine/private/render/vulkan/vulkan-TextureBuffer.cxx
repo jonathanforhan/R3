@@ -31,14 +31,15 @@ TextureBuffer::TextureBuffer(const TextureBufferSpecification& spec)
     int32 channels = 4;
     const int32 len = spec.height ? spec.width * spec.height : spec.width;
 
-    const uint8* bytes = nullptr;
+    const std::byte* bytes = nullptr;
 
     if (spec.path) {
         // modifies defaults
-        bytes = stbi_load(spec.path, &w, &h, &channels, 0);
+        bytes = std::bit_cast<const std::byte*>(stbi_load(spec.path, &w, &h, &channels, 0));
     } else if (spec.data) {
         // modifies defaults
-        bytes = stbi_load_from_memory((const stbi_uc*)spec.data, len, &w, &h, &channels, 0);
+        bytes = std::bit_cast<const std::byte*>(
+            stbi_load_from_memory(std::bit_cast<const stbi_uc*>(spec.data), len, &w, &h, &channels, 0));
     } else if (spec.raw) {
         bytes = spec.raw;
     }

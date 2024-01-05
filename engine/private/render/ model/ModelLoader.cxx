@@ -163,7 +163,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .commandBuffer = m_commandPool->commandBuffers().front(),
             .width = 1,
             .height = 1,
-            .raw = (const uint8*)&data,
+            .raw = std::bit_cast<const std::byte*>(&data),
             .type = TextureType::Nil,
         };
 
@@ -274,21 +274,21 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
             switch (n) {
                 case sizeof(uint8):
                     std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = model.buffer()[offset + i * n];
+                        uint32 x = *std::bit_cast<const uint8*>(&model.buffer()[offset + i * n]);
                         i++;
                         return x;
                     });
                     break;
                 case sizeof(uint16):
                     std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = *reinterpret_cast<const uint16*>(&model.buffer()[offset + i * n]);
+                        uint32 x = *std::bit_cast<const uint16*>(&model.buffer()[offset + i * n]);
                         i++;
                         return x;
                     });
                     break;
                 case sizeof(uint32):
                     std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = *reinterpret_cast<const uint32*>(&model.buffer()[offset + i * n]);
+                        uint32 x = *std::bit_cast<const uint32*>(&model.buffer()[offset + i * n]);
                         i++;
                         return x;
                     });
@@ -453,7 +453,7 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureI
             }));
         } else {
             glTF::BufferView& bufferView = model.bufferViews[image.bufferView];
-            const uint8* data = model.buffer().data() + bufferView.byteOffset;
+            const std::byte* data = std::bit_cast<const std::byte*>(&model.buffer()[bufferView.byteOffset]);
 
             m_textures.push_back(resourceManager->allocateTexture({
                 .physicalDevice = *m_physicalDevice,

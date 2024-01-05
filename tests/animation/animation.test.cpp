@@ -26,10 +26,10 @@ R3_DLL void Run() {
         cam.translateBackward(10);
 
         auto& entity = Entity::create<Entity>();
-        // entity.emplace<ModelComponent>("assets/glTF/Models/InterpolationTest/glTF-Binary/InterpolationTest.glb");
+        entity.emplace<ModelComponent>("assets/glTF/Models/InterpolationTest/glTF-Binary/InterpolationTest.glb");
         // entity.emplace<ModelComponent>("assets/glTF/Models/AnimatedCube/glTF/AnimatedCube.gltf");
         // entity.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf");
-        entity.emplace<ModelComponent>("assets/glTF/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+        // entity.emplace<ModelComponent>("assets/glTF/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
         entity.emplace<EditorComponent>().name = "Animation";
     } catch (std::exception const& e) {
         LOG(Error, e.what());
