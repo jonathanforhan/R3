@@ -71,8 +71,8 @@ void AnimationSystem::tick(double dt) {
 
                     quat rot = glm::slerp(last, next, interpolation);
                     mat4 lastMat = glm::mat4_cast(last);
-                    for (int i = 0; i < 4; i++) {
-                        lastMat[i][i] = glm::abs(lastMat[i][i]);
+                    for (int j = 0; j < 4; j++) {
+                        lastMat[j][j] = glm::abs(lastMat[j][j]);
                     }
 
                     mat4 R = lastMat * glm::mat4_cast(rot);

@@ -53,14 +53,14 @@ public:
     void load(const std::string& path, ModelComponent& model);
 
 private:
-    void processNode(glTF::Model* model, glTF::Node* node);
-    void processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* mesh);
-    void processSkin(glTF::Model* model, glTF::Skin* skin);
-    void processKeyFrames(glTF::Model* model);
-    void processMaterial(glTF::Model* model, glTF::Material* material);
-    void processTexture(glTF::Model* model, glTF::TextureInfo* textureInfo, TextureType type);
-    void processTexture(glTF::Model* model, glTF::NormalTextureInfo* textureInfo, TextureType type);
-    void processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type);
+    void processNode(glTF::Model& model, glTF::Node& node);
+    void processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh);
+    void processSkin(glTF::Model& model, glTF::Skin& skin);
+    void processKeyFrames(glTF::Model& model);
+    void processMaterial(glTF::Model& model, glTF::Material& material);
+    void processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type);
+    void processTexture(glTF::Model& model, glTF::NormalTextureInfo& textureInfo, TextureType type);
+    void processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type);
 
 private:
     Ref<const PhysicalDevice> m_physicalDevice;
