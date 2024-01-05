@@ -23,6 +23,7 @@ struct MeshPrototype {
     id vertexBuffer = undefined;
     id indexBuffer = undefined;
     std::vector<id> textureIndices;
+    mat4 transform;
 };
 
 /// @brief Model Loader Specification

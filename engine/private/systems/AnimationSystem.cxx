@@ -38,6 +38,7 @@ void propagateNodeScale(ModelComponent& model, ModelNode& node, const vec3& S) {
 
 void AnimationSystem::tick(double dt) {
     return;
+
     // apply keyframe animations to all models
     auto animate = [&](ModelComponent& model) {
         model.currentTime += float(dt);

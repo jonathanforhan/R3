@@ -53,6 +53,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
+            LOG(Info, iNode);
             processNode(gltf, gltf.nodes[iNode]);
         }
     }
@@ -189,6 +190,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             descriptorSets[i].bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
         }
 
+        mesh.subTransform = prototype.transform;
+
         model.meshes.emplace_back(std::move(mesh));
     }
 
@@ -241,25 +244,16 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
         std::vector<vec3> positions;
         populateVertexAttrib(primitive, positions, glTF::POSITION);
 
-        for (auto& position : positions) {
-            // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
-            // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
-            // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
-            // and then the translation. If none are provided, the transform is the identity. When a node is
-            // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
-            mat4 t = glm::make_mat4(node.matrix);
-
-            vec3 T = vec3(node.translation[0], node.translation[1], node.translation[2]);
-            t = glm::translate(t, T);
-
-            mat4 R = glm::mat4_cast(quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]));
-            t = t * R;
-
-            vec3 S = vec3(node.scale[0], node.scale[1], node.scale[2]);
-            t = glm::scale(t, S);
-
-            position = mat3(t) * position;
-        }
+        // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
+        // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
+        // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
+        // and then the translation. If none are provided, the transform is the identity. When a node is
+        // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
+        mat4 t = glm::make_mat4(node.matrix);
+        mat4 T = glm::translate(mat4(1.0f), vec3(node.translation[0], node.translation[1], node.translation[2]));
+        mat4 R = glm::mat4_cast(quat(node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]));
+        mat4 S = glm::scale(mat4(1.0f), vec3(node.scale[0], node.scale[1], node.scale[2]));
+        t = T * R * S * t;
 
         std::vector<vec3> normals;
         populateVertexAttrib(primitive, normals, glTF::NORMAL);
@@ -276,23 +270,34 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
 
             uint32 offset = accessor.byteOffset + bufferView.byteOffset;
 
-            auto nSize = local::datatypeSize(accessor.componentType);
-            switch (nSize) {
+            usize i = 0, n = local::datatypeSize(accessor.componentType);
+            switch (n) {
                 case sizeof(uint8):
-                    std::generate_n(indices.begin(), accessor.count, [&, i = 0]() mutable -> uint32 {
-                        return *reinterpret_cast<const uint8*>(&model.buffer()[offset + i++ * nSize]);
+                    std::generate_n(indices.begin(), accessor.count, [&] {
+                        uint32 x = model.buffer()[offset + i * n];
+                        i++;
+                        return x;
                     });
                     break;
                 case sizeof(uint16):
-                    std::generate_n(indices.begin(), accessor.count, [&, i = 0]() mutable -> uint32 {
-                        return *reinterpret_cast<const uint16*>(&model.buffer()[offset + i++ * nSize]);
+                    std::generate_n(indices.begin(), accessor.count, [&] {
+                        uint32 x = *reinterpret_cast<const uint16*>(&model.buffer()[offset + i * n]);
+                        i++;
+                        return x;
+                    });
+                    break;
+                case sizeof(uint32):
+                    std::generate_n(indices.begin(), accessor.count, [&] {
+                        uint32 x = *reinterpret_cast<const uint32*>(&model.buffer()[offset + i * n]);
+                        i++;
+                        return x;
                     });
                     break;
                 default:
-                    std::generate_n(indices.begin(), accessor.count, [&, i = 0]() mutable -> uint32 {
-                        return *reinterpret_cast<const uint32*>(&model.buffer()[offset + i++ * nSize]);
-                    });
+                    LOG(Warning, "unknown datatype size");
             }
+        } else {
+            LOG(Verbose, "mesh does not contain indices");
         }
 
         CHECK(primitive.mode == glTF::TRIANGLES);
@@ -300,14 +305,8 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
         std::vector<Vertex> vertices(positions.size());
         for (usize i = 0; i < vertices.size(); i++) {
             vertices[i].position = positions[i];
-
-            if (i < normals.size()) {
-                vertices[i].normal = normals[i];
-            }
-
-            if (i < texCoords.size()) {
-                vertices[i].textureCoords = texCoords[i];
-            }
+            vertices[i].normal = i < normals.size() ? normals[i] : vec3(0);
+            vertices[i].textureCoords = i < texCoords.size() ? texCoords[i] : vec2(0);
         }
 
         m_prototypes.emplace_back(MeshPrototype{
@@ -324,6 +323,7 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
                 .indices = indices,
             }),
             .textureIndices = {},
+            .transform = t,
         });
 
         if (primitive.material != undefined) {
