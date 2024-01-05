@@ -25,6 +25,7 @@ layout (set = 0, binding = 0) uniform UniformBufferObject {
 
 void main() {
     vec4 totalPosition = vec4(a_Position, 1.0);
+    /*
     for (int i = 0; i < MAX_BONE_INFLUENCE; i++) {
         if (a_BoneIDs[i] < 0) {
             continue;
@@ -37,6 +38,7 @@ void main() {
         totalPosition += localPosition * a_BoneWeights[i];
         vec3 localNormal = mat3(u_FinalBoneTransforms[a_BoneIDs[i]]) * a_Normal;
     }
+    */
 
 	v_Position = vec3(u_Model * totalPosition);
     v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;

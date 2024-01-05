@@ -283,7 +283,7 @@ void Renderer::render() {
                 pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));
 
             VertexUniformBufferObject vubo = {
-                .model = transform,
+                .model = transform * mesh.subTransform,
                 .view = m_viewProjection.view,
                 .projection = m_viewProjection.projection,
             };

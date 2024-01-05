@@ -18,8 +18,10 @@ namespace local {
 static usize datatypeSize(uint32 datatype) {
     switch (datatype) {
         case glTF::UNSIGNED_BYTE:
+        case glTF::BYTE:
             return sizeof(uint8);
         case glTF::UNSIGNED_SHORT:
+        case glTF::SHORT:
             return sizeof(uint16);
         case glTF::UNSIGNED_INT:
             return sizeof(uint32);
@@ -55,17 +57,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         }
     }
     processKeyFrames(&gltf);
-
-    for (auto& node : m_nodes) {
-        LOG(Info, "skin", node.skin);
-        LOG(Info, "mesh", node.mesh);
-        for (auto& weight : node.weights) {
-            LOG(Info, "weight", weight);
-        }
-        for (auto& child : node.children) {
-            LOG(Info, "child", child);
-        }
-    }
 
     for (auto& prototype : m_prototypes) {
         Mesh mesh;
@@ -175,7 +166,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .type = TextureType::Nil,
         };
 
-        for (auto i = 0U; i < PBR_TEXTURE_COUNT; i++) {
+        for (auto i = 0; i < PBR_TEXTURE_COUNT; i++) {
             if (!(mesh.material.pbrFlags & (1 << i))) {
                 TextureBuffer::ID textureID = resourceManager->allocateTexture(nilTextureSpec);
                 textureDescriptors.emplace_back(textureID, i + 1);
@@ -201,7 +192,9 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         model.meshes.emplace_back(std::move(mesh));
     }
 
+    model.nodes = std::move(m_nodes);
     model.keyFrames = std::move(m_keyFrames);
+    model.skins = std::move(m_skins);
 
     // save for reuse
     m_nodes.clear();
@@ -214,10 +207,10 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
 void ModelLoader::processNode(glTF::Model* model, glTF::Node* node) {
     // push a new node containing metadata (we copy to preserve data)
-    // - skin : index into skin
-    // - mesh : index into mesh
-    // - weights : weights of morph target ???
-    // - children : child nodes in hierarchy
+    // - skin       : index into skin
+    // - mesh       : index into mesh
+    // - weights    : weights of morph target ???
+    // - children   : child nodes in hierarchy
     m_nodes.emplace_back(node->skin, node->mesh, node->weights, node->children);
 
     if (node->mesh != undefined) {
@@ -240,7 +233,7 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
             uint32 offset = accessor.byteOffset + bufferView.byteOffset;
             vec.resize(accessor.count);
-            memcpy(vec.data(), model->buffer().data() + offset, accessor.count * sizeof(T));
+            std::memcpy(vec.data(), &model->buffer()[offset], accessor.count * sizeof(T));
         }
     };
 
@@ -254,22 +247,16 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
             // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
             // and then the translation. If none are provided, the transform is the identity. When a node is
             // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
-            mat4 t = {};
-            for (uint32 i = 0; i < 16; i++) {
-                t[i / 4][i % 4] = node->matrix[i];
-            }
+            mat4 t = glm::make_mat4(node->matrix);
 
             vec3 T = vec3(node->translation[0], node->translation[1], node->translation[2]);
-            t *= glm::translate(t, T);
+            t = glm::translate(t, T);
 
-            vec3 R = vec3(node->rotation[0], node->rotation[1], node->rotation[2]);
-            float theta = node->rotation[3];
-            if (R.x || R.y || R.z) {
-                t *= glm::rotate(t, theta, R);
-            }
+            mat4 R = glm::mat4_cast(quat(node->rotation[3], node->rotation[0], node->rotation[1], node->rotation[2]));
+            t = t * R;
 
             vec3 S = vec3(node->scale[0], node->scale[1], node->scale[2]);
-            t *= glm::scale(t, S);
+            t = glm::scale(t, S);
 
             position = mat3(t) * position;
         }
@@ -289,19 +276,20 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 
             uint32 offset = accessor.byteOffset + bufferView.byteOffset;
 
-            switch (auto nSize = local::datatypeSize(accessor.componentType)) {
-                case 1:
-                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable {
+            auto nSize = local::datatypeSize(accessor.componentType);
+            switch (nSize) {
+                case sizeof(uint8):
+                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable -> uint32 {
                         return *reinterpret_cast<const uint8*>(&model->buffer()[offset + i++ * nSize]);
                     });
                     break;
-                case 2:
-                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable {
+                case sizeof(uint16):
+                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable -> uint32 {
                         return *reinterpret_cast<const uint16*>(&model->buffer()[offset + i++ * nSize]);
                     });
                     break;
                 default:
-                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable {
+                    std::generate_n(indices.begin(), accessor.count, [=, i = 0]() mutable -> uint32 {
                         return *reinterpret_cast<const uint32*>(&model->buffer()[offset + i++ * nSize]);
                     });
             }
@@ -345,7 +333,64 @@ void ModelLoader::processMesh(glTF::Model* model, glTF::Node* node, glTF::Mesh* 
 }
 
 void ModelLoader::processSkin(glTF::Model* model, glTF::Skin* skin) {
-    m_skins.emplace_back();
+    std::vector<mat4> inverseBindMatrices;
+
+    if (skin->inverseBindMatrices != undefined) {
+        glTF::Accessor& accessor = model->accessors[skin->inverseBindMatrices];
+        glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
+
+        uint32 offset = accessor.byteOffset + bufferView.byteOffset;
+
+        inverseBindMatrices.resize(accessor.count);
+        std::memcpy(inverseBindMatrices.data(), &model->buffer()[offset], accessor.count * sizeof(mat4));
+    }
+
+    m_skins.emplace_back(std::move(inverseBindMatrices), skin->joints, skin->skeleton);
+}
+
+void ModelLoader::processKeyFrames(glTF::Model* model) {
+    // copies data from accessor bufferView to vec of type T
+    auto populateSamplerInOut = [&]<typename T>(usize accessorIndex, std::vector<T>& vec) {
+        glTF::Accessor& accessor = model->accessors[accessorIndex];
+        glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
+        uint32 offset = accessor.byteOffset + bufferView.byteOffset;
+
+        vec.resize(accessor.count);
+        std::memcpy(vec.data(), &model->buffer()[offset], accessor.count * sizeof(T));
+    };
+
+    for (glTF::Animation& animation : model->animations) {
+        for (glTF::AnimationChannel& channel : animation.channels) {
+            // which TRS is it
+            KeyFrame::ModifierType modifierType = KeyFrame::stringToModifier(channel.target.path);
+
+            glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
+
+            // collect timestamp
+            std::vector<float> inputTimestamps;
+            populateSamplerInOut(sampler.input, inputTimestamps);
+
+            // addKeyFrames by populating a vector of vec3 or quat
+            auto addKeyFrames = [&]<typename T>(std::vector<T>& modifiers) {
+                populateSamplerInOut(sampler.output, modifiers);
+
+                for (usize i = 0; float timestamp : inputTimestamps) {
+                    m_keyFrames.emplace_back(timestamp, channel.target.node, modifierType, modifiers[i++]);
+                }
+            };
+
+            if (modifierType == KeyFrame::Translation) { // populate vec3 translate data
+                std::vector<vec3> translations;
+                addKeyFrames(translations);
+            } else if (modifierType == KeyFrame::Rotation) { // populate quat rotation data
+                std::vector<quat> rotations;
+                addKeyFrames(rotations);
+            } else if (modifierType == KeyFrame::Scale) { // populate vec3 scale data
+                std::vector<vec3> scales;
+                addKeyFrames(scales);
+            }
+        } // for (channel : animation.channels)
+    }     // for (animation : model->animations)
 }
 
 void ModelLoader::processMaterial(glTF::Model* model, glTF::Material* material) {
@@ -432,85 +477,6 @@ void ModelLoader::processTexture(glTF::Model* model, glTF::NormalTextureInfo* te
 void ModelLoader::processTexture(glTF::Model* model, glTF::OcclusionTextureInfo* textureInfo, TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo->index};
     processTexture(model, &adapter, type);
-}
-
-void ModelLoader::processKeyFrames(glTF::Model* model) {
-    auto populateSamplerInOut = [&]<typename T>(usize accessorIndex, std::vector<T>& vec) {
-        glTF::Accessor& accessor = model->accessors[accessorIndex];
-        glTF::BufferView& bufferView = model->bufferViews[accessor.bufferView];
-        uint32 nBytes = accessor.byteOffset + bufferView.byteOffset;
-
-        vec.resize(accessor.count);
-        std::generate_n(vec.begin(), accessor.count, [=, i = 0]() mutable {
-            return *reinterpret_cast<const T*>(&model->buffer()[nBytes + i++ * sizeof(T)]);
-        });
-    };
-
-    for (glTF::Animation& animation : model->animations) {
-        for (glTF::AnimationChannel& channel : animation.channels) {
-            // which TRS is it
-            KeyFrame::ModifierType modifierType;
-            if (channel.target.path == "translation") {
-                modifierType = KeyFrame::Translation;
-            } else if (channel.target.path == "rotation") {
-                modifierType = KeyFrame::Rotation;
-            } else if (channel.target.path == "scale") {
-                modifierType = KeyFrame::Scale;
-            } else {
-                ENSURE(false);
-            }
-
-            glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
-
-            // collect timestamp
-            std::vector<float> inputTimestamps;
-            populateSamplerInOut(sampler.input, inputTimestamps);
-
-            // populate vec3 translate data
-            if (modifierType == KeyFrame::Translation) {
-                CHECK(model->accessors[sampler.output].type == glTF::VEC3);
-                std::vector<vec3> outputTranslate;
-                populateSamplerInOut(sampler.output, outputTranslate);
-
-                for (usize i = 0; float timestamp : inputTimestamps) {
-                    m_keyFrames.emplace_back(KeyFrame{
-                        .timestamp = timestamp,
-                        .node = undefined,
-                        .modifierType = modifierType,
-                        .modifier = outputTranslate[i++],
-                    });
-                }
-                // populate vec4 rotation data
-            } else if (modifierType == KeyFrame::Rotation) {
-                CHECK(model->accessors[sampler.output].type == glTF::VEC4);
-                std::vector<quat> outputRotation;
-                populateSamplerInOut(sampler.output, outputRotation);
-
-                for (usize i = 0; float timestamp : inputTimestamps) {
-                    m_keyFrames.emplace_back(KeyFrame{
-                        .timestamp = timestamp,
-                        .node = undefined,
-                        .modifierType = modifierType,
-                        .modifier = outputRotation[i++],
-                    });
-                }
-                // populate vec3 scale data
-            } else if (modifierType == KeyFrame::Scale) {
-                CHECK(model->accessors[sampler.output].type == glTF::VEC3);
-                std::vector<vec3> outputScale;
-                populateSamplerInOut(sampler.output, outputScale);
-
-                for (usize i = 0; float timestamp : inputTimestamps) {
-                    m_keyFrames.emplace_back(KeyFrame{
-                        .timestamp = timestamp,
-                        .node = undefined,
-                        .modifierType = modifierType,
-                        .modifier = outputScale[i++],
-                    });
-                }
-            }
-        } // for (channel : animation.channels)
-    }     // for (animation : model->animations)
 }
 
 } // namespace R3

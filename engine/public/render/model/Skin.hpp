@@ -6,8 +6,8 @@ namespace R3 {
 
 struct R3_API Skin {
     std::vector<mat4> inverseBindMatrices;
-    std::vector<usize> joints; // nodes used as joints
-    usize skeleton = undefined;
+    std::vector<uint32> joints; // nodes used as joints
+    uint32 skeleton = undefined;
 };
 
 } // namespace R3

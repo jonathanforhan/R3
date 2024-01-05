@@ -58,6 +58,6 @@ void main() {
 	f_Color = vec4(albedo, 1.0);
 
 	if (c_Uid == c_Selected) {
-		f_Color = f_Color + vec4(0.08, 0.05, 0.0, 0.0);
+		f_Color += vec4(0.16, 0.08, -0.1, 0.0);
 	}
 }

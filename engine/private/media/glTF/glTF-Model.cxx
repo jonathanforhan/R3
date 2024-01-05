@@ -49,13 +49,13 @@ bool Model::parseGLB(std::ifstream& ifs) {
 
     ChunkHeader chunkHeader = {};
 
-    auto readJson = [&]() {
+    auto readJson = [&] {
         std::string jsonFile(chunkHeader.length, '\0');
         ifs.read(jsonFile.data(), chunkHeader.length);
         m_document.Parse(jsonFile.c_str());
     };
 
-    auto readBin = [&]() {
+    auto readBin = [&] {
         m_buffer.resize(chunkHeader.length);
         ifs.read((char*)m_buffer.data(), chunkHeader.length);
     };

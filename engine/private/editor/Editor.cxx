@@ -110,7 +110,7 @@ void Editor::setContentScale(float scale) {
 void Editor::displayDeltaTime(double dt) {
     ImGui::Begin("Delta Time", nullptr, GUI_BOARDERLESS);
     ImGui::SetWindowPos(ImVec2(10, 10));
-    ImGui::Text("%lf ms", dt);
+    ImGui::Text("%lf ms", dt * 1000.0f);
     ImGui::End();
 }
 
