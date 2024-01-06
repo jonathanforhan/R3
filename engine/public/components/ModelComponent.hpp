@@ -6,6 +6,7 @@
 #include "render/model/KeyFrame.hpp"
 #include "render/model/Mesh.hpp"
 #include "render/model/ModelNode.hpp"
+#include "render/model/Skeleton.hpp"
 #include "render/model/Skin.hpp"
 
 namespace R3 {
@@ -29,7 +30,7 @@ public:
     std::vector<ModelNode> nodes;
     std::vector<Mesh> meshes;
     std::vector<KeyFrame> keyFrames;
-    std::vector<Skin> skins;
+    Skeleton skeleton;
 };
 
 } // namespace R3

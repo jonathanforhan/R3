@@ -33,6 +33,21 @@ static usize datatypeSize(uint32 datatype) {
     }
 };
 
+template <typename T, typename N = T>
+static void readAccessor(glTF::Model& model, usize accessorIndex, std::vector<T>& data) {
+    CHECK(data.empty());
+    glTF::Accessor& accessor = model.accessors[accessorIndex];
+    glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+    uint32 offset = accessor.byteOffset + bufferView.byteOffset;
+    data.resize(accessor.count);
+
+    // can take a vector of <typename T> and read the accessor as <typename N>
+    // eg accesor<uint16>[] --> std::vector<uint32>
+    std::generate_n(data.begin(), accessor.count, [&, i = 0]() mutable -> T {
+        return *std::bit_cast<const N*>(&model.buffer()[offset + i++ * sizeof(N)]);
+    });
+}
+
 } // namespace local
 
 ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
@@ -57,7 +72,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             processNode(gltf, gltf.nodes[iNode]);
         }
     }
-    processKeyFrames(gltf);
+    processAnimations(gltf);
 
     for (auto& prototype : m_prototypes) {
         Mesh mesh;
@@ -197,7 +212,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     model.nodes = std::move(m_nodes);
     model.keyFrames = std::move(m_keyFrames);
-    model.skins = std::move(m_skins);
 
     // save for reuse
     m_nodes.clear();
@@ -217,11 +231,8 @@ void ModelLoader::processNode(glTF::Model& model, glTF::Node& node) {
     m_nodes.emplace_back(node.skin, node.mesh, node.weights, node.children);
 
     if (node.mesh != undefined) {
+        m_nodes.back().mesh = m_prototypes.size();
         processMesh(model, node, model.meshes[node.mesh]);
-    }
-
-    if (node.skin != undefined) {
-        processSkin(model, model.skins[node.skin]);
     }
 
     for (auto child : node.children) {
@@ -230,19 +241,11 @@ void ModelLoader::processNode(glTF::Model& model, glTF::Node& node) {
 }
 
 void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh) {
-    auto populateVertexAttrib = [&]<typename T>(const auto& primitive, std::vector<T>& vec, const char* attrib) {
-        if (primitive.attributes.HasMember(attrib)) {
-            glTF::Accessor& accessor = model.accessors[primitive.attributes[attrib].GetUint()];
-            glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-            uint32 offset = accessor.byteOffset + bufferView.byteOffset;
-            vec.resize(accessor.count);
-            std::memcpy(vec.data(), &model.buffer()[offset], accessor.count * sizeof(T));
-        }
-    };
-
     for (auto& primitive : mesh.primitives) {
         std::vector<vec3> positions;
-        populateVertexAttrib(primitive, positions, glTF::POSITION);
+        if (primitive.attributes.HasMember(glTF::POSITION)) {
+            local::readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
+        }
 
         // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
         // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
@@ -256,42 +259,28 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
         t = T * R * S * t;
 
         std::vector<vec3> normals;
-        populateVertexAttrib(primitive, normals, glTF::NORMAL);
+        if (primitive.attributes.HasMember(glTF::NORMAL)) {
+            local::readAccessor(model, primitive.attributes[glTF::NORMAL].GetUint(), normals);
+        }
 
         std::vector<vec2> texCoords;
-        populateVertexAttrib(primitive, texCoords, glTF::TEXCOORD_0);
+        if (primitive.attributes.HasMember(glTF::TEXCOORD_0)) {
+            local::readAccessor(model, primitive.attributes[glTF::TEXCOORD_0].GetUint(), texCoords);
+        }
 
         std::vector<uint32> indices;
         if (primitive.indices != undefined) {
             glTF::Accessor& accessor = model.accessors[primitive.indices];
-            glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
 
-            indices.resize(accessor.count);
-
-            uint32 offset = accessor.byteOffset + bufferView.byteOffset;
-
-            usize i = 0, n = local::datatypeSize(accessor.componentType);
-            switch (n) {
+            switch (local::datatypeSize(accessor.componentType)) {
                 case sizeof(uint8):
-                    std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = *std::bit_cast<const uint8*>(&model.buffer()[offset + i * n]);
-                        i++;
-                        return x;
-                    });
+                    local::readAccessor<uint32, uint8>(model, primitive.indices, indices);
                     break;
                 case sizeof(uint16):
-                    std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = *std::bit_cast<const uint16*>(&model.buffer()[offset + i * n]);
-                        i++;
-                        return x;
-                    });
+                    local::readAccessor<uint32, uint16>(model, primitive.indices, indices);
                     break;
                 case sizeof(uint32):
-                    std::generate_n(indices.begin(), accessor.count, [&] {
-                        uint32 x = *std::bit_cast<const uint32*>(&model.buffer()[offset + i * n]);
-                        i++;
-                        return x;
-                    });
+                    local::readAccessor(model, primitive.indices, indices);
                     break;
                 default:
                     LOG(Warning, "unknown datatype size");
@@ -332,50 +321,28 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
     }
 }
 
-void ModelLoader::processSkin(glTF::Model& model, glTF::Skin& skin) {
-    std::vector<mat4> inverseBindMatrices;
-
-    if (skin.inverseBindMatrices != undefined) {
-        glTF::Accessor& accessor = model.accessors[skin.inverseBindMatrices];
-        glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-
-        uint32 offset = accessor.byteOffset + bufferView.byteOffset;
-
-        inverseBindMatrices.resize(accessor.count);
-        std::memcpy(inverseBindMatrices.data(), &model.buffer()[offset], accessor.count * sizeof(mat4));
-    }
-
-    m_skins.emplace_back(std::move(inverseBindMatrices), skin.joints, skin.skeleton);
-}
-
-void ModelLoader::processKeyFrames(glTF::Model& model) {
-    // copies data from accessor bufferView to vec of type T
-    auto populateSamplerInOut = [&]<typename T>(usize accessorIndex, std::vector<T>& vec) {
-        glTF::Accessor& accessor = model.accessors[accessorIndex];
-        glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-        uint32 offset = accessor.byteOffset + bufferView.byteOffset;
-
-        vec.resize(accessor.count);
-        std::memcpy(vec.data(), &model.buffer()[offset], accessor.count * sizeof(T));
-    };
-
+void ModelLoader::processAnimations(glTF::Model& model) {
     std::unordered_map<float, std::pair<usize, mat4>> keyFrameTransforms;
 
+    // for every channel of every animation, get the sampler timestamps
+    // use those timestamps as key so that we can build up a mat4 that represents the TRS transform gotten from
+    // the individual Translation, Rotation, and Scale components of the glTF file
     for (glTF::Animation& animation : model.animations) {
         for (glTF::AnimationChannel& channel : animation.channels) {
             KeyFrame::ModifierType modifierType = KeyFrame::stringToModifier(channel.target.path);
 
             glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
 
-            // collect timestamp
+            // collect timestamps
             std::vector<float> inputTimestamps;
-            populateSamplerInOut(sampler.input, inputTimestamps);
+            local::readAccessor(model, sampler.input, inputTimestamps);
 
             // addKeyFrames by populating a vector of vec3 or quat
             auto addKeyFrames = [&]<typename T>(std::vector<T>& modifiers) {
-                populateSamplerInOut(sampler.output, modifiers);
+                local::readAccessor(model, sampler.output, modifiers);
 
                 for (usize i = 0; float timestamp : inputTimestamps) {
+                    // cache our new keyframe transform with the m_keyFrames index
                     if (!keyFrameTransforms.contains(timestamp)) {
                         keyFrameTransforms.emplace(timestamp, std::pair<usize, mat4>(m_keyFrames.size(), mat4(1.0f)));
                         m_keyFrames.emplace_back(timestamp, channel.target.node);
@@ -387,10 +354,10 @@ void ModelLoader::processKeyFrames(glTF::Model& model) {
                         transform = modifierType == KeyFrame::Translation ? glm::translate(transform, modifiers[i])
                                                                           : glm::scale(transform, modifiers[i]);
                     } else {
-                        transform = transform * glm::mat4_cast(modifiers[i]);
+                        transform = transform * glm::mat4_cast(modifiers[i]); // apply rotation as mat4
                     }
 
-                    m_keyFrames[index].modifier = transform;
+                    m_keyFrames[index].modifier = transform; // apply it
 
                     i++;
                 }
@@ -406,7 +373,7 @@ void ModelLoader::processKeyFrames(glTF::Model& model) {
                 std::vector<vec3> scales;
                 addKeyFrames(scales);
             } else if (modifierType == KeyFrame::Weights) { // populate weights or something
-                LOG(Warning, "Weights not yet supported");
+                LOG(Warning, "weights not yet supported");
             }
         } // for (channel : animation.channels)
     }     // for (animation : model.animations)
@@ -457,7 +424,7 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
     }
 }
 
-void ModelLoader::processTexture(glTF::Model& model, uint8 color[4], TextureType type) {
+void ModelLoader::processTexture(glTF::Model&, uint8 color[4], TextureType type) {
     m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
 
     m_textures.push_back(resourceManager->allocateTexture({

@@ -9,10 +9,19 @@ namespace local {
 void propagateNodeTransform(ModelComponent& model, ModelNode& node, const mat4& t) {
     if (node.mesh != undefined) {
         model.meshes[node.mesh].subTransform = t;
-        for (auto child : node.children) {
-            propagateNodeTransform(model, model.nodes[child], t);
+    }
+
+    /*
+    if (node.skin != undefined) {
+        for (auto joint : model.skins[node.skin].joints) {
+            propagateNodeTransform(model, model.nodes[joint], t);
         }
     }
+
+    for (auto child : node.children) {
+        propagateNodeTransform(model, model.nodes[child], t);
+    }
+    */
 }
 
 } // namespace local
@@ -44,6 +53,8 @@ void AnimationSystem::tick(double dt) {
 
                 mat4 t = glm::interpolate(last, next, -interpolation);
                 local::propagateNodeTransform(model, node, t);
+
+                break;
             }
         }
     };

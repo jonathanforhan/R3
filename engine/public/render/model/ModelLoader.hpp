@@ -56,8 +56,7 @@ public:
 private:
     void processNode(glTF::Model& model, glTF::Node& node);
     void processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh);
-    void processSkin(glTF::Model& model, glTF::Skin& skin);
-    void processKeyFrames(glTF::Model& model);
+    void processAnimations(glTF::Model& model);
     void processMaterial(glTF::Model& model, glTF::Material& material);
     void processTexture(glTF::Model& model, uint8 color[4], TextureType type);
     void processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type);
