@@ -359,9 +359,10 @@ void ModelLoader::processKeyFrames(glTF::Model& model) {
         std::memcpy(vec.data(), &model.buffer()[offset], accessor.count * sizeof(T));
     };
 
+    std::unordered_map<float, std::pair<usize, mat4>> keyFrameTransforms;
+
     for (glTF::Animation& animation : model.animations) {
         for (glTF::AnimationChannel& channel : animation.channels) {
-            // which TRS is it
             KeyFrame::ModifierType modifierType = KeyFrame::stringToModifier(channel.target.path);
 
             glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
@@ -375,7 +376,23 @@ void ModelLoader::processKeyFrames(glTF::Model& model) {
                 populateSamplerInOut(sampler.output, modifiers);
 
                 for (usize i = 0; float timestamp : inputTimestamps) {
-                    m_keyFrames.emplace_back(timestamp, channel.target.node, modifierType, modifiers[i++]);
+                    if (!keyFrameTransforms.contains(timestamp)) {
+                        keyFrameTransforms.emplace(timestamp, std::pair<usize, mat4>(m_keyFrames.size(), mat4(1.0f)));
+                        m_keyFrames.emplace_back(timestamp, channel.target.node);
+                    }
+
+                    auto&& [index, transform] = keyFrameTransforms[timestamp];
+
+                    if constexpr (std::is_same_v<T, vec3>) {
+                        transform = modifierType == KeyFrame::Translation ? glm::translate(transform, modifiers[i])
+                                                                          : glm::scale(transform, modifiers[i]);
+                    } else {
+                        transform = transform * glm::mat4_cast(modifiers[i]);
+                    }
+
+                    m_keyFrames[index].modifier = transform;
+
+                    i++;
                 }
             };
 
@@ -388,17 +405,19 @@ void ModelLoader::processKeyFrames(glTF::Model& model) {
             } else if (modifierType == KeyFrame::Scale) { // populate vec3 scale data
                 std::vector<vec3> scales;
                 addKeyFrames(scales);
+            } else if (modifierType == KeyFrame::Weights) { // populate weights or something
+                LOG(Warning, "Weights not yet supported");
             }
         } // for (channel : animation.channels)
     }     // for (animation : model.animations)
 }
 
 void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) {
-    int32 pbrSpecularGlossiness_ExtensionIndex = undefined;
+    int32 pbrSpecularGlossiness_INDEX = undefined;
 
     for (int32 i = 0; auto& extension : material.extensions) {
         if (std::strcmp(extension->name, glTF::EXTENSION_KHR_materials_pbrSpecularGlossiness) == 0) {
-            pbrSpecularGlossiness_ExtensionIndex = i;
+            pbrSpecularGlossiness_INDEX = i;
         }
         i++;
     }
@@ -432,9 +451,8 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
             static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[3] * 255.0f),
         };
         processTexture(model, color, TextureType::Albedo);
-    } else if (pbrSpecularGlossiness_ExtensionIndex != undefined) {
-        auto* ext =
-            (glTF::KHR_materials_pbrSpecularGlossiness*)&*material.extensions[pbrSpecularGlossiness_ExtensionIndex];
+    } else if (pbrSpecularGlossiness_INDEX != undefined) {
+        auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)material.extensions[pbrSpecularGlossiness_INDEX].get();
         processTexture(model, *ext->diffuseTexture, TextureType::Albedo);
     }
 }

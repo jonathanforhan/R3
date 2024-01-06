@@ -12,7 +12,7 @@ struct R3_API Material {
     void destroy(Scene* parentScene);
 
     id descriptorPool = undefined;
-    id uniforms[MAX_FRAMES_IN_FLIGHT * 2];
+    id uniforms[MAX_FRAMES_IN_FLIGHT * 2] = {};
     PBRTextureResource textures;
     uint32 pbrFlags = 0;
 };

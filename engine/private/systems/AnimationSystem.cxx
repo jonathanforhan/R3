@@ -1,35 +1,16 @@
 #include "systems/AnimationSystem.hpp"
 
+#include <glm/gtx/matrix_interpolation.hpp>
+
 namespace R3 {
 
 namespace local {
 
-void propagateNodeTranslation(ModelComponent& model, ModelNode& node, const vec3& T) {
+void propagateNodeTransform(ModelComponent& model, ModelNode& node, const mat4& t) {
     if (node.mesh != undefined) {
-        auto& t = model.meshes[node.mesh].subTransform;
-        t = glm::translate(t, T);
+        model.meshes[node.mesh].subTransform = t;
         for (auto child : node.children) {
-            propagateNodeTranslation(model, model.nodes[child], T);
-        }
-    }
-}
-
-void propagateNodeRotation(ModelComponent& model, ModelNode& node, const mat4& R) {
-    if (node.mesh != undefined) {
-        auto& t = model.meshes[node.mesh].subTransform;
-        t = R;
-        for (auto child : node.children) {
-            propagateNodeRotation(model, model.nodes[child], R);
-        }
-    }
-}
-
-void propagateNodeScale(ModelComponent& model, ModelNode& node, const vec3& S) {
-    if (node.mesh != undefined) {
-        auto& t = model.meshes[node.mesh].subTransform;
-        t = glm::scale(t, S);
-        for (auto child : node.children) {
-            propagateNodeScale(model, model.nodes[child], S);
+            propagateNodeTransform(model, model.nodes[child], t);
         }
     }
 }
@@ -58,33 +39,11 @@ void AnimationSystem::tick(double dt) {
 
                 float interpolation = (model.currentTime - lastTimestamp) / (nextTimestamp - lastTimestamp);
 
-                if (keyFrame.modifierType == KeyFrame::Translation) {
-                    auto& last = std::get<vec3>(keyFrame.modifier);
-                    auto& next = std::get<vec3>(model.keyFrames[i + 1].modifier);
+                mat4& last = keyFrame.modifier;
+                mat4& next = model.keyFrames[i + 1].modifier;
 
-                    vec3 T = last + interpolation * (next - last);
-                    local::propagateNodeTranslation(model, node, T);
-                } else if (keyFrame.modifierType == KeyFrame::Rotation) {
-                    auto& last = std::get<quat>(keyFrame.modifier);
-                    auto& next = std::get<quat>(model.keyFrames[i + 1].modifier);
-
-                    quat rot = glm::slerp(last, next, interpolation);
-                    mat4 lastMat = glm::mat4_cast(last);
-                    for (int j = 0; j < 4; j++) {
-                        lastMat[j][j] = glm::abs(lastMat[j][j]);
-                    }
-
-                    mat4 R = lastMat * glm::mat4_cast(rot);
-                    local::propagateNodeRotation(model, node, R);
-                } else {
-                    auto& last = std::get<vec3>(keyFrame.modifier);
-                    auto& next = std::get<vec3>(model.keyFrames[i + 1].modifier);
-
-                    vec3 S = last + interpolation * (next - last);
-                    local::propagateNodeScale(model, node, S);
-                }
-
-                break;
+                mat4 t = glm::interpolate(last, next, -interpolation);
+                local::propagateNodeTransform(model, node, t);
             }
         }
     };
