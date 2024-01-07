@@ -1,7 +1,8 @@
 #include <R3>
-#include <R3_components>
 #include <R3_core>
 #include <R3_input>
+#include "components/CameraComponent.hpp"
+#include "components/ModelComponent.hpp"
 
 using namespace R3;
 

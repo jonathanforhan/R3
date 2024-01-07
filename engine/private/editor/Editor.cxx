@@ -4,12 +4,12 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include <R3_components>
 #include <R3_core>
 #include <R3_input>
 #include <format>
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
+#include "components/EditorComponent.hpp"
 #include "render/Renderer.hpp"
 
 namespace R3::editor {

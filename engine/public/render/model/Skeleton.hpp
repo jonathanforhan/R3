@@ -11,16 +11,15 @@ struct Joint {
     usize rootIndex = undefined;
 
     /// @brief Undeform Matrix of static model
-    mat4 undeformedMatrix = mat4(1.0f);
+    mat4 undeformedMatrix;
 
     /// @brief Inverse to go back
-    mat4 inverseBindMatrix = mat4(1.0f);
+    mat4 inverseBindMatrix;
 
     /// @brief Deformed Matrix of Animated Model
-    mat4 deformedMatrix = mat4(1.0f);
-    vec3 deformedTranslation = vec3(0.0f);
-    quat deformedRotation = quat(1.0f, 0.0f, 0.0f, 0.0f);
-    vec3 deformedScale = vec3(1.0f);
+    vec3 deformedTranslation;
+    quat deformedRotation;
+    vec3 deformedScale;
 
     mat4 getDeformedBindMatrix() {
         return glm::translate(glm::mat4(1.0f), deformedTranslation) * // T

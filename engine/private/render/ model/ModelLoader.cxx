@@ -98,6 +98,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
     processAnimations(gltf);
     processSkeleton(gltf);
 
+    model.meshes.reserve(m_prototypes.size());
     for (auto& prototype : m_prototypes) {
         Mesh mesh;
 
@@ -257,18 +258,6 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
     for (auto& primitive : mesh.primitives) {
         CHECK(primitive.mode == glTF::TRIANGLES);
 
-        //--- T R S and Matrix
-        // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
-        // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
-        // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
-        // and then the translation. If none are provided, the transform is the identity. When a node is
-        // targeted for animation (referenced by an animation.channel.target), matrix MUST NOT be present
-        mat4 t = glm::make_mat4(node.matrix);
-        mat4 T = glm::translate(mat4(1.0f), glm::make_vec3(node.translation));
-        mat4 R = glm::mat4_cast(glm::make_quat(node.rotation));
-        mat4 S = glm::scale(mat4(1.0f), glm::make_vec3(node.scale));
-        t = T * R * S * t;
-
         //--- Vertices
         std::vector<vec3> positions;
         CHECK(primitive.attributes.HasMember(glTF::POSITION));
@@ -303,7 +292,7 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
 
         std::vector<vec4> weights;
         if (primitive.attributes.HasMember(glTF::WEIGHTS_0)) {
-            usize index = primitive.attributes[glTF::JOINTS_0].GetUint();
+            usize index = primitive.attributes[glTF::WEIGHTS_0].GetUint();
 
             if (local::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
                 local::readAccessor<vec4, glm::vec<4, uint8>>(model, index, weights);
@@ -447,12 +436,12 @@ void ModelLoader::processSkeleton(glTF::Model& model) {
             m_skeleton.joints[i].inverseBindMatrix = inverseBindMatrices[i];
 
             auto& node = model.nodes[rootIndex];
-            mat4 t = glm::make_mat4(node.matrix);
-            mat4 T = glm::translate(mat4(1.0f), glm::make_vec3(node.translation));
-            mat4 R = glm::mat4_cast(glm::make_quat(node.rotation));
-            mat4 S = glm::scale(mat4(1.0f), glm::make_vec3(node.scale));
 
-            m_skeleton.joints[i].undeformedMatrix = T * R * S * t;
+            m_skeleton.joints[i].deformedTranslation = glm::make_vec3(node.translation);
+            m_skeleton.joints[i].deformedRotation = glm::mat4(glm::make_quat(node.rotation));
+            m_skeleton.joints[i].deformedScale = glm::make_vec3(node.scale);
+            m_skeleton.joints[i].undeformedMatrix = glm::make_mat4(node.matrix);
+
             m_skeleton.nodeToJointMap.emplace(rootIndex, i);
         }
 

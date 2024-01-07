@@ -6,11 +6,11 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 #include <R3>
-#include <R3_components>
 #include <R3_core>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <vulkan/vulkan.hpp>
+#include "components/LightComponent.hpp"
 #include "input/MouseEvent.hpp"
 #include "input/WindowEvent.hpp"
 #include "render/ResourceManager.hxx"

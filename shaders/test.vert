@@ -28,7 +28,7 @@ void main() {
     mat4 jointTransform = mat4(0.0f);
 
     for (int i = 0; i < MAX_JOINT_INFLUENCE; i++) {
-        if (a_Weights[i] == 0) {
+        if (a_JointIDs[i] < 0) {
             continue;
         }
 
@@ -38,11 +38,9 @@ void main() {
             break;
         }
 
-        mat4 jointMatrix = u_FinalJointTransforms[a_JointIDs[i]];
-
-        vec4 localPosition = jointMatrix * vec4(a_Position, 1.0f);
+        vec4 localPosition = u_FinalJointTransforms[a_JointIDs[i]] * vec4(a_Position, 1.0f);
         animatedPosition += localPosition * a_Weights[i];
-        jointTransform += jointMatrix * a_Weights[i];
+        jointTransform += u_FinalJointTransforms[a_JointIDs[i]] * a_Weights[i];
     }
 
 	v_Position = vec3(u_Model * animatedPosition);

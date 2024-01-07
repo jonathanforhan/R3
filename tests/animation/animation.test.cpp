@@ -1,7 +1,9 @@
 #include <R3>
-#include <R3_components>
 #include <R3_core>
 #include <R3_input>
+#include "components/CameraComponent.hpp"
+#include "components/EditorComponent.hpp"
+#include "components/ModelComponent.hpp"
 
 // Models
 // "assets/glTF/Models/AnimatedCube/glTF/AnimatedCube.gltf"
@@ -44,7 +46,6 @@ R3_DLL void Run() {
         auto& robot = Entity::create<Entity>();
         robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf");
         robot.emplace<EditorComponent>().name = "Robot";
-        auto& t = robot.get<TransformComponent>();
 
         auto& worm = Entity::create<Entity>();
         worm.emplace<ModelComponent>("assets/glTF/Models/RiggedSimple/glTF-Binary/RiggedSimple.glb");
