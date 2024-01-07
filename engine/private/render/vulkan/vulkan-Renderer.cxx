@@ -283,10 +283,13 @@ void Renderer::render() {
                 pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));
 
             VertexUniformBufferObject vubo = {
-                .model = transform * mesh.subTransform,
+                .model = transform,
                 .view = m_viewProjection.view,
                 .projection = m_viewProjection.projection,
             };
+            for (usize i = 0; i < model.skeleton.finalJointsMatrices.size(); i++) {
+                vubo.finalBoneTransforms[i] = model.skeleton.finalJointsMatrices[i];
+            }
             uniform.write(&vubo, sizeof(vubo));
 
             FragmentUniformBufferObject fubo = {

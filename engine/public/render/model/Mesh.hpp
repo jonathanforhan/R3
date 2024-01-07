@@ -10,7 +10,6 @@ class R3_API Scene;
 struct R3_API Mesh {
     void destroy(Scene* parentScene);
 
-    mat4 subTransform = mat4(1.0f);
     id vertexBuffer = undefined;
     id indexBuffer = undefined;
     id pipeline = undefined;

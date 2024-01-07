@@ -12,7 +12,8 @@ struct R3_API KeyFrame {
 
     float timestamp = 0.0f;
     usize node = undefined;
-    mat4 modifier = mat4(1.0f);
+    ModifierType modifierType;
+    vec4 modifier;
 };
 
 inline KeyFrame::ModifierType KeyFrame::stringToModifier(std::string_view s) {

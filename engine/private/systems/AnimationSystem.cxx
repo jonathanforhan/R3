@@ -4,59 +4,63 @@
 
 namespace R3 {
 
-namespace local {
-
-void propagateNodeTransform(ModelComponent& model, ModelNode& node, const mat4& t) {
-    if (node.mesh != undefined) {
-        model.meshes[node.mesh].subTransform = t;
-    }
-
-    /*
-    if (node.skin != undefined) {
-        for (auto joint : model.skins[node.skin].joints) {
-            propagateNodeTransform(model, model.nodes[joint], t);
-        }
-    }
-
-    for (auto child : node.children) {
-        propagateNodeTransform(model, model.nodes[child], t);
-    }
-    */
-}
-
-} // namespace local
-
 void AnimationSystem::tick(double dt) {
     // apply keyframe animations to all models
     auto animate = [&](ModelComponent& model) {
-        model.currentTime += float(dt);
-        if (model.currentTime >= model.maxTime) {
-            model.currentTime = 0;
-        }
+        if (model.skeleton.animated) {
+            model.currentTime += float(dt);
+            if (model.currentTime >= model.maxTime) {
+                model.currentTime = 0;
+            }
 
-        for (usize i = 0; i < model.keyFrames.size() - 1; i++) {
-            auto& keyFrame = model.keyFrames[i];
+            for (usize i = 0; i < model.keyFrames.size() - 1; i++) {
+                auto& keyFrame = model.keyFrames[i];
+                auto modType = keyFrame.modifierType;
 
-            float lastTimestamp = model.keyFrames[i].timestamp;
-            float nextTimestamp = model.keyFrames[i + 1].timestamp;
+                float lastTimestamp = model.keyFrames[i].timestamp;
+                float nextTimestamp = model.keyFrames[i + 1].timestamp;
 
-            bool gtLast = model.currentTime >= lastTimestamp;
-            bool ltNext = model.currentTime < nextTimestamp;
+                bool gtLast = model.currentTime >= lastTimestamp;
+                bool ltNext = model.currentTime < nextTimestamp;
 
-            if (gtLast && ltNext) {
-                auto& node = model.nodes[model.keyFrames[i].node];
+                if (!(gtLast && ltNext)) {
+                    continue;
+                }
+
+                usize nodeIndex = model.keyFrames[i].node;
 
                 float interpolation = (model.currentTime - lastTimestamp) / (nextTimestamp - lastTimestamp);
 
-                mat4& last = keyFrame.modifier;
-                mat4& next = model.keyFrames[i + 1].modifier;
+                auto& joint = model.skeleton.joints[model.skeleton.nodeToJointMap[nodeIndex]];
 
-                mat4 t = glm::interpolate(last, next, -interpolation);
-                local::propagateNodeTransform(model, node, t);
+                if (modType == KeyFrame::Translation) {
+                    vec3 last = vec3(keyFrame.modifier);
+                    vec3 next = vec3(model.keyFrames[i + 1].modifier);
 
-                break;
+                    joint.deformedTranslation = glm::mix(last, next, interpolation);
+                } else if (modType == KeyFrame::Rotation) {
+                    quat last = quat();
+                    last.x = model.keyFrames[i].modifier.x;
+                    last.y = model.keyFrames[i].modifier.y;
+                    last.z = model.keyFrames[i].modifier.z;
+                    last.w = model.keyFrames[i].modifier.w;
+
+                    quat next = quat();
+                    next.x = model.keyFrames[i + 1].modifier.x;
+                    next.y = model.keyFrames[i + 1].modifier.y;
+                    next.z = model.keyFrames[i + 1].modifier.z;
+                    next.w = model.keyFrames[i + 1].modifier.w;
+
+                    joint.deformedRotation = glm::normalize(glm::slerp(last, next, interpolation));
+                } else if (modType == KeyFrame::Scale) {
+                    vec3 last = vec3(keyFrame.modifier);
+                    vec3 next = vec3(model.keyFrames[i + 1].modifier);
+
+                    joint.deformedScale = glm::mix(last, next, interpolation);
+                }
             }
         }
+        model.skeleton.update();
     };
     Entity::componentView<ModelComponent>().each(animate);
 }

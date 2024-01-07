@@ -5,8 +5,8 @@
 
 namespace R3 {
 
-static constexpr uint32 MAX_LIGHTS = 128; ///< Maximum Scene lights
-static constexpr uint32 MAX_BONES = 128;  ///< Maximum Bones allowed for a mesh
+static constexpr auto MAX_LIGHTS = 128; ///< Maximum Scene lights
+static constexpr auto MAX_BONES = 128;  ///< Maximum Bones allowed for a mesh
 
 struct R3_API ViewProjection {
     alignas(16) mat4 view;

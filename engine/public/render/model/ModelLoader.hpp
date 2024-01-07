@@ -23,7 +23,6 @@ struct MeshPrototype {
     id vertexBuffer = undefined;
     id indexBuffer = undefined;
     std::vector<id> textureIndices;
-    mat4 transform;
 };
 
 /// @brief Model Loader Specification
@@ -57,6 +56,8 @@ private:
     void processNode(glTF::Model& model, glTF::Node& node);
     void processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh);
     void processAnimations(glTF::Model& model);
+    void processSkeleton(glTF::Model& model);
+    void processJoint(glTF::Model& model, usize rootIndex, usize parentJoint);
     void processMaterial(glTF::Model& model, glTF::Material& material);
     void processTexture(glTF::Model& model, uint8 color[4], TextureType type);
     void processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type);
@@ -71,12 +72,11 @@ private:
     Ref<const CommandPool> m_commandPool;
     Ref<const StorageBuffer> m_storageBuffer;
 
-    std::vector<ModelNode> m_nodes;
     std::vector<MeshPrototype> m_prototypes;
     std::vector<KeyFrame> m_keyFrames;
-    std::vector<Skin> m_skins;
-    std::vector<id> m_textures;
+    Skeleton m_skeleton;
 
+    std::vector<id> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;
     std::string m_directory;
 };
