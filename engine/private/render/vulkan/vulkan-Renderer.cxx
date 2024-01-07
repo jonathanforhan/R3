@@ -380,15 +380,16 @@ void Renderer::renderEditorInterface(double dt) {
 void Renderer::updateLighting() {
     m_pointLights.clear();
 
-    Entity::componentView<LightComponent>().each([&, this](LightComponent& light) {
-        if (m_pointLights.size() < MAX_LIGHTS) {
-            m_pointLights.emplace_back(PointLightShaderObject{
-                .position = light.position,
-                .color = light.color,
-                .intensity = light.intensity,
-            });
-        }
-    });
+    Entity::componentView<LightComponent, TransformComponent>().each(
+        [&, this](LightComponent& light, TransformComponent& transform) {
+            if (m_pointLights.size() < MAX_LIGHTS) {
+                m_pointLights.emplace_back(PointLightShaderObject{
+                    .position = glm::translate(transform, light.position)[3],
+                    .color = light.color,
+                    .intensity = light.intensity,
+                });
+            }
+        });
 }
 
 void Renderer::waitIdle() const {

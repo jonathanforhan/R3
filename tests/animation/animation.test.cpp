@@ -3,6 +3,7 @@
 #include <R3_input>
 #include "components/CameraComponent.hpp"
 #include "components/EditorComponent.hpp"
+#include "components/LightComponent.hpp"
 #include "components/ModelComponent.hpp"
 
 // Models
@@ -15,6 +16,19 @@
 // "assets/WalkingRobot/glTF/WalkingRobot.gltf"
 
 using namespace R3;
+
+struct Robot : public Entity {
+    void init() {
+        auto& t = get<TransformComponent>();
+        t = glm::rotate(t, glm::radians(90.0f), vec3(0, 1, 0));
+        t = glm::translate(t, vec3(0, 14.2, -15));
+    }
+
+    void tick(double dt) {
+        auto& t = get<TransformComponent>();
+        t = glm::translate(t, vec3(0, 0, dt * 5));
+    }
+};
 
 extern "C" {
 
@@ -35,21 +49,24 @@ R3_DLL void Run() {
         auto& cam = Entity::create<Entity>().emplace<CameraComponent>();
         cam.setActive(true);
         cam.translateBackward(10);
+        cam.setPosition(vec3(0, 10, 0));
 
-#if 0
-        auto& cube = Entity::create<Entity>();
-        cube.emplace<ModelComponent>("assets/glTF/Models/AnimatedCube/glTF/AnimatedCube.gltf");
-        cube.emplace<EditorComponent>().name = "Cube";
-        cube.get<TransformComponent>() = glm::translate(mat4(1.0f), vec3(0, 10, 0));
-#endif
+        auto& light1 = Entity::create<Entity>();
+        auto& lc = light1.emplace<LightComponent>();
+        lc.intensity = 3.0f;
+        lc.position = vec3(0, 10, 0);
+        light1.emplace<EditorComponent>().name = "Light";
 
-        auto& robot = Entity::create<Entity>();
-        robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf");
+        auto& robot = Entity::create<Robot>();
+        robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf").skeleton.animated = true;
         robot.emplace<EditorComponent>().name = "Robot";
 
-        auto& worm = Entity::create<Entity>();
-        worm.emplace<ModelComponent>("assets/glTF/Models/RiggedSimple/glTF-Binary/RiggedSimple.glb");
-        worm.emplace<EditorComponent>().name = "Worm";
+        auto& sponza = Entity::create<Entity>();
+        sponza.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
+        sponza.emplace<EditorComponent>().name = "Sponza";
+        auto& t = sponza.get<TransformComponent>();
+        t = mat4(0.1f);
+        t = glm::translate(t, vec3(0, -10, 0));
 
     } catch (std::exception const& e) {
         LOG(Error, e.what());

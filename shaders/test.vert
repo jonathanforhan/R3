@@ -1,5 +1,4 @@
 #version 460
-#extension GL_GOOGLE_include_directive : require
 
 #define MAX_JOINTS 128
 #define MAX_JOINT_INFLUENCE 4
@@ -44,8 +43,8 @@ void main() {
     }
 
 	v_Position = vec3(u_Model * animatedPosition);
-    // v_Normal = mat3(transpose(inverse(u_Model * jointTransform))) * a_Normal;
-    v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
+    v_Normal = mat3(transpose(inverse(u_Model * jointTransform))) * a_Normal;
+    // v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
 	v_TexCoords = a_TexCoords;
 
     gl_Position = u_Projection * u_View * vec4(v_Position, 1.0);

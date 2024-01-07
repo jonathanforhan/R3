@@ -39,7 +39,7 @@ struct Skeleton {
     void update();
     void updateJoint(usize jointIndex);
 
-    bool animated = true;
+    bool animated = false;
     std::vector<Joint> joints;
     std::unordered_map<usize, usize> nodeToJointMap;
     std::vector<mat4> finalJointsMatrices; // see SSBO

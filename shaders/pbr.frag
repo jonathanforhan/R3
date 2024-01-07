@@ -123,7 +123,7 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(1.0);
+	vec3 ambientOcclusion = vec3(0.1);
 	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
 		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
@@ -180,11 +180,11 @@ void main() {
 	color = color / (color + vec3(1.0));
 
 	// gamma correction
-	// color = pow(color, vec3(1.0 / 2.2));
+	color = pow(color, vec3(1.0 / 2.2));
 
 	f_Color = vec4(color, 1.0);
 
 	if (c_Uid == c_Selected) {
-		f_Color = f_Color + vec4(0.08, 0.05, 0.0, 0.0);
+		f_Color += vec4(0.16, 0.08, -0.1, 0.0);
 	}
 }
