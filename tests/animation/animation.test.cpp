@@ -17,19 +17,6 @@
 
 using namespace R3;
 
-struct Robot : public Entity {
-    void init() {
-        auto& t = get<TransformComponent>();
-        t = glm::rotate(t, glm::radians(90.0f), vec3(0, 1, 0));
-        t = glm::translate(t, vec3(0, 14.2, -15));
-    }
-
-    void tick(double dt) {
-        auto& t = get<TransformComponent>();
-        t = glm::translate(t, vec3(0, 0, dt * 5));
-    }
-};
-
 extern "C" {
 
 R3_DLL void* Entry() {
@@ -57,16 +44,13 @@ R3_DLL void Run() {
         lc.position = vec3(0, 10, 0);
         light1.emplace<EditorComponent>().name = "Light";
 
-        auto& robot = Entity::create<Robot>();
+        auto& robot = Entity::create<Entity>();
         robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf").skeleton.animated = true;
         robot.emplace<EditorComponent>().name = "Robot";
 
-        auto& sponza = Entity::create<Entity>();
-        sponza.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
-        sponza.emplace<EditorComponent>().name = "Sponza";
-        auto& t = sponza.get<TransformComponent>();
-        t = mat4(0.1f);
-        t = glm::translate(t, vec3(0, -10, 0));
+        auto& phoenix = Entity::create<Entity>();
+        phoenix.emplace<ModelComponent>("assets/Phoenix/glTF-Binary/Phoenix.glb").skeleton.animated = true;
+        phoenix.emplace<EditorComponent>().name = "Phoenix";
 
     } catch (std::exception const& e) {
         LOG(Error, e.what());

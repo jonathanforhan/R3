@@ -123,7 +123,7 @@ void main() {
 	float metallic = mr.b;
 	float roughness = mr.g;
 
-	vec3 ambientOcclusion = vec3(0.1);
+	vec3 ambientOcclusion = vec3(1.0);
 	if (HAS_BIT(u_Flags, AMBIENT_OCCULSION_FLAG_BIT)) {
 		ambientOcclusion *= texture(u_AmbientOcclusion, v_TexCoords).rgb;
 	}
