@@ -5,7 +5,6 @@
 #include <thread>
 #include "core/Scene.hpp"
 #include "render/Renderer.hpp"
-#include "render/ResourceManager.hxx"
 #include "render/Window.hpp"
 
 namespace R3 {

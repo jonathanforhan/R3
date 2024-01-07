@@ -20,9 +20,9 @@ class Model;                 ///< @private
 } // namespace glTF
 
 struct MeshPrototype {
-    id vertexBuffer = undefined;
-    id indexBuffer = undefined;
-    std::vector<id> textureIndices;
+    VertexBuffer vertexBuffer;
+    IndexBuffer<uint32> indexBuffer;
+    std::vector<usize> textureIndices;
 };
 
 /// @brief Model Loader Specification
@@ -54,7 +54,7 @@ public:
 
 private:
     void processNode(glTF::Model& model, glTF::Node& node);
-    void processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh);
+    void processMesh(glTF::Model& model, glTF::Mesh& mesh);
     void processAnimations(glTF::Model& model);
     void processSkeleton(glTF::Model& model);
     void processJoint(glTF::Model& model, usize rootIndex, usize parentJoint);
@@ -76,8 +76,9 @@ private:
     std::vector<KeyFrame> m_keyFrames;
     Skeleton m_skeleton;
 
-    std::vector<id> m_textures;
+    std::vector<std::shared_ptr<TextureBuffer>> m_textures;
     std::unordered_map<uint32, usize> m_loadedTextures;
+    std::shared_ptr<TextureBuffer> m_nilTexture;
     std::string m_directory;
 };
 

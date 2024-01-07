@@ -17,10 +17,4 @@ ModelComponent::ModelComponent(const std::string& path) {
     }
 }
 
-ModelComponent::~ModelComponent() {
-    for (auto& mesh : meshes) {
-        mesh.destroy(CurrentScene);
-    }
-}
-
 } // namespace R3

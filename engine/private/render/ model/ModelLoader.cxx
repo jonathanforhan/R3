@@ -4,14 +4,10 @@
 #include "core/Scene.hpp"
 #include "media/glTF/glTF-Extensions.hxx"
 #include "media/glTF/glTF-Model.hxx"
-#include "private/render/ResourceManager.hxx"
 #include "render/CommandPool.hpp"
-#include "render/ResourceManager.hxx"
 #include "render/ShaderObjects.hpp"
 
 namespace R3 {
-
-static ResourceManager* resourceManager;
 
 namespace local {
 
@@ -79,7 +75,19 @@ ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
       m_swapchain(&spec.swapchain),
       m_renderPass(&spec.renderPass),
       m_commandPool(&spec.commandPool),
-      m_storageBuffer(&spec.storageBuffer) {}
+      m_storageBuffer(&spec.storageBuffer) {
+    const uint32 data = 0x00FF'FFFF; // forfills glTF spec of white base color on missing pbrMetallicRoughness
+    const TextureBufferSpecification nilTextureSpec = {
+        .physicalDevice = *m_physicalDevice,
+        .logicalDevice = *m_logicalDevice,
+        .commandBuffer = m_commandPool->commandBuffers().front(),
+        .width = 1,
+        .height = 1,
+        .raw = std::bit_cast<const std::byte*>(&data),
+        .type = TextureType::Nil,
+    };
+    m_nilTexture = std::make_shared<TextureBuffer>(nilTextureSpec);
+}
 
 void ModelLoader::load(const std::string& path, ModelComponent& model) {
     usize split = path.find_last_of('/') + 1;
@@ -87,8 +95,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
     auto file = path.substr(split);
 
     glTF::Model gltf(m_directory + file);
-
-    resourceManager = static_cast<ResourceManager*>(CurrentScene->resourceManager);
 
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
@@ -102,8 +108,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
     for (auto& prototype : m_prototypes) {
         Mesh mesh;
 
-        mesh.vertexBuffer = prototype.vertexBuffer;
-        mesh.indexBuffer = prototype.indexBuffer;
+        mesh.vertexBuffer = std::move(prototype.vertexBuffer);
+        mesh.indexBuffer = std::move(prototype.indexBuffer);
 
         // Descriptor Set Layout Bindings
         static const std::vector<DescriptorSetLayoutBinding> layoutBindings = {
@@ -128,19 +134,19 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         };
 
         // Descriptor Pool
-        mesh.material.descriptorPool = resourceManager->allocateDescriptorPool({
+        mesh.material.descriptorPool = DescriptorPool({
             .logicalDevice = *m_logicalDevice,
             .descriptorSetCount = MAX_FRAMES_IN_FLIGHT,
             .layoutBindings = layoutBindings,
         });
 
         // Pipeline
-        mesh.pipeline = resourceManager->allocateGraphicsPipeline({
+        mesh.pipeline = GraphicsPipeline({
             .physicalDevice = *m_physicalDevice,
             .logicalDevice = *m_logicalDevice,
             .swapchain = *m_swapchain,
             .renderPass = *m_renderPass,
-            .descriptorSetLayout = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool).layout(),
+            .descriptorSetLayout = mesh.material.descriptorPool.layout(),
             .vertexBindingSpecification = Vertex::vertexBindingSpecification(),
             .vertexAttributeSpecification = Vertex::vertexAttributeSpecification(),
             .vertexShaderPath = "spirv/pbr.vert.spv",
@@ -150,12 +156,12 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         // Uniform
         for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            mesh.material.uniforms[i] = resourceManager->allocateUniform({
+            mesh.material.uniforms[i] = UniformBuffer({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .bufferSize = sizeof(VertexUniformBufferObject),
             });
-            mesh.material.uniforms[i + 3] = resourceManager->allocateUniform({
+            mesh.material.uniforms[i + 3] = UniformBuffer({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .bufferSize = sizeof(FragmentUniformBufferObject),
@@ -166,52 +172,54 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         std::vector<TextureDescriptor> textureDescriptors;
 
         for (usize index : prototype.textureIndices) {
-            auto& texture = resourceManager->getTextureById(m_textures[index]);
-            auto type = texture.type();
+            TextureType type = m_textures[index]->type();
             mesh.material.pbrFlags |= (1 << (uint32(type) - 1));
 
             switch (type) {
                 case TextureType::Albedo:
                     mesh.material.textures.albedo = m_textures[index];
-                    textureDescriptors.emplace_back(m_textures[index], 1);
+                    textureDescriptors.emplace_back(*mesh.material.textures.albedo, 1);
                     break;
                 case TextureType::MetallicRoughness:
                     mesh.material.textures.metallicRoughness = m_textures[index];
-                    textureDescriptors.emplace_back(m_textures[index], 2);
+                    textureDescriptors.emplace_back(*mesh.material.textures.metallicRoughness, 2);
                     break;
                 case TextureType::Normal:
                     mesh.material.textures.normal = m_textures[index];
-                    textureDescriptors.emplace_back(m_textures[index], 3);
+                    textureDescriptors.emplace_back(*mesh.material.textures.normal, 3);
                     break;
                 case TextureType::AmbientOcclusion:
                     mesh.material.textures.ambientOcclusion = m_textures[index];
-                    textureDescriptors.emplace_back(m_textures[index], 4);
+                    textureDescriptors.emplace_back(*mesh.material.textures.ambientOcclusion, 4);
                     break;
                 case TextureType::Emissive:
                     mesh.material.textures.emissive = m_textures[index];
-                    textureDescriptors.emplace_back(m_textures[index], 5);
+                    textureDescriptors.emplace_back(*mesh.material.textures.emissive, 5);
                     break;
                 default:
                     break;
             }
         }
 
-        const uint32 data = 0x00FF'FFFF; // forfills glTF spec of white base color on missing pbrMetallicRoughness
-        const TextureBufferSpecification nilTextureSpec = {
-            .physicalDevice = *m_physicalDevice,
-            .logicalDevice = *m_logicalDevice,
-            .commandBuffer = m_commandPool->commandBuffers().front(),
-            .width = 1,
-            .height = 1,
-            .raw = std::bit_cast<const std::byte*>(&data),
-            .type = TextureType::Nil,
-        };
-
-        for (auto i = 0; i < PBR_TEXTURE_COUNT; i++) {
-            if (!(mesh.material.pbrFlags & (1 << i))) {
-                TextureBuffer::ID textureID = resourceManager->allocateTexture(nilTextureSpec);
-                textureDescriptors.emplace_back(textureID, i + 1);
-            }
+        if (!(mesh.material.pbrFlags & TexturePBR::ALBEDO_FLAG)) {
+            mesh.material.textures.albedo = m_nilTexture;
+            textureDescriptors.emplace_back(*mesh.material.textures.albedo, 1);
+        }
+        if (!(mesh.material.pbrFlags & TexturePBR::METALLIC_ROUGHNESS_FLAG)) {
+            mesh.material.textures.metallicRoughness = m_nilTexture;
+            textureDescriptors.emplace_back(*mesh.material.textures.metallicRoughness, 2);
+        }
+        if (!(mesh.material.pbrFlags & TexturePBR::NORMAL_FLAG)) {
+            mesh.material.textures.normal = m_nilTexture;
+            textureDescriptors.emplace_back(*mesh.material.textures.normal, 3);
+        }
+        if (!(mesh.material.pbrFlags & TexturePBR::AMBIENT_OCCLUSION_FLAG)) {
+            mesh.material.textures.ambientOcclusion = m_nilTexture;
+            textureDescriptors.emplace_back(*mesh.material.textures.ambientOcclusion, 4);
+        }
+        if (!(mesh.material.pbrFlags & TexturePBR::EMISSIVE_FLAG)) {
+            mesh.material.textures.emissive = m_nilTexture;
+            textureDescriptors.emplace_back(*mesh.material.textures.emissive, 5);
         }
 
         // Bindings
@@ -223,8 +231,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         StorageDescriptor storageDescriptors[] = {{*m_storageBuffer, 7}};
 
-        auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
-        auto& descriptorSets = descriptorPool.descriptorSets();
+        DescriptorPool& descriptorPool = mesh.material.descriptorPool;
+        std::vector<DescriptorSet>& descriptorSets = descriptorPool.descriptorSets();
 
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             descriptorSets[i].bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
@@ -250,11 +258,11 @@ void ModelLoader::processNode(glTF::Model& model, glTF::Node& node) {
     }
 
     if (node.mesh != undefined) {
-        processMesh(model, node, model.meshes[node.mesh]);
+        processMesh(model, model.meshes[node.mesh]);
     }
 }
 
-void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& mesh) {
+void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh) {
     for (auto& primitive : mesh.primitives) {
         CHECK(primitive.mode == glTF::TRIANGLES);
 
@@ -335,13 +343,13 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Node& node, glTF::Mesh& 
         }
 
         m_prototypes.emplace_back(MeshPrototype{
-            .vertexBuffer = resourceManager->allocateVertexBuffer({
+            .vertexBuffer = VertexBuffer({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
                 .vertices = vertices,
             }),
-            .indexBuffer = resourceManager->allocateIndexBuffer({
+            .indexBuffer = IndexBuffer<uint32>({
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
@@ -518,7 +526,7 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
 void ModelLoader::processTexture(glTF::Model&, uint8 color[4], TextureType type) {
     m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
 
-    m_textures.push_back(resourceManager->allocateTexture({
+    TextureBufferSpecification textureBufferSpecification = {
         .physicalDevice = *m_physicalDevice,
         .logicalDevice = *m_logicalDevice,
         .commandBuffer = m_commandPool->commandBuffers().front(),
@@ -526,7 +534,9 @@ void ModelLoader::processTexture(glTF::Model&, uint8 color[4], TextureType type)
         .height = 1,
         .raw = std::bit_cast<const std::byte*>(color),
         .type = type,
-    }));
+    };
+
+    m_textures.emplace_back(std::make_shared<TextureBuffer>(textureBufferSpecification));
 }
 
 void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type) {
@@ -545,18 +555,19 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureI
         auto path = std::string(m_directory + image.uri);
 
         if (!image.uri.empty()) {
-            m_textures.push_back(resourceManager->allocateTexture({
+            TextureBufferSpecification textureBufferSpecification = {
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
                 .path = path.c_str(),
                 .type = type,
-            }));
+            };
+            m_textures.emplace_back(std::make_shared<TextureBuffer>(textureBufferSpecification));
         } else {
             glTF::BufferView& bufferView = model.bufferViews[image.bufferView];
             const std::byte* data = std::bit_cast<const std::byte*>(&model.buffer()[bufferView.byteOffset]);
 
-            m_textures.push_back(resourceManager->allocateTexture({
+            TextureBufferSpecification textureBufferSpecification = {
                 .physicalDevice = *m_physicalDevice,
                 .logicalDevice = *m_logicalDevice,
                 .commandBuffer = m_commandPool->commandBuffers().front(),
@@ -564,7 +575,8 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureI
                 .height = 0,
                 .data = data,
                 .type = type,
-            }));
+            };
+            m_textures.emplace_back(std::make_shared<TextureBuffer>(textureBufferSpecification));
         }
     }
 }

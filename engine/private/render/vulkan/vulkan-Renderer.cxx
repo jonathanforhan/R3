@@ -13,7 +13,6 @@
 #include "components/LightComponent.hpp"
 #include "input/MouseEvent.hpp"
 #include "input/WindowEvent.hpp"
-#include "render/ResourceManager.hxx"
 #include "render/ShaderObjects.hpp"
 
 namespace R3 {
@@ -260,19 +259,14 @@ void Renderer::render() {
     //*************************************** RENDER PASS BEGIN ***************************************//
 
     // draw every mesh of every model
-    auto draw = [&](auto entity, const TransformComponent& transform, const ModelComponent& model) {
-        for (const Mesh& mesh : model.meshes) {
-            auto* resourceManager = static_cast<ResourceManager*>(CurrentScene->resourceManager);
+    auto draw = [&](auto entity, const TransformComponent& transform, ModelComponent& model) {
+        for (Mesh& mesh : model.meshes) {
+            auto& uniform = mesh.material.uniforms[m_currentFrame];
+            auto& lightUniform = mesh.material.uniforms[m_currentFrame + MAX_FRAMES_IN_FLIGHT];
+            const auto& descriptorSet = mesh.material.descriptorPool.descriptorSets()[m_currentFrame];
 
-            auto& pipeline = resourceManager->getGraphicsPipelineById(mesh.pipeline);
-            auto& uniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame]);
-            auto& lightUniform = resourceManager->getUniformById(mesh.material.uniforms[m_currentFrame + 3]);
-            auto& descriptorPool = resourceManager->getDescriptorPoolById(mesh.material.descriptorPool);
-            auto& vertexBuffer = resourceManager->getVertexBufferById(mesh.vertexBuffer);
-            auto& indexBuffer = resourceManager->getIndexBufferById(mesh.indexBuffer);
-
-            cmd.bindPipeline(pipeline);
-            cmd.bindDescriptorSet(pipeline.layout(), descriptorPool.descriptorSets()[m_currentFrame]);
+            cmd.bindPipeline(mesh.pipeline);
+            cmd.bindDescriptorSet(mesh.pipeline.layout(), descriptorSet);
 
             FragmentPushConstant fragmentPushConstant = {
                 .cursorPosition = m_cursorPosition,
@@ -280,7 +274,7 @@ void Renderer::render() {
                 .selected = m_editor.currentEntity(),
             };
             cmd.pushConstants(
-                pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));
+                mesh.pipeline.layout(), ShaderStage::Fragment, &fragmentPushConstant, sizeof(fragmentPushConstant));
 
             VertexUniformBufferObject vubo = {
                 .model = transform,
@@ -300,9 +294,9 @@ void Renderer::render() {
             std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
             lightUniform.write(&fubo, sizeof(fubo));
 
-            cmd.bindVertexBuffer(vertexBuffer);
-            cmd.bindIndexBuffer(indexBuffer);
-            cmd.as<vk::CommandBuffer>().drawIndexed(indexBuffer.count(), 1, 0, 0, 0);
+            cmd.bindVertexBuffer(mesh.vertexBuffer);
+            cmd.bindIndexBuffer(mesh.indexBuffer);
+            cmd.as<vk::CommandBuffer>().drawIndexed(mesh.indexBuffer.count(), 1, 0, 0, 0);
         }
     };
     Entity::componentView<TransformComponent, ModelComponent>().each(draw);

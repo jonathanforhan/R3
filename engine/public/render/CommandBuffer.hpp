@@ -95,8 +95,8 @@ public:
 
     /// @brief Bind DescriptorSet to CommandBuffer, this tells the Buffer about shader binding data
     /// @param pipelineLayout
-    /// @param descriptorSets
-    void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSets) const;
+    /// @param descriptorSet
+    void bindDescriptorSet(const PipelineLayout& pipelineLayout, const DescriptorSet& descriptorSet) const;
 
     /// @brief Push Constants to a Shader Stage
     /// @param layout

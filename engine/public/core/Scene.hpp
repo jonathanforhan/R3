@@ -19,9 +19,6 @@ public:
     /// @param id uuid
     explicit Scene(uuid32 id, const char* name);
 
-    /// @brief Free resource manager
-    ~Scene();
-
     /// @brief clear the Scene's ECS Registry of all entities and components
     void clearRegistry();
 

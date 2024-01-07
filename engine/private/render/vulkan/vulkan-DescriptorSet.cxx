@@ -9,7 +9,6 @@
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/RenderSpecification.hpp"
-#include "render/ResourceManager.hxx"
 
 namespace R3 {
 
@@ -49,10 +48,8 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorBufferInfos.reserve(spec.uniformDescriptors.size() + spec.storageDescriptors.size());
 
     for (const auto& it : spec.uniformDescriptors) {
-        auto& uniform = ((ResourceManager*)CurrentScene->resourceManager)->getUniformById(it.uniform);
-
         auto& info = descriptorBufferInfos.emplace_back(vk::DescriptorBufferInfo{
-            .buffer = uniform.as<vk::Buffer>(),
+            .buffer = it.uniform.as<vk::Buffer>(),
             .offset = it.offset,
             .range = it.range ? it.range : vk::WholeSize,
         });
@@ -97,11 +94,9 @@ void DescriptorSet::bindResources(const DescriptorSetBindingSpecification& spec)
     descriptorImageInfos.reserve(spec.textureDescriptors.size());
 
     for (const auto& it : spec.textureDescriptors) {
-        auto& texture = ((ResourceManager*)CurrentScene->resourceManager)->getTextureById(it.texture);
-
         auto& info = descriptorImageInfos.emplace_back(vk::DescriptorImageInfo{
-            .sampler = texture.sampler().as<vk::Sampler>(),
-            .imageView = texture.textureView().as<vk::ImageView>(),
+            .sampler = it.texture.sampler().as<vk::Sampler>(),
+            .imageView = it.texture.textureView().as<vk::ImageView>(),
             .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
         });
 

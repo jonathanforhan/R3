@@ -36,6 +36,10 @@ public:
     /// @return sets
     [[nodiscard]] constexpr std::vector<DescriptorSet>& descriptorSets() { return m_descriptorSets; }
 
+    /// @brief Query DescriptorSets owned by this pool
+    /// @return sets
+    [[nodiscard]] constexpr const std::vector<DescriptorSet>& descriptorSets() const { return m_descriptorSets; }
+
 private:
     Ref<const LogicalDevice> m_logicalDevice;
     DescriptorSetLayout m_layout;

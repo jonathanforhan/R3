@@ -18,7 +18,6 @@ public:
     using Handle = void*; ///< Opaque Handle type will be converted to API specific Handle when queried
     using HandleRef = Ref<std::remove_pointer_t<Handle>>;            ///< Handle Reference Type
     using HandleConstRef = Ref<const std::remove_pointer_t<Handle>>; ///< Handle const Reference Type
-    using ID = usize;                                                ///< ID type used by GlobalResourceManager
 
 protected:
     DEFAULT_CONSTRUCT(NativeRenderObject);

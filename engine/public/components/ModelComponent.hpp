@@ -20,7 +20,6 @@ public:
     /// @brief Create Model by filepath
     /// @param path
     ModelComponent(const std::string& path);
-    ~ModelComponent();
 
 public:
     float currentTime = 0.0f;
