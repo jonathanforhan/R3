@@ -59,8 +59,8 @@ public:
     [[nodiscard]] constexpr uint32 index() const { return m_queueIndex; }
 
 private:
-    QueueType m_queueType;
-    uint32 m_queueIndex;
+    QueueType m_queueType = QueueType::Graphics;
+    uint32 m_queueIndex = undefined;
 };
 
 } // namespace R3

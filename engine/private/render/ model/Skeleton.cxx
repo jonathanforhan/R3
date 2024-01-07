@@ -2,8 +2,8 @@
 
 namespace R3 {
 
-void Skeleton::update() {
-    if (!animated) {
+void Skeleton::update(bool isAnimated) {
+    if (!isAnimated) {
         for (auto& jointMatrix : finalJointsMatrices) {
             jointMatrix = mat4(1.0f);
         }

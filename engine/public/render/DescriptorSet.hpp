@@ -26,10 +26,10 @@ struct R3_API UniformDescriptor {
 
 /// @brief Descriptor Describing Storage Data
 struct R3_API StorageDescriptor {
-    const StorageBuffer& storageBuffer; // TODO match other API
-    uint32 binding;                     ///< Descriptor Shader binding
-    usize offset = 0;                   ///< Descriptor Shader offset
-    usize range = 0;                    ///< Size in bytes used for update, the entire buffer is updated if range=0
+    const StorageBuffer& storageBuffer;
+    uint32 binding;   ///< Descriptor Shader binding
+    usize offset = 0; ///< Descriptor Shader offset
+    usize range = 0;  ///< Size in bytes used for update, the entire buffer is updated if range=0
 };
 
 /// @brief Descriptor Describing Texture Data

@@ -35,7 +35,7 @@ public:
 private:
     Ref<const LogicalDevice> m_logicalDevice;
     void* m_mappedMemory = nullptr;
-    usize m_bufferSize;
+    usize m_bufferSize = undefined;
 };
 
 } // namespace R3

@@ -8,8 +8,6 @@
 
 namespace R3 {
 
-class R3_API Scene;
-
 struct R3_API Mesh {
     VertexBuffer vertexBuffer;
     IndexBuffer<uint32> indexBuffer;

@@ -13,8 +13,6 @@ class EntityView;
 
 class R3_API Scene {
 public:
-    using ResourceManagerImpl = void*;
-
     /// @brief Create Scene with uuid
     /// @param id uuid
     explicit Scene(uuid32 id, const char* name);
@@ -109,9 +107,8 @@ public:
     [[nodiscard]] static vec2 cursorPosition();
 
 public:
-    const uuid32 id;                     ///< Scene id
-    const char* name;                    ///< Scene name
-    ResourceManagerImpl resourceManager; ///< Handle to Scene ResourceManager
+    const uuid32 id;  ///< Scene id
+    const char* name; ///< Scene name
 
 private:
     //--- Graphics

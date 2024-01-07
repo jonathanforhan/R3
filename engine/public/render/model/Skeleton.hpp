@@ -36,10 +36,9 @@ struct Joint {
 
 /// @brief Node Hierachy
 struct Skeleton {
-    void update();
+    void update(bool isAnimated = true);
     void updateJoint(usize jointIndex);
 
-    bool animated = false;
     std::vector<Joint> joints;
     std::unordered_map<usize, usize> nodeToJointMap;
     std::vector<mat4> finalJointsMatrices; // see SSBO

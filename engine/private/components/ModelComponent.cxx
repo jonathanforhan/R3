@@ -8,11 +8,11 @@ namespace R3 {
 
 ModelComponent::ModelComponent(const std::string& path) {
     EngineInstance->renderer().modelLoader().load(path, *this);
-    if (!keyFrames.empty()) {
+    if (!animation.keyFrames.empty()) {
         Scene::addSystem<AnimationSystem>();
 
-        for (auto& keyFrame : keyFrames) {
-            maxTime = std::max(keyFrame.timestamp, maxTime);
+        for (auto& keyFrame : animation.keyFrames) {
+            animation.maxTime = std::max(keyFrame.timestamp, animation.maxTime);
         }
     }
 }

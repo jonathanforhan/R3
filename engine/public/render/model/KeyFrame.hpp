@@ -1,7 +1,6 @@
 #pragma once
 
 #include <R3>
-#include <variant>
 
 namespace R3 {
 

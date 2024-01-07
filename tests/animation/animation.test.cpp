@@ -45,11 +45,11 @@ R3_DLL void Run() {
         light1.emplace<EditorComponent>().name = "Light";
 
         auto& robot = Entity::create<Entity>();
-        robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf").skeleton.animated = true;
+        robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf").animation.running = true;
         robot.emplace<EditorComponent>().name = "Robot";
 
         auto& phoenix = Entity::create<Entity>();
-        phoenix.emplace<ModelComponent>("assets/Phoenix/glTF-Binary/Phoenix.glb").skeleton.animated = true;
+        phoenix.emplace<ModelComponent>("assets/Phoenix/glTF-Binary/Phoenix.glb").animation.running = true;
         phoenix.emplace<EditorComponent>().name = "Phoenix";
 
     } catch (std::exception const& e) {

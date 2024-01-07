@@ -49,7 +49,7 @@ private:
 private:
     Ref<const Surface> m_surface;
     std::vector<const char*> m_extensions;
-    uint8 m_sampleCount;
+    uint8 m_sampleCount = undefined;
 };
 
 } // namespace R3

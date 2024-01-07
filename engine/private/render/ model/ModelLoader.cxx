@@ -241,7 +241,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         model.meshes.emplace_back(std::move(mesh));
     }
 
-    model.keyFrames = std::move(m_keyFrames);
+    model.animation.keyFrames = std::move(m_keyFrames);
     model.skeleton = std::move(m_skeleton);
 
     // save for reuse
