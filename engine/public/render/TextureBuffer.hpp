@@ -48,6 +48,7 @@ public:
     [[nodiscard]] constexpr const ImageView& textureView() const { return m_imageView; } ///< Query Texture ImageView
     [[nodiscard]] constexpr const Sampler& sampler() const { return m_sampler; }         ///< Query Texture Sampler
     [[nodiscard]] constexpr TextureType type() const { return m_type; }                  ///< Query type
+    void setType(TextureType type) { m_type = type; }                                    ///< Type setter
 
 private:
     Ref<const LogicalDevice> m_logicalDevice;

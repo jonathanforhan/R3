@@ -2,11 +2,14 @@
 
 #include "render/Queue.hpp"
 
+#include <mutex>
 #include <vulkan/vulkan.hpp>
-#include "api/Check.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
+
+static std::mutex s_graphicsMutex;
+static std::mutex s_presentationMutex;
 
 QueueFamilyIndices QueueFamilyIndices::query(NativeRenderObject&& physicalDeviceHandle,
                                              NativeRenderObject&& surfaceHandle) {
@@ -41,6 +44,22 @@ void Queue::acquire(const QueueSpecification& spec) {
     m_queueType = spec.queueType;
     m_queueIndex = spec.queueIndex;
     setHandle(spec.logicalDevice->as<vk::Device>().getQueue(m_queueIndex, 0));
+}
+
+void Queue::lock() const {
+    if (m_queueType == QueueType::Graphics) {
+        s_graphicsMutex.lock();
+    } else {
+        s_presentationMutex.lock();
+    }
+}
+
+void Queue::unlock() const {
+    if (m_queueType == QueueType::Graphics) {
+        s_graphicsMutex.unlock();
+    } else {
+        s_presentationMutex.unlock();
+    }
 }
 
 } // namespace R3

@@ -195,8 +195,10 @@ void CommandBuffer::submit(const CommandBufferSumbitSpecification& spec) const {
         .pSignalSemaphores = (const vk::Semaphore*)spec.signalSemaphores.data(),
     };
 
+    m_logicalDevice->graphicsQueue().lock();
     spec.fence ? m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo, spec.fence->as<vk::Fence>())
                : m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
+    m_logicalDevice->graphicsQueue().unlock();
 }
 
 void CommandBuffer::oneTimeSubmit() const {
@@ -206,8 +208,10 @@ void CommandBuffer::oneTimeSubmit() const {
         .commandBufferCount = 1,
         .pCommandBuffers = &vkCommandBuffer,
     };
+    m_logicalDevice->graphicsQueue().lock();
     m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
     m_logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
+    m_logicalDevice->graphicsQueue().unlock();
 }
 
 int32 CommandBuffer::present(const CommandBufferPresentSpecification& spec) const {

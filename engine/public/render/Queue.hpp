@@ -37,8 +37,8 @@ public:
 /// @brief Queue Specification
 struct R3_API QueueSpecification {
     Ref<const LogicalDevice> logicalDevice; ///< LogicalDevice
-    QueueType queueType;                    ///< type of queue to create
-    uint32 queueIndex;                      ///< Index of queue as gotten through QueueFamilyIndices::query(...);
+    QueueType queueType = {};               ///< type of queue to create
+    uint32 queueIndex = undefined;          ///< Index of queue as gotten through QueueFamilyIndices::query(...);
 };
 
 /// @brief Device Queue, Queues live on the hardware
@@ -58,8 +58,14 @@ public:
     /// @return index
     [[nodiscard]] constexpr uint32 index() const { return m_queueIndex; }
 
+    /// @brief Lock the queue for a queue operation
+    void lock() const;
+
+    /// @brief Unlock the queue
+    void unlock() const;
+
 private:
-    QueueType m_queueType = QueueType::Graphics;
+    QueueType m_queueType = {};
     uint32 m_queueIndex = undefined;
 };
 

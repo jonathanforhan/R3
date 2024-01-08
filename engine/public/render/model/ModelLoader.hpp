@@ -64,6 +64,8 @@ private:
     void processTexture(glTF::Model& model, glTF::NormalTextureInfo& textureInfo, TextureType type);
     void processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type);
 
+    void preProcessTextures(glTF::Model& model);
+
 private:
     Ref<const PhysicalDevice> m_physicalDevice;
     Ref<const LogicalDevice> m_logicalDevice;

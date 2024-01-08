@@ -10,17 +10,22 @@ namespace R3 {
 
 namespace local {
 
-static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolType flags) {
-    switch (flags) {
-        case CommandPoolType::Protected:
-            return vk::CommandPoolCreateFlagBits::eProtected;
-        case CommandPoolType::Reset:
-            return vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
-        case CommandPoolType::Transient:
-            return vk::CommandPoolCreateFlagBits::eTransient;
-        default:
-            ENSURE(false);
+static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolType::Flags flags) {
+    uint32 bits = {};
+
+    if (flags & CommandPoolType::Protected) {
+        bits |= uint32(vk::CommandPoolCreateFlagBits::eProtected);
     }
+
+    if (flags & CommandPoolType::Reset) {
+        bits |= uint32(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+    }
+
+    if (flags & CommandPoolType::Transient) {
+        bits |= uint32(vk::CommandPoolCreateFlagBits::eTransient);
+    }
+
+    return vk::CommandPoolCreateFlags(bits);
 }
 
 } // namespace local

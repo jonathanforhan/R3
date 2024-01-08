@@ -3,23 +3,26 @@
 /// @brief Pool from which CommandBuffers are allocated
 /// A thread can only write to 1 CommandPool at a time, so a thread has a CommandPool each
 
+#include "api/Flag.hpp"
 #include "render/CommandBuffer.hpp"
 #include "render/RenderApi.hpp"
 
 namespace R3 {
 
 /// @brief Command Pool Type
-enum class R3_API CommandPoolType {
-    Transient, ///< Used Short-lived CommandPools
-    Reset,     ///< Use and can be reset to initial state
-    Protected, ///< Protected CommandBuffer
+struct R3_API CommandPoolType : public Flag {
+    enum {
+        Transient, ///< Used Short-lived CommandPools
+        Reset,     ///< Use and can be reset to initial state
+        Protected, ///< Protected CommandBuffer
+    };
 };
 
 /// @brief Command Pool Specification
 struct R3_API CommandPoolSpecification {
     const LogicalDevice& logicalDevice; ///< Logical Device
     const Swapchain& swapchain;         ///< Swapchain
-    CommandPoolType type;               ///< CommandPool type
+    CommandPoolType::Flags type;        ///< CommandPool type
     uint32 commandBufferCount;          ///< CommandBuffer count
 };
 

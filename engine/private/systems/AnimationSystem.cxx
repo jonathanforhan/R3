@@ -60,7 +60,7 @@ void AnimationSystem::tick(double dt) {
                 }
             }
         }
-        model.skeleton.update();
+        model.skeleton.update(model.animation.running);
     };
     Entity::componentView<ModelComponent>().each(animate);
 }

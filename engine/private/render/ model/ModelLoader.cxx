@@ -96,6 +96,7 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
     glTF::Model gltf(m_directory + file);
 
+    preProcessTextures(gltf);
     for (auto& scene : gltf.scenes) {
         for (uint32 iNode : scene.nodes) {
             processNode(gltf, gltf.nodes[iNode]);
@@ -540,44 +541,11 @@ void ModelLoader::processTexture(glTF::Model&, uint8 color[4], TextureType type)
 }
 
 void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type) {
-    if (m_loadedTextures.contains(textureInfo.index)) {
-        m_prototypes.back().textureIndices.emplace_back(m_loadedTextures[textureInfo.index]);
-        return;
-    } else {
-        m_loadedTextures.emplace(textureInfo.index, m_textures.size());
-    }
-
     glTF::Texture& texture = model.textures[textureInfo.index];
 
     if (texture.source != undefined) {
-        m_prototypes.back().textureIndices.emplace_back(static_cast<uint32>(m_textures.size()));
-        glTF::Image& image = model.images[texture.source];
-        auto path = std::string(m_directory + image.uri);
-
-        if (!image.uri.empty()) {
-            TextureBufferSpecification textureBufferSpecification = {
-                .physicalDevice = *m_physicalDevice,
-                .logicalDevice = *m_logicalDevice,
-                .commandBuffer = m_commandPool->commandBuffers().front(),
-                .path = path.c_str(),
-                .type = type,
-            };
-            m_textures.emplace_back(std::make_shared<TextureBuffer>(textureBufferSpecification));
-        } else {
-            glTF::BufferView& bufferView = model.bufferViews[image.bufferView];
-            const std::byte* data = std::bit_cast<const std::byte*>(&model.buffer()[bufferView.byteOffset]);
-
-            TextureBufferSpecification textureBufferSpecification = {
-                .physicalDevice = *m_physicalDevice,
-                .logicalDevice = *m_logicalDevice,
-                .commandBuffer = m_commandPool->commandBuffers().front(),
-                .width = bufferView.byteLength,
-                .height = 0,
-                .data = data,
-                .type = type,
-            };
-            m_textures.emplace_back(std::make_shared<TextureBuffer>(textureBufferSpecification));
-        }
+        m_prototypes.back().textureIndices.emplace_back(textureInfo.index);
+        m_textures[textureInfo.index]->setType(type);
     }
 }
 
@@ -589,6 +557,68 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::NormalTextureInfo& te
 void ModelLoader::processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo.index};
     processTexture(model, adapter, type);
+}
+
+void ModelLoader::preProcessTextures(glTF::Model& model) {
+    m_textures.resize(model.textures.size());
+    std::vector<std::thread> pool;
+
+    for (uint32 i = 0; const glTF::Texture& texture : model.textures) {
+        if (texture.source == uint32(undefined)) {
+            m_textures.emplace_back(nullptr);
+            continue;
+        }
+
+        glTF::Image& image = model.images[texture.source];
+        std::string path = m_directory + image.uri;
+
+        pool.emplace_back([&, i, path]() {
+            CommandPool commandPool = CommandPoolSpecification{
+                .logicalDevice = *m_logicalDevice,
+                .swapchain = *m_swapchain,
+                .type = CommandPoolType::Transient | CommandPoolType::Reset,
+                .commandBufferCount = 1,
+            };
+
+            std::vector<CommandBuffer> commandBuffers = CommandBuffer::allocate({
+                .logicalDevice = *m_logicalDevice,
+                .swapchain = *m_swapchain,
+                .commandPool = commandPool,
+                .commandBufferCount = 1,
+            });
+
+            if (!image.uri.empty()) {
+                TextureBufferSpecification textureBufferSpecification = {
+                    .physicalDevice = *m_physicalDevice,
+                    .logicalDevice = *m_logicalDevice,
+                    .commandBuffer = commandBuffers.front(),
+                    .path = path.c_str(),
+                    .type = TextureType::Nil, // set later
+                };
+                m_textures[i] = std::make_shared<TextureBuffer>(textureBufferSpecification);
+            } else {
+                glTF::BufferView& bufferView = model.bufferViews[image.bufferView];
+                const std::byte* data = std::bit_cast<const std::byte*>(&model.buffer()[bufferView.byteOffset]);
+
+                TextureBufferSpecification textureBufferSpecification = {
+                    .physicalDevice = *m_physicalDevice,
+                    .logicalDevice = *m_logicalDevice,
+                    .commandBuffer = commandBuffers.front(),
+                    .width = bufferView.byteLength,
+                    .height = 0,
+                    .data = data,
+                    .type = TextureType::Nil, // set later
+                };
+                m_textures[i] = std::make_shared<TextureBuffer>(textureBufferSpecification);
+            }
+        });
+
+        i++;
+    }
+
+    for (auto& thread : pool) {
+        thread.join();
+    }
 }
 
 } // namespace R3
