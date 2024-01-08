@@ -249,7 +249,6 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
     m_prototypes.clear();
     m_keyFrames.clear();
     m_textures.clear();
-    m_loadedTextures.clear();
     m_skeleton = Skeleton();
 }
 

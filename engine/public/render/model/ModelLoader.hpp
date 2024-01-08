@@ -79,7 +79,6 @@ private:
     Skeleton m_skeleton;
 
     std::vector<std::shared_ptr<TextureBuffer>> m_textures;
-    std::unordered_map<uint32, usize> m_loadedTextures;
     std::shared_ptr<TextureBuffer> m_nilTexture;
     std::string m_directory;
 };
