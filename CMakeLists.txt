@@ -46,27 +46,46 @@ if (R3_VULKAN)
 	find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
 endif ()
 
+if (WIN32)
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	COMMAND
+	powershell
+		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/asset_link.ps1"
 		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
+)
+else ()
+execute_process(
+	COMMAND 
+	python
+		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/asset_link.py"
+		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
+)
+endif ()
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	COMMAND
+		${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures"
+)
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
+	COMMAND
+		${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts"
+)
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E make_directory
+	COMMAND
+		${CMAKE_COMMAND} -E make_directory
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )
 
-add_custom_target(COMPILE_SHADERS ALL COMMAND
+add_custom_target(COMPILE_SHADERS ALL
+	COMMAND
 	python
 		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py"
 		"${glslc_executable}"

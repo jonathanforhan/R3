@@ -18,7 +18,7 @@ enum class R3_API CommandBufferUsage {
 /// @brief CommandBuffer Sumbit Specification
 /// Accepts spans of the handles to the R3 Semaphores to not have to convert and dynamically allocate memory
 struct R3_API CommandBufferSumbitSpecification {
-    PipelineStage::Flags waitStages;                    ///< Wait on these Pipeline stages (bitwise | the flags)
+    PipelineStage::Flags waitStages = undefined;        ///< Wait on these Pipeline stages (bitwise | the flags)
     std::span<const NativeRenderObject> waitSemaphores; ///< Wait on these Semaphores
     std::span<NativeRenderObject> signalSemaphores;     ///< Trigger Semaphores when complete
     Ref<Fence> fence;                                   ///< (optional) Signal this Fence when complete
