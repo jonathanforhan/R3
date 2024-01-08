@@ -50,7 +50,10 @@ public:
     /// @brief Load in a glTF Model from path
     /// @param path
     /// @param[out] model
-    void load(const std::string& path, ModelComponent& model);
+    void load(const std::string& path,
+              ModelComponent& model,
+              const char* vertexShader = nullptr,
+              const char* fragmentShader = nullptr);
 
 private:
     void processNode(glTF::Model& model, glTF::Node& node);

@@ -2,6 +2,8 @@
 #include <R3_core>
 #include <R3_input>
 #include "components/CameraComponent.hpp"
+#include "components/EditorComponent.hpp"
+#include "components/LightComponent.hpp"
 #include "components/ModelComponent.hpp"
 
 using namespace R3;
@@ -24,10 +26,31 @@ R3_DLL void Run() {
         //--- Camera
         Entity::create<Entity>().emplace<CameraComponent>().setActive(true);
 
-        auto& entity = Entity::create<Entity>();
-        entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
-        auto& transform = entity.get<TransformComponent>();
-        transform = glm::translate(transform, vec3(0, -2, 0));
+        {
+            auto& light1 = Entity::create<Entity>();
+            auto& lc = light1.emplace<LightComponent>();
+            lc.intensity = 10.0f;
+            lc.position = vec3(0, 4, 0);
+            light1.emplace<EditorComponent>().name = "Light";
+        }
+
+        {
+            auto& sponza = Entity::create<Entity>();
+            sponza.emplace<ModelComponent>("assets/glTF/Models/Sponza/glTF/Sponza.gltf");
+            sponza.emplace<EditorComponent>().name = "Sponza";
+            auto& t = sponza.get<TransformComponent>();
+            t = glm::translate(t, vec3(0, -2, 0));
+            t = glm::scale(t, vec3(0.01f));
+        }
+
+        {
+            auto& peter = Entity::create<Entity>();
+            auto& c(peter.emplace<ModelComponent>(
+                "assets/peter_griffin.glb", "spirv/test.vert.spv", "spirv/test.frag.spv"));
+            c.animation.running = true;
+            peter.emplace<EditorComponent>().name = "Peter";
+            auto& t = peter.get<TransformComponent>();
+        }
     } catch (std::exception const& e) {
         LOG(Error, e.what());
     }

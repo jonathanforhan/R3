@@ -12,13 +12,12 @@ namespace R3 {
 /// @brief ModelComponent holds Mesh data
 /// A ModelComponent is constructed through the ModelLoader owned by the Renderer
 struct R3_API ModelComponent {
-    DEFAULT_CONSTRUCT(ModelComponent);
     NO_COPY(ModelComponent);
     DEFAULT_MOVE(ModelComponent);
 
     /// @brief Create Model by filepath
     /// @param path
-    ModelComponent(const std::string& path);
+    ModelComponent(const std::string& path, const char* vertexShader = nullptr, const char* fragmentShader = nullptr);
 
     std::vector<Mesh> meshes;
     Skeleton skeleton;

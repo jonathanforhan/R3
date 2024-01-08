@@ -6,8 +6,8 @@
 
 namespace R3 {
 
-ModelComponent::ModelComponent(const std::string& path) {
-    EngineInstance->renderer().modelLoader().load(path, *this);
+ModelComponent::ModelComponent(const std::string& path, const char* vertexShader, const char* fragmentShader) {
+    EngineInstance->renderer().modelLoader().load(path, *this, vertexShader, fragmentShader);
     if (!animation.keyFrames.empty()) {
         Scene::addSystem<AnimationSystem>();
 

@@ -27,11 +27,7 @@ void main() {
     mat4 jointTransform = mat4(0.0f);
 
     for (int i = 0; i < MAX_JOINT_INFLUENCE; i++) {
-        if (a_JointIDs[i] < 0) {
-            continue;
-        }
-
-        if (a_JointIDs[i] >= MAX_JOINTS) {
+        if (a_JointIDs[i] >= MAX_JOINTS || a_JointIDs[i] < 0) {
             animatedPosition = vec4(a_Position, 1.0f);
             jointTransform = mat4(1.0f);
             break;
@@ -44,7 +40,6 @@ void main() {
 
 	v_Position = vec3(u_Model * animatedPosition);
     v_Normal = mat3(transpose(inverse(u_Model * jointTransform))) * a_Normal;
-    // v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
 	v_TexCoords = a_TexCoords;
 
     gl_Position = u_Projection * u_View * vec4(v_Position, 1.0);

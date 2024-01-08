@@ -4,70 +4,11 @@
 #include "core/Scene.hpp"
 #include "media/glTF/glTF-Extensions.hxx"
 #include "media/glTF/glTF-Model.hxx"
+#include "media/glTF/glTF-Util.hxx"
 #include "render/CommandPool.hpp"
 #include "render/ShaderObjects.hpp"
 
 namespace R3 {
-
-namespace local {
-
-static usize datatypeSize(uint32 datatype) {
-    switch (datatype) {
-        case glTF::UNSIGNED_BYTE:
-        case glTF::BYTE:
-            return sizeof(uint8);
-        case glTF::UNSIGNED_SHORT:
-        case glTF::SHORT:
-            return sizeof(uint16);
-        case glTF::UNSIGNED_INT:
-        case glTF::INT:
-            return sizeof(uint32);
-        case glTF::FLOAT:
-            return sizeof(float);
-        default:
-            ENSURE(false);
-    }
-};
-
-static usize componentElements(std::string_view component) {
-    if (component == "SCALAR") {
-        return 1;
-    } else if (component == "VEC2") {
-        return 2;
-    } else if (component == "VEC3") {
-        return 3;
-    } else if (component == "VEC4") {
-        return 4;
-    } else if (component == "MAT2") {
-        return 4;
-    } else if (component == "MAT3") {
-        return 9;
-    } else if (component == "MAT4") {
-        return 16;
-    } else {
-        ENSURE(false);
-    }
-};
-
-template <typename T, typename N = T>
-static void readAccessor(glTF::Model& model, usize accessorIndex, std::vector<T>& data) {
-    CHECK(data.empty());
-
-    glTF::Accessor& accessor = model.accessors[accessorIndex];
-    glTF::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-
-    CHECK(datatypeSize(accessor.componentType) * componentElements(accessor.type) == sizeof(N));
-
-    uint32 offset = accessor.byteOffset + bufferView.byteOffset;
-    data.resize(accessor.count);
-
-    // can take a vector of <typename T> and read the accessor as <typename N>
-    // eg accesor<uint16>[] --> std::vector<uint32>
-    usize i = 0;
-    std::ranges::generate(data, [&] { return *std::bit_cast<const N*>(&model.buffer()[offset + i++ * sizeof(N)]); });
-}
-
-} // namespace local
 
 ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
     : m_physicalDevice(&spec.physicalDevice),
@@ -89,7 +30,10 @@ ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
     m_nilTexture = std::make_shared<TextureBuffer>(nilTextureSpec);
 }
 
-void ModelLoader::load(const std::string& path, ModelComponent& model) {
+void ModelLoader::load(const std::string& path,
+                       ModelComponent& model,
+                       const char* vertexShader,
+                       const char* fragmentShader) {
     usize split = path.find_last_of('/') + 1;
     m_directory = path.substr(0, split);
     auto file = path.substr(split);
@@ -150,8 +94,8 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             .descriptorSetLayout = mesh.material.descriptorPool.layout(),
             .vertexBindingSpecification = Vertex::vertexBindingSpecification(),
             .vertexAttributeSpecification = Vertex::vertexAttributeSpecification(),
-            .vertexShaderPath = "spirv/pbr.vert.spv",
-            .fragmentShaderPath = "spirv/pbr.frag.spv",
+            .vertexShaderPath = vertexShader ? vertexShader : "spirv/pbr.vert.spv",
+            .fragmentShaderPath = fragmentShader ? fragmentShader : "spirv/pbr.frag.spv",
             .msaa = true,
         });
 
@@ -227,16 +171,14 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
         std::vector<UniformDescriptor> uniformDescriptors;
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             uniformDescriptors.emplace_back(mesh.material.uniforms[i], 0);
-            uniformDescriptors.emplace_back(mesh.material.uniforms[i + 3], 6);
+            uniformDescriptors.emplace_back(mesh.material.uniforms[i + MAX_FRAMES_IN_FLIGHT], 6);
         };
 
         StorageDescriptor storageDescriptors[] = {{*m_storageBuffer, 7}};
 
-        DescriptorPool& descriptorPool = mesh.material.descriptorPool;
-        std::vector<DescriptorSet>& descriptorSets = descriptorPool.descriptorSets();
-
-        for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            descriptorSets[i].bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
+        std::vector<DescriptorSet>& descriptorSets = mesh.material.descriptorPool.descriptorSets();
+        for (auto& descriptorSet : descriptorSets) {
+            descriptorSet.bindResources({uniformDescriptors, storageDescriptors, textureDescriptors});
         }
 
         model.meshes.emplace_back(std::move(mesh));
@@ -269,45 +211,41 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh) {
         //--- Vertices
         std::vector<vec3> positions;
         CHECK(primitive.attributes.HasMember(glTF::POSITION));
-        local::readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
+        glTF::readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
 
         std::vector<vec3> normals;
         if (primitive.attributes.HasMember(glTF::NORMAL)) {
-            local::readAccessor(model, primitive.attributes[glTF::NORMAL].GetUint(), normals);
+            glTF::readAccessor(model, primitive.attributes[glTF::NORMAL].GetUint(), normals);
         }
 
         std::vector<vec2> texCoords;
         if (primitive.attributes.HasMember(glTF::TEXCOORD_0)) {
-            local::readAccessor(model, primitive.attributes[glTF::TEXCOORD_0].GetUint(), texCoords);
+            glTF::readAccessor(model, primitive.attributes[glTF::TEXCOORD_0].GetUint(), texCoords);
         }
 
         std::vector<ivec4> joints;
         if (primitive.attributes.HasMember(glTF::JOINTS_0)) {
             usize index = primitive.attributes[glTF::JOINTS_0].GetUint();
-            std::vector<glm::vec<4, uint16>> jointIndices;
 
-            if (local::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
-                local::readAccessor<decltype(jointIndices)::value_type, glm::vec<4, uint8>>(model, index, jointIndices);
-            } else if (local::datatypeSize(model.accessors[index].componentType) == sizeof(uint16)) {
-                local::readAccessor(model, index, jointIndices);
+            if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
+                glTF::readAccessor<ivec4, glm::vec<4, uint8>>(model, index, joints);
+            } else if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint16)) {
+                glTF::readAccessor<ivec4, glm::vec<4, uint16>>(model, index, joints);
             } else {
                 LOG(Error, "unsupported joint datatype", model.accessors[index].componentType);
             }
-
-            joints.resize(jointIndices.size());
-            std::ranges::copy(jointIndices, joints.begin());
         }
 
         std::vector<vec4> weights;
         if (primitive.attributes.HasMember(glTF::WEIGHTS_0)) {
             usize index = primitive.attributes[glTF::WEIGHTS_0].GetUint();
 
-            if (local::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
-                local::readAccessor<vec4, glm::vec<4, uint8>>(model, index, weights);
-            } else if (local::datatypeSize(model.accessors[index].componentType) == sizeof(uint16)) {
-                local::readAccessor<vec4, glm::vec<4, uint16>>(model, index, weights);
+            if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
+                glTF::readAccessor<vec4, glm::vec<4, uint8>>(model, index, weights);
+            } else if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint16)) {
+                glTF::readAccessor<vec4, glm::vec<4, uint16>>(model, index, weights);
             } else {
-                local::readAccessor(model, index, weights);
+                glTF::readAccessor(model, index, weights);
             }
         }
 
@@ -325,15 +263,15 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh) {
         if (primitive.indices != undefined) {
             glTF::Accessor& accessor = model.accessors[primitive.indices];
 
-            switch (local::datatypeSize(accessor.componentType)) {
+            switch (glTF::datatypeSize(accessor.componentType)) {
                 case sizeof(uint8):
-                    local::readAccessor<uint32, uint8>(model, primitive.indices, indices);
+                    glTF::readAccessor<uint32, uint8>(model, primitive.indices, indices);
                     break;
                 case sizeof(uint16):
-                    local::readAccessor<uint32, uint16>(model, primitive.indices, indices);
+                    glTF::readAccessor<uint32, uint16>(model, primitive.indices, indices);
                     break;
                 case sizeof(uint32):
-                    local::readAccessor(model, primitive.indices, indices);
+                    glTF::readAccessor(model, primitive.indices, indices);
                     break;
                 default:
                     LOG(Warning, "unknown datatype size");
@@ -371,43 +309,30 @@ void ModelLoader::processAnimations(glTF::Model& model) {
     for (glTF::Animation& animation : model.animations) {
         for (glTF::AnimationChannel& channel : animation.channels) {
             KeyFrame::ModifierType modifierType = KeyFrame::stringToModifier(channel.target.path);
-
             glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
 
             // collect timestamps
-            std::vector<float> inputTimestamps;
-            local::readAccessor(model, sampler.input, inputTimestamps);
+            std::vector<float> timestamps;
+            glTF::readAccessor(model, sampler.input, timestamps);
 
-            // addKeyFrames by populating a vector of vec3 or quat
-            auto addKeyFrames = [&]<typename T>(std::vector<T>& modifiers) {
-                local::readAccessor(model, sampler.output, modifiers);
+            std::vector<vec4> modifiers;
 
-                for (usize i = 0; float timestamp : inputTimestamps) {
-                    if constexpr (std::is_same_v<T, vec3>) {
-                        m_keyFrames.emplace_back(
-                            timestamp, channel.target.node, modifierType, vec4(modifiers[i], 0.0f));
-                    } else {
-                        m_keyFrames.emplace_back(timestamp,
-                                                 channel.target.node,
-                                                 modifierType,
-                                                 vec4(modifiers[i].x, modifiers[i].y, modifiers[i].z, modifiers[i].w));
-                    }
+            switch (modifierType) {
+                case KeyFrame::Translation:
+                case KeyFrame::Scale:
+                    glTF::readAccessor<vec4, vec3>(
+                        model, sampler.output, modifiers, [](const vec3& v) { return vec4(v, 0.0f); });
+                    break;
+                case KeyFrame::Rotation:
+                    glTF::readAccessor(model, sampler.output, modifiers);
+                    break;
+                case KeyFrame::Weights:
+                    LOG(Warning, "weights not yet supported");
+                    break;
+            }
 
-                    i++;
-                }
-            };
-
-            if (modifierType == KeyFrame::Translation) { // populate vec3 translate data
-                std::vector<vec3> translations;
-                addKeyFrames(translations);
-            } else if (modifierType == KeyFrame::Rotation) { // populate quat rotation data
-                std::vector<quat> rotations;
-                addKeyFrames(rotations);
-            } else if (modifierType == KeyFrame::Scale) { // populate vec3 scale data
-                std::vector<vec3> scales;
-                addKeyFrames(scales);
-            } else if (modifierType == KeyFrame::Weights) { // populate weights or something
-                LOG(Warning, "weights not yet supported");
+            for (usize i = 0; i < timestamps.size(); i++) {
+                m_keyFrames.emplace_back(timestamps[i], channel.target.node, modifierType, modifiers[i]);
             }
         } // for (channel : animation.channels)
     }     // for (animation : model.animations)
@@ -435,7 +360,7 @@ void ModelLoader::processSkeleton(glTF::Model& model) {
         LOG(Verbose, "loading skeleton:", !skin.name.empty() ? skin.name : "UNNAMED");
 
         std::vector<mat4> inverseBindMatrices;
-        local::readAccessor(model, skin.inverseBindMatrices, inverseBindMatrices);
+        glTF::readAccessor(model, skin.inverseBindMatrices, inverseBindMatrices);
 
         for (usize i = 0; i < numberOfJoints; i++) {
             auto rootIndex = skin.joints[i];
