@@ -611,7 +611,9 @@ void Model::populateMeshes() {
             MeshPrimitive& primitive = mesh.primitives.emplace_back();
 
             // attributes
-            primitive.attributes = std::move(itPrimitive["attributes"]);
+            for (auto&& [itAttributeKey, itAttributeValue] : itPrimitive["attributes"].GetObject()) {
+                primitive.attributes.emplace(itAttributeKey.GetString(), itAttributeValue.GetUint());
+            }
 
             // indices
             maybeAssign(primitive.indices, itPrimitive, "indices");

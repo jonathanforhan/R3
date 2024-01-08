@@ -431,7 +431,7 @@ struct Material {
 
 // https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
 struct MeshPrimitive {
-    rapidjson::Value attributes; // REQUIRED
+    std::unordered_map<std::string, usize> attributes; // REQUIRED
     uint32 indices = undefined;
     uint32 material = undefined;
     uint32 mode{4};

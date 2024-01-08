@@ -219,8 +219,8 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& 
 
         //--- Vertices
         std::vector<vec3> positions;
-        CHECK(primitive.attributes.HasMember(glTF::POSITION));
-        glTF::readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
+        CHECK(primitive.attributes.contains(glTF::POSITION));
+        glTF::readAccessor(model, primitive.attributes[glTF::POSITION], positions);
 
         // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
         // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
@@ -242,18 +242,18 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& 
         }
 
         std::vector<vec3> normals;
-        if (primitive.attributes.HasMember(glTF::NORMAL)) {
-            glTF::readAccessor(model, primitive.attributes[glTF::NORMAL].GetUint(), normals);
+        if (primitive.attributes.contains(glTF::NORMAL)) {
+            glTF::readAccessor(model, primitive.attributes[glTF::NORMAL], normals);
         }
 
         std::vector<vec2> texCoords;
-        if (primitive.attributes.HasMember(glTF::TEXCOORD_0)) {
-            glTF::readAccessor(model, primitive.attributes[glTF::TEXCOORD_0].GetUint(), texCoords);
+        if (primitive.attributes.contains(glTF::TEXCOORD_0)) {
+            glTF::readAccessor(model, primitive.attributes[glTF::TEXCOORD_0], texCoords);
         }
 
         std::vector<ivec4> joints;
-        if (primitive.attributes.HasMember(glTF::JOINTS_0)) {
-            usize index = primitive.attributes[glTF::JOINTS_0].GetUint();
+        if (primitive.attributes.contains(glTF::JOINTS_0)) {
+            usize index = primitive.attributes[glTF::JOINTS_0];
 
             if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
                 glTF::readAccessor<ivec4, glm::vec<4, uint8>>(model, index, joints);
@@ -265,8 +265,8 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& 
         }
 
         std::vector<vec4> weights;
-        if (primitive.attributes.HasMember(glTF::WEIGHTS_0)) {
-            usize index = primitive.attributes[glTF::WEIGHTS_0].GetUint();
+        if (primitive.attributes.contains(glTF::WEIGHTS_0)) {
+            usize index = primitive.attributes[glTF::WEIGHTS_0];
 
             if (glTF::datatypeSize(model.accessors[index].componentType) == sizeof(uint8)) {
                 glTF::readAccessor<vec4, glm::vec<4, uint8>>(model, index, weights);
