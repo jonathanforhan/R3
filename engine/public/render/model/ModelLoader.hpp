@@ -2,6 +2,7 @@
 
 /// Owned by Renderer and used to load in assets
 
+#include <set>
 #include <unordered_map>
 #include "components/ModelComponent.hpp"
 #include "render/RenderApi.hpp"
@@ -56,11 +57,11 @@ public:
               const char* fragmentShader = nullptr);
 
 private:
-    void processNode(glTF::Model& model, glTF::Node& node);
-    void processMesh(glTF::Model& model, glTF::Mesh& mesh);
+    void processNode(glTF::Model& model, glTF::Node& node, bool isAnimated);
+    void processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& node, bool isNodeAnimated);
     void processAnimations(glTF::Model& model);
     void processSkeleton(glTF::Model& model);
-    void processJoint(glTF::Model& model, usize rootIndex, usize parentJoint);
+    void processJoint(glTF::Model& model, usize jointIndex, usize parentJoint);
     void processMaterial(glTF::Model& model, glTF::Material& material);
     void processTexture(glTF::Model& model, uint8 color[4], TextureType type);
     void processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type);
@@ -80,6 +81,7 @@ private:
     std::vector<MeshPrototype> m_prototypes;
     std::vector<KeyFrame> m_keyFrames;
     Skeleton m_skeleton;
+    std::set<usize> m_animatedNodeIndices;
 
     std::vector<std::shared_ptr<TextureBuffer>> m_textures;
     std::shared_ptr<TextureBuffer> m_nilTexture;

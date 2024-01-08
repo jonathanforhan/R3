@@ -18,22 +18,15 @@ struct R3_API KeyFrame {
 inline KeyFrame::ModifierType KeyFrame::stringToModifier(std::string_view s) {
     if (s == "translation") {
         return KeyFrame::Translation;
-    }
-
-    if (s == "rotation") {
+    } else if (s == "rotation") {
         return KeyFrame::Rotation;
-    }
-
-    if (s == "scale") {
+    } else if (s == "scale") {
         return KeyFrame::Scale;
-    }
-
-    if (s == "weights") {
+    } else if (s == "weights") {
         return KeyFrame::Weights;
     }
 
-    CHECK(false);
-    return KeyFrame::ModifierType(int(undefined));
+    ENSURE(false);
 }
 
 } // namespace R3

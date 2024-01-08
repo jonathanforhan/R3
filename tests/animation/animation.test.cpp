@@ -68,7 +68,6 @@ R3_DLL void Run() {
             sponza.emplace<EditorComponent>().name = "Sponza";
             auto& t = sponza.get<TransformComponent>();
             t = glm::translate(t, vec3(0, -3, 0));
-            t = glm::scale(t, vec3(0.02f));
         }
 
         { // TODO

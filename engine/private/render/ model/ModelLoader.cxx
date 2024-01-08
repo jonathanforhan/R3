@@ -40,12 +40,20 @@ void ModelLoader::load(const std::string& path,
 
     glTF::Model gltf(m_directory + file);
 
-    preProcessTextures(gltf);
-    for (auto& scene : gltf.scenes) {
-        for (uint32 iNode : scene.nodes) {
-            processNode(gltf, gltf.nodes[iNode]);
+    for (const auto& animation : gltf.animations) {
+        for (const auto& channel : animation.channels) {
+            m_animatedNodeIndices.insert(channel.target.node);
         }
     }
+
+    preProcessTextures(gltf);
+
+    for (auto& scene : gltf.scenes) {
+        for (uint32 iNode : scene.nodes) {
+            processNode(gltf, gltf.nodes[iNode], m_animatedNodeIndices.contains(iNode));
+        }
+    }
+
     processAnimations(gltf);
     processSkeleton(gltf);
 
@@ -190,21 +198,22 @@ void ModelLoader::load(const std::string& path,
     // save for reuse
     m_prototypes.clear();
     m_keyFrames.clear();
-    m_textures.clear();
+    m_animatedNodeIndices.clear();
     m_skeleton = Skeleton();
+    m_textures.clear();
 }
 
-void ModelLoader::processNode(glTF::Model& model, glTF::Node& node) {
+void ModelLoader::processNode(glTF::Model& model, glTF::Node& node, bool isAnimated) {
     for (auto child : node.children) {
-        processNode(model, model.nodes[child]);
+        processNode(model, model.nodes[child], m_animatedNodeIndices.contains(child));
     }
 
     if (node.mesh != undefined) {
-        processMesh(model, model.meshes[node.mesh]);
+        processMesh(model, model.meshes[node.mesh], node, isAnimated);
     }
 }
 
-void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh) {
+void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& node, bool isNodeAnimated) {
     for (auto& primitive : mesh.primitives) {
         CHECK(primitive.mode == glTF::TRIANGLES);
 
@@ -212,6 +221,25 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh) {
         std::vector<vec3> positions;
         CHECK(primitive.attributes.HasMember(glTF::POSITION));
         glTF::readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
+
+        // A node MAY have either a matrix or any combination of translation/rotation/scale (TRS)
+        // properties. TRS properties are converted to matrices and postmultiplied in the T * R * S order to
+        // compose the transformation matrix; first the scale is applied to the vertices, then the rotation,
+        // and then the translation. If none are provided, the transform is the identity. When a node is
+        // targeted for animation (referenced by an animation.channel.target), ** matrix MUST NOT be present
+        //
+        // ** only if node is not animated do we apply the TRS transform
+        if (!isNodeAnimated) {
+            mat4 t = glm::make_mat4(node.matrix);
+            mat4 T = glm::translate(mat4(1.0f), glm::make_vec3(node.translation));
+            mat4 R = mat4(glm::make_quat(node.rotation));
+            mat4 S = glm::scale(mat4(1.0f), glm::make_vec3(node.scale));
+            t = T * R * S * t;
+
+            for (auto& position : positions) {
+                position = t * vec4(position, 1.0f);
+            }
+        }
 
         std::vector<vec3> normals;
         if (primitive.attributes.HasMember(glTF::NORMAL)) {
@@ -363,42 +391,42 @@ void ModelLoader::processSkeleton(glTF::Model& model) {
         glTF::readAccessor(model, skin.inverseBindMatrices, inverseBindMatrices);
 
         for (usize i = 0; i < numberOfJoints; i++) {
-            auto rootIndex = skin.joints[i];
+            auto gltfIndex = skin.joints[i];
 
-            m_skeleton.joints[i].rootIndex = rootIndex;
+            m_skeleton.joints[i].rootIndex = gltfIndex;
             m_skeleton.joints[i].inverseBindMatrix = inverseBindMatrices[i];
 
-            auto& node = model.nodes[rootIndex];
+            auto& node = model.nodes[gltfIndex];
 
             m_skeleton.joints[i].deformedTranslation = glm::make_vec3(node.translation);
             m_skeleton.joints[i].deformedRotation = glm::mat4(glm::make_quat(node.rotation));
             m_skeleton.joints[i].deformedScale = glm::make_vec3(node.scale);
             m_skeleton.joints[i].undeformedMatrix = glm::make_mat4(node.matrix);
 
-            m_skeleton.nodeToJointMap.emplace(rootIndex, i);
+            m_skeleton.nodeToJointMap.emplace(gltfIndex, i);
         }
 
-        usize rootJoint = skin.joints[0];
+        usize gltfJoint = skin.joints[0];
 
-        processJoint(model, rootJoint, undefined);
+        processJoint(model, gltfJoint, undefined);
     }
 }
 
-void ModelLoader::processJoint(glTF::Model& model, usize rootIndex, usize parentJoint) {
-    usize currentJoint = m_skeleton.nodeToJointMap[rootIndex];
+void ModelLoader::processJoint(glTF::Model& model, usize jointIndex, usize parentJoint) {
+    usize currentJoint = m_skeleton.nodeToJointMap[jointIndex];
 
     auto& joint = m_skeleton.joints[currentJoint];
 
     joint.parentJoint = parentJoint;
 
-    usize numberOfChildren = model.nodes[rootIndex].children.size();
+    usize numberOfChildren = model.nodes[jointIndex].children.size();
     if (numberOfChildren > 0) {
         joint.children.resize(numberOfChildren);
 
         for (auto i = 0; i < numberOfChildren; i++) {
-            usize childRootIndex = model.nodes[rootIndex].children[i];
-            joint.children[i] = m_skeleton.nodeToJointMap[childRootIndex];
-            processJoint(model, childRootIndex, currentJoint);
+            usize childJointIndex = model.nodes[jointIndex].children[i];
+            joint.children[i] = m_skeleton.nodeToJointMap[childJointIndex];
+            processJoint(model, childJointIndex, currentJoint);
         }
     }
 }
