@@ -123,13 +123,6 @@ Renderer::Renderer(const RendererSpecification& spec)
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     });
 
-    m_commandPoolLocal = CommandPool({
-        .logicalDevice = m_logicalDevice,
-        .swapchain = m_swapchain,
-        .type = CommandPoolType::Reset,
-        .commandBufferCount = 1,
-    });
-
     //--- Synchronization
     for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         m_imageAvailable[i] = Semaphore({m_logicalDevice});

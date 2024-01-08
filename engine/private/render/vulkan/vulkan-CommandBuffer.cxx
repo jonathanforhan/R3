@@ -195,10 +195,13 @@ void CommandBuffer::submit(const CommandBufferSumbitSpecification& spec) const {
         .pSignalSemaphores = (const vk::Semaphore*)spec.signalSemaphores.data(),
     };
 
-    m_logicalDevice->graphicsQueue().lock();
-    spec.fence ? m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo, spec.fence->as<vk::Fence>())
-               : m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
-    m_logicalDevice->graphicsQueue().unlock();
+    if (spec.fence) {
+        m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo, spec.fence->as<vk::Fence>());
+    } else {
+        m_logicalDevice->graphicsQueue().lock();
+        m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
+        m_logicalDevice->graphicsQueue().unlock();
+    }
 }
 
 void CommandBuffer::oneTimeSubmit() const {

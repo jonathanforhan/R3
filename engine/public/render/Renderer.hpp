@@ -99,8 +99,7 @@ private:
     Swapchain m_swapchain;
     RenderPass m_renderPass;
     std::vector<Framebuffer> m_framebuffers;
-    CommandPool m_commandPoolLocal; // used for small command buffer operations like CPU -> GPU copy
-    CommandPool m_commandPool;      // used for the render command buffers
+    CommandPool m_commandPool;
     ColorBuffer m_colorBuffer;
     DepthBuffer m_depthBuffer;
 

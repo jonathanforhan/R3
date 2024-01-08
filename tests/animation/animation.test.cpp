@@ -71,6 +71,12 @@ R3_DLL void Run() {
             t = glm::scale(t, vec3(0.02f));
         }
 
+        { // TODO
+            auto& ori = Entity::create<Entity>();
+            ori.emplace<ModelComponent>("assets/glTF/Models/OrientationTest/glTF/OrientationTest.gltf");
+            ori.emplace<EditorComponent>().name = "Orientation";
+        }
+
     } catch (std::exception const& e) {
         LOG(Error, e.what());
     }

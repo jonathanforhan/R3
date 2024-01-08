@@ -506,10 +506,10 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
 
     if (material.pbrMetallicRoughness.baseColorTexture) {
         processTexture(model, *material.pbrMetallicRoughness.baseColorTexture, TextureType::Albedo);
-    } else if (material.pbrMetallicRoughness.baseColorFactor[0] != 1.0f ||
-               material.pbrMetallicRoughness.baseColorFactor[1] != 1.0f ||
-               material.pbrMetallicRoughness.baseColorFactor[2] != 1.0f ||
-               material.pbrMetallicRoughness.baseColorFactor[3] != 1.0f) {
+    } else if (pbrSpecularGlossiness_INDEX != undefined) {
+        auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)material.extensions[pbrSpecularGlossiness_INDEX].get();
+        processTexture(model, *ext->diffuseTexture, TextureType::Albedo);
+    } else {
         uint8 color[4] = {
             static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[0] * 255.0f),
             static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[1] * 255.0f),
@@ -517,9 +517,6 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
             static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[3] * 255.0f),
         };
         processTexture(model, color, TextureType::Albedo);
-    } else if (pbrSpecularGlossiness_INDEX != undefined) {
-        auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)material.extensions[pbrSpecularGlossiness_INDEX].get();
-        processTexture(model, *ext->diffuseTexture, TextureType::Albedo);
     }
 }
 
@@ -560,7 +557,9 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::OcclusionTextureInfo&
 
 void ModelLoader::preProcessTextures(glTF::Model& model) {
     m_textures.resize(model.textures.size());
+
     std::vector<std::thread> pool;
+    pool.reserve(model.textures.size());
 
     for (uint32 i = 0; const glTF::Texture& texture : model.textures) {
         if (texture.source == uint32(undefined)) {
