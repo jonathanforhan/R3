@@ -5,6 +5,10 @@ file(GLOB_RECURSE CXX_SOURCES
 	"${CMAKE_CURRENT_SOURCE_DIR}/private/*.cxx"
 )
 
+file(GLOB_RECURSE VULKAN_SOURCES
+	"${CMAKE_CURRENT_SOURCE_DIR}/private/render/vulkan/*.cxx"
+)
+
 # [[ EXCLUDE RENDERERS NOT IN USE ]]
 if (NOT R3_OPENGL)
 	list(FILTER CXX_SOURCES EXCLUDE REGEX "/opengl-[a-z|A-Z|0-9]*\\.cxx")
