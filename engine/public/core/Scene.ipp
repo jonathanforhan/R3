@@ -60,16 +60,16 @@ inline void Scene::bindEventListener(F&& callback) {
     using Event_T = EventTypeDeduced<F>;
     // create wrapper so that we can store functions with void ptr param in registry
     EventCallback wrapper = [callback](const void* event) { callback((const Event_T&)(*(const Event_T*)event)); };
-    eventRegistery.insert(std::make_pair(Event_T::SingalType::value, wrapper));
+    eventRegistery.emplace(Event_T::SingalType::value, wrapper);
 }
 #endif
 
-template <typename E>
-inline void Scene::bindEventListener(std::function<void(const E&)> callback) {
+template <typename E, typename F>
+inline void Scene::bindEventListener(F&& callback) {
     auto& eventRegistery = CurrentScene->m_eventRegistery;
     // create wrapper so that we can store functions with void ptr param in registry
     EventCallback wrapper = [callback](const void* event) { callback((const E&)(*(const E*)event)); };
-    eventRegistery.insert(std::make_pair(E::SingalType::value, wrapper));
+    eventRegistery.emplace(E::SingalType::value, wrapper);
 }
 
 #if R3_ENGINE

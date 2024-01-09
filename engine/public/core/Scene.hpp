@@ -57,11 +57,11 @@ public:
 #endif
 
     /// @brief Bind an Event listener to the current Scene
-    /// Uses std::function so that it can be dll exported
+    /// Uses explicit Event template so that it can be dll exported
     /// @tparam F Functor
     /// @param callback
-    template <typename E>
-    static void bindEventListener(std::function<void(const E&)> callback);
+    template <typename E, typename F>
+    static void bindEventListener(F&& callback);
 
 #if R3_ENGINE
     /// @brief Dispath the all the events callbacks in the queue
