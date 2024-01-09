@@ -90,7 +90,7 @@ void Editor::beginFrame() {
     float scaleFactor = io.DisplayFramebufferScale.x;
     ImGui::GetStyle().ScaleAllSizes(scaleFactor);
 
-    ImGui::ShowDemoWindow();
+    // ImGui::ShowDemoWindow();
 }
 
 void Editor::endFrame() {
@@ -116,7 +116,7 @@ void Editor::displayDeltaTime(double dt) {
 
 void Editor::initializeDocking() {
     static constexpr ImGuiDockNodeFlags dockspaceFlags =
-        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoWindowMenuButton;
+        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_(ImGuiDockNodeFlags_NoWindowMenuButton);
     ImGui::DockSpaceOverViewport(nullptr, dockspaceFlags);
 }
 
@@ -128,8 +128,8 @@ void Editor::displayHierarchy() {
             // The Scene's Entities
             Entity::forEach([this](EntityView& entity) {
                 if (auto* editorComponent = entity.tryGet<EditorComponent>()) {
-                    CHECK(editorComponent->name != nullptr);
-                    if (ImGui::Button(editorComponent->name)) {
+                    CHECK(!editorComponent->name.empty());
+                    if (ImGui::Button(editorComponent->name.c_str())) {
                         m_currentEntity = entity.id();
                     }
                 }
@@ -147,12 +147,13 @@ void Editor::displayProperties() {
 
             auto* maybeEditorComponent = entityView.tryGet<EditorComponent>();
             if (!maybeEditorComponent) {
+                m_currentEntity = undefined;
                 ImGui::End();
                 return;
             }
             auto& editorComponent = *maybeEditorComponent;
 
-            ImGui::Text(editorComponent.name);
+            ImGui::Text(editorComponent.name.c_str());
 
             const float sensitivity = ImGui::GetIO().KeyShift ? 0.0001f : 0.1f;
             const bool scaleLock = ImGui::GetIO().KeyCtrl;
@@ -199,6 +200,47 @@ void Editor::displayProperties() {
             transform = transform * rotationMatrix;
             transform[3] += vec4(deltaPosition, 0.0f);
             transform = glm::scale(transform, deltaScale);
+
+            // Animation Editor
+            auto* modelComponent = entityView.tryGet<ModelComponent>();
+            if (!modelComponent) {
+                ImGui::End();
+                return;
+            }
+
+            std::vector<std::string> possibleAnimations;
+            for (auto&& [animationName, _] : modelComponent->animations) {
+                possibleAnimations.push_back(animationName);
+            }
+
+            if (possibleAnimations.empty()) {
+                ImGui::End();
+                return;
+            }
+
+            static usize animationIndex = 0;
+
+            animationIndex %= possibleAnimations.size();
+
+            if (ImGui::BeginCombo("Animation", possibleAnimations[animationIndex].c_str())) {
+                for (usize i = 0; auto& animation : possibleAnimations) {
+                    const bool selectedAnimation = i == animationIndex;
+
+                    if (ImGui::Selectable(animation.c_str(), selectedAnimation)) {
+                        animationIndex = i;
+                    }
+
+                    if (selectedAnimation) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+
+                    i++;
+                }
+
+                ImGui::EndCombo();
+            }
+
+            modelComponent->currentAnimation = possibleAnimations[animationIndex];
         }
     }
     ImGui::End();

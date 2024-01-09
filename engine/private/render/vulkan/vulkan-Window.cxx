@@ -93,6 +93,11 @@ Window::Window(const WindowSpecification& spec) {
         Scene::setCursorPosition(vec2(x, y));
     });
 
+    //--- Mouse Scroll Callback
+    glfwSetScrollCallback(handle<GLFWwindow*>(), [](GLFWwindow*, double, double scroll) {
+        Scene::pushEvent<MouseScrollEvent>(static_cast<float>(scroll));
+    });
+
     //--- Window Close Callback
     glfwSetWindowCloseCallback(handle<GLFWwindow*>(), [](GLFWwindow*) { Scene::pushEvent<WindowCloseEvent>(); });
 }

@@ -2,6 +2,7 @@
 
 /// Owned by Renderer and used to load in assets
 
+#include <map>
 #include <set>
 #include <unordered_map>
 #include "components/ModelComponent.hpp"
@@ -79,7 +80,7 @@ private:
     Ref<const StorageBuffer> m_storageBuffer;
 
     std::vector<MeshPrototype> m_prototypes;
-    std::vector<KeyFrame> m_keyFrames;
+    std::map<std::string, Animation> m_animations;
     Skeleton m_skeleton;
     std::set<usize> m_animatedNodeIndices;
 

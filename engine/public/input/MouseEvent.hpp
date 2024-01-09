@@ -20,6 +20,11 @@ struct MouseCursorEventPayload {
     vec2 cursorPosition; ///< x by y floating point cursor position **normalized**
 };
 
+/// @brief Mouse Scroll Event Payload
+struct MouseScrollEventPayload {
+    float deltaScroll;
+};
+
 /// @brief Mouse Button Press Event "on-mouse-button-press"
 using MouseButtonPressEvent = EVENT("on-mouse-button-press", MouseButtonEventPayload);
 
@@ -28,5 +33,8 @@ using MouseButtonReleaseEvent = EVENT("on-mouse-button-release", MouseButtonEven
 
 /// @brief Mouse Cursor Event "on-mouse-cursor-change"
 using MouseCursorEvent = EVENT("on-mouse-cursor-change", MouseCursorEventPayload);
+
+/// @brief Mouse Scroll Event "on-mouse-scroll"
+using MouseScrollEvent = EVENT("on-mouse-scroll", MouseScrollEventPayload);
 
 } // namespace R3

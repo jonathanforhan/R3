@@ -3,6 +3,9 @@
 /// @brief Provides Component for attaching mesh and material data to entity
 
 #include <R3>
+#include <map>
+#include <optional>
+#include <queue>
 #include "render/model/Animation.hpp"
 #include "render/model/Mesh.hpp"
 #include "render/model/Skeleton.hpp"
@@ -21,7 +24,8 @@ struct R3_API ModelComponent {
 
     std::vector<Mesh> meshes;
     Skeleton skeleton;
-    Animation animation;
+    std::map<std::string, Animation> animations;
+    std::optional<std::string> currentAnimation;
 };
 
 } // namespace R3

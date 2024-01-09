@@ -17,6 +17,181 @@
 
 using namespace R3;
 
+struct Armature : public Entity {
+public:
+    void init() {
+        auto& cam = emplace<CameraComponent>();
+        cam.active = true;
+
+        auto& m = emplace<ModelComponent>("assets/person.glb");
+        m.currentAnimation = "idle";
+        emplace<EditorComponent>("Armature");
+        auto& t = get<TransformComponent>();
+        t = glm::rotate(t, glm::radians(90.0f), vec3(1, 0, 0));
+        t = glm::scale(t, vec3(0.01f));
+
+        Scene::bindEventListener([this](const KeyPressEvent& e) {
+            switch (e.payload.key) {
+                case Key::W:
+                    activeKeys.w = true;
+                    break;
+                case Key::A:
+                    activeKeys.a = true;
+                    break;
+                case Key::S:
+                    activeKeys.s = true;
+                    break;
+                case Key::D:
+                    activeKeys.d = true;
+                    break;
+                case Key::E:
+                    activeKeys.e = true;
+                    break;
+                case Key::Q:
+                    activeKeys.q = true;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        Scene::bindEventListener([this](const KeyReleaseEvent& e) {
+            auto& m = get<ModelComponent>();
+
+            switch (e.payload.key) {
+                case Key::W:
+                    m.currentAnimation = "idle";
+                    m.animations["idle"].currentTime = 0.0f;
+                    m.animations["walking"].currentTime = 0.0f;
+                    m.animations["left_strafe"].currentTime = 0.0f;
+                    m.animations["right_strafe"].currentTime = 0.0f;
+                    activeKeys.w = false;
+                    break;
+                case Key::A:
+                    activeKeys.a = false;
+                    break;
+                case Key::S:
+                    activeKeys.s = false;
+                    break;
+                case Key::D:
+                    activeKeys.d = false;
+                    break;
+                case Key::E:
+                    activeKeys.e = false;
+                    break;
+                case Key::Q:
+                    activeKeys.q = false;
+                    break;
+                default:
+                    break;
+            }
+        });
+
+        Scene::bindEventListener([this](const MouseButtonPressEvent& e) {
+            if (e.payload.button == MouseButton::Left)
+                mouseDown = true;
+        });
+
+        Scene::bindEventListener([this](const MouseButtonReleaseEvent& e) {
+            if (e.payload.button == MouseButton::Left)
+                mouseDown = false;
+        });
+
+        Scene::bindEventListener([this](const MouseCursorEvent& e) { cursorPosition = e.payload.cursorPosition; });
+    }
+
+    void tick(double dt) {
+        float deltaT = static_cast<float>(dt);
+
+        auto& m = get<ModelComponent>();
+        auto& t = get<TransformComponent>();
+        auto& pos = t[3];
+        auto& cam = get<CameraComponent>();
+
+        if (m.currentAnimation == "left_turn") {
+            if (m.animations[*m.currentAnimation].currentTime == 0) {
+                m.currentAnimation = "idle";
+                t = glm::rotate(t, -glm::pi<float>() / 2, vec3(0, 0, 1));
+            }
+            cam.yaw -= ((90.0f / m.animations[*m.currentAnimation].maxTime) * dt);
+        } else if (m.currentAnimation == "right_turn") {
+            if (m.animations[*m.currentAnimation].currentTime == 0) {
+                m.currentAnimation = "idle";
+                t = glm::rotate(t, glm::pi<float>() / 2, vec3(0, 0, 1));
+            }
+            cam.yaw += ((90.0f / m.animations[*m.currentAnimation].maxTime) * dt);
+        }
+
+        static constexpr float mouseSensitivity = 360.0f;
+        static constexpr float movementSensitivity = 8.0f;
+
+        const float mag = deltaT * movementSensitivity;
+
+        if (activeKeys.w) {
+            if (activeKeys.a) {
+                m.currentAnimation = "left_strafe";
+                pos += vec4(cam.frontPlanar() * mag, 0);
+            } else if (activeKeys.d) {
+                m.currentAnimation = "right_strafe";
+                pos += vec4(cam.frontPlanar() * mag, 0);
+            } else if (m.currentAnimation != "left_turn" && m.currentAnimation != "right_turn") {
+                m.currentAnimation = "walking";
+                pos += vec4(cam.frontPlanar() * mag, 0);
+            }
+        } else if (activeKeys.s) {
+            pos += vec4(cam.backPlanar() * mag, 0);
+        }
+
+        if (activeKeys.a) {
+            pos += vec4(cam.left() * mag / 2.0f, 0);
+        } else if (activeKeys.d) {
+            pos += vec4(cam.right() * mag / 2.0f, 0);
+        }
+
+        if (activeKeys.q) {
+            pos += vec4(cam.up * mag, 0);
+        } else if (activeKeys.e) {
+            pos -= vec4(cam.up * mag, 0);
+        }
+
+        const float deltaX = mouseDown ? cursorPosition.x - prevCursorPosition.x : 0.0f;
+        const float deltaY = mouseDown ? -cursorPosition.y + prevCursorPosition.y : 0.0f;
+        prevCursorPosition = cursorPosition;
+
+        cam.pitch += deltaY * mouseSensitivity;
+
+        float oldYaw = cam.yaw;
+        cam.yaw += deltaX * mouseSensitivity;
+        float deltaYaw = cam.yaw - oldYaw;
+
+        if (deltaYaw > 4.0f) {
+            m.currentAnimation = "right_turn";
+        } else if (deltaYaw < -4.0f) {
+            m.currentAnimation = "left_turn";
+        }
+
+        // keep player facing camera
+        t = glm::rotate(t, glm::radians(deltaYaw), vec3(0, 0, 1));
+
+        // move camera to player location
+        cam.target = t[3];
+    }
+
+public:
+    struct ActiveKeys {
+        bool w = false;
+        bool a = false;
+        bool s = false;
+        bool d = false;
+        bool e = false;
+        bool q = false;
+    } activeKeys;
+    bool mouseDown = false;
+
+    vec2 cursorPosition = vec2(0.0f);
+    vec2 prevCursorPosition = vec2(0.0f);
+};
+
 extern "C" {
 
 R3_DLL void* Entry() {
@@ -33,47 +208,24 @@ R3_DLL void Exit(void* scene_) {
 R3_DLL void Run() {
     try {
         //--- Camera
-        auto& cam = Entity::create<Entity>().emplace<CameraComponent>();
-        cam.setActive(true);
-        cam.translateBackward(10);
-        cam.setPosition(vec3(10, 2, 0));
 
-        auto& light1 = Entity::create<Entity>();
-        auto& lc = light1.emplace<LightComponent>();
-        lc.intensity = 5.0f;
-        lc.position = vec3(0, 4, 0);
-        light1.emplace<EditorComponent>().name = "Light";
-
-        {
-            auto& robot = Entity::create<Entity>();
-            robot.emplace<ModelComponent>("assets/WalkingRobot/glTF/WalkingRobot.gltf").animation.running = true;
-            robot.emplace<EditorComponent>().name = "Robot";
-            auto& t = robot.get<TransformComponent>();
-            t = glm::translate(t, vec3(0, -0.8, 0));
-            t = glm::scale(t, vec3(0.15f));
+        for (int i = 0; i < 16; i++) {
+            auto& light = Entity::create<Entity>();
+            light.emplace<EditorComponent>(std::format("Light {}", i));
+            auto& lc = light.emplace<LightComponent>();
+            lc.intensity = 16.0f;
+            lc.position = vec3(-11.25, 6, i * -5);
         }
 
-        {
-            auto& phoenix = Entity::create<Entity>();
-            phoenix.emplace<ModelComponent>("assets/Phoenix/glTF-Binary/Phoenix.glb").animation.running = true;
-            phoenix.emplace<EditorComponent>().name = "Phoenix";
-            auto& t = phoenix.get<TransformComponent>();
-            t = glm::translate(t, vec3(0, 1, 0));
-            t = glm::scale(t, vec3(0.01f));
-        }
+        Entity::create<Armature>();
 
         {
-            auto& sponza = Entity::create<Entity>();
-            sponza.emplace<ModelComponent>("assets/glTF/Models/Sponza/glTF/Sponza.gltf");
-            sponza.emplace<EditorComponent>().name = "Sponza";
-            auto& t = sponza.get<TransformComponent>();
-            t = glm::translate(t, vec3(0, -3, 0));
-        }
-
-        { // TODO
-            auto& ori = Entity::create<Entity>();
-            ori.emplace<ModelComponent>("assets/glTF/Models/OrientationTest/glTF/OrientationTest.gltf");
-            ori.emplace<EditorComponent>().name = "Orientation";
+            auto& garage = Entity::create<Entity>();
+            garage.emplace<ModelComponent>("assets/garage.glb");
+            garage.emplace<EditorComponent>("Garage");
+            auto& t = garage.get<TransformComponent>();
+            t = glm::rotate(t, glm::radians(270.0f), vec3(1, 0, 0));
+            t = glm::scale(t, vec3(0.025f));
         }
 
     } catch (std::exception const& e) {

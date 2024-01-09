@@ -167,7 +167,7 @@ void main() {
 		Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
 	}
 
-	vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
+	vec3 ambient = vec3(0.5) * albedo * ambientOcclusion;
 
 	vec3 color = ambient + Lo;
 

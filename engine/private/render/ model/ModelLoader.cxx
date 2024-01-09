@@ -192,12 +192,12 @@ void ModelLoader::load(const std::string& path,
         model.meshes.emplace_back(std::move(mesh));
     }
 
-    model.animation.keyFrames = std::move(m_keyFrames);
+    model.animations = std::move(m_animations);
     model.skeleton = std::move(m_skeleton);
 
     // save for reuse
     m_prototypes.clear();
-    m_keyFrames.clear();
+    m_animations.clear();
     m_animatedNodeIndices.clear();
     m_skeleton = Skeleton();
     m_textures.clear();
@@ -335,6 +335,8 @@ void ModelLoader::processAnimations(glTF::Model& model) {
     // use those timestamps as key so that we can build up a mat4 that represents the TRS transform gotten from
     // the individual Translation, Rotation, and Scale components of the glTF file
     for (glTF::Animation& animation : model.animations) {
+        LOG(Verbose, "processing animation:", animation.name);
+        Animation modelAnimation;
         for (glTF::AnimationChannel& channel : animation.channels) {
             KeyFrame::ModifierType modifierType = KeyFrame::stringToModifier(channel.target.path);
             glTF::AnimationSampler& sampler = animation.samplers[channel.sampler];
@@ -360,10 +362,11 @@ void ModelLoader::processAnimations(glTF::Model& model) {
             }
 
             for (usize i = 0; i < timestamps.size(); i++) {
-                m_keyFrames.emplace_back(timestamps[i], channel.target.node, modifierType, modifiers[i]);
+                modelAnimation.keyFrames.emplace_back(timestamps[i], channel.target.node, modifierType, modifiers[i]);
             }
-        } // for (channel : animation.channels)
-    }     // for (animation : model.animations)
+        }
+        m_animations.emplace(animation.name, std::move(modelAnimation));
+    }
 }
 
 void ModelLoader::processSkeleton(glTF::Model& model) {
@@ -374,7 +377,7 @@ void ModelLoader::processSkeleton(glTF::Model& model) {
     }
 
     if (numberOfSkeletons > 1) {
-        LOG(Warning, "more that one skeleton");
+        LOG(Warning, "more than one skeleton");
     }
 
     const auto& skin = model.skins[0];

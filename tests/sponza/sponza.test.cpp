@@ -1,7 +1,7 @@
 #include <R3>
 #include <R3_core>
 #include <R3_input>
-#include "components/CameraComponent.hpp"
+#include "components/EditorCameraComponent.hpp"
 #include "components/EditorComponent.hpp"
 #include "components/LightComponent.hpp"
 #include "components/ModelComponent.hpp"
@@ -24,20 +24,20 @@ R3_DLL void Exit(void* scene_) {
 R3_DLL void Run() {
     try {
         //--- Camera
-        Entity::create<Entity>().emplace<CameraComponent>().setActive(true);
+        Entity::create<Entity>().emplace<EditorCameraComponent>().setActive(true);
 
         {
             auto& light1 = Entity::create<Entity>();
             auto& lc = light1.emplace<LightComponent>();
             lc.intensity = 10.0f;
             lc.position = vec3(0, 4, 0);
-            light1.emplace<EditorComponent>().name = "Light";
+            light1.emplace<EditorComponent>("Light");
         }
 
         {
             auto& sponza = Entity::create<Entity>();
             sponza.emplace<ModelComponent>("assets/glTF/Models/Sponza/glTF/Sponza.gltf");
-            sponza.emplace<EditorComponent>().name = "Sponza";
+            sponza.emplace<EditorComponent>("Sponza");
             auto& t = sponza.get<TransformComponent>();
             t = glm::translate(t, vec3(0, -2, 0));
         }

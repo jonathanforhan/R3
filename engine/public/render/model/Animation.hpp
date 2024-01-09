@@ -9,7 +9,6 @@ struct Animation {
     float currentTime = 0.0f;
     float maxTime = 0.0f;
     std::vector<KeyFrame> keyFrames;
-    bool running = false;
 };
 
 } // namespace R3

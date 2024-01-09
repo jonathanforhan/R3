@@ -23,12 +23,16 @@ Model::Model(std::string_view path)
 
     populateRoot();
 
-    LOG(Verbose, "=== Extensions Used ===");
+    if (!extensionsUsed.empty()) {
+        LOG(Verbose, "=== Extensions Used ===");
+    }
     for (auto& extension : extensionsUsed) {
         LOG(Verbose, "\t-", extension);
     }
 
-    LOG(Verbose, "=== Extensions Required ===");
+    if (!extensionsRequired.empty()) {
+        LOG(Verbose, "=== Extensions Required ===");
+    }
     for (auto& extension : extensionsRequired) {
         LOG(Verbose, "\t-", extension);
     }
