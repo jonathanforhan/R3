@@ -19,13 +19,13 @@ public:
     std::vector<vk::SurfaceFormatKHR> surfaceFormats;
     std::vector<vk::PresentModeKHR> presentModes;
 
-    bool isValid() const { return !surfaceFormats.empty() && !presentModes.empty(); }
+    [[nodiscard]] constexpr bool isValid() const { return !surfaceFormats.empty() && !presentModes.empty(); }
 
     [[nodiscard]] static SwapchainSupportDetails query(vk::PhysicalDevice physicalDevice, vk::SurfaceKHR surface);
     std::tuple<Format, ColorSpace> optimalSurfaceFormat() const;
     PresentMode optimalPresentMode() const;
-    uvec2 optimalExtent(GLFWwindow* window) const;
-    bool isMinimized(GLFWwindow* window) const;
+    uvec2 optimalExtent(const GLFWwindow* window) const;
+    bool isMinimized(const GLFWwindow* window) const;
 };
 
 } // namespace R3::vulkan

@@ -10,8 +10,8 @@ namespace R3 {
 struct R3_API FramebufferSpecification {
     const LogicalDevice& logicalDevice;
     const RenderPass& renderPass;
-    std::span<const ImageView*> attachments; ///< Image View attachments
-    uvec2 extent;                            ///< Framebuffer extent
+    std::span<const Ref<const ImageView>> attachments; ///< Image View attachments
+    uvec2 extent;                                      ///< Framebuffer extent
 };
 
 /// @brief Framebuffer is created per Image in Swapchain

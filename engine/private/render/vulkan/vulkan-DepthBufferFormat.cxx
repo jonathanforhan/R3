@@ -6,28 +6,27 @@
 namespace R3::vulkan {
 
 vk::Format getSupportedDepthFormat(vk::PhysicalDevice gpu, vk::ImageTiling tiling, vk::FormatFeatureFlags features) {
-    constexpr vk::Format formats[] = {
+    static constexpr vk::Format formats[] = {
         vk::Format::eD32Sfloat,
         vk::Format::eD32SfloatS8Uint,
         vk::Format::eD24UnormS8Uint,
     };
 
-    for (vk::Format format : formats) {
+    auto it = std::ranges::find_if(formats, [=](const auto& format) {
         const vk::FormatProperties formatProperties = gpu.getFormatProperties(format);
 
         switch (tiling) {
             case vk::ImageTiling::eLinear:
-                if ((formatProperties.linearTilingFeatures & features) == features)
-                    return format;
-                break;
+                return ((formatProperties.linearTilingFeatures & features) == features);
             case vk::ImageTiling::eOptimal:
-                if ((formatProperties.optimalTilingFeatures & features) == features)
-                    return format;
-                break;
+                return ((formatProperties.optimalTilingFeatures & features) == features);
+            default:
+                return false;
         }
-    }
+    });
 
-    ENSURE(false);
+    ENSURE(it != std::end(formats));
+    return *it;
 }
 
 } // namespace R3::vulkan

@@ -22,7 +22,7 @@ static constexpr auto DEPTH_ARRAY_SCALE = 2048;
 Renderer::Renderer(const RendererSpecification& spec)
     : m_window(spec.window) {
     //--- Instance Extensions
-    std::vector<const char*> extensions(Instance::queryRequiredExtensions());
+    std::vector extensions(Instance::queryRequiredExtensions());
     std::vector<const char*> validationLayers;
 
     //--- Validation
@@ -102,7 +102,7 @@ Renderer::Renderer(const RendererSpecification& spec)
     for (const auto& swapchainImageView : m_swapchain.imageViews()) {
         // NOTE this format [ COLOR, DEPTH, SWAPCHAIN_IMAGE ]
         // is important. It is mirrored in the layout of the renderpass attachments
-        const ImageView* attachments[] = {
+        Ref<const ImageView> attachments[] = {
             &m_colorBuffer.imageView(),
             &m_depthBuffer.imageView(),
             &swapchainImageView,

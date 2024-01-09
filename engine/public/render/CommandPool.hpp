@@ -12,9 +12,9 @@ namespace R3 {
 /// @brief Command Pool Type
 struct R3_API CommandPoolType : public Flag {
     enum {
-        Transient, ///< Used Short-lived CommandPools
-        Reset,     ///< Use and can be reset to initial state
-        Protected, ///< Protected CommandBuffer
+        Transient = 1, ///< Used Short-lived CommandPools
+        Reset = 2,     ///< Use and can be reset to initial state
+        Protected = 4, ///< Protected CommandBuffer
     };
 };
 

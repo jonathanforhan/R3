@@ -3,39 +3,16 @@
 #include "render/CommandPool.hpp"
 
 #include <vulkan/vulkan.hpp>
-#include "api/Ensure.hpp"
 #include "render/LogicalDevice.hpp"
 
 namespace R3 {
-
-namespace local {
-
-static constexpr vk::CommandPoolCreateFlags CommandPoolFlagsToVkFlags(CommandPoolType::Flags flags) {
-    uint32 bits = {};
-
-    if (flags & CommandPoolType::Protected) {
-        bits |= uint32(vk::CommandPoolCreateFlagBits::eProtected);
-    }
-
-    if (flags & CommandPoolType::Reset) {
-        bits |= uint32(vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-    }
-
-    if (flags & CommandPoolType::Transient) {
-        bits |= uint32(vk::CommandPoolCreateFlagBits::eTransient);
-    }
-
-    return vk::CommandPoolCreateFlags(bits);
-}
-
-} // namespace local
 
 CommandPool::CommandPool(const CommandPoolSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
     const vk::CommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = vk::StructureType::eCommandPoolCreateInfo,
         .pNext = nullptr,
-        .flags = local::CommandPoolFlagsToVkFlags(spec.type),
+        .flags = vk::CommandPoolCreateFlags(uint32(spec.type)),
         .queueFamilyIndex = m_logicalDevice->graphicsQueue().index(),
     };
 

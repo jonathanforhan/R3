@@ -13,7 +13,7 @@
 namespace R3 {
 
 std::vector<Image> Image::acquireImages(const ImageSpecification& spec) {
-    const std::vector<vk::Image> swapchainImages =
+    const std::vector swapchainImages =
         spec.logicalDevice.as<vk::Device>().getSwapchainImagesKHR(spec.swapchain.as<vk::SwapchainKHR>());
 
     std::vector<Image> images(swapchainImages.size());

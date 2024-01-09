@@ -113,13 +113,13 @@ public:
                 m.currentAnimation = "idle";
                 t = glm::rotate(t, -glm::pi<float>() / 2, vec3(0, 0, 1));
             }
-            cam.yaw -= ((90.0f / m.animations[*m.currentAnimation].maxTime) * dt);
+            cam.yaw -= ((90.0f / m.animations[*m.currentAnimation].maxTime) * deltaT);
         } else if (m.currentAnimation == "right_turn") {
             if (m.animations[*m.currentAnimation].currentTime == 0) {
                 m.currentAnimation = "idle";
                 t = glm::rotate(t, glm::pi<float>() / 2, vec3(0, 0, 1));
             }
-            cam.yaw += ((90.0f / m.animations[*m.currentAnimation].maxTime) * dt);
+            cam.yaw += ((90.0f / m.animations[*m.currentAnimation].maxTime) * deltaT);
         }
 
         static constexpr float mouseSensitivity = 360.0f;

@@ -172,11 +172,12 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
             .aspectMask = ImageAspect::Color,
         });
 
-        std::array<const ImageView*, 3> attachments = {
+        Ref<const ImageView> attachments[] = {
             &spec.colorBuffer.imageView(),
             &spec.depthBuffer.imageView(),
             &m_imageViews[i],
         };
+
         spec.framebuffers.emplace_back(FramebufferSpecification{
             .logicalDevice = *m_logicalDevice,
             .renderPass = spec.renderPass,

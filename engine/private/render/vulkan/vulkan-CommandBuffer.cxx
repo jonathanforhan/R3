@@ -20,7 +20,7 @@ namespace R3 {
 
 namespace local {
 
-static constexpr vk::CommandBufferUsageFlags CommandBufferFlagsToVkFlags(CommandBufferUsage flags) {
+static constexpr vk::CommandBufferUsageFlags commandBufferFlagsToVkFlags(CommandBufferUsage flags) {
     switch (flags) {
         case CommandBufferUsage::OneTimeSubmit:
             return vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
@@ -62,10 +62,8 @@ std::vector<CommandBuffer> CommandBuffer::allocate(const CommandBufferSpecificat
 }
 
 void CommandBuffer::free(std::vector<CommandBuffer>& commandBuffers) {
-    std::vector<vk::CommandBuffer> buffers;
-    for (const auto& commandBuffer : commandBuffers) {
-        buffers.push_back(commandBuffer.as<vk::CommandBuffer>());
-    }
+    std::vector<vk::CommandBuffer> buffers(commandBuffers.size());
+    std::ranges::transform(commandBuffers, buffers.begin(), [](auto& buf) { return buf.as<vk::CommandBuffer>(); });
 
     const auto& logicalDevice = commandBuffers.front().m_logicalDevice;
     const auto& commandPool = commandBuffers.front().m_commandPool;
@@ -86,7 +84,7 @@ void CommandBuffer::beginCommandBuffer(CommandBufferUsage usage) const {
     const vk::CommandBufferBeginInfo commandBufferBeginInfo = {
         .sType = vk::StructureType::eCommandBufferBeginInfo,
         .pNext = nullptr,
-        .flags = local::CommandBufferFlagsToVkFlags(usage),
+        .flags = local::commandBufferFlagsToVkFlags(usage),
         .pInheritanceInfo = nullptr,
     };
 
@@ -198,9 +196,8 @@ void CommandBuffer::submit(const CommandBufferSumbitSpecification& spec) const {
     if (spec.fence) {
         m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo, spec.fence->as<vk::Fence>());
     } else {
-        m_logicalDevice->graphicsQueue().lock();
+        std::unique_lock lock(m_logicalDevice->graphicsQueue().lock());
         m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
-        m_logicalDevice->graphicsQueue().unlock();
     }
 }
 
@@ -211,10 +208,9 @@ void CommandBuffer::oneTimeSubmit() const {
         .commandBufferCount = 1,
         .pCommandBuffers = &vkCommandBuffer,
     };
-    m_logicalDevice->graphicsQueue().lock();
+    std::unique_lock lock(m_logicalDevice->graphicsQueue().lock());
     m_logicalDevice->graphicsQueue().as<vk::Queue>().submit(submitInfo);
     m_logicalDevice->graphicsQueue().as<vk::Queue>().waitIdle();
-    m_logicalDevice->graphicsQueue().unlock();
 }
 
 int32 CommandBuffer::present(const CommandBufferPresentSpecification& spec) const {

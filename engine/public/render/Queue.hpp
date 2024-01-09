@@ -59,10 +59,7 @@ public:
     [[nodiscard]] constexpr uint32 index() const { return m_queueIndex; }
 
     /// @brief Lock the queue for a queue operation
-    void lock() const;
-
-    /// @brief Unlock the queue
-    void unlock() const;
+    [[nodiscard]] std::unique_lock<std::mutex> lock() const;
 
 private:
     QueueType m_queueType = {};

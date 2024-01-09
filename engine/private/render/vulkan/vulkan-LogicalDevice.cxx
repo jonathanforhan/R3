@@ -15,7 +15,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
     const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice.handle(), spec.surface.handle());
     CHECK(queueFamilyIndices.isValid());
 
-    const std::set<int32> uniqueQueueIndices = {
+    const std::set uniqueQueueIndices = {
         queueFamilyIndices.graphics,
         queueFamilyIndices.presentation,
     };
@@ -39,7 +39,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
         .samplerAnisotropy = vk::True,
     };
 
-    const std::span<const char* const> deviceExtensions = spec.physicalDevice.extensions();
+    const std::span deviceExtensions = spec.physicalDevice.extensions();
 
     const vk::DeviceCreateInfo logicalDeviceCreateInfo = {
         .sType = vk::StructureType::eDeviceCreateInfo,

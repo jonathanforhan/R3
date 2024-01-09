@@ -114,11 +114,11 @@ std::vector<const char*> Instance::queryRequiredExtensions() {
     uint32 extensionCount = 0;
     const char** extensions_ = glfwGetRequiredInstanceExtensions(&extensionCount);
     CHECK(extensions_ != nullptr);
-    return std::vector<const char*>(extensions_, extensions_ + extensionCount);
+    return std::vector(extensions_, extensions_ + extensionCount);
 }
 
 bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) const {
-    std::vector<vk::ExtensionProperties> instanceExtensions = vk::enumerateInstanceExtensionProperties();
+    std::vector instanceExtensions = vk::enumerateInstanceExtensionProperties();
 
     for (const auto& requiredExtension : requiredExtensions) {
         auto it = std::ranges::find_if(instanceExtensions, [=](vk::ExtensionProperties& extension) -> bool {
@@ -134,7 +134,7 @@ bool Instance::checkExtensionSupport(std::span<const char*> requiredExtensions) 
 }
 
 bool Instance::checkValidationLayerSupport(std::span<const char*> requiredValidationLayers) const {
-    std::vector<vk::LayerProperties> validationLayers = vk::enumerateInstanceLayerProperties();
+    std::vector validationLayers = vk::enumerateInstanceLayerProperties();
 
     for (const char* requiredValidationLayer : requiredValidationLayers) {
         auto it = std::ranges::find_if(validationLayers, [=](vk::LayerProperties& layer) -> bool {

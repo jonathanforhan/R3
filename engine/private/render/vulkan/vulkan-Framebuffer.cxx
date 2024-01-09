@@ -14,7 +14,7 @@ Framebuffer::Framebuffer(const FramebufferSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice),
       m_extent(spec.extent) {
     std::vector<vk::ImageView> attachments(spec.attachments.size());
-    std::ranges::transform(spec.attachments, attachments.begin(), [](const auto* x) { return x->as<vk::ImageView>(); });
+    std::ranges::transform(spec.attachments, attachments.begin(), [](const auto& x) { return x->as<vk::ImageView>(); });
 
     const vk::FramebufferCreateInfo framebufferCreateInfo = {
         .sType = vk::StructureType::eFramebufferCreateInfo,

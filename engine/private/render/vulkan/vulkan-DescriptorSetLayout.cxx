@@ -8,15 +8,15 @@ namespace R3 {
 
 DescriptorSetLayout::DescriptorSetLayout(const DescriptorSetLayoutSpecification& spec)
     : m_logicalDevice(&spec.logicalDevice) {
-    std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings;
-
-    for (const auto& binding : spec.layoutBindings) {
-        auto& vkBinding = descriptorSetLayoutBindings.emplace_back();
-        vkBinding.binding = binding.binding;
-        vkBinding.descriptorType = vk::DescriptorType(binding.type);
-        vkBinding.descriptorCount = binding.count;
-        vkBinding.stageFlags = vk::ShaderStageFlagBits(binding.stage);
-    };
+    std::vector<vk::DescriptorSetLayoutBinding> descriptorSetLayoutBindings(spec.layoutBindings.size());
+    std::ranges::transform(spec.layoutBindings, descriptorSetLayoutBindings.begin(), [](const auto& binding) {
+        return vk::DescriptorSetLayoutBinding{
+            .binding = binding.binding,
+            .descriptorType = vk::DescriptorType(binding.type),
+            .descriptorCount = binding.count,
+            .stageFlags = vk::ShaderStageFlagBits(binding.stage),
+        };
+    });
 
     const vk::DescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
         .sType = vk::StructureType::eDescriptorSetLayoutCreateInfo,

@@ -46,19 +46,11 @@ void Queue::acquire(const QueueSpecification& spec) {
     setHandle(spec.logicalDevice->as<vk::Device>().getQueue(m_queueIndex, 0));
 }
 
-void Queue::lock() const {
+std::unique_lock<std::mutex> Queue::lock() const {
     if (m_queueType == QueueType::Graphics) {
-        s_graphicsMutex.lock();
+        return std::unique_lock(s_graphicsMutex);
     } else {
-        s_presentationMutex.lock();
-    }
-}
-
-void Queue::unlock() const {
-    if (m_queueType == QueueType::Graphics) {
-        s_graphicsMutex.unlock();
-    } else {
-        s_presentationMutex.unlock();
+        return std::unique_lock(s_presentationMutex);
     }
 }
 

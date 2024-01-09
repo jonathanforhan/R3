@@ -17,7 +17,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     std::vector<vk::DescriptorPoolSize> poolSizes;
 
     for (const auto& binding : spec.layoutBindings) {
-        auto it = std::find_if(poolSizes.begin(), poolSizes.end(), [&](auto& poolSize) {
+        auto it = std::find_if(poolSizes.begin(), poolSizes.end(), [&](const auto& poolSize) {
             return uint32(poolSize.type) == uint32(binding.type);
         });
 

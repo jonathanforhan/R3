@@ -39,13 +39,13 @@ PresentMode SwapchainSupportDetails::optimalPresentMode() const {
     return PresentMode(it != presentModes.end() ? optimalPresentMode : vk::PresentModeKHR::eFifo);
 }
 
-uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {
+uvec2 SwapchainSupportDetails::optimalExtent(const GLFWwindow* window) const {
     if (capabilities.currentExtent.width != UINT32_MAX) {
         return uvec2(capabilities.currentExtent.width, capabilities.currentExtent.height);
     }
 
     int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(const_cast<GLFWwindow*>(window), &width, &height);
 
     vk::Extent2D extent = {
         .width = static_cast<uint32>(width),
@@ -57,9 +57,9 @@ uvec2 SwapchainSupportDetails::optimalExtent(GLFWwindow* window) const {
     return uvec2(extent.width, extent.height);
 }
 
-bool SwapchainSupportDetails::isMinimized(GLFWwindow* window) const {
+bool SwapchainSupportDetails::isMinimized(const GLFWwindow* window) const {
     int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
+    glfwGetFramebufferSize(const_cast<GLFWwindow*>(window), &width, &height);
     return !(width | height);
 }
 
