@@ -9,7 +9,7 @@ inline void Scene::addSystem(Args&&... args) {
     auto& systems = CurrentScene->m_systems;
 
     if (!systemSet.contains(typeid(T).name())) {
-        systems.emplace_back(new T(std::forward<Args>(args)...));
+        systems.emplace_back(std::make_unique<T>(std::forward<Args>(args)...));
         systemSet.emplace(typeid(T).name());
     }
 }
@@ -18,14 +18,14 @@ template <typename Event, typename... Args>
 requires std::is_constructible_v<typename Event::PayloadType, Args...>
 inline constexpr void Scene::pushEvent(Args&&... args) {
     auto& eventArena = CurrentScene->m_eventArena;
-    auto& eventQueue = CurrentScene->m_eventQueue;
+    auto& eventStack = CurrentScene->m_eventStack;
 
     using Payload_T = typename Event::PayloadType;
-    const auto event = Event(Payload_T(std::forward<Args>(args)...));        // construct event
-    const usize iEnd = eventArena.size();                                    // get the offset
-    eventArena.resize(eventArena.size() + sizeof(event));                    // resize our arena to fit event
-    memcpy(&eventArena[iEnd], &event, sizeof(event));                        // memcpy the event to arena
-    eventQueue.push(std::span<std::byte>(&eventArena[iEnd], sizeof(event))); // add payload addr and size to queue
+    const auto event = Event(Payload_T(std::forward<Args>(args)...)); // construct event
+    const usize iEnd = eventArena.size();                             // get the offset
+    eventArena.resize(eventArena.size() + sizeof(event));             // resize our arena to fit event
+    memcpy(&eventArena[iEnd], &event, sizeof(event));                 // memcpy the event to arena
+    eventStack.emplace(iEnd, sizeof(event));                          // add payload addr and size to atck
 }
 
 inline void Scene::clearRegistry() {
@@ -34,22 +34,23 @@ inline void Scene::clearRegistry() {
 
 inline void Scene::popEvent() {
     auto& eventArena = CurrentScene->m_eventArena;
-    auto& eventQueue = CurrentScene->m_eventQueue;
+    auto& eventStack = CurrentScene->m_eventStack;
 
-    if (!eventQueue.empty()) {
-        const usize eventSize = eventQueue.front().size();
+    if (!eventStack.empty()) {
+        const usize eventSize = eventStack.top().second;
         eventArena.resize(eventArena.size() - eventSize);
-        eventQueue.pop();
+        eventStack.pop();
     }
 }
 
 inline uuid32 Scene::topEvent() {
-    auto& eventQueue = CurrentScene->m_eventQueue;
-    return eventQueue.empty() ? 0 : *(uuid32*)eventQueue.front().data();
+    auto& eventArena = CurrentScene->m_eventArena;
+    auto& eventStack = CurrentScene->m_eventStack;
+    return eventStack.empty() ? 0 : *(uuid32*)(&eventArena[eventStack.top().first]);
 }
 
-inline bool Scene::isEventQueueEmpty() {
-    return CurrentScene->m_eventQueue.empty();
+inline bool Scene::isEventStackEmpty() {
+    return CurrentScene->m_eventStack.empty();
 }
 
 #if not R3_ENGINE
@@ -59,7 +60,9 @@ inline void Scene::bindEventListener(F&& callback) {
     auto& eventRegistery = CurrentScene->m_eventRegistery;
     using Event_T = EventTypeDeduced<F>;
     // create wrapper so that we can store functions with void ptr param in registry
-    EventCallback wrapper = [callback](const void* event) { callback((const Event_T&)(*(const Event_T*)event)); };
+    EventCallback wrapper = [callback](const void* event) constexpr {
+        callback((const Event_T&)(*(const Event_T*)event));
+    };
     eventRegistery.emplace(Event_T::SingalType::value, wrapper);
 }
 #endif
@@ -68,15 +71,18 @@ template <typename E, typename F>
 inline void Scene::bindEventListener(F&& callback) {
     auto& eventRegistery = CurrentScene->m_eventRegistery;
     // create wrapper so that we can store functions with void ptr param in registry
-    EventCallback wrapper = [callback](const void* event) { callback((const E&)(*(const E*)event)); };
+    EventCallback wrapper = [callback](const void* event) constexpr { callback((const E&)(*(const E*)event)); };
     eventRegistery.emplace(E::SingalType::value, wrapper);
 }
 
 #if R3_ENGINE
 inline void Scene::dispatchEvents() {
-    while (!Scene::isEventQueueEmpty()) {
-        void* const p = CurrentScene->m_eventQueue.front().data();
-        const uuid32 id = *(uuid32*)p;
+    while (!Scene::isEventStackEmpty()) {
+        auto& eventArena = CurrentScene->m_eventArena;
+        auto& eventStack = CurrentScene->m_eventStack;
+
+        const void* p = (const void*)&eventArena[eventStack.top().first];
+        const uuid32 id = *(const uuid32*)p;
 
         auto range = CurrentScene->m_eventRegistery.equal_range(id);
         for (auto& it = range.first; it != range.second; ++it) {

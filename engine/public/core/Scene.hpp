@@ -2,7 +2,7 @@
 
 #include <R3>
 #include <entt/entt.hpp>
-#include <queue>
+#include <stack>
 #include "core/Engine.hpp"
 #include "input/Event.hpp"
 #include "systems/System.hpp"
@@ -28,13 +28,13 @@ public:
     requires ValidSystem<T, Args...>
     static void addSystem(Args&&... args);
 
-    /// @brief Push an Event onto the Event queue where is can be called.
+    /// @brief Push an Event onto the Event stack where is can be called.
     /// Events get freed from heap memory when they are dispatched
     template <typename Event, typename... Args>
     requires std::is_constructible_v<typename Event::PayloadType, Args...>
     static constexpr void pushEvent(Args&&... args);
 
-    /// @brief Pope event from queue, is freed automatically
+    /// @brief Pope event from stack, is freed automatically
     static void popEvent();
 
     /// @brief Query Top event
@@ -42,9 +42,9 @@ public:
     /// @return Top Event ID
     static uuid32 topEvent();
 
-    /// @brief Query whether the event queues holds any events
+    /// @brief Query whether the event stack holds any events
     /// @return t/f
-    static bool isEventQueueEmpty();
+    static bool isEventStackEmpty();
 
 #if not R3_ENGINE
     /// @brief Bind an Event listener to the current Scene
@@ -64,7 +64,7 @@ public:
     static void bindEventListener(F&& callback);
 
 #if R3_ENGINE
-    /// @brief Dispath the all the events callbacks in the queue
+    /// @brief Dispath the all the events callbacks in the stack
     static void dispatchEvents();
 
     /// @brief Run the systems bound to scene
@@ -123,7 +123,7 @@ private:
     std::set<std::string> m_systemSet;
 
     //--- Event System
-    std::queue<std::span<std::byte>> m_eventQueue;                   // tracks event byte array
+    std::stack<std::pair<usize, usize>> m_eventStack;                // tracks event index and size of event in arena
     std::vector<std::byte> m_eventArena;                             // memory pool for allocations when pushing events
     std::unordered_multimap<uuid32, EventCallback> m_eventRegistery; // mapping of id to callback
 

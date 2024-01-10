@@ -45,8 +45,7 @@ concept EventListener = std::is_const_v<EventTypeDeduced<F>> and requires {
 /// @tparam Signal A Hash of what Event Signal you are binding to
 template <uuid32 Signal, typename Payload>
 requires std::is_trivially_destructible_v<Payload>
-class R3_API Event final {
-public:
+struct R3_API Event final {
     using PayloadType = Payload;
     using SingalType = std::integral_constant<uuid32, Signal>;
 
@@ -56,7 +55,6 @@ public:
     Event(PayloadType payload)
         : payload(payload) {}
 
-public:
     const uuid32 signal = Signal; ///< @brief Signal, a const uuid32 that we cast to get event type
     const PayloadType payload;    ///< @brief Payload, contains Event data
 };

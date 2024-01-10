@@ -9,8 +9,8 @@ namespace R3 {
 
 /// @brief checks for `void tick(double)` method present
 template <typename T>
-concept Tickable = requires {
-    { std::declval<T>().tick(double{}) } -> std::same_as<void>;
+concept Tickable = requires(T& t, double dt) {
+    { t.tick(dt) } -> std::same_as<void>;
 };
 
 /// @brief Tick system is used to class tick on a `Tickable` object once per frame

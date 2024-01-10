@@ -32,7 +32,7 @@ EngineStatusCode Engine::loop(const char* dlName) {
 
     m_renderer.preLoop();
 
-    while ((!m_window.shouldClose() && code == EngineStatusCode::Success) || !Scene::isEventQueueEmpty()) {
+    while ((!m_window.shouldClose() && code == EngineStatusCode::Success) || !Scene::isEventStackEmpty()) {
         double dt = deltaTime();
 
         Scene::dispatchEvents();
