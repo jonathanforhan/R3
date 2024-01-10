@@ -62,7 +62,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     };
 
     // transform R3 attribute to vk descriptor
-    auto vertexAttributeToDescription = [](const VertexAttributeSpecification& attribute) {
+    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(spec.vertexAttributeSpecification.size());
+    auto vertexAttribToDescription = [](const VertexAttributeSpecification& attribute) {
         return vk::VertexInputAttributeDescription{
             .location = attribute.location,
             .binding = attribute.binding,
@@ -70,9 +71,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
             .offset = attribute.offset,
         };
     };
-    std::vector<vk::VertexInputAttributeDescription> attributeDescriptions(spec.vertexAttributeSpecification.size());
-    std::ranges::transform(
-        spec.vertexAttributeSpecification, attributeDescriptions.begin(), vertexAttributeToDescription);
+    std::ranges::transform(spec.vertexAttributeSpecification, attributeDescriptions.begin(), vertexAttribToDescription);
 
     const vk::PipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
         .sType = vk::StructureType::ePipelineVertexInputStateCreateInfo,

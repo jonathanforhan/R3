@@ -236,9 +236,7 @@ void ModelLoader::processMesh(glTF::Model& model, glTF::Mesh& mesh, glTF::Node& 
             mat4 S = glm::scale(mat4(1.0f), glm::make_vec3(node.scale));
             t = T * R * S * t;
 
-            for (auto& position : positions) {
-                position = t * vec4(position, 1.0f);
-            }
+            std::ranges::transform(positions, positions.begin(), [&](auto& x) { return t * vec4(x, 1.0f); });
         }
 
         std::vector<vec3> normals;
@@ -466,12 +464,11 @@ void ModelLoader::processMaterial(glTF::Model& model, glTF::Material& material) 
         auto* ext = (glTF::KHR_materials_pbrSpecularGlossiness*)material.extensions[pbrSpecularGlossiness_INDEX].get();
         processTexture(model, *ext->diffuseTexture, TextureType::Albedo);
     } else {
-        uint8 color[4] = {
-            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[0] * 255.0f),
-            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[1] * 255.0f),
-            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[2] * 255.0f),
-            static_cast<uint8>(material.pbrMetallicRoughness.baseColorFactor[3] * 255.0f),
-        };
+        uint8 color[4];
+        std::ranges::transform(material.pbrMetallicRoughness.baseColorFactor, std::begin(color), [](float x) {
+            return static_cast<uint8>(x * 255.0f);
+        });
+
         processTexture(model, color, TextureType::Albedo);
     }
 }
@@ -526,7 +523,7 @@ void ModelLoader::preProcessTextures(glTF::Model& model) {
         glTF::Image& image = model.images[texture.source];
         std::string path = m_directory + image.uri;
 
-        pool.emplace_back([&, i, path]() {
+        pool.emplace_back([&, i, path = std::move(path)]() {
             CommandPool commandPool = CommandPoolSpecification{
                 .logicalDevice = *m_logicalDevice,
                 .swapchain = *m_swapchain,
@@ -534,7 +531,7 @@ void ModelLoader::preProcessTextures(glTF::Model& model) {
                 .commandBufferCount = 1,
             };
 
-            std::vector<CommandBuffer> commandBuffers = CommandBuffer::allocate({
+            std::vector commandBuffers = CommandBuffer::allocate({
                 .logicalDevice = *m_logicalDevice,
                 .swapchain = *m_swapchain,
                 .commandPool = commandPool,

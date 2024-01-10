@@ -166,9 +166,6 @@ Renderer::Renderer(const RendererSpecification& spec)
 void Renderer::preLoop() {
     static vec2 prevMousePosition = m_cursorPosition;
 
-    // Save position on mouse press for comparison
-    Scene::bindEventListener<MouseButtonReleaseEvent>([this](const auto&) { prevMousePosition = m_cursorPosition; });
-
     // Change editor selected entity if pressed and not dragging the view
     Scene::bindEventListener<MouseButtonReleaseEvent>([this](const MouseButtonReleaseEvent& e) {
         float localityX = glm::abs(prevMousePosition.x - m_cursorPosition.x);
@@ -177,6 +174,8 @@ void Renderer::preLoop() {
         if (e.payload.button == MouseButton::Left && (localityY + localityX) < 5.0f) {
             m_editor.setCurrentEntity(getHoveredEntity());
         }
+
+        prevMousePosition = m_cursorPosition;
     });
 
     // Rescale the font and window size for High DPI
@@ -265,9 +264,7 @@ void Renderer::render() {
                 .view = m_viewProjection.view,
                 .projection = m_viewProjection.projection,
             };
-            for (usize i = 0; i < model.skeleton.finalJointsMatrices.size(); i++) {
-                vubo.finalBoneTransforms[i] = model.skeleton.finalJointsMatrices[i];
-            }
+            std::ranges::copy(model.skeleton.finalJointsMatrices, vubo.finalBoneTransforms);
             uniform.write(&vubo, sizeof(vubo));
 
             FragmentUniformBufferObject fubo = {
@@ -275,7 +272,7 @@ void Renderer::render() {
                 .pbrFlags = mesh.material.pbrFlags,
                 .lightCount = static_cast<uint32>(m_pointLights.size()),
             };
-            std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
+            std::ranges::copy(m_pointLights, fubo.pointLights);
             lightUniform.write(&fubo, sizeof(fubo));
 
             cmd.bindVertexBuffer(mesh.vertexBuffer);
@@ -335,15 +332,11 @@ void Renderer::recreate() {
 }
 
 uuid32 Renderer::getHoveredEntity() const {
-    auto* buf = m_storageBuffer.read<uint32>();
+    std::span buf(m_storageBuffer.read<uint32>(), DEPTH_ARRAY_SCALE);
 
-    for (auto i = 0; i < DEPTH_ARRAY_SCALE; i++) {
-        if (buf[i] != 0) {
-            return buf[i];
-        }
-    }
+    auto it = std::ranges::find_if_not(buf, [](auto x) { return x == 0; });
 
-    return undefined;
+    return it == buf.end() ? undefined : *it;
 }
 
 void Renderer::renderEditorInterface(double dt) {
@@ -358,16 +351,17 @@ void Renderer::renderEditorInterface(double dt) {
 void Renderer::updateLighting() {
     m_pointLights.clear();
 
-    Entity::componentView<LightComponent, TransformComponent>().each(
-        [&, this](LightComponent& light, TransformComponent& transform) {
-            if (m_pointLights.size() < MAX_LIGHTS) {
-                m_pointLights.emplace_back(PointLightShaderObject{
-                    .position = glm::translate(transform, light.position)[3],
-                    .color = light.color,
-                    .intensity = light.intensity,
-                });
-            }
+    Entity::componentView<LightComponent, TransformComponent>().each([&](auto& light, auto& transform) {
+        if (m_pointLights.size() >= MAX_LIGHTS) {
+            return;
+        }
+
+        m_pointLights.emplace_back(PointLightShaderObject{
+            .position = glm::translate(transform, light.position)[3],
+            .color = light.color,
+            .intensity = light.intensity,
         });
+    });
 }
 
 void Renderer::waitIdle() const {
