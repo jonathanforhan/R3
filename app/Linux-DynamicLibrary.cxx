@@ -12,7 +12,6 @@ DynamicLibrary::~DynamicLibrary() {
         return;
     }
 
-    // Windows DLLs are reference counted so if we free one in use somewhere else it's fine
     int success = dlclose(mod);
     mod = nullptr;
 

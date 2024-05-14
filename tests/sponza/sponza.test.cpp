@@ -25,7 +25,7 @@ R3_DLL void Run() {
         Entity::create<Entity>().emplace<CameraComponent>().setActive(true);
 
         auto& entity = Entity::create<Entity>();
-        entity.emplace<ModelComponent>("assets/Sponza/glTF/Sponza.gltf");
+        entity.emplace<ModelComponent>("assets/glTF/Models/Sponza/glTF/Sponza.gltf");
         auto& transform = entity.get<TransformComponent>();
         transform = glm::translate(transform, vec3(0, -2, 0));
     } catch (std::exception const& e) {
