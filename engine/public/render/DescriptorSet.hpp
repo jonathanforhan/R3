@@ -3,7 +3,6 @@
 /// @brief DescriptorSets provide description of how shader memory is laid out and what we can write to
 /// the DescriptorSet is allocated with a layout given to it by the DescriptorPool
 
-#include "render/RenderApi.hpp"
 #include "render/StorageBuffer.hpp"
 
 namespace R3 {

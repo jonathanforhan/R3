@@ -225,13 +225,13 @@ void Renderer::preLoop() {
 void Renderer::render() {
     Fence& inFlight = m_inFlight[m_currentFrame];
 
-    vk::Result r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, ~0ULL);
+    vk::Result r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, -1);
     CHECK(r == vk::Result::eSuccess);
 
     Semaphore& imageAvailable = m_imageAvailable[m_currentFrame];
 
     auto&& [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
-        m_swapchain.as<vk::SwapchainKHR>(), ~0ULL, imageAvailable.as<vk::Semaphore>());
+        m_swapchain.as<vk::SwapchainKHR>(), -1, imageAvailable.as<vk::Semaphore>());
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
@@ -280,6 +280,7 @@ void Renderer::render() {
                 .model = transform,
                 .view = m_viewProjection.view,
                 .projection = m_viewProjection.projection,
+                .finalBoneTransforms = {},
             };
             for (usize i = 0; i < model.skeleton.finalJointsMatrices.size(); i++) {
                 vubo.finalBoneTransforms[i] = model.skeleton.finalJointsMatrices[i];
@@ -290,6 +291,7 @@ void Renderer::render() {
                 .cameraPosition = Scene::cameraPosition(),
                 .pbrFlags = mesh.material.pbrFlags,
                 .lightCount = static_cast<uint32>(m_pointLights.size()),
+                .pointLights = {},
             };
             std::copy(m_pointLights.begin(), m_pointLights.end(), fubo.pointLights);
             lightUniform.write(&fubo, sizeof(fubo));
@@ -325,13 +327,8 @@ void Renderer::render() {
     try {
         result = vk::Result(cmd.present(commandBufferPresentSpecification));
     } catch (std::exception& e) {
-        if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR ||
-            m_window.shouldResize()) {
-            resize();
-            m_window.setShouldResize(false);
-        } else {
-            LOG(Error, e.what());
-        }
+        resize();
+        m_window.setShouldResize(false);
     }
 
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

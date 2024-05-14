@@ -34,16 +34,16 @@
       "name": "gcc-base",
       "hidden": true,
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "gcc.exe",
-        "CMAKE_CXX_COMPILER": "g++.exe"
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
       }
     },
     {
       "name": "clang-base",
       "hidden": true,
       "cacheVariables": {
-        "CMAKE_C_COMPILER": "clang.exe",
-        "CMAKE_CXX_COMPILER": "clang++.exe"
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
       }
     },
     {

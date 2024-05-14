@@ -171,9 +171,9 @@ void Window::update() {
 
 void* Window::nativeId() const {
 #ifdef WIN32
-    return glfwGetWin32Window(handle<GLFWwindow*>());
+    return (void*)glfwGetWin32Window(handle<GLFWwindow*>());
 #else
-    return glfwGetWinX11Window(handle<GLFWwindow*>());
+    return (void*)glfwGetX11Window(handle<GLFWwindow*>());
 #endif // WIN32
 }
 

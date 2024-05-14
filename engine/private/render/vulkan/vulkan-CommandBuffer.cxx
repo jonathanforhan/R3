@@ -12,7 +12,6 @@
 #include "render/IndexBuffer.hpp"
 #include "render/LogicalDevice.hpp"
 #include "render/RenderPass.hpp"
-#include "render/Semaphore.hpp"
 #include "render/Swapchain.hpp"
 #include "render/VertexBuffer.hpp"
 
@@ -99,8 +98,11 @@ void CommandBuffer::endCommandBuffer() const {
 
 void CommandBuffer::beginRenderPass(const RenderPass& renderPass, const Framebuffer& framebuffer) const {
     constexpr vk::ClearValue clearValues[] = {
-        vk::ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f),
-        vk::ClearDepthStencilValue(1.0f, 0U),
+        vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f},
+        vk::ClearDepthStencilValue{
+            .depth = 1.0f,
+            .stencil = 0,
+        },
     };
 
     const vk::RenderPassBeginInfo renderPassBeginInfo = {

@@ -4,11 +4,12 @@
 #include <R3_core>
 #include <R3_systems>
 #include <filesystem>
+#include "DynamicLibrary.hxx"
 
 static char const* ENTRY_TAG = "Entry";
 static char const* EXIT_TAG = "Exit";
 static char const* RUN_TAG = "Run";
-static char const* CLIENT_DL = "R3_client.dll";
+#define CLIENT_DL "libR3_client.so"
 
 namespace R3 {
 
@@ -20,6 +21,8 @@ int Application::run() {
     while (loop) {
         if (std::filesystem::exists(USER_DL)) {
             std::filesystem::rename(USER_DL, CLIENT_DL);
+        } else {
+            LOG(Warning, USER_DL, "not found");
         }
 
         DynamicLibrary dl;
@@ -28,7 +31,7 @@ int Application::run() {
         DlRun dlRun;
 
         try {
-            dl.loadLib(CLIENT_DL);
+            dl.loadLib("./" CLIENT_DL);
 
             dlEntry = dl.loadEntry(ENTRY_TAG);
             CurrentScene = reinterpret_cast<Scene*>(dlEntry());

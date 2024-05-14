@@ -1,9 +1,10 @@
 #pragma once
 
 #include <R3>
-#include "DynamicLibrary.hxx"
 
-#define USER_DL "animation.dll"
+// #define USER_DL "animation.dll"
+#define USER_DL "libanimation.so"
+// #define USER_DL "libsponza.so"
 
 namespace R3 {
 

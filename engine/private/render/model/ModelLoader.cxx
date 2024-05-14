@@ -1,10 +1,11 @@
 #include "render/model/ModelLoader.hpp"
 
 #include <R3>
-#include "core/Scene.hpp"
+#include <thread>
 #include "media/glTF/glTF-Extensions.hxx"
 #include "media/glTF/glTF-Model.hxx"
 #include "render/CommandPool.hpp"
+#include "render/DescriptorSet.hpp"
 #include "render/ShaderObjects.hpp"
 
 namespace R3 {
@@ -179,23 +180,25 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             switch (type) {
                 case TextureType::Albedo:
                     mesh.material.textures.albedo = m_textures[index];
-                    textureDescriptors.emplace_back(*mesh.material.textures.albedo, 1);
+                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.albedo.get(), 1}); // WIP
                     break;
                 case TextureType::MetallicRoughness:
                     mesh.material.textures.metallicRoughness = m_textures[index];
-                    textureDescriptors.emplace_back(*mesh.material.textures.metallicRoughness, 2);
+                    textureDescriptors.emplace_back(
+                        TextureDescriptor{*mesh.material.textures.metallicRoughness.get(), 2});
                     break;
                 case TextureType::Normal:
                     mesh.material.textures.normal = m_textures[index];
-                    textureDescriptors.emplace_back(*mesh.material.textures.normal, 3);
+                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.normal.get(), 3});
                     break;
                 case TextureType::AmbientOcclusion:
                     mesh.material.textures.ambientOcclusion = m_textures[index];
-                    textureDescriptors.emplace_back(*mesh.material.textures.ambientOcclusion, 4);
+                    textureDescriptors.emplace_back(
+                        TextureDescriptor{*mesh.material.textures.ambientOcclusion.get(), 4});
                     break;
                 case TextureType::Emissive:
                     mesh.material.textures.emissive = m_textures[index];
-                    textureDescriptors.emplace_back(*mesh.material.textures.emissive, 5);
+                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.emissive.get(), 5});
                     break;
                 default:
                     break;
@@ -204,30 +207,30 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         if (!(mesh.material.pbrFlags & TexturePBR::ALBEDO_FLAG)) {
             mesh.material.textures.albedo = m_nilTexture;
-            textureDescriptors.emplace_back(*mesh.material.textures.albedo, 1);
+            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.albedo.get(), 1}); // WIP
         }
         if (!(mesh.material.pbrFlags & TexturePBR::METALLIC_ROUGHNESS_FLAG)) {
             mesh.material.textures.metallicRoughness = m_nilTexture;
-            textureDescriptors.emplace_back(*mesh.material.textures.metallicRoughness, 2);
+            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.metallicRoughness.get(), 2});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::NORMAL_FLAG)) {
             mesh.material.textures.normal = m_nilTexture;
-            textureDescriptors.emplace_back(*mesh.material.textures.normal, 3);
+            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.normal.get(), 3});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::AMBIENT_OCCLUSION_FLAG)) {
             mesh.material.textures.ambientOcclusion = m_nilTexture;
-            textureDescriptors.emplace_back(*mesh.material.textures.ambientOcclusion, 4);
+            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.ambientOcclusion.get(), 4});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::EMISSIVE_FLAG)) {
             mesh.material.textures.emissive = m_nilTexture;
-            textureDescriptors.emplace_back(*mesh.material.textures.emissive, 5);
+            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.emissive.get(), 5});
         }
 
         // Bindings
         std::vector<UniformDescriptor> uniformDescriptors;
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            uniformDescriptors.emplace_back(mesh.material.uniforms[i], 0);
-            uniformDescriptors.emplace_back(mesh.material.uniforms[i + 3], 6);
+            uniformDescriptors.emplace_back(UniformDescriptor{mesh.material.uniforms[i], 0}); // WIP
+            uniformDescriptors.emplace_back(UniformDescriptor{mesh.material.uniforms[i + 3], 6});
         };
 
         StorageDescriptor storageDescriptors[] = {{*m_storageBuffer, 7}};
@@ -385,12 +388,13 @@ void ModelLoader::processAnimations(glTF::Model& model) {
                 for (usize i = 0; float timestamp : inputTimestamps) {
                     if constexpr (std::is_same_v<T, vec3>) {
                         m_keyFrames.emplace_back(
-                            timestamp, channel.target.node, modifierType, vec4(modifiers[i], 0.0f));
+                            KeyFrame{timestamp, channel.target.node, modifierType, vec4(modifiers[i], 0.0f)}); // WIP
                     } else {
-                        m_keyFrames.emplace_back(timestamp,
-                                                 channel.target.node,
-                                                 modifierType,
-                                                 vec4(modifiers[i].x, modifiers[i].y, modifiers[i].z, modifiers[i].w));
+                        m_keyFrames.emplace_back(
+                            KeyFrame{timestamp,
+                                     channel.target.node,
+                                     modifierType,
+                                     vec4(modifiers[i].x, modifiers[i].y, modifiers[i].z, modifiers[i].w)});
                     }
 
                     i++;
@@ -410,7 +414,7 @@ void ModelLoader::processAnimations(glTF::Model& model) {
                 LOG(Warning, "weights not yet supported");
             }
         } // for (channel : animation.channels)
-    }     // for (animation : model.animations)
+    } // for (animation : model.animations)
 }
 
 void ModelLoader::processSkeleton(glTF::Model& model) {
@@ -470,7 +474,7 @@ void ModelLoader::processJoint(glTF::Model& model, usize rootIndex, usize parent
     if (numberOfChildren > 0) {
         joint.children.resize(numberOfChildren);
 
-        for (auto i = 0; i < numberOfChildren; i++) {
+        for (usize i = 0; i < numberOfChildren; i++) {
             usize childRootIndex = model.nodes[rootIndex].children[i];
             joint.children[i] = m_skeleton.nodeToJointMap[childRootIndex];
             processJoint(model, childRootIndex, currentJoint);

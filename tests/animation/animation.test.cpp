@@ -19,7 +19,7 @@ using namespace R3;
 
 extern "C" {
 
-R3_DLL void* Entry() {
+R3_DLL void* Entry(void) {
     CurrentScene = new Scene(HASH32("Animation"), "Animation");
     return CurrentScene;
 }
@@ -30,7 +30,7 @@ R3_DLL void Exit(void* scene_) {
     delete scene;
 }
 
-R3_DLL void Run() {
+R3_DLL void Run(void) {
     try {
         //--- Camera
         auto& cam = Entity::create<Entity>().emplace<CameraComponent>();

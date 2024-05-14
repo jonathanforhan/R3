@@ -56,6 +56,13 @@ public:
     Event(PayloadType payload)
         : payload(payload) {}
 
+    /// @brief Construct Event with given payload args
+    /// @note Recommended to use EVENT(_Signal, _Payload) macro
+    /// @param args payload args
+    template <typename... Args>
+    Event(Args&&... args)
+        : payload(args...) {}
+
 public:
     const uuid32 signal = Signal; ///< @brief Signal, a const uuid32 that we cast to get event type
     const PayloadType payload;    ///< @brief Payload, contains Event data

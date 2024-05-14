@@ -26,7 +26,7 @@ if (MSVC)
 		set_source_files_properties(${VKCPP} PROPERTIES COMPILE_FLAGS "/Yuvulkan.hpp")
 	endforeach ()
 else ()
-	set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+    set_target_properties(R3_ENGINE PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic -Wno-extra-semi")
 endif ()
 
 file(GLOB PRE_COMPILE_API "${CMAKE_CURRENT_SOURCE_DIR}/public/api/*.hpp")
@@ -102,7 +102,8 @@ if (R3_EDITOR)
 	target_compile_definitions(R3_ENGINE PUBLIC -DR3_EDITOR=1)
 endif ()
 
-target_compile_definitions(R3_ENGINE PUBLIC
+target_compile_definitions(R3_ENGINE
+PUBLIC
 	-DGLFW_INCLUDE_NONE=1
 	-DGLM_FORCE_RADIANS=1
 	-DVULKAN_HPP_PRECOMPILE=1
@@ -111,9 +112,7 @@ target_compile_definitions(R3_ENGINE PUBLIC
 	-DVULKAN_HPP_NO_STRUCT_SETTERS=1
 	-DVULKAN_HPP_NO_SPACESHIP_OPERATOR=1
 	-DVULKAN_HPP_NO_TO_STRING=1
-)
-
-target_compile_definitions(R3_ENGINE PRIVATE
+PRIVATE
 	-DR3_ENGINE=1
 )
 
@@ -124,9 +123,10 @@ else ()
 endif ()
 
 #[[ R3 INCLUDES ]]
+target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/public")
-target_include_directories(R3_ENGINE PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/private")
+target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/private")
 
 #[[ R3 EXTERNAL DEPENDECIES ]]
 add_subdirectory(extern)

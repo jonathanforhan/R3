@@ -24,6 +24,8 @@ vk::Format getSupportedDepthFormat(vk::PhysicalDevice gpu, vk::ImageTiling tilin
                 if ((formatProperties.optimalTilingFeatures & features) == features)
                     return format;
                 break;
+            default:
+                continue;
         }
     }
 

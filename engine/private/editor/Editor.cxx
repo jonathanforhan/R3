@@ -6,7 +6,6 @@
 #include <imgui_internal.h>
 #include <R3_core>
 #include <R3_input>
-#include <format>
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
 #include "components/EditorComponent.hpp"
@@ -116,7 +115,7 @@ void Editor::displayDeltaTime(double dt) {
 
 void Editor::initializeDocking() {
     static constexpr ImGuiDockNodeFlags dockspaceFlags =
-        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoWindowMenuButton;
+        ImGuiDockNodeFlags_PassthruCentralNode | (int)ImGuiDockNodeFlags_NoWindowMenuButton;
     ImGui::DockSpaceOverViewport(nullptr, dockspaceFlags);
 }
 
@@ -152,7 +151,7 @@ void Editor::displayProperties() {
             }
             auto& editorComponent = *maybeEditorComponent;
 
-            ImGui::Text(editorComponent.name);
+            ImGui::Text("%s", editorComponent.name);
 
             const float sensitivity = ImGui::GetIO().KeyShift ? 0.0001f : 0.1f;
             const bool scaleLock = ImGui::GetIO().KeyCtrl;

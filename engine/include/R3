@@ -1,16 +1,16 @@
 #pragma once
 
-#include "public/api/Api.hpp"
-#include "public/api/Check.hpp"
-#include "public/api/Construct.hpp"
-#include "public/api/Ensure.hpp"
-#include "public/api/Flag.hpp"
+#include "../public/api/Api.hpp"
+#include "../public/api/Check.hpp"
+#include "../public/api/Construct.hpp"
+#include "../public/api/Ensure.hpp"
+#include "../public/api/Flag.hpp"
 #if not R3_ENGINE
-	#include "public/api/Function.hpp"
+	#include "../public/api/Function.hpp"
 #endif
-#include "public/api/Hash.hpp"
-#include "public/api/Log.hpp"
-#include "public/api/Math.hpp"
-#include "public/api/Ref.hpp"
-#include "public/api/Types.hpp"
-#include "public/api/Version.hpp"
+#include "../public/api/Hash.hpp"
+#include "../public/api/Log.hpp"
+#include "../public/api/Math.hpp"
+#include "../public/api/Ref.hpp"
+#include "../public/api/Types.hpp"
+#include "../public/api/Version.hpp"

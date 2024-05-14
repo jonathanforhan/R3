@@ -11,7 +11,7 @@ void Skeleton::update(bool isAnimated) {
     }
 
     // apply animation
-    for (auto i = 0; i < joints.size(); i++) {
+    for (usize i = 0; i < joints.size(); i++) {
         finalJointsMatrices[i] = joints[i].getDeformedBindMatrix();
     }
 
@@ -20,7 +20,7 @@ void Skeleton::update(bool isAnimated) {
     updateJoint(ROOT);
 
     // bring back to model space
-    for (auto i = 0; i < joints.size(); i++) {
+    for (usize i = 0; i < joints.size(); i++) {
         finalJointsMatrices[i] = finalJointsMatrices[i] * joints[i].inverseBindMatrix;
     }
 }

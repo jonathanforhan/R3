@@ -3,7 +3,6 @@
 #include <R3>
 #include <entt/entt.hpp>
 #include <queue>
-#include "core/Engine.hpp"
 #include "input/Event.hpp"
 #include "systems/System.hpp"
 
@@ -31,7 +30,7 @@ public:
     /// @brief Push an Event onto the Event queue where is can be called.
     /// Events get freed from heap memory when they are dispatched
     template <typename Event, typename... Args>
-    requires std::is_constructible_v<typename Event::PayloadType, Args...>
+    // requires std::is_constructible_v<typename Event::PayloadType, Args&&...>
     static constexpr void pushEvent(Args&&... args);
 
     /// @brief Pope event from queue, is freed automatically

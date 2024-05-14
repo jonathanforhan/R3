@@ -10,7 +10,7 @@ struct R3_API KeyFrame {
     static ModifierType stringToModifier(std::string_view s);
 
     float timestamp = 0.0f;
-    usize node = undefined;
+    uint32 node = undefined;
     ModifierType modifierType;
     vec4 modifier;
 };

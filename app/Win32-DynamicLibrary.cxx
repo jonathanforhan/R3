@@ -1,4 +1,8 @@
+#ifdef WIN32
+
 #include "DynamicLibrary.hxx"
+
+#include <windows.h>
 
 namespace R3 {
 
@@ -44,3 +48,5 @@ DlRun DynamicLibrary::loadRunner(char const* funcname) {
 }
 
 } // namespace R3
+
+#endif // WIN32

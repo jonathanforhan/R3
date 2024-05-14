@@ -18,20 +18,17 @@ class Lock:
                 print(f"creating new {lock_file}")
                 json.dump(self.__data, lock, indent=2)
 
-
     def is_valid(self, shader: str) -> bool:
         """ query lock.json to see if shader needs to be updated """
         uuid = self.__uuid(shader)
         return shader in self.__data and self.__data[shader] == uuid
 
-
     def update_hash(self, shader: str):
         """ update shader with approriate uuid """
         key = f"{shader}"
-        self.__data[key] = self.__uuid(shader);
+        self.__data[key] = self.__uuid(shader)
         with open(f"{self.__lock_file}", "w") as lock:
             json.dump(self.__data, lock, indent=2)
-
 
     def __uuid(self, shader: str) -> str:
         sha256 = hashlib.sha256(usedforsecurity=False)
@@ -81,4 +78,4 @@ if __name__ == "__main__":
         sys.argv.remove("-f")
     except:
         ...
-    main(sys.argv[1], sys.argv[2], sys.argv[3], force);
+    main(sys.argv[1], sys.argv[2], sys.argv[3], force)

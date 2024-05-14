@@ -4,7 +4,7 @@
 /// @brief Provides means of hashing at compile time
 /// Uses crc32 and crc64 hashing algorithms which are `consteval`ed
 
-#include "api/Types.hpp"
+#include "Types.hpp"
 
 namespace R3 {
 

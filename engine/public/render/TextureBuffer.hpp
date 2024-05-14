@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string_view>
 #include "render/Buffer.hpp"
 #include "render/ImageView.hpp"

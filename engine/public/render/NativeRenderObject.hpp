@@ -33,7 +33,7 @@ public:
     template <typename T = Handle>
     NativeRenderObject(const T& handle) {
         if constexpr (IsWrapper<T>) {
-            m_handle = reinterpret_cast<Handle>(static_cast<T::NativeType>(handle));
+            m_handle = reinterpret_cast<Handle>(static_cast<typename T::NativeType>(handle));
         } else {
             m_handle = reinterpret_cast<Handle>(handle);
         }
@@ -58,7 +58,7 @@ public:
     [[nodiscard]] constexpr T as() const {
         CHECK(validHandle());
         if constexpr (IsWrapper<T>) {
-            return static_cast<T>(reinterpret_cast<T::NativeType>(m_handle.get()));
+            return static_cast<T>(reinterpret_cast<typename T::NativeType>(m_handle.get()));
         } else {
             return static_cast<T>(m_handle.get());
         }
@@ -70,7 +70,7 @@ protected:
     template <typename T = Handle>
     constexpr void setHandle(const T& handle) {
         if constexpr (IsWrapper<T>) {
-            m_handle = reinterpret_cast<Handle>(static_cast<T::NativeType>(handle));
+            m_handle = reinterpret_cast<Handle>(static_cast<typename T::NativeType>(handle));
         } else {
             m_handle = reinterpret_cast<Handle>(handle);
         }

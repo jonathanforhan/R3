@@ -34,7 +34,7 @@ protected:
     template <typename T>
     [[nodiscard]] constexpr T deviceMemoryAs() const {
         if constexpr (IsWrapper<T>) {
-            return static_cast<T>(reinterpret_cast<T::NativeType>(m_deviceMemory.get()));
+            return static_cast<T>(reinterpret_cast<typename T::NativeType>(m_deviceMemory.get()));
         } else {
             return static_cast<T>(m_deviceMemory.get());
         }
@@ -45,7 +45,7 @@ protected:
     template <typename T = Handle>
     constexpr void setDeviceMemory(const T& bufferHandle) {
         if constexpr (IsWrapper<T>) {
-            m_deviceMemory = reinterpret_cast<Handle>(static_cast<T::NativeType>(bufferHandle));
+            m_deviceMemory = reinterpret_cast<Handle>(static_cast<typename T::NativeType>(bufferHandle));
         } else {
             m_deviceMemory = reinterpret_cast<Handle>(bufferHandle);
         }

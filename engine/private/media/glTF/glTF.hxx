@@ -1,6 +1,8 @@
 #pragma once
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 26495)
+#endif // _MSC_VER
 
 #include <rapidjson/document.h>
 #include <optional>
@@ -519,4 +521,6 @@ struct Root {
 
 } // namespace R3::glTF
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif // _MSC_VER

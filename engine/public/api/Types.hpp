@@ -9,8 +9,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "api/Api.hpp"
-#include "api/Construct.hpp"
+#include "Api.hpp"
+#include "Construct.hpp"
 
 namespace R3 {
 
@@ -91,6 +91,8 @@ using id = usize;
 
 } // namespace R3
 
+#ifdef _MSC_VER
+
 // vec export
 template class R3_API glm::vec<1, glm::f32, glm::packed_highp>;
 template class R3_API glm::vec<2, glm::f32, glm::packed_highp>;
@@ -128,3 +130,5 @@ template class R3_API glm::mat<4, 4, glm::f64, glm::packed_highp>;
 // quat export
 template class R3_API glm::qua<glm::f32, glm::packed_highp>;
 template class R3_API glm::qua<glm::f64, glm::packed_highp>;
+
+#endif // _MSC_VER

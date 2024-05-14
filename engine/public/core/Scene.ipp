@@ -15,13 +15,13 @@ inline void Scene::addSystem(Args&&... args) {
 }
 
 template <typename Event, typename... Args>
-requires std::is_constructible_v<typename Event::PayloadType, Args...>
+// requires std::is_constructible_v<typename Event::PayloadType, Args&&...>
 inline constexpr void Scene::pushEvent(Args&&... args) {
     auto& eventArena = CurrentScene->m_eventArena;
     auto& eventQueue = CurrentScene->m_eventQueue;
 
     using Payload_T = typename Event::PayloadType;
-    const auto event = Event(Payload_T(std::forward<Args>(args)...));        // construct event
+    const auto event = Event(Payload_T{std::forward<Args>(args)...});        // construct event
     const usize iEnd = eventArena.size();                                    // get the offset
     eventArena.resize(eventArena.size() + sizeof(event));                    // resize our arena to fit event
     memcpy(&eventArena[iEnd], &event, sizeof(event));                        // memcpy the event to arena
