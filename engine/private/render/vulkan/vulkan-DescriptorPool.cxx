@@ -22,7 +22,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
         });
 
         if (it == poolSizes.end()) {
-            poolSizes.push_back({vk::DescriptorType(binding.type), binding.count * spec.descriptorSetCount}); // WIP
+            poolSizes.push_back({vk::DescriptorType(binding.type), binding.count * spec.descriptorSetCount});
         } else {
             it->descriptorCount += binding.count * spec.descriptorSetCount;
         }

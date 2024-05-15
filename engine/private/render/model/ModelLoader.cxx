@@ -180,25 +180,23 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
             switch (type) {
                 case TextureType::Albedo:
                     mesh.material.textures.albedo = m_textures[index];
-                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.albedo.get(), 1}); // WIP
+                    textureDescriptors.push_back({*mesh.material.textures.albedo, 1});
                     break;
                 case TextureType::MetallicRoughness:
                     mesh.material.textures.metallicRoughness = m_textures[index];
-                    textureDescriptors.emplace_back(
-                        TextureDescriptor{*mesh.material.textures.metallicRoughness.get(), 2});
+                    textureDescriptors.push_back({*mesh.material.textures.metallicRoughness, 2});
                     break;
                 case TextureType::Normal:
                     mesh.material.textures.normal = m_textures[index];
-                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.normal.get(), 3});
+                    textureDescriptors.push_back({*mesh.material.textures.normal, 3});
                     break;
                 case TextureType::AmbientOcclusion:
                     mesh.material.textures.ambientOcclusion = m_textures[index];
-                    textureDescriptors.emplace_back(
-                        TextureDescriptor{*mesh.material.textures.ambientOcclusion.get(), 4});
+                    textureDescriptors.push_back({*mesh.material.textures.ambientOcclusion, 4});
                     break;
                 case TextureType::Emissive:
                     mesh.material.textures.emissive = m_textures[index];
-                    textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.emissive.get(), 5});
+                    textureDescriptors.push_back({*mesh.material.textures.emissive, 5});
                     break;
                 default:
                     break;
@@ -207,30 +205,30 @@ void ModelLoader::load(const std::string& path, ModelComponent& model) {
 
         if (!(mesh.material.pbrFlags & TexturePBR::ALBEDO_FLAG)) {
             mesh.material.textures.albedo = m_nilTexture;
-            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.albedo.get(), 1}); // WIP
+            textureDescriptors.push_back({*mesh.material.textures.albedo, 1});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::METALLIC_ROUGHNESS_FLAG)) {
             mesh.material.textures.metallicRoughness = m_nilTexture;
-            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.metallicRoughness.get(), 2});
+            textureDescriptors.push_back({*mesh.material.textures.metallicRoughness, 2});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::NORMAL_FLAG)) {
             mesh.material.textures.normal = m_nilTexture;
-            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.normal.get(), 3});
+            textureDescriptors.push_back({*mesh.material.textures.normal, 3});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::AMBIENT_OCCLUSION_FLAG)) {
             mesh.material.textures.ambientOcclusion = m_nilTexture;
-            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.ambientOcclusion.get(), 4});
+            textureDescriptors.push_back({*mesh.material.textures.ambientOcclusion, 4});
         }
         if (!(mesh.material.pbrFlags & TexturePBR::EMISSIVE_FLAG)) {
             mesh.material.textures.emissive = m_nilTexture;
-            textureDescriptors.emplace_back(TextureDescriptor{*mesh.material.textures.emissive.get(), 5});
+            textureDescriptors.push_back({*mesh.material.textures.emissive, 5});
         }
 
         // Bindings
         std::vector<UniformDescriptor> uniformDescriptors;
         for (uint32 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-            uniformDescriptors.emplace_back(UniformDescriptor{mesh.material.uniforms[i], 0}); // WIP
-            uniformDescriptors.emplace_back(UniformDescriptor{mesh.material.uniforms[i + 3], 6});
+            uniformDescriptors.push_back({mesh.material.uniforms[i], 0});
+            uniformDescriptors.push_back({mesh.material.uniforms[i + 3], 6});
         };
 
         StorageDescriptor storageDescriptors[] = {{*m_storageBuffer, 7}};
