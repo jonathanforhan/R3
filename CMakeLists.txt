@@ -97,3 +97,9 @@ if (R3_DOCS)
 		)
 	endif ()
 endif ()
+
+execute_process(
+	COMMAND ${CMAKE_COMMAND} -E copy
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/compile_commands.json"
+        "${R3_SOURCE_DIR}/compile_commands.json"
+)

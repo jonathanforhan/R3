@@ -40,7 +40,7 @@ R3_DLL void Run(void) {
 
         auto& light1 = Entity::create<Entity>();
         auto& lc = light1.emplace<LightComponent>();
-        lc.intensity = 5.0f;
+        lc.intensity = 100.0f;
         lc.position = vec3(0, 4, 0);
         light1.emplace<EditorComponent>().name = "Light";
 

@@ -48,7 +48,7 @@ int Application::run() {
         auto ret = EngineInstance->loop(USER_DL);
 
         switch (ret) {
-            case EngineStatusCode::DlOutOfData:
+            case EngineStatusCode::DlOutOfDate:
                 // let the dl deconstructor call and load in the new one
                 break;
             case EngineStatusCode::Success:

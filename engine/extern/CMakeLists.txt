@@ -17,8 +17,8 @@ include(GNUInstallDirs)
 
 if (R3_OPENGL)
 #[[ Glad ]]
-add_subdirectory(glad)
-list(APPEND EXTERN_LIBS_PRIVATE "glad")
+    add_subdirectory(glad)
+    list(APPEND EXTERN_LIBS_PRIVATE "glad")
 endif ()
 
 #[[ GLFW ]]
@@ -42,7 +42,7 @@ list(APPEND EXTERN_LIBS "EnTT::EnTT")
 
 #[[ ImGui ]]
 find_package(Vulkan REQUIRED)
-add_library(ImGui STATIC 
+add_library(ImGui SHARED 
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.h"
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/imgui_demo.cpp"
@@ -53,9 +53,6 @@ add_library(ImGui STATIC
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_glfw.cpp"
 )
 target_include_directories(ImGui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
-if (NOT MSVC)
-    set_target_properties(ImGui PROPERTIES COMPILE_FLAGS  "${CMAKE_CXX_FLAGS} -fPIC")
-endif ()
 target_link_libraries(ImGui PUBLIC "Vulkan::Vulkan" "glfw")
 list(APPEND EXTERN_LIBS_PRIVATE "ImGui")
 
@@ -68,10 +65,12 @@ set(RAPIDJSON_BUILD_CXX17 ON CACHE BOOL "" FORCE)
 add_subdirectory(rapidjson)
 list(APPEND EXTERN_INCLUDE_DIRS_PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/rapidjson/include")
 
-#[[ Optick ]]
-if (NOT R3_BUILD_DIST AND MSVC)
-add_subdirectory(optick)
-list(APPEND EXTERN_LIBS_PRIVATE "OptickCore")
+#[[ Easy Profiler ]]
+if (NOT R3_BUILD_DIST)
+    set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
+    add_subdirectory(easy_profiler)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+    list(APPEND EXTERN_LIBS_PRIVATE "easy_profiler")
 endif ()
 
 set(R3_EXTERN_LIBS ${EXTERN_LIBS} PARENT_SCOPE)

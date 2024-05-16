@@ -17,3 +17,6 @@
 [submodule "assets/glTF"]
 	path = assets/glTF
 	url = https://github.com/KhronosGroup/glTF-Sample-Assets.git
+[submodule "engine/extern/easy_profiler"]
+	path = engine/extern/easy_profiler
+	url = https://github.com/yse/easy_profiler.git

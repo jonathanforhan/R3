@@ -14,7 +14,7 @@ R3_EXPORT extern Scene* CurrentScene;
 
 enum class R3_API EngineStatusCode {
     Success = 0,
-    DlOutOfData = 1,
+    DlOutOfDate = 1,
 };
 
 class R3_API Engine final {
