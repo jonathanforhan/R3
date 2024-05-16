@@ -6,10 +6,10 @@
 #include <imgui_internal.h>
 #include <R3_core>
 #include <R3_input>
+#include <filesystem>
 #include <glm/gtx/quaternion.hpp>
 #include <vulkan/vulkan.hpp>
 #include "components/EditorComponent.hpp"
-#include "render/Renderer.hpp"
 
 namespace R3::editor {
 
@@ -199,6 +199,60 @@ void Editor::displayProperties() {
             transform[3] += vec4(deltaPosition, 0.0f);
             transform = glm::scale(transform, deltaScale);
         }
+    }
+    ImGui::End();
+}
+
+void Editor::displaySceneManager() {
+    const float TEXT_BASE_WIDTH = ImGui::CalcTextSize("A").x;
+    static constexpr ImGuiTableFlags flags = ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuterH |
+                                             ImGuiTableFlags_Resizable | ImGuiTableFlags_RowBg |
+                                             ImGuiTableFlags_NoBordersInBody;
+
+    static ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_SpanAllColumns;
+
+    ImGui::Begin("Scene Manager");
+    if (ImGui::BeginTable("3ways", 3, flags)) {
+        // The first column will use the default _WidthStretch when ScrollX is Off and _WidthFixed when ScrollX is
+        // On
+        ImGui::TableSetupColumn("Name", ImGuiTableColumnFlags_NoHide);
+        ImGui::TableSetupColumn("Size", ImGuiTableColumnFlags_WidthFixed, TEXT_BASE_WIDTH * 12.0f);
+        ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed, TEXT_BASE_WIDTH * 18.0f);
+        ImGui::TableHeadersRow();
+
+        static void (*fileTree)(const std::filesystem::directory_entry) = [](const auto fd) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+
+            if (std::filesystem::is_directory(fd)) {
+                const bool open = ImGui::TreeNodeEx(fd.path().filename().c_str(), treeNodeFlags);
+                ImGui::TableNextColumn();
+                ImGui::TextDisabled("--");
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(fd.path().extension().c_str());
+
+                if (open) {
+                    for (const auto& dir : std::filesystem::directory_iterator(fd)) {
+                        fileTree(dir);
+                    }
+                    ImGui::TreePop();
+                }
+            } else {
+                ImGui::TreeNodeEx(fd.path().filename().c_str(),
+                                  treeNodeFlags | ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_Bullet |
+                                      ImGuiTreeNodeFlags_NoTreePushOnOpen);
+                ImGui::TableNextColumn();
+                ImGui::Text("%ju", std::filesystem::file_size(fd));
+                ImGui::TableNextColumn();
+                ImGui::TextUnformatted(fd.path().extension().c_str());
+            }
+        };
+
+        for (const auto& dir : std::filesystem::directory_iterator(".")) {
+            fileTree(dir);
+        }
+
+        ImGui::EndTable();
     }
     ImGui::End();
 }

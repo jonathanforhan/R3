@@ -2,7 +2,6 @@
 
 #include <chrono>
 #include <filesystem>
-#include <thread>
 #include "core/Scene.hpp"
 #include "render/Renderer.hpp"
 #include "render/Window.hpp"

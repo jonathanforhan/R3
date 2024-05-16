@@ -2,7 +2,6 @@
 
 #include <atomic>
 #include <string_view>
-#include "render/RenderApi.hpp"
 
 namespace R3 {
 

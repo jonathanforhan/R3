@@ -20,10 +20,23 @@ static constexpr struct {
     consteval operator T() const {
         return ~T{};
     }
-
-    constexpr bool operator==(std::integral auto x) const { return x == ~decltype(x){}; }
-    constexpr bool operator!=(std::integral auto x) const { return x != ~decltype(x){}; }
 } undefined;
+
+constexpr bool operator==(decltype(undefined), std::integral auto x) {
+    return x == ~decltype(x){};
+}
+
+constexpr bool operator!=(decltype(undefined), std::integral auto x) {
+    return x != ~decltype(x){};
+}
+
+constexpr bool operator==(std::integral auto x, decltype(undefined)) {
+    return x == ~decltype(x){};
+}
+
+constexpr bool operator!=(std::integral auto x, decltype(undefined)) {
+    return x != ~decltype(x){};
+}
 
 // vecs are first class citizens
 using glm::vec1; ///< vec1

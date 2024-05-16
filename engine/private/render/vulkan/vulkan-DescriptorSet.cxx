@@ -4,11 +4,9 @@
 
 #include <vulkan/vulkan.hpp>
 #include "api/Check.hpp"
-#include "core/Scene.hpp"
 #include "render/DescriptorPool.hpp"
 #include "render/DescriptorSetLayout.hpp"
 #include "render/LogicalDevice.hpp"
-#include "render/RenderSpecification.hpp"
 
 namespace R3 {
 
@@ -26,6 +24,7 @@ std::vector<DescriptorSet> DescriptorSet::allocate(const DescriptorSetSpecificat
 
     const auto allocatedDescriptorSets =
         spec.logicalDevice.as<vk::Device>().allocateDescriptorSets(descriptorSetAllocateInfo);
+
     CHECK(allocatedDescriptorSets.size() == spec.descriptorSetCount);
 
     std::vector<DescriptorSet> descriptorSets(spec.descriptorSetCount);

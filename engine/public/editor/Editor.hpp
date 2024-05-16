@@ -1,8 +1,7 @@
 #pragma once
 
 #include <R3>
-#include "render/RenderApi.hpp"
-#include "render/ShaderObjects.hpp"
+#include "render/CommandBuffer.hpp"
 
 namespace R3::editor {
 
@@ -39,6 +38,8 @@ public:
     void displayHierarchy();
 
     void displayProperties();
+
+    void displaySceneManager();
 
     void setCurrentEntity(uuid32 id) { m_currentEntity = id; }
 

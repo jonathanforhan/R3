@@ -232,8 +232,9 @@ int32 CommandBuffer::present(const CommandBufferPresentSpecification& spec) cons
         .pResults = nullptr,
     };
 
-    // MAY THROW !
-    return (int32)m_logicalDevice->presentationQueue().as<vk::Queue>().presentKHR(presentInfo);
+    // use C api because vulkan.hpp is too strict
+    VkPresentInfoKHR cPresentInfo = presentInfo;
+    return vkQueuePresentKHR(m_logicalDevice->presentationQueue().as<VkQueue>(), &cPresentInfo);
 }
 
 } // namespace R3

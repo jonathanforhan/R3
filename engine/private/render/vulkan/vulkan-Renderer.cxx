@@ -225,13 +225,18 @@ void Renderer::preLoop() {
 void Renderer::render() {
     Fence& inFlight = m_inFlight[m_currentFrame];
 
-    vk::Result r = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, -1);
-    CHECK(r == vk::Result::eSuccess);
+    vk::Result result = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, -1);
+    CHECK(result == vk::Result::eSuccess);
 
     Semaphore& imageAvailable = m_imageAvailable[m_currentFrame];
 
-    auto&& [result, imageIndex] = m_logicalDevice.as<vk::Device>().acquireNextImageKHR(
-        m_swapchain.as<vk::SwapchainKHR>(), -1, imageAvailable.as<vk::Semaphore>());
+    uint32 imageIndex;
+    result = vk::Result(vkAcquireNextImageKHR(m_logicalDevice.as<VkDevice>(),
+                                              m_swapchain.as<VkSwapchainKHR>(),
+                                              static_cast<uint64>(-1),
+                                              imageAvailable.as<VkSemaphore>(),
+                                              VK_NULL_HANDLE,
+                                              &imageIndex));
 
     [[unlikely]] if (result != vk::Result::eSuccess) {
         if (result == vk::Result::eErrorOutOfDateKHR) {
@@ -256,6 +261,7 @@ void Renderer::render() {
     cmd.resetCommandBuffer();
     cmd.beginCommandBuffer();
     cmd.beginRenderPass(m_renderPass, m_framebuffers[imageIndex]);
+
     //*************************************** RENDER PASS BEGIN ***************************************//
 
     // draw every mesh of every model
@@ -305,6 +311,7 @@ void Renderer::render() {
     m_editor.drawFrame(cmd);
 
     //**************************************** RENDER PASS END ****************************************//
+
     cmd.endRenderPass();
     cmd.endCommandBuffer();
 
@@ -324,9 +331,9 @@ void Renderer::render() {
         .currentImageIndex = imageIndex,
     };
 
-    try {
-        result = vk::Result(cmd.present(commandBufferPresentSpecification));
-    } catch (std::exception& e) {
+    result = vk::Result(cmd.present(commandBufferPresentSpecification));
+
+    if (result == vk::Result::eErrorOutOfDateKHR || result == vk::Result::eSuboptimalKHR || m_window.shouldResize()) {
         resize();
         m_window.setShouldResize(false);
     }
@@ -364,6 +371,7 @@ void Renderer::renderEditorInterface(double dt) {
     m_editor.initializeDocking();
     m_editor.displayHierarchy();
     m_editor.displayProperties();
+    m_editor.displaySceneManager();
     m_editor.displayDeltaTime(dt);
     m_editor.endFrame();
 }
