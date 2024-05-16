@@ -21,8 +21,6 @@ int Application::run() {
     while (loop) {
         if (std::filesystem::exists(USER_DL)) {
             std::filesystem::rename(USER_DL, CLIENT_DL);
-        } else {
-            LOG(Warning, USER_DL, "not found");
         }
 
         DynamicLibrary dl;

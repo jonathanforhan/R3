@@ -8,7 +8,7 @@ namespace R3::glTF {
 
 class Model : public Root {
 public:
-    explicit Model(std::string_view path);
+    explicit Model(const std::filesystem::path& path);
 
     [[nodiscard]] constexpr const std::vector<std::byte>& buffer() const { return m_buffer; }
 

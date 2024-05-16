@@ -11,9 +11,9 @@ using namespace rapidjson;
 
 namespace R3::glTF {
 
-Model::Model(std::string_view path)
+Model::Model(const std::filesystem::path& path)
     : m_path(path) {
-    std::ifstream ifs(path.data(), std::ios::binary);
+    std::ifstream ifs(path, std::ios::binary);
     ENSURE(ifs.is_open() && ifs.good());
 
     bool glbSuccess = parseGLB(ifs);

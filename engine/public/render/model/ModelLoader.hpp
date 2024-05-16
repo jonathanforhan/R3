@@ -2,6 +2,7 @@
 
 /// Owned by Renderer and used to load in assets
 
+#include <filesystem>
 #include "components/ModelComponent.hpp"
 
 namespace R3 {
@@ -48,7 +49,7 @@ public:
     /// @brief Load in a glTF Model from path
     /// @param path
     /// @param[out] model
-    void load(const std::string& path, ModelComponent& model);
+    void load(const std::filesystem::path& path, ModelComponent& model);
 
 private:
     void processNode(glTF::Model& model, glTF::Node& node);
@@ -78,7 +79,7 @@ private:
 
     std::vector<std::shared_ptr<TextureBuffer>> m_textures;
     std::shared_ptr<TextureBuffer> m_nilTexture;
-    std::string m_directory;
+    std::filesystem::path m_directory;
 };
 
 } // namespace R3

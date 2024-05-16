@@ -1,6 +1,7 @@
 #include "render/model/ModelLoader.hpp"
 
 #include <R3>
+#include <filesystem>
 #include <thread>
 #include "media/glTF/glTF-Extensions.hxx"
 #include "media/glTF/glTF-Model.hxx"
@@ -84,18 +85,19 @@ ModelLoader::ModelLoader(const ModelLoaderSpecification& spec)
         .commandBuffer = m_commandPool->commandBuffers().front(),
         .width = 1,
         .height = 1,
+        .data = nullptr,
         .raw = std::bit_cast<const std::byte*>(&data),
+        .path = nullptr,
         .type = TextureType::Nil,
     };
     m_nilTexture = std::make_shared<TextureBuffer>(nilTextureSpec);
 }
 
-void ModelLoader::load(const std::string& path, ModelComponent& model) {
-    usize split = path.find_last_of('/') + 1;
-    m_directory = path.substr(0, split);
-    auto file = path.substr(split);
+void ModelLoader::load(const std::filesystem::path& path, ModelComponent& model) {
+    glTF::Model gltf(path);
 
-    glTF::Model gltf(m_directory + file);
+    m_directory = path;
+    m_directory.replace_filename("");
 
     preProcessTextures(gltf);
     for (auto& scene : gltf.scenes) {
@@ -534,7 +536,9 @@ void ModelLoader::processTexture(glTF::Model&, uint8 color[4], TextureType type)
         .commandBuffer = m_commandPool->commandBuffers().front(),
         .width = 1,
         .height = 1,
+        .data = nullptr,
         .raw = std::bit_cast<const std::byte*>(color),
+        .path = nullptr,
         .type = type,
     };
 
@@ -551,12 +555,12 @@ void ModelLoader::processTexture(glTF::Model& model, glTF::TextureInfo& textureI
 }
 
 void ModelLoader::processTexture(glTF::Model& model, glTF::NormalTextureInfo& textureInfo, TextureType type) {
-    glTF::TextureInfo adapter{.index = textureInfo.index};
+    glTF::TextureInfo adapter{.index = textureInfo.index, .texCoord = {}, .extensions = {}};
     processTexture(model, adapter, type);
 }
 
 void ModelLoader::processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type) {
-    glTF::TextureInfo adapter{.index = textureInfo.index};
+    glTF::TextureInfo adapter{.index = textureInfo.index, .texCoord = {}, .extensions = {}};
     processTexture(model, adapter, type);
 }
 
@@ -571,7 +575,8 @@ void ModelLoader::preProcessTextures(glTF::Model& model) {
         }
 
         glTF::Image& image = model.images[texture.source];
-        std::string path = m_directory + image.uri;
+        std::filesystem::path path = m_directory;
+        path.replace_filename(image.uri);
 
         pool.emplace_back([&, i, path]() {
             CommandPool commandPool = CommandPoolSpecification{
@@ -593,6 +598,10 @@ void ModelLoader::preProcessTextures(glTF::Model& model) {
                     .physicalDevice = *m_physicalDevice,
                     .logicalDevice = *m_logicalDevice,
                     .commandBuffer = commandBuffers.front(),
+                    .width = undefined,
+                    .height = undefined,
+                    .data = nullptr,
+                    .raw = nullptr,
                     .path = path.c_str(),
                     .type = TextureType::Nil, // set later
                 };
@@ -608,6 +617,8 @@ void ModelLoader::preProcessTextures(glTF::Model& model) {
                     .width = bufferView.byteLength,
                     .height = 0,
                     .data = data,
+                    .raw = nullptr,
+                    .path = nullptr,
                     .type = TextureType::Nil, // set later
                 };
                 m_textures[i] = std::make_shared<TextureBuffer>(textureBufferSpecification);

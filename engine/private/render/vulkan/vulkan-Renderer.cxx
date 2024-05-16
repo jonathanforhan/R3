@@ -225,7 +225,7 @@ void Renderer::preLoop() {
 void Renderer::render() {
     Fence& inFlight = m_inFlight[m_currentFrame];
 
-    vk::Result result = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, -1);
+    vk::Result result = m_logicalDevice.as<vk::Device>().waitForFences(inFlight.as<vk::Fence>(), vk::False, uint64(-1));
     CHECK(result == vk::Result::eSuccess);
 
     Semaphore& imageAvailable = m_imageAvailable[m_currentFrame];
@@ -233,7 +233,7 @@ void Renderer::render() {
     uint32 imageIndex;
     result = vk::Result(vkAcquireNextImageKHR(m_logicalDevice.as<VkDevice>(),
                                               m_swapchain.as<VkSwapchainKHR>(),
-                                              static_cast<uint64>(-1),
+                                              uint64(-1),
                                               imageAvailable.as<VkSemaphore>(),
                                               VK_NULL_HANDLE,
                                               &imageIndex));
@@ -243,7 +243,7 @@ void Renderer::render() {
             resize();
             return;
         } else if (result != vk::Result::eSuboptimalKHR) {
-            LOG(Error, "vulkan error code:", (VkResult)result);
+            LOG(Error, "vulkan error code:", VkResult(result));
         }
     }
 
