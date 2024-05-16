@@ -14,9 +14,6 @@
 	path = engine/extern/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
-[submodule "engine/extern/optick"]
-	path = engine/extern/optick
-	url = https://github.com/bombomby/optick.git
 [submodule "assets/glTF"]
 	path = assets/glTF
 	url = https://github.com/KhronosGroup/glTF-Sample-Assets.git
