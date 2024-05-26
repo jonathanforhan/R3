@@ -52,15 +52,12 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "R3_BUILD_DEBUG": true,
-        "R3_LOGGING_ENABLED": true,
         "R3_LOG_VERBOSE": true,
         "R3_LOG_INFO": true,
         "R3_LOG_WARNING": true,
         "R3_LOG_ERROR": true,
-        "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": true,
-        "R3_DOCS": true,
-        "R3_EDITOR": true
+        "R3_EDITOR": true,
+        "R3_TESTS": true
       }
     },
     {
@@ -70,15 +67,12 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "R3_BUILD_RELEASE": true,
-        "R3_LOGGING_ENABLED": true,
         "R3_LOG_VERBOSE": true,
         "R3_LOG_INFO": true,
         "R3_LOG_WARNING": true,
         "R3_LOG_ERROR": true,
-        "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": true,
-        "R3_DOCS": true,
-        "R3_EDITOR": true
+        "R3_EDITOR": true,
+        "R3_TESTS": true
       }
     },
     {
@@ -87,16 +81,13 @@
       "hidden": true,
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "R3_BUILD_DIST": true,
-        "R3_LOGGING_ENABLED": false,
+        "R3_BUILD_DISTRIBUTION": true,
         "R3_LOG_VERBOSE": false,
         "R3_LOG_INFO": false,
         "R3_LOG_WARNING": false,
         "R3_LOG_ERROR": false,
-        "R3_BUILD_TESTS": true,
-        "R3_BUILD_EDITOR": false,
-        "R3_DOCS": false,
-        "R3_EDITOR": false
+        "R3_EDITOR": false,
+        "R3_TESTS": true
       }
     },
     {
@@ -143,6 +134,51 @@
       "name": "Clang-Vulkan-Dist",
       "inherits": [ "base", "dist-base", "clang-base" ],
       "cacheVariables": { "R3_VULKAN": true }
+    },
+    {
+      "name": "MSVC-OpenGL-Debug",
+      "inherits": [ "base", "debug-base", "msvc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "MSVC-OpenGL-Release",
+      "inherits": [ "base", "release-base", "msvc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "MSVC-OpenGL-Dist",
+      "inherits": [ "base", "dist-base", "msvc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "GCC-OpenGL-Debug",
+      "inherits": [ "base", "debug-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "GCC-OpenGL-Release",
+      "inherits": [ "base", "release-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "GCC-OpenGL-Dist",
+      "inherits": [ "base", "dist-base", "gcc-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Clang-OpenGL-Debug",
+      "inherits": [ "base", "debug-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Clang-OpenGL-Release",
+      "inherits": [ "base", "release-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
+    },
+    {
+      "name": "Clang-OpenGL-Dist",
+      "inherits": [ "base", "dist-base", "clang-base" ],
+      "cacheVariables": { "R3_OPENGL": true }
     }
   ]
 }

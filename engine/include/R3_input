@@ -1,7 +1,0 @@
-#pragma once
-
-#include "../public/input/Event.hpp"
-#include "../public/input/InputCodes.hpp"
-#include "../public/input/KeyboardEvent.hpp"
-#include "../public/input/MouseEvent.hpp"
-#include "../public/input/WindowEvent.hpp"

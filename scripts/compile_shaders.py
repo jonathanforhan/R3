@@ -6,7 +6,7 @@ import hashlib
 
 class Lock:
     def __init__(self, lock_file: str):
-        """ initialize Lock with path to .shader.lock.json """
+        """ initialize Lock with path to .shader-lock.json """
         self.__lock_file = lock_file
         self.__data = {}
 
@@ -46,7 +46,7 @@ class Lock:
 def main(glslc: str, in_dir: str, out_dir: str, force: bool):
     print("checking shader cache...")
     os.chdir(in_dir)
-    shader_lock = ".shader.lock.json"
+    shader_lock = ".shader-lock.json"
 
     # if out_dir is empty directory, invalidate cache
     if not os.listdir(out_dir):

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
-project(R3 VERSION 0.0.0 LANGUAGES CXX C)
+project(R3 VERSION 0.0.0)
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 17)
@@ -9,57 +9,59 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (MSVC)
-	add_compile_options("/EHsc")
-	add_definitions("/wd4251") # disable dll-interface warning, must compile engine with same compiler version as dll hot-reload
+    # MSVC Hot Reload
+    if (POLICY CMP0141)
+        cmake_policy(SET CMP0141 NEW)
+        set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
+    endif ()
+
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 endif ()
 
-set(R3_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
-
-#[[ RENDERER ]]
+# Renderer
 option(R3_OPENGL "Use OpenGL Renderer" OFF)
-option(R3_VULKAN "Use Vulkan Renderer" OFF)
+option(R3_VULKAN "Use VULKAN Renderer" OFF)
 
-#[[ BUILD ]]
+# Build
 option(R3_BUILD_DEBUG OFF)
 option(R3_BUILD_RELEASE OFF)
-option(R3_BUILD_DIST OFF)
+option(R3_BUILD_DISTRIBUTION OFF)
 
-#[[ EDITOR ]]
-option(R3_BUILD_EDITOR OFF)
+# Editor
+option(R3_EDITOR OFF)
 
-#[[ LOGGING ]]
-option(R3_LOGGING_ENABLED ON)
+# Logging
 option(R3_LOG_VERBOSE ON)
 option(R3_LOG_INFO ON)
 option(R3_LOG_WARNING ON)
 option(R3_LOG_ERROR ON)
-option(R3_EXTENDED_RENDER_INFO OFF)
 
-#[[ DOCS ]]
-option(R3_DOCS OFF)
+# Tests
+option(R3_TESTS OFF)
 
-#[[ TEST ]]
-option(R3_BUILD_TESTS ON)
-
+# Assets and Shaders
 if (R3_VULKAN)
-	find_package(Vulkan REQUIRED COMPONENTS glslc)
-	find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
+    find_package(Vulkan REQUIRED COMPONENTS glslc)
+    find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
 endif ()
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
+)
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures"
+)
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts")
+		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts"
+)
 
 execute_process(
 	COMMAND ${CMAKE_COMMAND} -E make_directory
@@ -76,30 +78,15 @@ add_custom_target(COMPILE_SHADERS ALL COMMAND
 		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )
 
-add_subdirectory(engine)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/engine")
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/app")
+# add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
 
-add_subdirectory(app)
-
-if(R3_BUILD_TESTS)
-	add_subdirectory(tests)
-endif()
-
-#[[ DOCUMENTATION ]]
-if (R3_DOCS)
-	find_package(Doxygen)
-
-	if (DOXYGEN_FOUND)
-		execute_process(
-			COMMAND ${DOXYGEN_EXECUTABLE} "${R3_SOURCE_DIR}/Doxyfile"
-				WORKING_DIRECTORY ${R3_SOURCE_DIR}
-				OUTPUT_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
-				ERROR_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
-		)
-	endif ()
-endif ()
-
-execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/compile_commands.json"
-        "${R3_SOURCE_DIR}/compile_commands.json"
+target_link_libraries(R3_ENGINE
+	PRIVATE
+		"${R3_EXTERN_LIBS_PRIVATE}"
+	PUBLIC
+		"${R3_EXTERN_LIBS_PUBLIC}"
 )
+target_link_libraries(R3_APP PRIVATE R3_ENGINE)

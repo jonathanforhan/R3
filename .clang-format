@@ -4,7 +4,7 @@ AccessModifierOffset: -4
 AlignAfterOpenBracket: Align
 AlignArrayOfStructures: None
 AlignConsecutiveMacros: None
-AlignConsecutiveAssignments: None
+AlignConsecutiveAssignments: Consecutive
 AlignConsecutiveBitFields: None
 AlignConsecutiveDeclarations: None
 AlignEscapedNewlines: Left
@@ -177,4 +177,3 @@ TabWidth:        8
 UseCRLF:         false
 UseTab:          Never
 ...
-

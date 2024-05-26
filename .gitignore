@@ -1,16 +1,14 @@
-.vs
-.vscode
-.idea
-out/*
-*-build*/
-*build*/
-.cache/*
-.shader.lock.json
-compile_commands.json
-CMakeUserPresets.json
-R3.proj.DotSettings
+# ide
+.vs*/
+.idea/
 
+# build
+out/
+*build*/
+.cache/
+.shader-lock.json
+compile_commands.json
+
+# docs
 docs/*
 !docs/docs.html
-!docs/package.json
-!docs/package-lock.json
