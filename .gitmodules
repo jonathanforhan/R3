@@ -1,0 +1,4 @@
+[submodule "assets/glTF"]
+	path = assets/glTF
+	url = https://github.com/KhronosGroup/glTF-Sample-Assets.git
+	branch = main
