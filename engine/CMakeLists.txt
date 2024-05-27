@@ -1,14 +1,14 @@
 project(R3_ENGINE)
 
-file(GLOB_RECURSE CXX_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE CXX_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx")
 
 add_library(R3_ENGINE "${CXX_SRCS}")
 
 if (MSVC)
-	if (${CMAKE_BUILD_TYPE} MATCHES "^Debug$")
-		target_compile_options(R3_ENGINE PUBLIC "${CMAKE_CXX_FLAGS} /W4 /DEBUG")
-	else ()
+	if (${CMAKE_BUILD_TYPE} MATCHES "^Release$")
 		target_compile_options(R3_ENGINE PUBLIC "${CMAKE_CXX_FLAGS} /W4")
+	else ()
+		target_compile_options(R3_ENGINE PUBLIC "${CMAKE_CXX_FLAGS} /W4 /Od")
 	endif ()
 else ()
 	target_compile_options(R3_ENGINE PUBLIC "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
@@ -35,7 +35,6 @@ if (NOT R3_BUILD_DEBUG AND NOT R3_BUILD_RELEASE AND NOT R3_BUILD_DISTRIBUTION)
 elseif ((R3_BUILD_DEBUG AND R3_BUILD_RELEASE) OR (R3_BUILD_DEBUG AND R3_BUILD_DISTRIBUTION) OR (R3_BUILD_RELEASE AND R3_BUILD_DISTRIBUTION))
     message(FATAL_ERROR "too many builds set ")
 endif ()
-
 
 # defines
 if (R3_OPENGL)
@@ -79,4 +78,9 @@ target_compile_definitions(R3_ENGINE
 )
 
 # includes
-target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+target_include_directories(R3_ENGINE
+	PUBLIC
+		"${CMAKE_CURRENT_SOURCE_DIR}/public"
+	PRIVATE
+		"${CMAKE_CURRENT_SOURCE_DIR}/private"
+)

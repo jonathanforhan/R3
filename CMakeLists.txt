@@ -16,6 +16,7 @@ if (MSVC)
     endif ()
 
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    add_compile_options("/Zc:preprocessor")
 endif ()
 
 # Renderer
@@ -46,36 +47,36 @@ if (R3_VULKAN)
 endif ()
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/assets"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/assets"
 )
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/textures"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/textures"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/textures"
 )
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E copy_directory
-		"${CMAKE_CURRENT_SOURCE_DIR}/fonts"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/fonts"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/fonts"
 )
 
 execute_process(
-	COMMAND ${CMAKE_COMMAND} -E make_directory
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )
 
 find_package(Python3 COMPONENTS Interpreter)
 
 add_custom_target(COMPILE_SHADERS ALL COMMAND
     "${Python3_EXECUTABLE}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py"
-		"${glslc_executable}"
-		"${CMAKE_CURRENT_SOURCE_DIR}/shaders"
-		"${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
+        "${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py"
+        "${glslc_executable}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/shaders"
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/spirv"
 )
 
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/extern")
@@ -84,9 +85,29 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/app")
 # add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/tests")
 
 target_link_libraries(R3_ENGINE
-	PRIVATE
-		"${R3_EXTERN_LIBS_PRIVATE}"
-	PUBLIC
-		"${R3_EXTERN_LIBS_PUBLIC}"
+    PRIVATE
+        "${R3_EXTERN_LIBS_PRIVATE}"
+    PUBLIC
+        "${R3_EXTERN_LIBS_PUBLIC}"
 )
 target_link_libraries(R3_APP PRIVATE R3_ENGINE)
+
+#[[ DOCUMENTATION ]]
+if (R3_DOCS)
+    find_package(Doxygen)
+
+    if (DOXYGEN_FOUND)
+        execute_process(
+            COMMAND ${DOXYGEN_EXECUTABLE} "${R3_SOURCE_DIR}/Doxyfile"
+                WORKING_DIRECTORY ${R3_SOURCE_DIR}
+                OUTPUT_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
+                ERROR_FILE "${R3_SOURCE_DIR}/docs/doxygen.log.txt"
+        )
+    endif ()
+endif ()
+
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy
+        "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/compile_commands.json"
+        "${R3_SOURCE_DIR}/compile_commands.json"
+)

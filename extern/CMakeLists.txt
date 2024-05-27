@@ -1,7 +1,7 @@
 set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
 if (R3_OPENGL)
-    find_package(OpengGL REQUIRED)
+    find_package(OpenGL REQUIRED)
 
     # glad
     add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glad")
@@ -21,7 +21,7 @@ list(APPEND EXTERN_LIBS_PRIVATE "glfw")
 
 # glm (public)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/glm-1.0.1/glm")
-target_include_directories("glm" INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/glm.1.0.1")
+target_include_directories("glm" INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/glm-1.0.1")
 list(APPEND EXTERN_LIBS_PUBLIC "glm")
 
 # stb_image
@@ -54,11 +54,12 @@ add_library(ImGui SHARED
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/imgui_draw.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/imgui_widgets.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/imgui_tables.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/backends/imgui_impl_vulkan.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/backends/imgui_impl_opengl3.cpp"
+	# "$<$<BOOL:R3_VULKAN>:${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/backends/imgui_impl_vulkan.cpp>"
+	"$<$<BOOL:R3_OPENGL>:${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/backends/imgui_impl_opengl3.cpp>"
 	"${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6/backends/imgui_impl_glfw.cpp"
 )
 target_include_directories(ImGui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui-1.90.6")
+#target_link_libraries(ImGui PUBLIC "$<$<BOOL:R3_VULKAN>:Vulkan::Vulkan>" "glfw")
 if (R3_OPENGL)
 	target_link_libraries(ImGui PUBLIC "glfw")
 elseif (R3_VULKAN)
@@ -67,8 +68,14 @@ endif ()
 list(APPEND EXTERN_LIBS_PRIVATE "ImGui")
 
 # easy_profiler
+set(EASY_PROFILER_NO_GUI ON CACHE BOOL "" FORCE)
+set(EASY_PROFILER_NO_SAMPLES ON CACHE BOOL "" FORCE)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/easy_profiler-2.1.0")
 list(APPEND EXTERN_LIBS_PRIVATE "EnTT::EnTT")
+
+# fmt
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/fmt-10.2.1")
+list(APPEND EXTERN_LIBS_PUBLIC "fmt::fmt")
 
 set(R3_EXTERN_LIBS_PUBLIC ${EXTERN_LIBS_PUBLIC} PARENT_SCOPE)
 set(R3_EXTERN_LIBS_PRIVATE ${EXTERN_LIBS_PRIVATE} PARENT_SCOPE)

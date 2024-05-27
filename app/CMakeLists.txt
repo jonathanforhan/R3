@@ -1,6 +1,6 @@
 project(R3_APP)
 
-file(GLOB_RECURSE CXX_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE CXX_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx")
 
 if (WIN32 AND R3_BUILD_DISTRIBUTION)
 	add_executable(R3_APP WIN32 "${CXX_SRCS}")
@@ -9,10 +9,10 @@ else ()
 endif ()
 
 if (MSVC)
-	if (${CMAKE_BUILD_TYPE} MATCHES "^Debug$")
-		target_compile_options(R3_APP PUBLIC "${CMAKE_CXX_FLAGS} /W4 /DEBUG")
-	else ()
+	if (${CMAKE_BUILD_TYPE} MATCHES "^Release$")
 		target_compile_options(R3_APP PUBLIC "${CMAKE_CXX_FLAGS} /W4")
+	else ()
+		target_compile_options(R3_APP PUBLIC "${CMAKE_CXX_FLAGS} /W4 /Od")
 	endif ()
 else ()
 	target_compile_options(R3_APP PUBLIC "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
