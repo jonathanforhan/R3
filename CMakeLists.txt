@@ -40,6 +40,15 @@ option(R3_LOG_ERROR ON)
 # Tests
 option(R3_TESTS OFF)
 
+# Checks
+include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/disjunction.cmake")
+
+# Renderer Check
+disjunction("incorrect renderer selection" R3_OPENGL R3_VULKAN)
+
+# Build Check
+disjunction("incorrect build selection" R3_BUILD_DEBUG R3_BUILD_RELEASE R3_BUILD_DISTRIBUTION)
+
 # Assets and Shaders
 if (R3_VULKAN)
     find_package(Vulkan REQUIRED COMPONENTS glslc)
@@ -92,7 +101,7 @@ target_link_libraries(R3_ENGINE
 )
 target_link_libraries(R3_APP PRIVATE R3_ENGINE)
 
-#[[ DOCUMENTATION ]]
+# Documentation
 if (R3_DOCS)
     find_package(Doxygen)
 

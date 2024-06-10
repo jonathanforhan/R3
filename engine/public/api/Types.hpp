@@ -1,8 +1,3 @@
-/*******************************************************************************
- * @file Types.hpp
- * @brief Defines R3 types
- ******************************************************************************/
-
 #pragma once
 
 #include <concepts>
@@ -13,16 +8,16 @@ namespace R3 {
 
 namespace detail {
 
-/*******************************************************************************
+/**
  * @brief Explicit undefined type for integral values
  *
  * Correct regardless of type and sign, resovles to UINT**_MAX or -1
- ******************************************************************************/
+ */
 struct undefined_t {
-    /***************************************************************************
+    /**
      * @brief Cast to desired integral type
      * @tparam T
-     **************************************************************************/
+     */
     template <std::integral T>
     consteval operator T() const {
         return ~T{};
@@ -31,13 +26,13 @@ struct undefined_t {
 
 } // namespace detail
 
-static thread_local constexpr detail::undefined_t undefined; /**< thread undefined constant */
+static constexpr detail::undefined_t undefined; /**< undefined constant */
 
-/*******************************************************************************
+/**
  * @brief Compare equality of undefined and integral type
  * @param x Var to check equality
  * @return Does x equal undefined?
- ******************************************************************************/
+ */
 /** @{ */
 constexpr bool operator==(detail::undefined_t, std::integral auto x) {
     return x == ~decltype(x){};
@@ -95,9 +90,9 @@ using glm::dmat4;
 
 using glm::quat;
 
-/*******************************************************************************
+/**
  * @brief R3 primitive type
- ******************************************************************************/
+ */
 /** @{ */
 using int8  = std::int8_t;
 using int16 = std::int16_t;
