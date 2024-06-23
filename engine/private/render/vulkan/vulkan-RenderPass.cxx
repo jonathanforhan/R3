@@ -1,17 +1,17 @@
 #if R3_VULKAN
 
-#include "api/Assert.hpp"
 #include "vulkan-DepthBuffer.hxx"
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include "vulkan-RenderPass.hxx"
+#include <api/Assert.hpp>
 #include <api/Types.hpp>
 #include <vector>
 
 namespace R3::vulkan {
 
 RenderPass::RenderPass(const RenderPassSpecification& spec)
-    : m_device(spec.device) {
+    : m_device(spec.device.vk()) {
     const VkAttachmentDescription colorAttachment = {
         .flags          = {},
         .format         = spec.colorAttachment.format,
@@ -28,8 +28,8 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     };
 
-    VkFormat depthFormat = DepthBuffer::querySupportedDepthFormat(
-        spec.physicalDevice, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    const VkFormat depthFormat = DepthBuffer::querySupportedDepthFormat(
+        spec.physicalDevice.vk(), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
     const VkAttachmentDescription depthAttachment = {
         .flags          = {},
@@ -47,28 +47,31 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .layout     = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
     };
 
-    // Color Attachment Resolve, only present if MSAA is enabled
-    const bool msaa = spec.colorAttachment.sampleCount > 1;
-    VkAttachmentDescription colorAttachmentResolve;
-    VkAttachmentReference colorAttachmentResolveReference;
+    // color resolve attachment, to convert color attach from MSAA to normal image
+    const VkAttachmentDescription colorAttachmentResolve = {
+        .flags          = {},
+        .format         = spec.colorAttachment.format,
+        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+    };
+    const VkAttachmentReference colorAttachmentResolveReference = {
+        .attachment = 2,
+        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+    };
+
+    std::vector<VkAttachmentDescription> attachments;
+
+    const bool msaa = spec.colorAttachment.sampleCount > 1; // Color Attachment Resolve, only present if MSAA is enabled
 
     if (msaa) {
-        // color resolve attachment, to convert color attach from MSAA to normal image
-        colorAttachmentResolve = {
-            .flags          = {},
-            .format         = spec.colorAttachment.format,
-            .samples        = VK_SAMPLE_COUNT_1_BIT,
-            .loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-            .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-            .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-            .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        };
-        colorAttachmentResolveReference = {
-            .attachment = 2,
-            .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        };
+        attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
+    } else {
+        attachments = {colorAttachment, depthAttachment};
     }
 
     const VkSubpassDescription subpassDescription = {
@@ -94,14 +97,6 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyFlags = {},
     };
 
-    std::vector<VkAttachmentDescription> attachments;
-
-    if (msaa) {
-        attachments = {colorAttachment, depthAttachment, colorAttachmentResolve};
-    } else {
-        attachments = {colorAttachment, depthAttachment};
-    }
-
     const VkRenderPassCreateInfo renderPassCreateInfo = {
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext           = nullptr,
@@ -113,7 +108,7 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyCount = 1,
         .pDependencies   = &subpassDependency,
     };
-    VkResult result = vkCreateRenderPass(spec.device, &renderPassCreateInfo, nullptr, &m_handle);
+    VkResult result = vkCreateRenderPass(spec.device.vk(), &renderPassCreateInfo, nullptr, &m_handle);
     ENSURE(result == VK_SUCCESS);
 }
 

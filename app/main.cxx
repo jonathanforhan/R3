@@ -8,7 +8,7 @@
 #if defined WIN32 and R3_BUILD_DISTRIBUTION
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR lpCmdLine, int mCmdShow) {
 #else
-int main(int argc, char* argv[]) {
+int main() {
 #endif
     R3::Application app;
     int ret;

@@ -2,10 +2,10 @@
 
 #if R3_VULKAN
 
-#include "api/Construct.hpp"
-#include "api/Types.hpp"
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
+#include <api/Construct.hpp>
+#include <api/Types.hpp>
 #include <mutex>
 #include <vulkan/vulkan.h>
 
@@ -30,14 +30,14 @@ private:
     DEFAULT_CONSTRUCT(QueueFamilyIndices);
 
 public:
-    int32 graphics     = undefined; /**< graphics queue index */
-    int32 presentation = undefined; /**< presentation queue index */
+    uint32 graphics     = undefined; /**< graphics queue index */
+    uint32 presentation = undefined; /**< presentation queue index */
 
     /**
      * @brief Check is all queue indices are valid
      * @return valid?
      */
-    constexpr bool isValid() const { return graphics >= 0 && presentation >= 0; }
+    constexpr bool isValid() const { return graphics != undefined && presentation != undefined; }
 
     /**
      * @brief QueueFamilyIndices is not publicly constructable, must be queried

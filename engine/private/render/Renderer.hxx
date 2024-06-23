@@ -5,19 +5,29 @@
 #elif R3_VULKAN
 #include <vulkan/vulkan.h>
 #include "vulkan/vulkan-ColorBuffer.hxx"
+#include "vulkan/vulkan-CommandPool.hxx"
 #include "vulkan/vulkan-DepthBuffer.hxx"
+#include "vulkan/vulkan-Fence.hxx"
 #include "vulkan/vulkan-Framebuffer.hxx"
 #include "vulkan/vulkan-Instance.hxx"
 #include "vulkan/vulkan-LogicalDevice.hxx"
 #include "vulkan/vulkan-PhysicalDevice.hxx"
 #include "vulkan/vulkan-RenderPass.hxx"
+#include "vulkan/vulkan-Semaphore.hxx"
 #include "vulkan/vulkan-Surface.hxx"
 #include "vulkan/vulkan-Swapchain.hxx"
 #endif
 
+#include <api/Construct.hpp>
 #include <vector>
-#include "api/Construct.hpp"
 #include "render/Window.hpp"
+
+// TODO FIXME (for testing)
+// {
+#include "vulkan/vulkan-DescriptorPool.hxx"
+#include "vulkan/vulkan-GraphicsPipeline.hxx"
+#include "vulkan/vulkan-ShaderModule.hxx"
+// }
 
 namespace R3 {
 
@@ -42,8 +52,15 @@ public:
      */
     explicit Renderer(Window& window);
 
+    ~Renderer();
+
     // TODO docs
     void render();
+
+    void resize();
+
+public:
+    static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 
 private:
     Window& m_window;
@@ -61,6 +78,19 @@ private:
     vulkan::ColorBuffer m_colorBuffer;
     vulkan::DepthBuffer m_depthBuffer;
     std::vector<vulkan::Framebuffer> m_framebuffers;
+    vulkan::CommandPool m_commandPool;
+
+    // sync
+    vulkan::Semaphore m_imageAvailable[MAX_FRAMES_IN_FLIGHT];
+    vulkan::Semaphore m_renderFinished[MAX_FRAMES_IN_FLIGHT];
+    vulkan::Fence m_inFlight[MAX_FRAMES_IN_FLIGHT];
+    uint32 m_currentFrame = 0;
+
+    // TODO FIXME
+    vulkan::ShaderModule m_vertexShader;
+    vulkan::ShaderModule m_fragmentShader;
+    VkDescriptorSetLayout m_descriptorSetLayout;
+    vulkan::GraphicsPipeline m_graphicsPipeline;
 #endif
 };
 

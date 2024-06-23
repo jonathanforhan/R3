@@ -6,12 +6,12 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
+#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Types.hpp>
 #include <cstdint>
 #include <tuple>
 #include <utility>
-#include "api/Assert.hpp"
-#include "api/Log.hpp"
-#include "api/Types.hpp"
 #include "render/Window.hpp"
 #include "vulkan-ColorBuffer.hxx"
 #include "vulkan-DepthBuffer.hxx"
@@ -82,9 +82,9 @@ VkExtent2D SwapchainSupportDetails::optimalExtent(Window& window) const {
 }
 
 Swapchain::Swapchain(const SwapchainSpecification& spec)
-    : m_device(spec.device) {
+    : m_device(spec.device.vk()) {
     // get details
-    const auto swapchainSupportDetails       = SwapchainSupportDetails::query(spec.physicalDevice, spec.surface);
+    const auto swapchainSupportDetails = SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
     const auto&& [surfaceFormat, colorSpace] = swapchainSupportDetails.optimalSurfaceFormat();
 
     m_surfaceFormat = surfaceFormat;
@@ -107,7 +107,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .pNext                 = nullptr,
         .flags                 = {},
-        .surface               = spec.surface,
+        .surface               = spec.surface.vk(),
         .minImageCount         = m_imageCount,
         .imageFormat           = m_surfaceFormat,
         .imageColorSpace       = m_colorSpace,
@@ -124,15 +124,15 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VkResult result = vkCreateSwapchainKHR(spec.device, &swapchainCreateInfo, nullptr, &m_handle);
+    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
     ENSURE(result == VK_SUCCESS);
 
     // acquire images from device
     uint32 imageCount;
-    vkGetSwapchainImagesKHR(spec.device, m_handle, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
 
     m_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(spec.device, m_handle, &imageCount, m_images.data());
+    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
 
     // make the image views
     m_imageViews.resize(imageCount);
@@ -162,7 +162,7 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
                 },
         };
 
-        VkResult result = vkCreateImageView(spec.device, &imageViewCreateInfo, nullptr, &m_imageViews[i]);
+        result = vkCreateImageView(spec.device.vk(), &imageViewCreateInfo, nullptr, &m_imageViews[i]);
         ENSURE(result == VK_SUCCESS);
     }
 }
@@ -179,13 +179,13 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     vkDeviceWaitIdle(m_device);
 
     // query
-    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice, spec.surface);
+    auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
     m_extent                     = swapchainSupportDetails.optimalExtent(spec.window);
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent.width == 0 || m_extent.height == 0) {
         glfwWaitEvents();
-        swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice, spec.surface);
+        swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
         m_extent                = swapchainSupportDetails.optimalExtent(spec.window);
     }
 
@@ -202,7 +202,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .sType                 = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .pNext                 = nullptr,
         .flags                 = {},
-        .surface               = spec.surface,
+        .surface               = spec.surface.vk(),
         .minImageCount         = m_imageCount,
         .imageFormat           = m_surfaceFormat,
         .imageColorSpace       = m_colorSpace,
@@ -212,14 +212,14 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .imageSharingMode      = sameQueueFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
         .queueFamilyIndexCount = 2,                  // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .pQueueFamilyIndices   = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
-        .preTransform          = swapchainSupportDetails.capabilities.currentTransform,
+        .preTransform          = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR,
         .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
         .presentMode           = m_presentMode,
         .clipped               = VK_TRUE,
         .oldSwapchain          = oldSwapchain,
     };
 
-    vkCreateSwapchainKHR(spec.device, &swapchainCreateInfo, nullptr, &m_handle);
+    vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
     vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
 
     // recreate color buffer with new extent
@@ -227,9 +227,9 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     spec.colorBuffer = ColorBuffer({
         .physicalDevice = spec.physicalDevice,
         .device         = spec.device,
-        .format         = spec.colorBuffer.format(),
+        .format         = m_surfaceFormat,
         .extent         = m_extent,
-        .sampleCount    = spec.colorBuffer.sampleCount(),
+        .sampleCount    = spec.physicalDevice.sampleCount(),
     });
 
     // recreate depth buffer with new extent
@@ -238,15 +238,15 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .physicalDevice = spec.physicalDevice,
         .device         = spec.device,
         .extent         = m_extent,
-        .sampleCount    = spec.depthBuffer.sampleCount(),
+        .sampleCount    = spec.physicalDevice.sampleCount(),
     });
 
     // acquire images from device (don't free previous, they are not allocated by us)
     uint32 imageCount;
-    vkGetSwapchainImagesKHR(spec.device, m_handle, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
 
     m_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(spec.device, m_handle, &imageCount, m_images.data());
+    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
 
     for (VkImageView imageView : m_imageViews) {
         vkDestroyImageView(m_device, imageView, nullptr);

@@ -1,12 +1,12 @@
 #include "vulkan-PhysicalDevice.hxx"
 
-#include "api/Assert.hpp"
-#include "api/Types.hpp"
 #include "vulkan-Instance.hxx"
 #include "vulkan-Queue.hxx"
 #include "vulkan-Surface.hxx"
 #include "vulkan-Swapchain.hxx"
+#include <api/Assert.hpp>
 #include <api/Log.hpp>
+#include <api/Types.hpp>
 #include <cstdint>
 #include <span>
 #include <string_view>
@@ -19,15 +19,15 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     : m_extensions(spec.extensions), // explicit copy
       m_sampleCount(undefined) {
     uint32 physicalDeviceCount;
-    vkEnumeratePhysicalDevices(spec.instance, &physicalDeviceCount, nullptr);
+    vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, nullptr);
 
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-    vkEnumeratePhysicalDevices(spec.instance, &physicalDeviceCount, physicalDevices.data());
+    vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, physicalDevices.data());
 
-    VkPhysicalDevice physicalDevice;
-    int32 bestScore = INT32_MIN;
+    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+    int32 bestScore                 = INT32_MIN;
     for (VkPhysicalDevice device : physicalDevices) {
-        int32 score = evaluateDevice(device, spec.surface);
+        int32 score = evaluateDevice(device, spec.surface.vk());
 
         if (score > bestScore) {
             physicalDevice = device;

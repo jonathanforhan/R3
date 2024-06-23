@@ -2,9 +2,9 @@
 
 #if R3_VULKAN
 
-#include "api/Construct.hpp"
 #include "vulkan-AttachmentBuffer.hxx"
 #include "vulkan-fwd.hxx"
+#include <api/Construct.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {

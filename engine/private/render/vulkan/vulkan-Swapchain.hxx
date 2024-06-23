@@ -1,12 +1,17 @@
+/**
+ * @file vulkan-Swapchain.hxx
+ * @copyright GNU Public License
+ */
+
 #pragma once
 
 #if R3_VULKAN
 
-#include "api/Construct.hpp"
-#include "api/Types.hpp"
 #include "render/Window.hpp"
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
+#include <api/Construct.hpp>
+#include <api/Types.hpp>
 #include <span>
 #include <tuple>
 #include <vector>
@@ -15,7 +20,7 @@
 namespace R3::vulkan {
 
 /**
- * @brief Swapchain details for checking suitable support
+ * Swapchain details for checking suitable support.
  */
 struct SwapchainSupportDetails {
 private:
@@ -23,12 +28,13 @@ private:
 
 public:
     /**
-     * @brief Checks is swapchain support at least one format and present mode
+     * Checks is swapchain support at least one format and present mode.
      * @return Validity
      */
     constexpr bool isValid() const { return !surfaceFormats.empty() && !presentModes.empty(); };
 
-    /** * @brief Get Swapchain details for PhsycialDevice and Surface
+    /**
+     * Get Swapchain details for PhsycialDevice and Surface.
      * @param physicalDevice
      * @param surface
      * @return Swapchain Support Details
@@ -36,60 +42,59 @@ public:
     static SwapchainSupportDetails query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
     /**
-     * @brief Get optimal format channel and color space, preferably SRGB
+     * Get optimal format channel and color space, preferably SRGB.
      * @return Format, ColorSpace
      */
     std::tuple<VkFormat, VkColorSpaceKHR> optimalSurfaceFormat() const;
 
     /**
-     * @brief Get optimal present mode for image ordering e.g. FIFO, MAILBOX
+     * Get optimal present mode for image ordering e.g. FIFO, MAILBOX.
      * @return Present mode
      */
     VkPresentModeKHR optimalPresentMode() const;
 
     /**
-     * @brief Get optimal extent, this is always equal to the window resolution
+     * Get optimal extent, this is always equal to the window resolution.
      * @param window OS Window
-     * @return Optimal Extent **
+     * @return Optimal Extent
      */
     VkExtent2D optimalExtent(Window& window) const;
 
 public:
-    VkSurfaceCapabilitiesKHR capabilities = {};     /**< Swapchain capabilities */
-    std::vector<VkSurfaceFormatKHR> surfaceFormats; /**< all swapchain formats */
-    std::vector<VkPresentModeKHR> presentModes;     /**< all swapchain modes */
+    VkSurfaceCapabilitiesKHR capabilities = {};     /**< Swapchain capabilities. */
+    std::vector<VkSurfaceFormatKHR> surfaceFormats; /**< all swapchain formats. */
+    std::vector<VkPresentModeKHR> presentModes;     /**< all swapchain modes. */
 };
 
 /**
- * @brief Vulkan Swapchain Specification
+ * Vulkan Swapchain Specification.
  */
 struct SwapchainSpecification {
-    const Surface& surface;               /**< Valid Surface */
-    const PhysicalDevice& physicalDevice; /**< Valid PhysicalDevice */
-    const LogicalDevice& device;          /**< Valid LogicalDevice */
-    Window& window;                       /**< Valid Window */
+    const Surface& surface;               /**< Valid Surface. */
+    const PhysicalDevice& physicalDevice; /**< Valid PhysicalDevice. */
+    const LogicalDevice& device;          /**< Valid LogicalDevice. */
+    Window& window;                       /**< Valid Window. */
 };
 
 /**
- * @brief Vulkan Swapchain Recreation Specification
+ * Vulkan Swapchain Recreation Specification
  */
 struct SwapchainRecreationSpecification {
-    Window& window;                         /**< Valid Window */
-    const Surface& surface;                 /**< Valid Surface */
-    const PhysicalDevice& physicalDevice;   /**< Valid PhysicalDevice */
-    const LogicalDevice& device;            /**< Valid LogicalDevice */
-    std::vector<Framebuffer>& framebuffers; /**< Framebuffers to be recreated */
-    ColorBuffer& colorBuffer;               /**< ColorBuffer to recreate */
-    DepthBuffer& depthBuffer;               /**< DepthBuffer to recreate */
-    const RenderPass& renderPass;           /**< RenderPass to reference */
+    Window& window;                         /**< Valid Window. */
+    const Surface& surface;                 /**< Valid Surface. */
+    const PhysicalDevice& physicalDevice;   /**< Valid PhysicalDevice. */
+    const LogicalDevice& device;            /**< Valid LogicalDevice. */
+    std::vector<Framebuffer>& framebuffers; /**< Framebuffers to be recreated. */
+    ColorBuffer& colorBuffer;               /**< ColorBuffer to recreate. */
+    DepthBuffer& depthBuffer;               /**< DepthBuffer to recreate. */
+    const RenderPass& renderPass;           /**< RenderPass to reference. */
 };
 
 /**
- * @brief Vulkan Swapchain RAII wrapper
- *
+ * Vulkan Swapchain RAII wrapper.
  * Vulkan Swapchain is a queue of Images waiting to be presented to the screen,
  * must be recreated on Window resize.
- *
+ * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSwapchainKHR.html
  * @note VK_KHR_swapchain device extension must be present
  */
 class Swapchain : public VulkanObject<VkSwapchainKHR> {
@@ -99,22 +104,20 @@ public:
     DEFAULT_MOVE(Swapchain);
 
     /**
-     * @brief Creates Swapchain using optimal settings from Swapchain Details
+     * Creates Swapchain using optimal settings from Swapchain Details.
      * @param spec
      */
     Swapchain(const SwapchainSpecification& spec);
 
     /**
-     * @brief Destroys Swapchain and image views
+     * Destroys Swapchain and image views.
      * @note Swapchain images are device internal and must NOT be destroyed
      */
     ~Swapchain();
 
     /**
-     * @brief Recreates swapchain using old Swapchain
-     *
+     * Recreates swapchain using old Swapchain.
      * Also recreates ColorBuffer, DepthBuffer, and Framebuffers.
-     *
      * @param spec
      */
     void recreate(const SwapchainRecreationSpecification& spec);

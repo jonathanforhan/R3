@@ -1,15 +1,28 @@
+/**
+ * @file vulkan-VulkanObject.hxx
+ * @copyright GNU Public License
+ */
+
 #pragma once
 
-#include "api/Construct.hpp"
-#include <type_traits>
-
 #if R3_VULKAN
+
+#include <api/Construct.hpp>
+#include <type_traits>
 
 namespace R3::vulkan {
 
 /**
- * @brief Wrapper for C Vulkan objects that implicitly cast to underlying type
- * @tparam T Vulkan API Struct
+ * Wrapper for C Vulkan objects, handles move construction for RAII.
+ * If inheriting from VulkanObject multiple times it is recommended to define
+ * which VulkanObject<T>::vk the class is using.
+ * @code
+ * class VulkanObjectChild : public VulkanObject<Foo>, public VulkanObject<Bar> {
+ * public:
+ *     using VulkanObject<Foo>::vk;
+ * };
+ * @endcode
+ * @tparam T Vulkan API Handle
  */
 template <typename T>
 requires std::is_pointer_v<T>
@@ -22,14 +35,14 @@ protected:
     NO_COPY(VulkanObject);
 
     /**
-     * @brief Construct explicitly with handle
-     * @param handle Vulkan Handle
+     * Construct with handle.
+     * @param handle Vulkan API Handle
      */
     VulkanObject(T handle)
         : m_handle(handle) {}
 
     /**
-     * @brief Move constructor that invalidates moved object's handle
+     * Move constructor that invalidates moved object's handle.
      * @param other Moved object
      */
     VulkanObject(VulkanObject&& other) noexcept
@@ -38,7 +51,7 @@ protected:
     }
 
     /**
-     * @brief Move assignment operator that invalidates moved object's handle
+     * Move assignment operator that invalidates moved object's handle.
      * @param other Moved object
      * @return This
      */
@@ -50,14 +63,16 @@ protected:
 
 public:
     /**
-     * @brief Cast to Underlying Vulkan C Api Handle
+     * Get underlying Vulkan API Handle.
+     * @return Vulkan API Handle
      */
-    operator Handle() { return m_handle; }
+    constexpr Handle vk() { return m_handle; }
 
     /**
-     * @brief Const cast to Underlying Vulkan C Api Handle
+     * Get underlying const Vulkan API Handle.
+     * @return Const Vulkan API Handle
      */
-    operator const Handle() const { return m_handle; }
+    constexpr Handle vk() const { return m_handle; }
 
 protected:
     Handle m_handle = nullptr; /**< Underlying Handle e.g. VkInstance, VkDevice, etc */

@@ -10,12 +10,12 @@
 
 namespace R3::vulkan {
 Framebuffer::Framebuffer(const FramebufferSpecification& spec)
-    : m_device(spec.device) {
+    : m_device(spec.device.vk()) {
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .pNext           = nullptr,
         .flags           = {},
-        .renderPass      = spec.renderPass,
+        .renderPass      = spec.renderPass.vk(),
         .attachmentCount = static_cast<uint32>(spec.attachments.size()),
         .pAttachments    = spec.attachments.data(),
         .width           = spec.extent.width,

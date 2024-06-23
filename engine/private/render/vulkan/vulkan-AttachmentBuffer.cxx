@@ -12,10 +12,7 @@
 namespace R3::vulkan {
 
 R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecification& spec)
-    : m_device(spec.device),
-      m_format(spec.format),
-      m_extent(spec.extent),
-      m_sampleCount(spec.sampleCount) {
+    : m_device(spec.device.vk()) {
     // this constructor must
     // [ ] create image
     // [ ] allocate device memory
@@ -32,16 +29,16 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
         .pNext     = nullptr,
         .flags     = {},
         .imageType = VK_IMAGE_TYPE_2D,
-        .format    = m_format,
+        .format    = spec.format,
         .extent =
             {
-                .width  = m_extent.width,
-                .height = m_extent.height,
+                .width  = spec.extent.width,
+                .height = spec.extent.height,
                 .depth  = 1,
             },
-        .mipLevels             = 1,
+        .mipLevels             = spec.mipLevels,
         .arrayLayers           = 1,
-        .samples               = m_sampleCount,
+        .samples               = spec.sampleCount,
         .tiling                = VK_IMAGE_TILING_OPTIMAL,
         .usage                 = spec.imageUsage,
         .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
@@ -79,7 +76,7 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
         .flags    = {},
         .image    = image,
         .viewType = VK_IMAGE_VIEW_TYPE_2D,
-        .format   = m_format,
+        .format   = spec.format,
         .components =
             {
                 .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -91,7 +88,7 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
             {
                 .aspectMask     = spec.aspectFlags,
                 .baseMipLevel   = 0,
-                .levelCount     = 1,
+                .levelCount     = spec.mipLevels,
                 .baseArrayLayer = 0,
                 .layerCount     = 1,
             },

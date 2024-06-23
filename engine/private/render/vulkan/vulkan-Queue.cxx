@@ -48,7 +48,7 @@ QueueFamilyIndices QueueFamilyIndices::query(VkPhysicalDevice physicalDevice, Vk
 void Queue::acquire(const QueueSpecification& spec) {
     m_queueType  = spec.queueType;
     m_queueIndex = spec.queueIndex;
-    vkGetDeviceQueue(spec.device, m_queueIndex, 0, &m_handle);
+    vkGetDeviceQueue(spec.device.vk(), m_queueIndex, 0, &m_handle);
 
     switch (m_queueType) {
         case QueueType::Graphics:

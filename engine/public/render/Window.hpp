@@ -1,7 +1,7 @@
 #pragma once
 
-#include "api/Construct.hpp"
-#include "api/Types.hpp"
+#include <api/Construct.hpp>
+#include <api/Types.hpp>
 
 extern "C" struct GLFWwindow; /**< Forward decl pointer needed for Window internals */
 

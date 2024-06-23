@@ -1,9 +1,9 @@
 #if R3_VULKAN
 
-#include "api/Assert.hpp"
 #include "vulkan-AttachmentBuffer.hxx"
 #include "vulkan-DepthBuffer.hxx"
 #include "vulkan-PhysicalDevice.hxx"
+#include <api/Assert.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -12,7 +12,7 @@ DepthBuffer::DepthBuffer(const DepthBufferSpecification& spec)
     : AttachmentBuffer({
           .physicalDevice = spec.physicalDevice,
           .device         = spec.device,
-          .format         = querySupportedDepthFormat(spec.physicalDevice,
+          .format         = querySupportedDepthFormat(spec.physicalDevice.vk(),
                                               VK_IMAGE_TILING_OPTIMAL,
                                               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT),
           .extent         = spec.extent,

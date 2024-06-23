@@ -1,17 +1,18 @@
 #pragma once
 
+#include <cmath>
 #include <concepts>
 #include <cstdint>
 #include <glm/glm.hpp>
+#include <limits>
 
 namespace R3 {
-
-namespace detail {
 
 /**
  * @brief Explicit undefined type for integral values
  *
- * Correct regardless of type and sign, resovles to UINT**_MAX or -1
+ * For integral types undefined resolves to UINT**_MAX or -1
+ * For floating point types undefined resolves to NaN
  */
 struct undefined_t {
     /**
@@ -22,32 +23,55 @@ struct undefined_t {
     consteval operator T() const {
         return ~T{};
     }
+
+    /**
+     * @brief Cast to desired float type
+     * @tparam T
+     */
+    template <std::floating_point T>
+    consteval operator T() const {
+        return std::numeric_limits<T>::quiet_NaN();
+    }
 };
 
-} // namespace detail
-
-static constexpr detail::undefined_t undefined; /**< undefined constant */
+static constexpr undefined_t undefined; /**< undefined constant */
 
 /**
- * @brief Compare equality of undefined and integral type
+ * @brief Compare equality of undefined and numeric type
  * @param x Var to check equality
  * @return Does x equal undefined?
  */
 /** @{ */
-constexpr bool operator==(detail::undefined_t, std::integral auto x) {
+constexpr bool operator==(undefined_t, std::integral auto x) {
     return x == ~decltype(x){};
 }
 
-constexpr bool operator!=(detail::undefined_t, std::integral auto x) {
+constexpr bool operator!=(undefined_t, std::integral auto x) {
     return x != ~decltype(x){};
 }
 
-constexpr bool operator==(std::integral auto x, detail::undefined_t) {
+constexpr bool operator==(std::integral auto x, undefined_t) {
     return x == ~decltype(x){};
 }
 
-constexpr bool operator!=(std::integral auto x, detail::undefined_t) {
+constexpr bool operator!=(std::integral auto x, undefined_t) {
     return x != ~decltype(x){};
+}
+
+constexpr bool operator==(undefined_t, std::floating_point auto x) {
+    return std::isnan(x);
+}
+
+constexpr bool operator!=(undefined_t, std::floating_point auto x) {
+    return !std::isnan(x);
+}
+
+constexpr bool operator==(std::floating_point auto x, undefined_t) {
+    return std::isnan(x);
+}
+
+constexpr bool operator!=(std::floating_point auto x, undefined_t) {
+    return !std::isnan(x);
 }
 /** @} */
 

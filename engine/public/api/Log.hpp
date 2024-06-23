@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <fmt/core.h>
 
+/** @cond TURN_OFF_DOXYGEN */
 /** @{ */
 #if R3_LOG_VERBOSE
 #define R3_LOG_Verbose(_Fmt, ...) fmt::println(stderr, fmt::runtime(_Fmt), ##__VA_ARGS__)

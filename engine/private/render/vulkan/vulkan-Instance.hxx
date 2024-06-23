@@ -1,31 +1,38 @@
+/**
+ * @file vulkan-Instance.hxx
+ * @copyright GNU Public License
+ */
+
 #pragma once
 
 #if R3_VULKAN
 
-#define R3_VALIDATION_LAYERS (not R3_BUILD_DISTRIBUTION)
-
-#include "api/Construct.hpp"
 #include "vulkan-VulkanObject.hxx"
+#include <api/Construct.hpp>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
 
+/**
+ * @def R3_VALIDATION_LAYERS
+ * Determines whether the vulkan instance enables validation layers.
+ */
+#define R3_VALIDATION_LAYERS (not R3_BUILD_DISTRIBUTION)
+
 namespace R3::vulkan {
 
 /**
- * @brief Vulkan Instance Specification
+ * Vulkan Instance Specification
  */
 struct InstanceSpecification {
-    const char* applicationName;                   /**< Name of application */
-    std::span<const char* const> extensions;       /**< Vulkan extensions */
-    std::span<const char* const> validationLayers; /**< Vulkan validation layers */
+    const char* applicationName;                   /**< Name of application. */
+    std::span<const char* const> extensions;       /**< Vulkan instance extensions. */
+    std::span<const char* const> validationLayers; /**< Vulkan validation layers. */
 };
 
 /**
- * @brief Vulkan Instance RAII wrapper
- *
- * A Vulkan Instance is the connection between a user applcation and
- * the graphics driver.
+ * Vulkan Instance RAII wrapper.
+ * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkInstance.html
  */
 class Instance : public VulkanObject<VkInstance> {
 public:
@@ -34,26 +41,23 @@ public:
     DEFAULT_MOVE(Instance);
 
     /**
-     * @brief Create Vulkan Instance stored as VulkanObject::Handle
-     *
+     * Create Vulkan Instance stored as VulkanObject::Handle.
      * Checks extension and validation support in DEBUG build, adds validation
      * layers if R3_VALIDATION_LAYERS is true and sets up debug logging. Always
      * ensures VK_SUCCESS on creatation.
-     *
      * @param spec
      */
     Instance(const InstanceSpecification& spec);
 
     /**
-     * @brief Destroy Vulkan Instance calling vkDestroyInstance
-     *
+     * Destroy Vulkan Instance calling vkDestroyInstance.
      * All Vulkan objects that depend on the instance must be destroyed before
      * the Instance is destroyed.
      */
     ~Instance();
 
     /**
-     * @brief Query required instance extensions from GLFW API
+     * Query required instance extensions from GLFW API.
      * @return List of required extensions
      */
     static std::vector<const char*> queryRequiredExtensions();

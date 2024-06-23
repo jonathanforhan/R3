@@ -2,9 +2,9 @@
 
 #if R3_VULKAN
 
-#include "api/Construct.hpp"
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
+#include <api/Construct.hpp>
 #include <api/Types.hpp>
 #include <vulkan/vulkan.h>
 
@@ -25,6 +25,9 @@ struct AttachmentBufferSpecification {
 class AttachmentBuffer : public VulkanObject<VkImage>,
                          public VulkanObject<VkImageView>,
                          public VulkanObject<VkDeviceMemory> {
+public:
+    using VulkanObject<VkImage>::vk;
+
 protected:
     DEFAULT_CONSTRUCT(AttachmentBuffer);
     NO_COPY(AttachmentBuffer);
@@ -37,21 +40,10 @@ protected:
 public:
     void free();
 
-    constexpr VkImageView imageView() const { return VulkanObject<VkImageView>::m_handle; }
-
-    constexpr VkFormat format() const { return m_format; }
-
-    constexpr VkExtent2D extent() const { return m_extent; }
-
-    constexpr VkSampleCountFlagBits sampleCount() const { return m_sampleCount; }
+    constexpr VkImageView imageView() const { return VulkanObject<VkImageView>::vk(); }
 
 protected:
     VkDevice m_device = VK_NULL_HANDLE;
-
-private:
-    VkFormat m_format                   = VK_FORMAT_UNDEFINED;
-    VkExtent2D m_extent                 = {};
-    VkSampleCountFlagBits m_sampleCount = VK_SAMPLE_COUNT_1_BIT;
 };
 
 } // namespace R3::vulkan

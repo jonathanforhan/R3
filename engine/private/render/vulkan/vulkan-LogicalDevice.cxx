@@ -1,10 +1,10 @@
 #if R3_VULKAN
 
-#include "api/Assert.hpp"
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include "vulkan-Queue.hxx"
 #include "vulkan-Surface.hxx"
+#include <api/Assert.hpp>
 #include <api/Types.hpp>
 #include <set>
 #include <span>
@@ -14,10 +14,10 @@
 namespace R3::vulkan {
 
 LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
-    const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice, spec.surface);
+    const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice.vk(), spec.surface.vk());
     ASSERT(queueFamilyIndices.isValid());
 
-    const std::set<int32> uniqueQueueIndices = {
+    const std::set<uint32> uniqueQueueIndices = {
         queueFamilyIndices.graphics,
         queueFamilyIndices.presentation,
     };
@@ -25,12 +25,12 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
     float queuePriority = 1.0f;
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    for (int32 index : uniqueQueueIndices) {
+    for (uint32 index : uniqueQueueIndices) {
         queueCreateInfos.emplace_back(VkDeviceQueueCreateInfo{
             .sType            = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
             .pNext            = nullptr,
             .flags            = {},
-            .queueFamilyIndex = static_cast<uint32>(index),
+            .queueFamilyIndex = index,
             .queueCount       = 1,
             .pQueuePriorities = &queuePriority,
         });
@@ -56,7 +56,7 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
         .pEnabledFeatures        = &physicalDeviceFeatures,
     };
 
-    VkResult result = vkCreateDevice(spec.physicalDevice, &logicalDeviceCreateInfo, nullptr, &m_handle);
+    VkResult result = vkCreateDevice(spec.physicalDevice.vk(), &logicalDeviceCreateInfo, nullptr, &m_handle);
     ENSURE(result == VK_SUCCESS);
 
     m_graphicsQueue.acquire({
