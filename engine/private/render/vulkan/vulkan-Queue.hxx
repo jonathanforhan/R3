@@ -82,15 +82,7 @@ public:
      */
     constexpr uint32 index() const { return m_queueIndex; }
 
-    /**
-     * @brief Locks queue with static mutex
-     */
-    void lock() const { m_mutex->lock(); }
-
-    /**
-     * @brief Unlocks queue with static mutex
-     */
-    void unlock() const { m_mutex->unlock(); }
+    std::scoped_lock<std::mutex> scopedLock() { return std::scoped_lock(*m_mutex); }
 
 private:
     QueueType m_queueType = {};

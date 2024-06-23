@@ -156,7 +156,6 @@ Renderer::Renderer(Window& window)
 
 Renderer::~Renderer() {
     vkDeviceWaitIdle(m_device.vk());
-
     /* TODO FIXME --> */ vkDestroyDescriptorSetLayout(m_device.vk(), m_descriptorSetLayout, nullptr);
 }
 
@@ -195,7 +194,7 @@ void Renderer::render() {
     CommandBuffer cmd = m_commandPool[m_currentFrame];
     cmd.reset();
     cmd.begin();
-    cmd.beginRenderPass(m_renderPass, m_framebuffers[m_currentFrame], m_swapchain.extent());
+    cmd.beginRenderPass(m_renderPass, m_framebuffers[imageIndex], m_swapchain.extent());
     {
         cmd.bindPipeline(m_graphicsPipeline);
         cmd.setViewport(m_swapchain);
@@ -224,8 +223,12 @@ void Renderer::render() {
     });
     // }
 
-    if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || m_window.shouldResize()) {
-        resize();
+    if (result != VK_SUCCESS) {
+        if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || m_window.shouldResize()) {
+            resize();
+        } else {
+            LOG(Error, "vkPresent error: {}", (int)result);
+        }
     }
 
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

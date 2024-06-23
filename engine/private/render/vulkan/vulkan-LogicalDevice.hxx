@@ -54,11 +54,15 @@ public:
      */
     const Queue& graphicsQueue() const { return m_graphicsQueue; }
 
+    Queue& graphicsQueue() { return m_graphicsQueue; }
+
     /**
      * Get presentation Queue.
      * @return Queue
      */
     const Queue& presentationQueue() const { return m_presentationQueue; }
+
+    Queue& presentationQueue() { return m_presentationQueue; }
 
 private:
     Queue m_graphicsQueue;

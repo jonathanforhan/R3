@@ -92,9 +92,10 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
     m_presentMode   = swapchainSupportDetails.optimalPresentMode();
     m_extent        = swapchainSupportDetails.optimalExtent(spec.window);
 
-    swapchainSupportDetails.capabilities.minImageCount == swapchainSupportDetails.capabilities.maxImageCount
-        ? m_imageCount = swapchainSupportDetails.capabilities.maxImageCount
-        : m_imageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
+    m_imageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
+    if (swapchainSupportDetails.capabilities.maxImageCount > 0) {
+        m_imageCount = std::min(m_imageCount, swapchainSupportDetails.capabilities.maxImageCount);
+    }
 
     const uint32 queueFamilyIndices[] = {
         spec.device.graphicsQueue().index(),
@@ -219,7 +220,9 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .oldSwapchain          = oldSwapchain,
     };
 
-    vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
+    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
+    ENSURE(result == VK_SUCCESS);
+
     vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
 
     // recreate color buffer with new extent
@@ -243,10 +246,10 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
 
     // acquire images from device (don't free previous, they are not allocated by us)
     uint32 imageCount;
-    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
 
     m_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
 
     for (VkImageView imageView : m_imageViews) {
         vkDestroyImageView(m_device, imageView, nullptr);
@@ -280,7 +283,7 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
                 },
         };
 
-        VkResult result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_imageViews[i]);
+        result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_imageViews[i]);
         ENSURE(result == VK_SUCCESS);
 
         VkImageView attachments[] = {

@@ -18,7 +18,7 @@
 namespace R3::vulkan {
 
 struct CommandBufferSubmitSpecification {
-    const LogicalDevice& device;
+    LogicalDevice& device;
     VkPipelineStageFlags waitStages;
     std::span<const VkSemaphore> waitSemaphores;
     std::span<VkSemaphore> signalSemaphores;
@@ -26,7 +26,7 @@ struct CommandBufferSubmitSpecification {
 };
 
 struct CommandBufferPresentSpecification {
-    const LogicalDevice& device;
+    LogicalDevice& device;
     const Swapchain& swapchain;
     std::span<const VkSemaphore> waitSemaphores;
     uint32 currentImage;
@@ -171,13 +171,15 @@ inline void CommandBuffer::submit(const CommandBufferSubmitSpecification& spec) 
         .pSignalSemaphores    = spec.signalSemaphores.data(),
     };
 
-    spec.device.graphicsQueue().lock();
-    (void)vkQueueSubmit(spec.device.graphicsQueue().vk(), 1, &submitInfo, spec.fence);
-    spec.device.graphicsQueue().unlock();
+    {
+        std::scoped_lock lock = spec.device.graphicsQueue().scopedLock();
+        (void)vkQueueSubmit(spec.device.graphicsQueue().vk(), 1, &submitInfo, spec.fence);
+    }
 }
 
 inline VkResult CommandBuffer::present(const CommandBufferPresentSpecification& spec) {
     VkSwapchainKHR swapchain = spec.swapchain.vk();
+    uint32 currentImage      = spec.currentImage;
 
     const VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -186,7 +188,7 @@ inline VkResult CommandBuffer::present(const CommandBufferPresentSpecification& 
         .pWaitSemaphores    = spec.waitSemaphores.data(),
         .swapchainCount     = 1,
         .pSwapchains        = &swapchain,
-        .pImageIndices      = &spec.currentImage,
+        .pImageIndices      = &currentImage,
         .pResults           = nullptr,
     };
 

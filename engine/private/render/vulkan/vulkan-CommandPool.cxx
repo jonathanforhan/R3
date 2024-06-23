@@ -35,11 +35,8 @@ R3::vulkan::CommandPool::CommandPool(const CommandPoolSpecification& spec)
 }
 
 CommandPool::~CommandPool() {
-    if (m_handle) {
-        // vkFreeCommandBuffers(m_device, m_handle, static_cast<uint32>(m_commandBuffers.size()),
-        // m_commandBuffers.data());
-        vkDestroyCommandPool(m_device, m_handle, nullptr);
-    }
+    // vkFreeCommandBuffers(m_device, m_handle, static_cast<uint32>(m_commandBuffers.size()), m_commandBuffers.data());
+    vkDestroyCommandPool(m_device, m_handle, nullptr);
 }
 
 } // namespace R3::vulkan
