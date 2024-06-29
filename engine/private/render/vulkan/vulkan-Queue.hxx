@@ -1,7 +1,7 @@
-/**
- * @file vulkan-Queue.hxx
- * @copyright GNU Public License
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @file vulkan-Queue.hxx
+/// @copyright GNU Public License
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -15,74 +15,55 @@
 
 namespace R3::vulkan {
 
-/**
- * GPU Queue types.
- */
+/// @brief GPU Queue types.
 enum class QueueType {
-    Graphics,     /**< Graphics Queue. */
-    Presentation, /**< Presentation Queue. */
-    Compute,      /**< Compute Queue. */
+    Graphics,     ///< Graphics Queue.
+    Presentation, ///< Presentation Queue.
+    Compute,      ///< Compute Queue.
 };
 
-/**
- * QueueFamilyIndices Specification.
- * Queue indices are indices into Queues on the PhysicalDevice.
- */
+/// @brief QueueFamilyIndices Specification.
+/// Queue indices are indices into Queues on the PhysicalDevice.
 struct QueueFamilyIndices {
 private:
     DEFAULT_CONSTRUCT(QueueFamilyIndices);
 
 public:
-    uint32 graphics     = undefined; /**< graphics queue index. */
-    uint32 presentation = undefined; /**< presentation queue index. */
+    uint32 graphics     = undefined; ///< graphics queue index.
+    uint32 presentation = undefined; ///< presentation queue index.
 
-    /**
-     * Check that all queue indices are valid.
-     * @return Validity
-     */
+    /// @brief Check that all queue indices are valid.
+    /// @return Validity
     constexpr bool isValid() const { return graphics != undefined && presentation != undefined; }
 
-    /**
-     * QueueFamilyIndices is not publicly constructable, must be queried.
-     * @param physicalDevice Valid VkPhysicalDevice
-     * @param surface Valid VkSurfaceKHR
-     * @return QueueFamilyIndices with graphics and presentation queues
-     */
+    /// @brief QueueFamilyIndices is not publicly constructable, must be queried.
+    /// @param physicalDevice Valid VkPhysicalDevice
+    /// @param surface Valid VkSurfaceKHR
+    /// @return QueueFamilyIndices with graphics and presentation queues
     static QueueFamilyIndices query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 };
 
-/**
- * Vulkan Queue Specification.
- */
+/// @brief Vulkan Queue Specification.
 struct QueueSpecification {
-    const LogicalDevice& device;     /**< Valid LogicalDevice used to query Queue. */
-    QueueType queueType = {};        /**< Type of Queue to acquire. */
-    uint32 queueIndex   = undefined; /**< Index of queue on PhsycialDevice. */
+    const LogicalDevice& device;     ///< Valid LogicalDevice used to query Queue.
+    QueueType queueType = {};        ///< Type of Queue to acquire.
+    uint32 queueIndex   = undefined; ///< Index of queue on PhsycialDevice.
 };
 
-/**
- * Vulkan Queue RAII wrapper.
- * Every operation in Vulkan is first submitting to a Queue for synchronization,
- * this class handles the acquisition of the Queue and holds Queue data like
- * type and index.
- * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkQueue.html
- */
+/// @brief Vulkan Queue RAII wrapper.
+/// Every operation in Vulkan is first submitting to a Queue for synchronization, this class handles the acquisition of
+/// the Queue and holds Queue data like type and index.
+/// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkQueue.html
 class Queue : public VulkanObject<VkQueue> {
 public:
-    /**
-     * Aquire queue from device.
-     * @param spec
-     */
+    /// @brief Aquire queue from device.
+    /// @param spec
     void acquire(const QueueSpecification& spec);
 
-    /**
-     * @return Queue type
-     */
+    /// @return Queue type
     constexpr QueueType type() const { return m_queueType; }
 
-    /**
-     * @return Queue index
-     */
+    /// @return Queue index
     constexpr uint32 index() const { return m_queueIndex; }
 
 private:

@@ -2,8 +2,8 @@
 
 namespace R3 {
 
-/** API Version */
-/** @{ */
+/// API Version
+/// @{
 constexpr int ENGINE_VERSION_MAJOR = 0;
 constexpr int ENGINE_VERSION_MINOR = 0;
 constexpr int ENGINE_VERSION_PATCH = 0;
@@ -18,6 +18,6 @@ constexpr int GLTF_VERSION_MAJOR = 2;
 constexpr int GLTF_VERSION_MINOR = 0;
 
 constexpr int GLB_VERSION = 2;
-/** @} */
+/// @}
 
 } // namespace R3

@@ -1,7 +1,7 @@
-/**
- * @file vulkan-fwd.hxx
- * @copyright GNU Public License
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @file vulkan-fwd.hxx
+/// @copyright GNU Public License
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -9,7 +9,7 @@
 
 namespace R3::vulkan {
 
-/** @cond TURN_OFF_DOXYGEN */
+/// @cond TURN_OFF_DOXYGEN
 class Instance;
 class Surface;
 class PhysicalDevice;
@@ -28,7 +28,7 @@ class DescriptorPool;
 class ShaderModule;
 class Semaphore;
 class Fence;
-/** @endcond TURN_OFF_DOXYGEN */
+/// @endcond TURN_OFF_DOXYGEN
 
 } // namespace R3::vulkan
 

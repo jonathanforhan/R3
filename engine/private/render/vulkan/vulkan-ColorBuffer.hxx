@@ -1,7 +1,7 @@
-/**
- * @file vulkan-ColorBuffer.hxx
- * @copyright GNU Public License
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @file vulkan-ColorBuffer.hxx
+/// @copyright GNU Public License
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -14,31 +14,25 @@
 
 namespace R3::vulkan {
 
-/**
- * ColorBuffer Specification.
- */
+/// @brief ColorBuffer Specification.
 struct ColorBufferSpecification {
-    const PhysicalDevice& physicalDevice; /**< Valid PhsyicalDevice. */
-    const LogicalDevice& device;          /**< Valid LogicalDevice. */
-    VkFormat format;                      /**< Image format. */
-    VkExtent2D extent;                    /**< Image extent. */
-    VkSampleCountFlagBits sampleCount;    /**< Image sample count. */
+    const PhysicalDevice& physicalDevice; ///< Valid PhsyicalDevice.
+    const LogicalDevice& device;          ///< Valid LogicalDevice.
+    VkFormat format;                      ///< Image format.
+    VkExtent2D extent;                    ///< Image extent.
+    VkSampleCountFlagBits sampleCount;    ///< Image sample count.
 };
 
-/**
- * Vulkan ColorBuffer RAII wrapper.
- * Used in RenderPass.
- */
+/// @brief Vulkan ColorBuffer RAII wrapper.
+/// Used in RenderPass.
 class ColorBuffer : public AttachmentBuffer {
 public:
     DEFAULT_CONSTRUCT(ColorBuffer);
     NO_COPY(ColorBuffer);
     DEFAULT_MOVE(ColorBuffer);
 
-    /**
-     * Construct a ColorBuffer.
-     * @param spec
-     */
+    /// @brief Construct a ColorBuffer.
+    /// @param spec
     ColorBuffer(const ColorBufferSpecification& spec);
 };
 

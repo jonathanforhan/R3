@@ -1,7 +1,7 @@
-/**
- * @file vulkan-Surface.hxx
- * @copyright GNU Public License
- */
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @file vulkan-Surface.hxx
+/// @copyright GNU Public License
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -15,35 +15,27 @@
 
 namespace R3::vulkan {
 
-/**
- * Vulkan Surface Specification.
- */
+/// @brief Vulkan Surface Specification.
 struct SurfaceSpecification {
-    const Instance& instance; /**< Valid Vulkan Instance. */
-    Window& window;           /**< Valid Window. */
+    const Instance& instance; ///< Valid Vulkan Instance.
+    Window& window;           ///< Valid Window.
 };
 
-/**
- * Vulkan Surface RAII wrapper.
- * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSurfaceKHR.html
- */
+/// @brief Vulkan Surface RAII wrapper.
+/// https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSurfaceKHR.html
 class Surface : public VulkanObject<VkSurfaceKHR> {
 public:
     DEFAULT_CONSTRUCT(Surface);
     NO_COPY(Surface);
     DEFAULT_MOVE(Surface);
 
-    /**
-     * Create Vulkan Window Surface.
-     * Uses GLFW to create OS dependant Surface and stores VkInstance from spec
-     * @param spec
-     */
+    /// @brief Create Vulkan Window Surface.
+    /// Uses GLFW to create OS dependant Surface and stores VkInstance from spec.
+    /// @param spec
     Surface(const SurfaceSpecification& spec);
 
-    /**
-     * Destroy Surface using vkDestroySurfaceKHR.
-     * @note vkDestroySurfaceKHR uses stored m_instance so it must be valid
-     */
+    /// @brief Destroy Surface using vkDestroySurfaceKHR.
+    /// @note vkDestroySurfaceKHR uses stored m_instance so it must be valid
     ~Surface();
 
 private:

@@ -33,24 +33,18 @@
 
 namespace R3 {
 
-/**
- * Renderer for R3 Application, uses selected graphics API
- *
- * The user will never touch the Renderer, instead there will be magic classes
- * that the user must inherit from when creating their Entity and that will
- * be how an object is Rendered
- *
- * Private fields may contain API-Specfic code but public fields must not
- */
+/// Renderer for R3 Application, uses selected graphics API
+/// The user will never touch the Renderer, instead there will be magic classes
+/// that the user must inherit from when creating their Entity and that will
+/// be how an object is Rendered
+/// Private fields may contain API-Specfic code but public fields must not
 class Renderer {
 public:
     NO_COPY(Renderer);
     NO_MOVE(Renderer);
 
-    /**
-     * Creates Renderer, uses RAII for Vulkan Objects
-     * The Renderer is tied to a specific Window
-     */
+    /// @brief Creates Renderer, uses RAII for Vulkan Objects
+    /// The Renderer is tied to a specific Window
     explicit Renderer(Window& window);
 
     ~Renderer();

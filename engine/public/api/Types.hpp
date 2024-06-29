@@ -8,40 +8,31 @@
 
 namespace R3 {
 
-/**
- * @brief Explicit undefined type for integral values
- *
- * For integral types undefined resolves to UINT**_MAX or -1
- * For floating point types undefined resolves to NaN
- */
+/// @brief Explicit undefined type for integral values.
+/// For integral types undefined resolves to UINT**_MAX or -1
+/// For floating point types undefined resolves to NaN
 struct undefined_t {
-    /**
-     * @brief Cast to desired integral type
-     * @tparam T
-     */
+    /// @brief Cast to desired integral type.
+    /// @tparam T
     template <std::integral T>
     consteval operator T() const {
         return ~T{};
     }
 
-    /**
-     * @brief Cast to desired float type
-     * @tparam T
-     */
+    /// @brief Cast to desired float type.
+    /// @tparam T
     template <std::floating_point T>
     consteval operator T() const {
         return std::numeric_limits<T>::quiet_NaN();
     }
 };
 
-static constexpr undefined_t undefined; /**< undefined constant */
+static constexpr undefined_t undefined; ///< undefined constant.
 
-/**
- * @brief Compare equality of undefined and numeric type
- * @param x Var to check equality
- * @return Does x equal undefined?
- */
-/** @{ */
+/// @brief Compare equality of undefined and numeric type.
+/// @param x Var to check equality
+/// @return Does x equal undefined?
+/// @{
 constexpr bool operator==(undefined_t, std::integral auto x) {
     return x == ~decltype(x){};
 }
@@ -73,8 +64,28 @@ constexpr bool operator==(std::floating_point auto x, undefined_t) {
 constexpr bool operator!=(std::floating_point auto x, undefined_t) {
     return !std::isnan(x);
 }
-/** @} */
+/// @}
 
+/// @brief R3 primitive type.
+/// @{
+using int8  = std::int8_t;
+using int16 = std::int16_t;
+using int32 = std::int32_t;
+using int64 = std::int64_t;
+using isize = std::intmax_t;
+
+using uint8  = std::uint8_t;
+using uint16 = std::uint16_t;
+using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
+using usize  = std::size_t;
+
+using float32 = float;
+using float64 = double;
+/// @}
+
+/// @brief R3 math type.
+/// @{
 using glm::vec1;
 using glm::vec2;
 using glm::vec3;
@@ -113,31 +124,6 @@ using glm::dmat3;
 using glm::dmat4;
 
 using glm::quat;
-
-/**
- * @brief R3 primitive type
- */
-/** @{ */
-using int8  = std::int8_t;
-using int16 = std::int16_t;
-using int32 = std::int32_t;
-using int64 = std::int64_t;
-#if SIZE_MAX == UINT_MAX
-using isize = int;
-#elif SIZE_MAX == ULONG_MAX
-using isize = long;
-#else
-using isize = long long;
-#endif
-
-using uint8  = std::uint8_t;
-using uint16 = std::uint16_t;
-using uint32 = std::uint32_t;
-using uint64 = std::uint64_t;
-using usize  = std::size_t;
-
-using uuid32 = uint32;
-using uuid64 = uint64;
-/** @} */
+/// @}
 
 } // namespace R3

@@ -3,6 +3,7 @@
 #if R3_VULKAN
 #include "vulkan/vulkan-DescriptorPool.hxx"
 #include "vulkan/vulkan-GraphicsPipeline.hxx"
+#include "vulkan/vulkan-VertexBuffer.hxx"
 #endif
 
 #include "ShaderObjects.hxx"
