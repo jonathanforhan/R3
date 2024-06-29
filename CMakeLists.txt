@@ -16,7 +16,6 @@ if (MSVC)
     endif ()
 
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
-    add_compile_options("/Zc:preprocessor")
 endif ()
 
 # Renderer

@@ -7,7 +7,6 @@
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
 #include <api/Types.hpp>
-#include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
 

@@ -68,7 +68,8 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
     ENSURE(result == VK_SUCCESS);
     /* [X] allocate device memory */ VulkanObject<VkDeviceMemory>::m_handle = memory;
 
-    vkBindImageMemory(m_device, image, memory, 0);
+    result = vkBindImageMemory(m_device, image, memory, 0);
+    ENSURE(result == VK_SUCCESS);
 
     const VkImageViewCreateInfo imageViewCreateInfo = {
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -107,15 +108,11 @@ AttachmentBuffer::~AttachmentBuffer() {
 }
 
 void AttachmentBuffer::free() {
-    if (m_device) {
+    if (m_device) { // check for m_device because it might be used with invalid buffer on swapchain recreation
         vkDestroyImageView(m_device, VulkanObject<VkImageView>::m_handle, nullptr);
         vkDestroyImage(m_device, VulkanObject<VkImage>::m_handle, nullptr);
         vkFreeMemory(m_device, VulkanObject<VkDeviceMemory>::m_handle, nullptr);
     }
-
-    VulkanObject<VkImageView>::m_handle    = VK_NULL_HANDLE;
-    VulkanObject<VkImage>::m_handle        = VK_NULL_HANDLE;
-    VulkanObject<VkDeviceMemory>::m_handle = VK_NULL_HANDLE;
 }
 
 } // namespace R3::vulkan

@@ -39,7 +39,7 @@ void Window::initialize() {
     const char* title = "R3";
 
     if (!(m_window = glfwCreateWindow(width, height, title, nullptr, nullptr))) {
-        LOG(Error, "window creation failure");
+        R3_LOG(Error, "window creation failure");
         std::exit(EXIT_FAILURE);
     }
     glfwMakeContextCurrent(m_window);
@@ -51,7 +51,7 @@ void Window::initialize() {
     };
     glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
-    auto errorCallback = [](int code, const char* msg) { LOG(Error, "glfw error code: {}, {}", code, msg); };
+    auto errorCallback = [](int code, const char* msg) { R3_LOG(Error, "glfw error code: {}, {}", code, msg); };
     glfwSetErrorCallback(errorCallback);
 }
 

@@ -10,15 +10,15 @@
  * @note This only applies to non-distribution builds
  */
 #if not R3_BUILD_DISTRIBUTION
-#define ASSERT(_X)                               \
-    do {                                         \
-        if (!(_X)) {                             \
-            LOG(Error, "assert failed {}", #_X); \
-            std::exit(EXIT_FAILURE);             \
-        }                                        \
+#define ASSERT(_X)                                  \
+    do {                                            \
+        if (!(_X)) {                                \
+            R3_LOG(Error, "ASSERT failed {}", #_X); \
+            std::exit(EXIT_FAILURE);                \
+        }                                           \
     } while (false)
 #else
-#define ASSERT(_X) void(0)
+#define ASSERT(_X) (void)0
 #endif
 
 /**
@@ -27,10 +27,10 @@
  * @param _X Expression
  * @note This applies to all builds
  */
-#define ENSURE(_X)                               \
-    do {                                         \
-        if (!(_X)) {                             \
-            LOG(Error, "ensure failed {}", #_X); \
-            std::exit(EXIT_FAILURE);             \
-        }                                        \
+#define ENSURE(_X)                                  \
+    do {                                            \
+        if (!(_X)) {                                \
+            R3_LOG(Error, "ENSURE failed {}", #_X); \
+            std::exit(EXIT_FAILURE);                \
+        }                                           \
     } while (false)

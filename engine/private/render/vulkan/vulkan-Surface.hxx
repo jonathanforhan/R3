@@ -24,7 +24,7 @@ struct SurfaceSpecification {
 };
 
 /**
- * @brief Vulkan Surface RAII wrapper.
+ * Vulkan Surface RAII wrapper.
  * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkSurfaceKHR.html
  */
 class Surface : public VulkanObject<VkSurfaceKHR> {

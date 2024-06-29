@@ -18,7 +18,6 @@
 #include <api/Log.hpp>
 #include <api/Types.hpp>
 #include <cstdint>
-#include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -145,7 +144,7 @@ Renderer::Renderer(Window& window)
         .swapchain             = m_swapchain,
         .renderPass            = m_renderPass,
         .descriptorSetLayout   = m_descriptorSetLayout,
-        .bindingDescription    = {},
+        .bindingDescriptions   = {},
         .attributeDescriptions = {},
         .vertexShader          = std::move(m_vertexShader),
         .fragmentShader        = std::move(m_fragmentShader),
@@ -178,7 +177,7 @@ void Renderer::render() {
             resize();
             return;
         } else if (result != VK_SUBOPTIMAL_KHR) {
-            LOG(Error, "vulkan error code: {}", (int)result);
+            R3_LOG(Error, "vulkan error code: {}", (int)result);
         }
     }
 
@@ -194,6 +193,7 @@ void Renderer::render() {
     CommandBuffer cmd = m_commandPool[m_currentFrame];
     cmd.reset();
     cmd.begin();
+    // NOTE we use the imageIndex NOT m_currentFrame
     cmd.beginRenderPass(m_renderPass, m_framebuffers[imageIndex], m_swapchain.extent());
     {
         cmd.bindPipeline(m_graphicsPipeline);
@@ -227,7 +227,7 @@ void Renderer::render() {
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || m_window.shouldResize()) {
             resize();
         } else {
-            LOG(Error, "vkPresent error: {}", (int)result);
+            R3_LOG(Error, "vkPresent error: {}", (int)result);
         }
     }
 

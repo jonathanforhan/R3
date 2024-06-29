@@ -52,7 +52,7 @@ std::tuple<VkFormat, VkColorSpaceKHR> SwapchainSupportDetails::optimalSurfaceFor
         return std::tuple(optimalFormat, optimalColorSpace);
     }
 
-    LOG(Warning, "surface format 32-bit SRGB is NOT available on this device, using sub-optimal format");
+    R3_LOG(Warning, "surface format 32-bit SRGB is NOT available on this device, using sub-optimal format");
     return std::tuple(surfaceFormats.front().format, surfaceFormats.front().colorSpace);
 }
 
@@ -60,7 +60,7 @@ VkPresentModeKHR SwapchainSupportDetails::optimalPresentMode() const {
     static constexpr VkPresentModeKHR optimalPresentMode = VK_PRESENT_MODE_MAILBOX_KHR;
 
     auto it = std::ranges::find_if(presentModes, [](auto& presentMode) { return presentMode == optimalPresentMode; });
-    return VkPresentModeKHR(it != presentModes.end() ? optimalPresentMode : VK_PRESENT_MODE_FIFO_KHR);
+    return it != presentModes.end() ? optimalPresentMode : VK_PRESENT_MODE_FIFO_KHR;
 }
 
 VkExtent2D SwapchainSupportDetails::optimalExtent(Window& window) const {
@@ -130,10 +130,10 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
 
     // acquire images from device
     uint32 imageCount;
-    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
 
     m_images.resize(imageCount);
-    vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
 
     // make the image views
     m_imageViews.resize(imageCount);
@@ -177,7 +177,7 @@ Swapchain::~Swapchain() {
 }
 
 void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
-    vkDeviceWaitIdle(m_device);
+    (void)vkDeviceWaitIdle(m_device);
 
     // query
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());

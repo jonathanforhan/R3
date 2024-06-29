@@ -5,9 +5,21 @@ file(GLOB_RECURSE CXX_SRCS "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx")
 add_library(R3_ENGINE "${CXX_SRCS}")
 
 if (MSVC)
-	target_compile_options(R3_ENGINE PUBLIC "/W4")
+	target_compile_options(R3_ENGINE
+		PUBLIC
+			"/W4"
+			"/Zc:preprocessor"
+			"/fp:fast"
+	)
 else ()
-	target_compile_options(R3_ENGINE PUBLIC "-Wall -Wextra -Wpedantic")
+	target_compile_options(R3_ENGINE
+		PUBLIC
+			"-Wall"
+			"-Wextra"
+			"-Wpedantic"
+			"-fno-exceptions"
+			"-ffast-math"
+	)
 endif ()
 set_property(TARGET R3_ENGINE PROPERTY COMPILE_WARNING_AS_ERROR ON)
 

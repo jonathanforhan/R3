@@ -4,6 +4,7 @@
 #include "vulkan-DepthBuffer.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include <api/Assert.hpp>
+#include <api/Log.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -50,6 +51,7 @@ VkFormat DepthBuffer::querySupportedDepthFormat(VkPhysicalDevice physicalDevice,
         }
     }
 
+    R3_LOG(Error, "GPU does not support required depth formats");
     ENSURE(false);
 }
 

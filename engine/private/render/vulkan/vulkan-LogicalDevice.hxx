@@ -26,6 +26,9 @@ struct LogicalDeviceSpecification {
 
 /**
  * Vulkan LogicalDevice RAII wrapper.
+ * LogicalDevice is needed for many operations throughout the Renderer. The
+ * LogicalDevice queries and stores Queues on creatation. Queues are
+ * automatically freed by Vulkan on vkDeviceDestroy.
  * https://registry.khronos.org/vulkan/specs/1.3-extensions/man/html/VkDevice.html
  */
 class LogicalDevice : public VulkanObject<VkDevice> {
@@ -35,9 +38,7 @@ public:
     DEFAULT_MOVE(LogicalDevice);
 
     /**
-     * LogicalDevice is the software abstraction for the PhysicalDevice.
-     * LogicalDevice is used for many of the other create commands and holds
-     * the Queues for the Device.
+     * Create LogicalDevice, query and assign Queues
      * @param spec
      */
     LogicalDevice(const LogicalDeviceSpecification& spec);
@@ -49,20 +50,24 @@ public:
     ~LogicalDevice();
 
     /**
-     * Get graphics Queue.
-     * @return Queue
+     * @return Const graphics Queue
      */
-    const Queue& graphicsQueue() const { return m_graphicsQueue; }
-
-    Queue& graphicsQueue() { return m_graphicsQueue; }
+    constexpr const Queue& graphicsQueue() const { return m_graphicsQueue; }
 
     /**
-     * Get presentation Queue.
-     * @return Queue
+     * @return Graphics Queue
      */
-    const Queue& presentationQueue() const { return m_presentationQueue; }
+    constexpr Queue& graphicsQueue() { return m_graphicsQueue; }
 
-    Queue& presentationQueue() { return m_presentationQueue; }
+    /**
+     * @return Const presentation Queue
+     */
+    constexpr const Queue& presentationQueue() const { return m_presentationQueue; }
+
+    /**
+     * @return Presentation Queue
+     */
+    constexpr Queue& presentationQueue() { return m_presentationQueue; }
 
 private:
     Queue m_graphicsQueue;

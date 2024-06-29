@@ -14,7 +14,7 @@ int main() {
     int ret;
 
     if ((ret = app.run()) != 0) {
-        LOG(Error, "application returned status code {}", ret);
+        R3_LOG(Error, "application returned status code {}", ret);
     }
     return ret;
 }

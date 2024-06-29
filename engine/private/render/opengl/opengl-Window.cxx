@@ -59,12 +59,12 @@ void Window::initialize() {
     glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
     // error handling
-    auto errorCallback = [](int code, const char* msg) { LOG(Error, "glfw error code: {}, {}", code, msg); };
+    auto errorCallback = [](int code, const char* msg) { R3_LOG(Error, "glfw error code: {}, {}", code, msg); };
     glfwSetErrorCallback(errorCallback);
 
     // opengl
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-        LOG(Error, "glad initialization failure");
+        R3_LOG(Error, "glad initialization failure");
         exit(-1);
     }
 }

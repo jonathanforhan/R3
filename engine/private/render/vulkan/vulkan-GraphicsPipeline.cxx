@@ -61,15 +61,11 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
 
     // Pipeline
     const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = {},
-#if 1 // TODO FIXME
-        .vertexBindingDescriptionCount = 0,
-#else
-        .vertexBindingDescriptionCount = 1,
-        .pVertexBindingDescriptions    = &spec.bindingDescription,
-#endif
+        .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        .pNext                           = nullptr,
+        .flags                           = {},
+        .vertexBindingDescriptionCount   = static_cast<uint32_t>(spec.bindingDescriptions.size()),
+        .pVertexBindingDescriptions      = spec.bindingDescriptions.data(),
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(spec.attributeDescriptions.size()),
         .pVertexAttributeDescriptions    = spec.attributeDescriptions.data(),
     };

@@ -19,10 +19,10 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     : m_extensions(spec.extensions), // explicit copy
       m_sampleCount(undefined) {
     uint32 physicalDeviceCount;
-    vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, nullptr);
+    (void)vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, nullptr);
 
     std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-    vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, physicalDevices.data());
+    (void)vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, physicalDevices.data());
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     int32 bestScore                 = INT32_MIN;
@@ -40,7 +40,7 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
 
     if (bestScore < 0) {
-        LOG(Warning, "using suboptimal device {}", physicalDeviceProperties.deviceName);
+        R3_LOG(Warning, "using suboptimal device {}", physicalDeviceProperties.deviceName);
     }
 
     // get samples as 8-bit flags (2^6 - 1)
@@ -94,10 +94,10 @@ int32 PhysicalDevice::evaluateDevice(VkPhysicalDevice physicalDevice, VkSurfaceK
 
 bool PhysicalDevice::checkExtensionSupport(VkPhysicalDevice physicalDevice, std::span<const char* const> extensions) {
     uint32 extensionPropertiesCount;
-    vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionPropertiesCount, nullptr);
+    (void)vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionPropertiesCount, nullptr);
 
     std::vector<VkExtensionProperties> extensionProperties(extensionPropertiesCount);
-    vkEnumerateDeviceExtensionProperties(
+    (void)vkEnumerateDeviceExtensionProperties(
         physicalDevice, nullptr, &extensionPropertiesCount, extensionProperties.data());
 
     for (const auto* requiredExtension : extensions) {

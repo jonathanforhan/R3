@@ -71,11 +71,7 @@ Instance::Instance(const InstanceSpecification& spec) {
         .messageSeverity =
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
-        .messageType =
-#if 0
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-#endif
-            VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+        .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
         .pfnUserCallback = validationDebugCallback,
         .pUserData       = nullptr,
     };
@@ -102,10 +98,10 @@ std::vector<const char*> Instance::queryRequiredExtensions() {
 
 bool Instance::checkExtensionSupport(std::span<const char* const> requiredExtensions) const {
     uint32 extensionCount = 0;
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
+    (void)vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr);
 
     std::vector<VkExtensionProperties> instanceExtensions(extensionCount);
-    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, instanceExtensions.data());
+    (void)vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, instanceExtensions.data());
 
     for (const auto& requiredExtension : requiredExtensions) {
         auto it = std::ranges::find_if(instanceExtensions, [=](const VkExtensionProperties& extension) {

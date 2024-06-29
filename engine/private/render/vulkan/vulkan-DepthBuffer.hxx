@@ -1,3 +1,8 @@
+/**
+ * @file vulkan-DepthBuffer.hxx
+ * @copyright GNU Public License
+ */
+
 #pragma once
 
 #if R3_VULKAN
@@ -9,21 +14,40 @@
 
 namespace R3::vulkan {
 
+/**
+ * DepthBuffer Specification.
+ */
 struct DepthBufferSpecification {
-    const PhysicalDevice& physicalDevice;
-    const LogicalDevice& device;
-    VkExtent2D extent;
-    VkSampleCountFlagBits sampleCount;
+    const PhysicalDevice& physicalDevice; /**< Valid PhsyicalDevice. */
+    const LogicalDevice& device;          /**< Valid LogicalDevice. */
+    VkExtent2D extent;                    /**< Image extent. */
+    VkSampleCountFlagBits sampleCount;    /**< Image sample count. */
 };
 
+/**
+ * Vulkan DepthBuffer RAII wrapper.
+ * Used in RenderPass.
+ */
 class DepthBuffer : public AttachmentBuffer {
 public:
     DEFAULT_CONSTRUCT(DepthBuffer);
     NO_COPY(DepthBuffer);
     DEFAULT_MOVE(DepthBuffer);
 
+    /**
+     * Construct DepthBuffer.
+     * @param spec
+     */
     DepthBuffer(const DepthBufferSpecification& spec);
 
+    /**
+     * Query PhysicalDevice for supported formats. If PhysicalDevice does not
+     * support any R3 formats it is a fatal error.
+     * @param physicalDevice
+     * @param tiling Desired tiling
+     * @param features Desired features
+     * @return Format that supports features
+     */
     static VkFormat querySupportedDepthFormat(VkPhysicalDevice physicalDevice,
                                               VkImageTiling tiling,
                                               VkFormatFeatureFlags features);

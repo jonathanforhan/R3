@@ -21,14 +21,14 @@ namespace R3::vulkan {
  * @brief Vulkan PhysicalDevice Specification.
  */
 struct PhysicalDeviceSpecification {
-    const Instance& instance;                   /**< Valid Vulkan Instance. */
-    const Surface& surface;                     /**< Valid OS Surface. */
+    const Instance& instance;                   /**< Valid Instance. */
+    const Surface& surface;                     /**< Valid Surface. */
     const std::vector<const char*>& extensions; /**< PhysicalDevice extensions required. */
 };
 
 /**
  * Vulkan PhysicalDevice RAII wrapper.
- * After initializing a VkInstance R3 can now look for a graphics card, the
+ * After initializing a VkInstance, R3 can now look for a graphics card; the
  * VkPhysicalDevice. This class provides means of checking for support and
  * evalutaing which graphics card is the best fit for the application. R3 does
  * not support usage of multiple graphics cards at once (at an API level).

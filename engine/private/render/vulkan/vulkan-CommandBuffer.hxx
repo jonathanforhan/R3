@@ -7,10 +7,10 @@
 #include "vulkan-GraphicsPipeline.hxx"
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-RenderPass.hxx"
-#include "vulkan-Semaphore.hxx"
 #include "vulkan-Swapchain.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Assert.hpp>
+#include <api/Construct.hpp>
 #include <api/Types.hpp>
 #include <span>
 #include <vulkan/vulkan.h>
@@ -143,6 +143,7 @@ inline void CommandBuffer::setViewport(const Swapchain& swapchain) {
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
+
     vkCmdSetViewport(m_handle, 0, 1, &viewport);
 }
 
@@ -151,6 +152,7 @@ inline void CommandBuffer::setScissor(const Swapchain& swapchain) {
         .offset = {},
         .extent = swapchain.extent(),
     };
+
     vkCmdSetScissor(m_handle, 0, 1, &scissor);
 }
 
@@ -171,10 +173,7 @@ inline void CommandBuffer::submit(const CommandBufferSubmitSpecification& spec) 
         .pSignalSemaphores    = spec.signalSemaphores.data(),
     };
 
-    {
-        std::scoped_lock lock = spec.device.graphicsQueue().scopedLock();
-        (void)vkQueueSubmit(spec.device.graphicsQueue().vk(), 1, &submitInfo, spec.fence);
-    }
+    (void)vkQueueSubmit(spec.device.graphicsQueue().vk(), 1, &submitInfo, spec.fence);
 }
 
 inline VkResult CommandBuffer::present(const CommandBufferPresentSpecification& spec) {

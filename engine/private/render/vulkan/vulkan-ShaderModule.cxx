@@ -14,7 +14,7 @@ ShaderModule::ShaderModule(const ShaderModuleSpecification& spec)
     : m_device(spec.device.vk()),
       m_stage(spec.stage) {
     std::ifstream ifs(spec.path, std::ios::ate | std::ios::binary);
-    ASSERT(ifs.is_open());
+    ASSERT(ifs.is_open() && ifs.good());
 
     std::vector<char> bytes(ifs.tellg());
     ASSERT(bytes.size() % 4 == 0);
