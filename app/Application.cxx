@@ -1,13 +1,14 @@
 #include "Application.hxx"
 
 #include "core/Engine.hpp"
+#include <api/Result.hpp>
 
 namespace R3 {
 
-int Application::run() {
+Result<void> Application::run() {
     auto& engine = Engine::instance();
     engine.initialize();
-    int ret = engine.loop();
+    auto ret = engine.loop();
     engine.deinitialize();
 
     return ret;

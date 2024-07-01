@@ -10,6 +10,8 @@
 #include "vulkan-AttachmentBuffer.hxx"
 #include "vulkan-fwd.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
+#include <type_traits>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -25,24 +27,30 @@ struct DepthBufferSpecification {
 /// @brief Vulkan DepthBuffer RAII wrapper.
 /// Used in RenderPass.
 class DepthBuffer : public AttachmentBuffer {
+protected:
+    /// @brief Construct DepthBuffer from a moved AttachmentBuffer, needed for inheritance with fallible constructor.
+    /// @param parent Valid AttachmentBuffer created with AttachmentBuffer::create
+    DepthBuffer(AttachmentBuffer&& parent)
+        : AttachmentBuffer(std::move(parent)) {}
+
 public:
     DEFAULT_CONSTRUCT(DepthBuffer);
     NO_COPY(DepthBuffer);
     DEFAULT_MOVE(DepthBuffer);
 
     /// @brief Construct DepthBuffer.
-    /// @param spec
-    DepthBuffer(const DepthBufferSpecification& spec);
+    /// @return  DepthBuffer | UnsupportedFeature | InitializationFailure | AllocationFailure
+    static Result<DepthBuffer> create(const DepthBufferSpecification& spec);
 
     /// @brief Query PhysicalDevice for supported formats.
-    /// If PhysicalDevice does no support any R3 formats it is a fatal error.
+    /// If PhysicalDevice does no support any R3 formats it is an error.
     /// @param physicalDevice
     /// @param tiling Desired tiling
     /// @param features Desired features
-    /// @return Format that supports features
-    static VkFormat querySupportedDepthFormat(VkPhysicalDevice physicalDevice,
-                                              VkImageTiling tiling,
-                                              VkFormatFeatureFlags features);
+    /// @return Format that supports features | UnsupportedFeature
+    static Result<VkFormat> querySupportedDepthFormat(VkPhysicalDevice physicalDevice,
+                                                      VkImageTiling tiling,
+                                                      VkFormatFeatureFlags features);
 };
 
 } // namespace R3::vulkan

@@ -3,14 +3,16 @@
 #include "vulkan-CommandPool.hxx"
 
 #include "vulkan-LogicalDevice.hxx"
-#include <api/Assert.hpp>
-#include <api/Types.hpp>
+#include <api/Log.hpp>
+#include <expected>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
-R3::vulkan::CommandPool::CommandPool(const CommandPoolSpecification& spec)
-    : m_device(spec.device.vk()) {
+Result<CommandPool> CommandPool::create(const CommandPoolSpecification& spec) {
+    CommandPool self;
+    self.m_device = spec.device.vk();
+
     const VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext            = nullptr,
@@ -18,24 +20,31 @@ R3::vulkan::CommandPool::CommandPool(const CommandPoolSpecification& spec)
         .queueFamilyIndex = spec.queue.index(),
     };
 
-    VkResult result = vkCreateCommandPool(spec.device.vk(), &commandPoolCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateCommandPool(spec.device.vk(), &commandPoolCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateCommandPool failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
 
     const VkCommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext              = nullptr,
-        .commandPool        = m_handle,
+        .commandPool        = self.m_handle,
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = spec.commandBufferCount,
     };
 
-    m_commandBuffers.resize(spec.commandBufferCount);
-    result = vkAllocateCommandBuffers(m_device, &commandBufferAllocateInfo, m_commandBuffers.data());
-    ENSURE(result == VK_SUCCESS);
+    self.m_commandBuffers.resize(spec.commandBufferCount);
+    result = vkAllocateCommandBuffers(self.m_device, &commandBufferAllocateInfo, self.m_commandBuffers.data());
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkAllocateCommandBuffers failure {}", (int)result);
+        return std::unexpected(Error::AllocationFailure);
+    }
+
+    return self;
 }
 
 CommandPool::~CommandPool() {
-    // vkFreeCommandBuffers(m_device, m_handle, static_cast<uint32>(m_commandBuffers.size()), m_commandBuffers.data());
     vkDestroyCommandPool(m_device, m_handle, nullptr);
 }
 

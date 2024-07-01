@@ -10,6 +10,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <span>
 #include <vector>
@@ -39,7 +40,8 @@ public:
     /// Ranks graphics cards, assigning them a score and chooses the card with the best score. Then stores the sample
     /// rate of the card for query.
     /// @param spec
-    PhysicalDevice(const PhysicalDeviceSpecification& spec);
+    /// @return PhysicalDevice | InitializationFailure
+    static Result<PhysicalDevice> query(const PhysicalDeviceSpecification& spec);
 
     /// @brief Get the memory type index from PhysicalDevice.
     /// Memory type index identifies where certain type of memory is stored on the GPU. This function is used in the
@@ -49,12 +51,12 @@ public:
     /// vkGetBufferMemoryRequirements(device, buffer, &requirements);
     ///
     /// uint32 memoryTypeIndex = physicalDevice.queryMemoryType(
-    ///   requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+    ///   requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT).value(); // TODO check result
     /// @endcode
     /// @param typeFilter This is given by VkMemoryRequirements::memoryTypeBits
     /// @param propertyFlags Flags determining memory location and coherency
-    /// @return memory type index
-    uint32 queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const;
+    /// @return Memory type index | UnsupportedFeature
+    Result<uint32> queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const;
 
     /// @brief Get stored PhyscialDevice extensions.
     /// @return Extensions

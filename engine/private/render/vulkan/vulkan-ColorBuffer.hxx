@@ -10,6 +10,8 @@
 #include "vulkan-AttachmentBuffer.hxx"
 #include "vulkan-fwd.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
+#include <type_traits>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -26,14 +28,20 @@ struct ColorBufferSpecification {
 /// @brief Vulkan ColorBuffer RAII wrapper.
 /// Used in RenderPass.
 class ColorBuffer : public AttachmentBuffer {
+protected:
+    /// @brief Construct ColorBuffer from a moved AttachmentBuffer, needed for inheritance with fallible constructor.
+    /// @param parent Valid AttachmentBuffer created with AttachmentBuffer::create
+    ColorBuffer(AttachmentBuffer&& parent)
+        : AttachmentBuffer(std::move(parent)) {}
+
 public:
     DEFAULT_CONSTRUCT(ColorBuffer);
     NO_COPY(ColorBuffer);
     DEFAULT_MOVE(ColorBuffer);
 
     /// @brief Construct a ColorBuffer.
-    /// @param spec
-    ColorBuffer(const ColorBufferSpecification& spec);
+    /// @return  ColorBuffer | InitializationFailure | AllocationFailure
+    static Result<ColorBuffer> create(const ColorBufferSpecification& spec);
 };
 
 } // namespace R3::vulkan

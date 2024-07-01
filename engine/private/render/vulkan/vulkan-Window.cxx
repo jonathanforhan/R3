@@ -5,9 +5,9 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <api/Assert.hpp>
 #include <api/Log.hpp>
 #include <api/Types.hpp>
+#include <cassert>
 #include <cstdlib>
 
 #if WIN32
@@ -25,11 +25,11 @@ Window& Window::instance() {
 }
 
 void Window::initialize() {
-    ASSERT(!m_window); // only initialize once
+    assert(!m_window); // only initialize once
 
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
+    // glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -80,13 +80,13 @@ void Window::size(int32* width, int32* height) const {
 
 int32 Window::width() const {
     int32 width;
-    size(&width, NULL);
+    size(&width, nullptr);
     return width;
 }
 
 int32 Window::height() const {
     int32 height;
-    size(NULL, &height);
+    size(nullptr, &height);
     return height;
 }
 

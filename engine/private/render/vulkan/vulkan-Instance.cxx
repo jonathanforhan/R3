@@ -3,9 +3,11 @@
 #include <vulkan/vulkan.h>
 // clang-format on
 #include "vulkan-Instance.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <api/Version.hpp>
+#include <expected>
 #include <iostream>
 #include <span>
 #include <string_view>
@@ -38,7 +40,9 @@ validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     return VK_FALSE;
 }
 
-Instance::Instance(const InstanceSpecification& spec) {
+Result<Instance> Instance::create(const InstanceSpecification& spec) {
+    Instance self;
+
     const VkApplicationInfo applicationInfo = {
         .sType              = VK_STRUCTURE_TYPE_APPLICATION_INFO,
         .pNext              = nullptr,
@@ -49,8 +53,15 @@ Instance::Instance(const InstanceSpecification& spec) {
         .apiVersion         = VK_VERSION,
     };
 
-    ASSERT(checkExtensionSupport(spec.extensions));
-    ASSERT(checkValidationLayerSupport(spec.validationLayers));
+    if (!self.checkExtensionSupport(spec.extensions)) {
+        R3_LOG(Error, "VkInstance does not support necessary extensions");
+        return std::unexpected(Error::UnsupportedFeature);
+    }
+
+    if (!self.checkValidationLayerSupport(spec.validationLayers)) {
+        R3_LOG(Error, "VkInstance does not support necessary validation layers");
+        return std::unexpected(Error::UnsupportedFeature);
+    }
 
     VkInstanceCreateInfo instanceCreateInfo = {
         .sType                   = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -81,8 +92,13 @@ Instance::Instance(const InstanceSpecification& spec) {
     instanceCreateInfo.ppEnabledLayerNames = spec.validationLayers.data();
 #endif
 
-    VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateInstance failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    return self;
 }
 
 Instance::~Instance() {
@@ -92,7 +108,9 @@ Instance::~Instance() {
 std::vector<const char*> Instance::queryRequiredExtensions() {
     uint32 extensionCount   = 0;
     const char** extensions = glfwGetRequiredInstanceExtensions(&extensionCount);
-    ASSERT(extensions);
+    if (extensions == nullptr) {
+        R3_LOG(Error, "glfwGetRequiredInstanceExtensions returned null");
+    }
     return std::vector(extensions, extensions + extensionCount);
 }
 
@@ -118,13 +136,13 @@ bool Instance::checkExtensionSupport(std::span<const char* const> requiredExtens
 
 bool Instance::checkValidationLayerSupport(std::span<const char* const> requiredValidationLayers) const {
     uint32 layerCount = 0;
-    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+    (void)vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
     std::vector<VkLayerProperties> validationLayers(layerCount);
-    vkEnumerateInstanceLayerProperties(&layerCount, validationLayers.data());
+    (void)vkEnumerateInstanceLayerProperties(&layerCount, validationLayers.data());
 
     for (const char* requiredValidationLayer : requiredValidationLayers) {
-        auto it = std::ranges::find_if(validationLayers, [=](VkLayerProperties& layer) {
+        auto it = std::ranges::find_if(validationLayers, [=](const VkLayerProperties& layer) {
             return std::string_view(requiredValidationLayer) == std::string_view(layer.layerName);
         });
 

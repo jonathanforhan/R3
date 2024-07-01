@@ -9,6 +9,7 @@
 
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -34,11 +35,12 @@ public:
     NO_COPY(Instance);
     DEFAULT_MOVE(Instance);
 
-    /// @brief Create Vulkan Instance stored as VulkanObject::Handle.
+    /// @brief Create Vulkan Instance.
     /// Checks extension and validation support in DEBUG build, adds validation layers if R3_VALIDATION_LAYERS is true
-    /// and sets up debug logging. Always ensures VK_SUCCESS on creatation.
+    /// and sets up debug logging.
     /// @param spec
-    Instance(const InstanceSpecification& spec);
+    /// @return Instance | InitializationFailure | UnsupportedFeature
+    static Result<Instance> create(const InstanceSpecification& spec);
 
     /// @brief Destroy Vulkan Instance calling vkDestroyInstance.
     /// All Vulkan objects that depend on the instance must be destroyed before the Instance is destroyed.

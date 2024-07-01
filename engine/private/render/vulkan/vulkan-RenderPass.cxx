@@ -4,14 +4,17 @@
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include "vulkan-RenderPass.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <vector>
 
 namespace R3::vulkan {
 
-RenderPass::RenderPass(const RenderPassSpecification& spec)
-    : m_device(spec.device.vk()) {
+Result<RenderPass> RenderPass::create(const RenderPassSpecification& spec) {
+    RenderPass self;
+    self.m_device = spec.device.vk();
+
     const VkAttachmentDescription colorAttachment = {
         .flags          = {},
         .format         = spec.colorAttachment.format,
@@ -28,12 +31,13 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     };
 
-    const VkFormat depthFormat = DepthBuffer::querySupportedDepthFormat(
+    const Result<VkFormat> depthFormat = DepthBuffer::querySupportedDepthFormat(
         spec.physicalDevice.vk(), VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    R3_PROPAGATE(depthFormat);
 
     const VkAttachmentDescription depthAttachment = {
         .flags          = {},
-        .format         = depthFormat,
+        .format         = depthFormat.value(),
         .samples        = spec.depthAttachment.sampleCount,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -108,8 +112,13 @@ RenderPass::RenderPass(const RenderPassSpecification& spec)
         .dependencyCount = 1,
         .pDependencies   = &subpassDependency,
     };
-    VkResult result = vkCreateRenderPass(spec.device.vk(), &renderPassCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateRenderPass(spec.device.vk(), &renderPassCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateRenderPass failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    return self;
 }
 
 RenderPass::~RenderPass() {

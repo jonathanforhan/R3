@@ -3,21 +3,27 @@
 #include "vulkan-ShaderModule.hxx"
 
 #include "vulkan-LogicalDevice.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
+#include <expected>
 #include <fstream>
 #include <vector>
 
 namespace R3::vulkan {
 
-ShaderModule::ShaderModule(const ShaderModuleSpecification& spec)
-    : m_device(spec.device.vk()),
-      m_stage(spec.stage) {
+Result<ShaderModule> ShaderModule::create(const ShaderModuleSpecification& spec) {
+    ShaderModule self;
+    self.m_device = spec.device.vk();
+    self.m_stage  = spec.stage;
+
     std::ifstream ifs(spec.path, std::ios::ate | std::ios::binary);
-    ASSERT(ifs.is_open() && ifs.good());
+    if (!(ifs.is_open() && ifs.good())) {
+        R3_LOG(Error, "failure to open file {}", spec.path);
+        return std::unexpected(Error::InvalidFilepath);
+    }
 
     std::vector<char> bytes(ifs.tellg());
-    ASSERT(bytes.size() % 4 == 0);
 
     ifs.seekg(0);
     ifs.read(bytes.data(), bytes.size());
@@ -31,8 +37,13 @@ ShaderModule::ShaderModule(const ShaderModuleSpecification& spec)
         .pCode    = reinterpret_cast<const uint32*>(bytes.data()),
     };
 
-    VkResult result = vkCreateShaderModule(m_device, &shaderModuleCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateShaderModule(self.m_device, &shaderModuleCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateShaderModule failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    return self;
 }
 
 ShaderModule::~ShaderModule() {

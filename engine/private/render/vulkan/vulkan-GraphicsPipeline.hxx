@@ -20,6 +20,7 @@
 
 #include <vulkan/vulkan.h>
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <span>
 #include "vulkan-ShaderModule.hxx"
 #include "vulkan-VulkanObject.hxx"
@@ -63,7 +64,8 @@ public:
     /// created dynamically so they must be set every time the CommandBuffer is recorded.
     /// @param spec
     /// @note GraphicsPipeline takes ownership of ShaderModules passed to it
-    GraphicsPipeline(const GraphicsPipelineSpecification& spec);
+    /// @return GraphicsPipeline | InitializationFailure
+    static Result<GraphicsPipeline> create(const GraphicsPipelineSpecification& spec);
 
     /// @brief Destroys GraphicsPipeline, and ShaderModules.
     ~GraphicsPipeline();

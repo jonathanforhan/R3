@@ -3,7 +3,6 @@
 #include "vulkan-DescriptorPool.hxx"
 
 #include "vulkan-LogicalDevice.hxx"
-#include <api/Assert.hpp>
 #include <api/Types.hpp>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -24,7 +23,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
     VkDescriptorSetLayout descriptorSetLayout;
     VkResult result =
         vkCreateDescriptorSetLayout(m_device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout);
-    ENSURE(result == VK_SUCCESS);
+    // ENSURE(result == VK_SUCCESS);
     VulkanObject<VkDescriptorSetLayout>::m_handle = descriptorSetLayout;
 
     // DescriptorPool
@@ -57,7 +56,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
 
     VkDescriptorPool descriptorPool;
     result = vkCreateDescriptorPool(m_device, &descriptorPoolCreateInfo, nullptr, &descriptorPool);
-    ENSURE(result == VK_SUCCESS);
+    // ENSURE(result == VK_SUCCESS);
     VulkanObject<VkDescriptorPool>::m_handle = descriptorPool;
 
     // DescriptorSets
@@ -73,7 +72,7 @@ DescriptorPool::DescriptorPool(const DescriptorPoolSpecification& spec)
 
     m_descriptorSets.resize(spec.descriptorSetCount);
     result = vkAllocateDescriptorSets(m_device, nullptr, m_descriptorSets.data());
-    ENSURE(result == VK_SUCCESS);
+    // ENSURE(result == VK_SUCCESS);
 }
 
 DescriptorPool::~DescriptorPool() {

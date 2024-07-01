@@ -2,8 +2,9 @@
 #include <windows.h>
 #endif
 
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include "Application.hxx"
-#include "api/Log.hpp"
 
 #if defined WIN32 and R3_BUILD_DISTRIBUTION
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR lpCmdLine, int mCmdShow) {
@@ -11,10 +12,12 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, PSTR lpCmdLine, int mCmdShow)
 int main() {
 #endif
     R3::Application app;
-    int ret;
 
-    if ((ret = app.run()) != 0) {
-        R3_LOG(Error, "application returned status code {}", ret);
+    auto result = app.run();
+
+    if (!result) {
+        R3_LOG(Error, "application returned status code {}", (int)result.error());
+        return -1;
     }
-    return ret;
+    return 0;
 }

@@ -10,6 +10,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <vulkan/vulkan.h>
 
@@ -44,7 +45,8 @@ public:
 
     /// @brief Create RenderPass, antialiasing is automatically MSAA (TODO).
     /// @param spec
-    RenderPass(const RenderPassSpecification& spec);
+    /// @return RenderPass | UnsupportedFeature | InitializationFailure
+    static Result<RenderPass> create(const RenderPassSpecification& spec);
 
     /// @brief Destroy RenderPass.
     ~RenderPass();

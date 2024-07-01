@@ -3,13 +3,23 @@
 #include "vulkan-Queue.hxx"
 
 #include "vulkan-LogicalDevice.hxx"
+#include "vulkan-PhysicalDevice.hxx"
+#include "vulkan-Surface.hxx"
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
+#include <cassert>
+#include <expected>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
-QueueFamilyIndices QueueFamilyIndices::query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+Result<QueueFamilyIndices> QueueFamilyIndices::query(const PhysicalDevice& physicalDevice, const Surface& surface) {
+    return query(physicalDevice.vk(), surface.vk());
+}
+
+Result<QueueFamilyIndices> QueueFamilyIndices::query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     uint32 queueFamilyCount;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, nullptr);
 
@@ -20,7 +30,7 @@ QueueFamilyIndices QueueFamilyIndices::query(VkPhysicalDevice physicalDevice, Vk
 
     for (uint32 i = 0; const auto& queueFamily : queueFamilies) {
         VkBool32 presentationSupport;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentationSupport);
+        (void)vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentationSupport);
 
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             queueFamilyIndices.graphics = i;
@@ -30,14 +40,15 @@ QueueFamilyIndices QueueFamilyIndices::query(VkPhysicalDevice physicalDevice, Vk
             queueFamilyIndices.presentation = i;
         }
 
-        if (queueFamilyIndices.isValid()) {
-            break;
+        if (queueFamilyIndices.valid()) {
+            return queueFamilyIndices;
         }
 
         i++;
     }
 
-    return queueFamilyIndices;
+    R3_LOG(Error, "invalid queue family indices");
+    return std::unexpected(Error::InitializationFailure);
 }
 
 void Queue::acquire(const QueueSpecification& spec) {

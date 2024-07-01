@@ -54,13 +54,17 @@ protected:
     }
 
 public:
+    /// @brief Check validity of internal handle.
+    /// @return True if handle != NULL
+    virtual constexpr bool valid() const { return m_handle != nullptr; }
+
     /// @brief Get underlying Vulkan API Handle.
     /// @return Vulkan API Handle
     constexpr Handle vk() { return m_handle; }
 
     /// @brief Get underlying const Vulkan API Handle.
     /// @return Const Vulkan API Handle
-    constexpr Handle vk() const { return m_handle; }
+    constexpr const Handle vk() const { return m_handle; }
 
 protected:
     Handle m_handle = nullptr; ///< Underlying Handle e.g. VkInstance, VkDevice, etc.

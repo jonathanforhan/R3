@@ -7,18 +7,22 @@
 #include "vulkan-RenderPass.hxx"
 #include "vulkan-ShaderModule.hxx"
 #include "vulkan-VulkanObject.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
 #include <api/Types.hpp>
 #include <cstdint>
+#include <expected>
+#include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
-GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
-    : m_device(spec.device.vk()),
-      m_vertexShader(std::move(spec.vertexShader)),
-      m_fragmentShader(std::move(spec.fragmentShader)) {
+Result<GraphicsPipeline> GraphicsPipeline::create(const GraphicsPipelineSpecification& spec) {
+    GraphicsPipeline self;
+    self.m_device         = spec.device.vk();
+    self.m_vertexShader   = std::move(spec.vertexShader);
+    self.m_fragmentShader = std::move(spec.fragmentShader);
+
     // Pipeline Layout
     const VkDescriptorSetLayout descriptorSetLayouts[] = {
         spec.descriptorSetLayout,
@@ -37,9 +41,13 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     };
 
     VkPipelineLayout layout;
-    VkResult result = vkCreatePipelineLayout(m_device, &pipelineLayoutCreateInfo, nullptr, &layout);
-    ENSURE(result == VK_SUCCESS);
-    VulkanObject<VkPipelineLayout>::m_handle = layout;
+    VkResult result = vkCreatePipelineLayout(self.m_device, &pipelineLayoutCreateInfo, nullptr, &layout);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreatePipelineLayout failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    self.VulkanObject<VkPipelineLayout>::m_handle = layout;
 
     // Shaders
     auto pipelineShaderStageCreateInfoGenerator = [](const ShaderModule& shader) {
@@ -55,8 +63,8 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     };
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos = {
-        pipelineShaderStageCreateInfoGenerator(m_vertexShader),
-        pipelineShaderStageCreateInfoGenerator(m_fragmentShader),
+        pipelineShaderStageCreateInfoGenerator(self.m_vertexShader),
+        pipelineShaderStageCreateInfoGenerator(self.m_fragmentShader),
     };
 
     // Pipeline
@@ -188,7 +196,7 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
         .pDepthStencilState  = &depthStencilStateCreateInfo,
         .pColorBlendState    = &colorBlendStateCreateInfo,
         .pDynamicState       = &dynamicStateCreateInfo,
-        .layout              = VulkanObject<VkPipelineLayout>::m_handle,
+        .layout              = self.VulkanObject<VkPipelineLayout>::m_handle,
         .renderPass          = spec.renderPass.vk(),
         .subpass             = 0,
         .basePipelineHandle  = VK_NULL_HANDLE,
@@ -196,9 +204,15 @@ GraphicsPipeline::GraphicsPipeline(const GraphicsPipelineSpecification& spec)
     };
 
     VkPipeline pipeline;
-    result = vkCreateGraphicsPipelines(m_device, nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
-    ENSURE(result == VK_SUCCESS);
-    VulkanObject<VkPipeline>::m_handle = pipeline;
+    result = vkCreateGraphicsPipelines(self.m_device, nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateGraphicsPipelines failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    self.VulkanObject<VkPipeline>::m_handle = pipeline;
+
+    return self;
 }
 
 GraphicsPipeline::~GraphicsPipeline() {

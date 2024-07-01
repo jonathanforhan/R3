@@ -6,11 +6,13 @@
 #include <GLFW/glfw3.h>
 
 #include <algorithm>
-#include <api/Assert.hpp>
 #include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <cstdint>
+#include <expected>
 #include <tuple>
+#include <type_traits>
 #include <utility>
 #include "render/Window.hpp"
 #include "vulkan-ColorBuffer.hxx"
@@ -22,21 +24,35 @@
 
 namespace R3::vulkan {
 
-SwapchainSupportDetails SwapchainSupportDetails::query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+Result<SwapchainSupportDetails> SwapchainSupportDetails::query(const PhysicalDevice physicalDevice,
+                                                               const Surface& surface) {
+    return query(physicalDevice.vk(), surface.vk());
+}
+
+Result<SwapchainSupportDetails> SwapchainSupportDetails::query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
     SwapchainSupportDetails details;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
+    (void)vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
 
     uint32 surfaceFormatsCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatsCount, nullptr);
+    (void)vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatsCount, nullptr);
+
     details.surfaceFormats.resize(surfaceFormatsCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatsCount, details.surfaceFormats.data());
+    (void)vkGetPhysicalDeviceSurfaceFormatsKHR(
+        physicalDevice, surface, &surfaceFormatsCount, details.surfaceFormats.data());
 
     uint32 presentModesCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModesCount, nullptr);
-    details.presentModes.resize(presentModesCount);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModesCount, details.presentModes.data());
+    (void)vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModesCount, nullptr);
 
-    return details;
+    details.presentModes.resize(presentModesCount);
+    (void)vkGetPhysicalDeviceSurfacePresentModesKHR(
+        physicalDevice, surface, &presentModesCount, details.presentModes.data());
+
+    if (details.valid()) {
+        return details;
+    }
+
+    R3_LOG(Error, "invalid swapchain details");
+    return std::unexpected(Error::InitializationFailure);
 }
 
 std::tuple<VkFormat, VkColorSpaceKHR> SwapchainSupportDetails::optimalSurfaceFormat() const {
@@ -81,20 +97,24 @@ VkExtent2D SwapchainSupportDetails::optimalExtent(Window& window) const {
     return extent;
 }
 
-Swapchain::Swapchain(const SwapchainSpecification& spec)
-    : m_device(spec.device.vk()) {
+Result<Swapchain> Swapchain::create(const SwapchainSpecification& spec) {
+    Swapchain self;
+    self.m_device = spec.device.vk();
+
     // get details
     const auto swapchainSupportDetails = SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
-    const auto&& [surfaceFormat, colorSpace] = swapchainSupportDetails.optimalSurfaceFormat();
+    // R3_PROPAGATE(swapchainSupportDetails); should always be good
 
-    m_surfaceFormat = surfaceFormat;
-    m_colorSpace    = colorSpace;
-    m_presentMode   = swapchainSupportDetails.optimalPresentMode();
-    m_extent        = swapchainSupportDetails.optimalExtent(spec.window);
+    const auto&& [surfaceFormat, colorSpace] = swapchainSupportDetails->optimalSurfaceFormat();
 
-    m_imageCount = swapchainSupportDetails.capabilities.minImageCount + 1;
-    if (swapchainSupportDetails.capabilities.maxImageCount > 0) {
-        m_imageCount = std::min(m_imageCount, swapchainSupportDetails.capabilities.maxImageCount);
+    self.m_surfaceFormat = surfaceFormat;
+    self.m_colorSpace    = colorSpace;
+    self.m_presentMode   = swapchainSupportDetails->optimalPresentMode();
+    self.m_extent        = swapchainSupportDetails->optimalExtent(spec.window);
+
+    self.m_imageCount = swapchainSupportDetails->capabilities.minImageCount + 1;
+    if (swapchainSupportDetails->capabilities.maxImageCount > 0) {
+        self.m_imageCount = std::min(self.m_imageCount, swapchainSupportDetails->capabilities.maxImageCount);
     }
 
     const uint32 queueFamilyIndices[] = {
@@ -109,43 +129,46 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
         .pNext                 = nullptr,
         .flags                 = {},
         .surface               = spec.surface.vk(),
-        .minImageCount         = m_imageCount,
-        .imageFormat           = m_surfaceFormat,
-        .imageColorSpace       = m_colorSpace,
-        .imageExtent           = m_extent,
+        .minImageCount         = self.m_imageCount,
+        .imageFormat           = self.m_surfaceFormat,
+        .imageColorSpace       = self.m_colorSpace,
+        .imageExtent           = self.m_extent,
         .imageArrayLayers      = 1,
         .imageUsage            = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
         .imageSharingMode      = sameQueueFamily ? VK_SHARING_MODE_EXCLUSIVE : VK_SHARING_MODE_CONCURRENT,
         .queueFamilyIndexCount = 2,                  // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
         .pQueueFamilyIndices   = queueFamilyIndices, // NOTE does nothing if VK_SHARING_MODE_EXCLUSIVE is true
-        .preTransform          = swapchainSupportDetails.capabilities.currentTransform,
+        .preTransform          = swapchainSupportDetails->capabilities.currentTransform,
         .compositeAlpha        = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        .presentMode           = m_presentMode,
+        .presentMode           = self.m_presentMode,
         .clipped               = VK_TRUE,
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateSwapchainKHR failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
 
     // acquire images from device
     uint32 imageCount;
-    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, nullptr);
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), self.m_handle, &imageCount, nullptr);
 
-    m_images.resize(imageCount);
-    (void)vkGetSwapchainImagesKHR(spec.device.vk(), m_handle, &imageCount, m_images.data());
+    self.m_images.resize(imageCount);
+    (void)vkGetSwapchainImagesKHR(spec.device.vk(), self.m_handle, &imageCount, self.m_images.data());
 
     // make the image views
-    m_imageViews.resize(imageCount);
+    self.m_imageViews.resize(imageCount);
 
-    for (uint32 i = 0; i < m_images.size(); i++) {
+    for (uint32 i = 0; i < self.m_images.size(); i++) {
         VkImageViewCreateInfo imageViewCreateInfo = {
             .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .pNext    = nullptr,
             .flags    = {},
-            .image    = m_images[i],
+            .image    = self.m_images[i],
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format   = m_surfaceFormat,
+            .format   = self.m_surfaceFormat,
             .components =
                 {
                     .r = VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -163,9 +186,14 @@ Swapchain::Swapchain(const SwapchainSpecification& spec)
                 },
         };
 
-        result = vkCreateImageView(spec.device.vk(), &imageViewCreateInfo, nullptr, &m_imageViews[i]);
-        ENSURE(result == VK_SUCCESS);
+        result = vkCreateImageView(spec.device.vk(), &imageViewCreateInfo, nullptr, &self.m_imageViews[i]);
+        if (result != VK_SUCCESS) {
+            R3_LOG(Error, "vkCreateImageView failure {}", (int)result);
+            return std::unexpected(Error::InitializationFailure);
+        }
     }
+
+    return self;
 }
 
 Swapchain::~Swapchain() {
@@ -176,18 +204,20 @@ Swapchain::~Swapchain() {
     vkDestroySwapchainKHR(m_device, m_handle, nullptr);
 }
 
-void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
+Result<void> Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     (void)vkDeviceWaitIdle(m_device);
 
     // query
     auto swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
-    m_extent                     = swapchainSupportDetails.optimalExtent(spec.window);
+    R3_PROPAGATE(swapchainSupportDetails);
+
+    m_extent = swapchainSupportDetails->optimalExtent(spec.window);
 
     // if extent == 0 -> we're minimized -> wait idle until maximized
     while (m_extent.width == 0 || m_extent.height == 0) {
         glfwWaitEvents();
         swapchainSupportDetails = vulkan::SwapchainSupportDetails::query(spec.physicalDevice.vk(), spec.surface.vk());
-        m_extent                = swapchainSupportDetails.optimalExtent(spec.window);
+        m_extent                = swapchainSupportDetails->optimalExtent(spec.window);
     }
 
     const uint32 queueFamilyIndices[] = {
@@ -221,28 +251,35 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     };
 
     VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateSwapchainKHR failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
 
     vkDestroySwapchainKHR(m_device, oldSwapchain, nullptr);
 
     // recreate color buffer with new extent
-    spec.colorBuffer.free();
-    spec.colorBuffer = ColorBuffer({
+    Result<ColorBuffer> colorBuffer = ColorBuffer::create({
         .physicalDevice = spec.physicalDevice,
         .device         = spec.device,
         .format         = m_surfaceFormat,
         .extent         = m_extent,
         .sampleCount    = spec.physicalDevice.sampleCount(),
     });
+    R3_PROPAGATE(colorBuffer);
+
+    spec.colorBuffer.free();
+    spec.colorBuffer = std::move(colorBuffer.value());
 
     // recreate depth buffer with new extent
-    spec.depthBuffer.free();
-    spec.depthBuffer = DepthBuffer({
+    Result<DepthBuffer> depthBuffer = DepthBuffer::create({
         .physicalDevice = spec.physicalDevice,
         .device         = spec.device,
         .extent         = m_extent,
         .sampleCount    = spec.physicalDevice.sampleCount(),
     });
+    spec.depthBuffer.free();
+    spec.depthBuffer = std::move(depthBuffer.value());
 
     // acquire images from device (don't free previous, they are not allocated by us)
     uint32 imageCount;
@@ -284,7 +321,10 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         };
 
         result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_imageViews[i]);
-        ENSURE(result == VK_SUCCESS);
+        if (result != VK_SUCCESS) {
+            R3_LOG(Error, "vkCreateImageView failure {}", (int)result);
+            return std::unexpected(Error::InitializationFailure);
+        }
 
         VkImageView attachments[] = {
             spec.colorBuffer.imageView(),
@@ -292,13 +332,18 @@ void Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
             m_imageViews[i],
         };
 
-        spec.framebuffers.emplace_back(FramebufferSpecification{
+        Result<Framebuffer> framebuffer = Framebuffer::create({
             .device      = spec.device,
             .renderPass  = spec.renderPass,
             .attachments = attachments,
             .extent      = m_extent,
         });
+        R3_PROPAGATE(framebuffer);
+
+        spec.framebuffers.emplace_back(std::move(framebuffer.value()));
     }
+
+    return Result<void>();
 }
 
 } // namespace R3::vulkan

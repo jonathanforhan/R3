@@ -3,17 +3,25 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <expected>
 #include "vulkan-Instance.hxx"
 
 namespace R3::vulkan {
 
-Surface::Surface(const SurfaceSpecification& spec)
-    : m_instance(spec.instance.vk()) {
+Result<Surface> Surface::create(const SurfaceSpecification& spec) {
+    Surface self;
+    self.m_instance = spec.instance.vk();
+
     VkSurfaceKHR surface;
-    VkResult result = glfwCreateWindowSurface(m_instance, spec.window, nullptr, &surface);
-    ENSURE(result == VK_SUCCESS);
-    m_handle = surface;
+    VkResult result = glfwCreateWindowSurface(self.m_instance, spec.window, nullptr, &surface);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "glfwCreateWindowSurface failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    self.m_handle = surface;
+    return self;
 }
 
 Surface::~Surface() {

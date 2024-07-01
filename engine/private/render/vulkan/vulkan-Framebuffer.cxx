@@ -4,13 +4,17 @@
 
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-RenderPass.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
 #include <api/Types.hpp>
+#include <expected>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
-Framebuffer::Framebuffer(const FramebufferSpecification& spec)
-    : m_device(spec.device.vk()) {
+
+Result<Framebuffer> Framebuffer::create(const FramebufferSpecification& spec) {
+    Framebuffer self;
+    self.m_device = spec.device.vk();
+
     const VkFramebufferCreateInfo framebufferCreateInfo = {
         .sType           = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .pNext           = nullptr,
@@ -23,8 +27,13 @@ Framebuffer::Framebuffer(const FramebufferSpecification& spec)
         .layers          = 1,
     };
 
-    VkResult result = vkCreateFramebuffer(m_device, &framebufferCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateFramebuffer(self.m_device, &framebufferCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateFramebuffer failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+
+    return self;
 }
 
 Framebuffer::~Framebuffer() {

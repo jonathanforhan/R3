@@ -19,6 +19,7 @@
 #endif
 
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <vector>
 #include "render/Window.hpp"
 
@@ -40,12 +41,13 @@ namespace R3 {
 /// Private fields may contain API-Specfic code but public fields must not
 class Renderer {
 public:
+    DEFAULT_CONSTRUCT(Renderer);
     NO_COPY(Renderer);
-    NO_MOVE(Renderer);
+    DEFAULT_MOVE(Renderer);
 
     /// @brief Creates Renderer, uses RAII for Vulkan Objects
     /// The Renderer is tied to a specific Window
-    explicit Renderer(Window& window);
+    static Result<Renderer> create(Window& window);
 
     ~Renderer();
 
@@ -58,7 +60,7 @@ public:
     static constexpr int MAX_FRAMES_IN_FLIGHT = 3;
 
 private:
-    Window& m_window;
+    Window* m_window = nullptr;
 
 #if R3_OPENGL
     // ...
@@ -84,7 +86,7 @@ private:
     // TODO FIXME
     vulkan::ShaderModule m_vertexShader;
     vulkan::ShaderModule m_fragmentShader;
-    VkDescriptorSetLayout m_descriptorSetLayout;
+    VkDescriptorSetLayout m_descriptorSetLayout{};
     vulkan::GraphicsPipeline m_graphicsPipeline;
 #endif
 };

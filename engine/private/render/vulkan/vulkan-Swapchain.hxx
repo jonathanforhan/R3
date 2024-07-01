@@ -11,6 +11,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <span>
 #include <tuple>
@@ -27,13 +28,16 @@ private:
 public:
     /// @brief Checks is swapchain support at least one format and present mode.
     /// @return Validity
-    constexpr bool isValid() const { return !surfaceFormats.empty() && !presentModes.empty(); };
+    constexpr bool valid() const { return !surfaceFormats.empty() && !presentModes.empty(); };
 
     /// @brief Get Swapchain details for PhsycialDevice and Surface.
     /// @param physicalDevice
     /// @param surface
-    /// @return Swapchain Support Details
-    static SwapchainSupportDetails query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    /// @return Swapchain Support Details | InitializationFailure
+    /// @{
+    static Result<SwapchainSupportDetails> query(const PhysicalDevice physicalDevice, const Surface& surface);
+    static Result<SwapchainSupportDetails> query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    /// @}
 
     /// @brief Get optimal format channel and color space, preferably SRGB.
     /// @return Format, ColorSpace
@@ -86,16 +90,19 @@ public:
 
     /// @brief Creates Swapchain using optimal settings from Swapchain Details
     /// @param spec
-    Swapchain(const SwapchainSpecification& spec);
+    /// @return Swapchain | InitializationFailure
+    static Result<Swapchain> create(const SwapchainSpecification& spec);
 
     /// @brief Destroys Swapchain and image views
     /// @note Swapchain images are device internal and must NOT be destroyed
     ~Swapchain();
 
     /// @brief Recreates swapchain using old Swapchain
-    /// Also recreates ColorBuffer, DepthBuffer, and Framebuffers.
+    /// Also recreates ColorBuffer, DepthBuffer, and Framebuffers. If the new Swapchain fails to create the old
+    /// Swapchain is preserved.
     /// @param spec
-    void recreate(const SwapchainRecreationSpecification& spec);
+    /// @return void | InitializationFailure
+    Result<void> recreate(const SwapchainRecreationSpecification& spec);
 
     /// @return Current surface format
     constexpr VkFormat surfaceFormat() const { return m_surfaceFormat; }

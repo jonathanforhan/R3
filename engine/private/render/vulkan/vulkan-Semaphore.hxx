@@ -1,23 +1,31 @@
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// @file vulkan-Semaphore.hxx
+/// @copyright GNU Public License
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 #if R3_VULKAN
 
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-VulkanObject.hxx"
-#include <api/Assert.hpp>
 #include <api/Construct.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
+/// @brief Vulkan Semaphore RAII wrapper.
 class Semaphore : public VulkanObject<VkSemaphore> {
 public:
     DEFAULT_CONSTRUCT(Semaphore);
     NO_COPY(Semaphore);
     DEFAULT_MOVE(Semaphore);
 
+    /// @brief Create a Vulkan Semaphore.
+    /// @param device
     Semaphore(const LogicalDevice& device);
 
+    /// @brief Destroy Semaphore
     ~Semaphore();
 
 private:
@@ -32,8 +40,7 @@ inline Semaphore::Semaphore(const LogicalDevice& device)
         .flags = {},
     };
 
-    VkResult result = vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    (void)vkCreateSemaphore(m_device, &semaphoreCreateInfo, nullptr, &m_handle);
 }
 
 inline Semaphore::~Semaphore() {

@@ -10,6 +10,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <vulkan/vulkan.h>
 
@@ -41,23 +42,29 @@ public:
 
 protected:
     DEFAULT_CONSTRUCT(AttachmentBuffer);
-    NO_COPY(AttachmentBuffer);
-    DEFAULT_MOVE(AttachmentBuffer);
 
     /// @brief Construct AttachmentBuffer, allocating new Image.
     /// @param spec
-    AttachmentBuffer(const AttachmentBufferSpecification& spec);
+    /// @return  AttachmentBuffer | UnsupportedFeature | InitializationFailure | AllocationFailure
+    static Result<AttachmentBuffer> create(const AttachmentBufferSpecification& spec);
+
+public:
+    NO_COPY(AttachmentBuffer);
+    DEFAULT_MOVE(AttachmentBuffer);
 
     /// @brief Destroy VkImage, VkImageView, and free VkDeviceMemory.
     ~AttachmentBuffer();
 
-public:
     /// @brief Free all resources, VkImage, VkImageView, and VkDeviceMemory.
     /// Checks for validity of m_device, meaning it can be used when unitialized.
     void free();
 
     /// @return ImageView
     constexpr VkImageView imageView() const { return VulkanObject<VkImageView>::vk(); }
+
+    /// @brief Check validity of internal handles.
+    /// @return True if ll valid
+    virtual constexpr bool valid() const override;
 
 protected:
     VkDevice m_device = VK_NULL_HANDLE; ///< Valid VkDevice

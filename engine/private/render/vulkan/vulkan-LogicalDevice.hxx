@@ -11,6 +11,7 @@
 #include "vulkan-Queue.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -34,7 +35,8 @@ public:
 
     /// @brief Create LogicalDevice, query and assign Queues.
     /// @param spec
-    LogicalDevice(const LogicalDeviceSpecification& spec);
+    /// @return LogicalDevice | InitializationFailure
+    static Result<LogicalDevice> create(const LogicalDeviceSpecification& spec);
 
     /// @brief Destroy device and automatically clean up queues.
     /// @note All other Vulkan object relying on Device must be destroyed first

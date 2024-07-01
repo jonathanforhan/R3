@@ -3,9 +3,10 @@
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include "vulkan-Queue.hxx"
-#include "vulkan-Surface.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
+#include <expected>
 #include <set>
 #include <span>
 #include <vector>
@@ -13,13 +14,15 @@
 
 namespace R3::vulkan {
 
-LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
-    const auto queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice.vk(), spec.surface.vk());
-    ASSERT(queueFamilyIndices.isValid());
+Result<LogicalDevice> LogicalDevice::create(const LogicalDeviceSpecification& spec) {
+    LogicalDevice self;
+
+    Result<QueueFamilyIndices> queueFamilyIndices = QueueFamilyIndices::query(spec.physicalDevice, spec.surface);
+    R3_PROPAGATE(queueFamilyIndices);
 
     const std::set<uint32> uniqueQueueIndices = {
-        queueFamilyIndices.graphics,
-        queueFamilyIndices.presentation,
+        queueFamilyIndices->graphics,
+        queueFamilyIndices->presentation,
     };
 
     float queuePriority = 1.0f;
@@ -56,20 +59,25 @@ LogicalDevice::LogicalDevice(const LogicalDeviceSpecification& spec) {
         .pEnabledFeatures        = &physicalDeviceFeatures,
     };
 
-    VkResult result = vkCreateDevice(spec.physicalDevice.vk(), &logicalDeviceCreateInfo, nullptr, &m_handle);
-    ENSURE(result == VK_SUCCESS);
+    VkResult result = vkCreateDevice(spec.physicalDevice.vk(), &logicalDeviceCreateInfo, nullptr, &self.m_handle);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateDevice failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
 
-    m_graphicsQueue.acquire({
-        .device     = *this,
+    self.m_graphicsQueue.acquire({
+        .device     = self,
         .queueType  = QueueType::Graphics,
-        .queueIndex = static_cast<uint32>(queueFamilyIndices.graphics),
+        .queueIndex = static_cast<uint32>(queueFamilyIndices->graphics),
     });
 
-    m_presentationQueue.acquire({
-        .device     = *this,
+    self.m_presentationQueue.acquire({
+        .device     = self,
         .queueType  = QueueType::Presentation,
-        .queueIndex = static_cast<uint32>(queueFamilyIndices.presentation),
+        .queueIndex = static_cast<uint32>(queueFamilyIndices->presentation),
     });
+
+    return self;
 }
 
 LogicalDevice::~LogicalDevice() {

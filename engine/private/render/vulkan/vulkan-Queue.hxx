@@ -10,6 +10,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
 #include <vulkan/vulkan.h>
 
@@ -34,13 +35,16 @@ public:
 
     /// @brief Check that all queue indices are valid.
     /// @return Validity
-    constexpr bool isValid() const { return graphics != undefined && presentation != undefined; }
+    constexpr bool valid() const { return graphics != undefined && presentation != undefined; }
 
     /// @brief QueueFamilyIndices is not publicly constructable, must be queried.
-    /// @param physicalDevice Valid VkPhysicalDevice
-    /// @param surface Valid VkSurfaceKHR
-    /// @return QueueFamilyIndices with graphics and presentation queues
-    static QueueFamilyIndices query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    /// @param physicalDevice Valid PhysicalDevice
+    /// @param surface Valid Surface
+    /// @return QueueFamilyIndices with graphics and presentation queues | InitializationFailure
+    /// @{
+    static Result<QueueFamilyIndices> query(const PhysicalDevice& physicalDevice, const Surface& surface);
+    static Result<QueueFamilyIndices> query(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    /// @}
 };
 
 /// @brief Vulkan Queue Specification.
@@ -57,6 +61,7 @@ struct QueueSpecification {
 class Queue : public VulkanObject<VkQueue> {
 public:
     /// @brief Aquire queue from device.
+    /// @note spec.queueIndex MUST be one the queues created by spec.device
     /// @param spec
     void acquire(const QueueSpecification& spec);
 

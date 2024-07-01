@@ -11,6 +11,7 @@
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
@@ -32,7 +33,8 @@ public:
     /// @brief Create Vulkan Window Surface.
     /// Uses GLFW to create OS dependant Surface and stores VkInstance from spec.
     /// @param spec
-    Surface(const SurfaceSpecification& spec);
+    /// @return Surface | InitializationFailure
+    static Result<Surface> create(const SurfaceSpecification& spec);
 
     /// @brief Destroy Surface using vkDestroySurfaceKHR.
     /// @note vkDestroySurfaceKHR uses stored m_instance so it must be valid

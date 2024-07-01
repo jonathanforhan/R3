@@ -2,17 +2,26 @@
 
 #include "vulkan-AttachmentBuffer.hxx"
 
-#include "vulkan/vulkan.h"
 #include "vulkan-LogicalDevice.hxx"
 #include "vulkan-PhysicalDevice.hxx"
 #include "vulkan-VulkanObject.hxx"
-#include <api/Assert.hpp>
+#include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
+#include <expected>
+#include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
-R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecification& spec)
-    : m_device(spec.device.vk()) {
+Result<AttachmentBuffer> AttachmentBuffer::create(const AttachmentBufferSpecification& spec) {
+    // A note on error handling:
+    // The early returns look scary, however keep in mind that when the resource is assigned to self it is now part of
+    // RAII clean up and will be cleaned up by the destructor on an early return because it will go out of scope when
+    // std::unexpected is returned.
+
+    AttachmentBuffer self;
+    self.m_device = spec.device.vk();
+
     // this constructor must
     // [ ] create image
     // [ ] allocate device memory
@@ -48,28 +57,43 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
     };
 
     VkImage image;
-    VkResult result = vkCreateImage(m_device, &imageCreateInfo, nullptr, &image);
-    ENSURE(result == VK_SUCCESS);
-    /* [X] create image */ VulkanObject<VkImage>::m_handle = image;
+    VkResult result = vkCreateImage(self.m_device, &imageCreateInfo, nullptr, &image);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateImage failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+    self.VulkanObject<VkImage>::m_handle = image;
+    /* [X] create image */
 
     // allocate device memory
     VkMemoryRequirements memoryRequirements;
-    vkGetImageMemoryRequirements(m_device, image, &memoryRequirements);
+    vkGetImageMemoryRequirements(self.m_device, image, &memoryRequirements);
+
+    Result<uint32> memoryTypeIndex =
+        spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, spec.memoryProperty);
+    R3_PROPAGATE(memoryTypeIndex);
 
     const VkMemoryAllocateInfo memoryAllocateInfo = {
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext           = nullptr,
         .allocationSize  = memoryRequirements.size,
-        .memoryTypeIndex = spec.physicalDevice.queryMemoryType(memoryRequirements.memoryTypeBits, spec.memoryProperty),
+        .memoryTypeIndex = memoryTypeIndex.value(),
     };
 
     VkDeviceMemory memory;
-    result = vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &memory);
-    ENSURE(result == VK_SUCCESS);
-    /* [X] allocate device memory */ VulkanObject<VkDeviceMemory>::m_handle = memory;
+    result = vkAllocateMemory(self.m_device, &memoryAllocateInfo, nullptr, &memory);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkAllocateMemory failure {}", (int)result);
+        return std::unexpected(Error::AllocationFailure);
+    }
+    self.VulkanObject<VkDeviceMemory>::m_handle = memory;
+    /* [X] allocate device memory */
 
-    result = vkBindImageMemory(m_device, image, memory, 0);
-    ENSURE(result == VK_SUCCESS);
+    result = vkBindImageMemory(self.m_device, image, memory, 0);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkBindImageMemory failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
 
     const VkImageViewCreateInfo imageViewCreateInfo = {
         .sType    = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -96,9 +120,15 @@ R3::vulkan::AttachmentBuffer::AttachmentBuffer(const AttachmentBufferSpecificati
     };
 
     VkImageView imageView;
-    result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &imageView);
-    ENSURE(result == VK_SUCCESS);
-    /* [X] create image view */ VulkanObject<VkImageView>::m_handle = imageView;
+    result = vkCreateImageView(self.m_device, &imageViewCreateInfo, nullptr, &imageView);
+    if (result != VK_SUCCESS) {
+        R3_LOG(Error, "vkCreateImageView failure {}", (int)result);
+        return std::unexpected(Error::InitializationFailure);
+    }
+    self.VulkanObject<VkImageView>::m_handle = imageView;
+    /* [X] create image view */
+
+    return self;
 }
 
 AttachmentBuffer::~AttachmentBuffer() {
@@ -113,6 +143,11 @@ void AttachmentBuffer::free() {
         vkDestroyImage(m_device, VulkanObject<VkImage>::m_handle, nullptr);
         vkFreeMemory(m_device, VulkanObject<VkDeviceMemory>::m_handle, nullptr);
     }
+}
+
+constexpr bool AttachmentBuffer::valid() const {
+    return VulkanObject<VkImage>::valid() && VulkanObject<VkImageView>::valid() &&
+           VulkanObject<VkDeviceMemory>::valid();
 }
 
 } // namespace R3::vulkan

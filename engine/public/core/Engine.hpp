@@ -1,6 +1,8 @@
 #pragma once
 
 #include <api/Construct.hpp>
+#include <api/Result.hpp>
+#include <expected>
 
 namespace R3 {
 
@@ -25,7 +27,7 @@ public:
     /// Deinitialize Window, Renderer.
     void deinitialize();
 
-    int loop();
+    Result<void> loop();
 };
 
 } // namespace R3

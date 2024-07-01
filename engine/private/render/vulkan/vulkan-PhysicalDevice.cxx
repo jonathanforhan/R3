@@ -4,10 +4,10 @@
 #include "vulkan-Queue.hxx"
 #include "vulkan-Surface.hxx"
 #include "vulkan-Swapchain.hxx"
-#include <api/Assert.hpp>
 #include <api/Log.hpp>
+#include <api/Result.hpp>
 #include <api/Types.hpp>
-#include <cstdint>
+#include <expected>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -15,9 +15,10 @@
 
 namespace R3::vulkan {
 
-PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
-    : m_extensions(spec.extensions), // explicit copy
-      m_sampleCount(undefined) {
+Result<PhysicalDevice> PhysicalDevice::query(const PhysicalDeviceSpecification& spec) {
+    PhysicalDevice self;
+    self.m_extensions = spec.extensions; // explicit copy
+
     uint32 physicalDeviceCount;
     (void)vkEnumeratePhysicalDevices(spec.instance.vk(), &physicalDeviceCount, nullptr);
 
@@ -27,14 +28,18 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     int32 bestScore                 = INT32_MIN;
     for (VkPhysicalDevice device : physicalDevices) {
-        int32 score = evaluateDevice(device, spec.surface.vk());
+        int32 score = self.evaluateDevice(device, spec.surface.vk());
 
         if (score > bestScore) {
             physicalDevice = device;
             bestScore      = score;
         }
     }
-    ENSURE(physicalDevice);
+
+    if (physicalDevice == VK_NULL_HANDLE) {
+        R3_LOG(Error, "no physical devices found");
+        return std::unexpected(Error::InitializationFailure);
+    }
 
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
@@ -44,20 +49,24 @@ PhysicalDevice::PhysicalDevice(const PhysicalDeviceSpecification& spec)
     }
 
     // get samples as 8-bit flags (2^6 - 1)
-    uint8 sampleFlags = static_cast<uint8>(physicalDeviceProperties.limits.framebufferColorSampleCounts &
+    uint8 sampleFlags  = static_cast<uint8>(physicalDeviceProperties.limits.framebufferColorSampleCounts &
                                            physicalDeviceProperties.limits.framebufferDepthSampleCounts);
-    m_sampleCount     = 64;
+    self.m_sampleCount = 64;
     // shift sample count until we find biggest valid sampleCount
-    while (!(m_sampleCount & sampleFlags) && m_sampleCount != 0) {
-        m_sampleCount >>= 1;
+    while (!(self.m_sampleCount & sampleFlags) && self.m_sampleCount != 0) {
+        self.m_sampleCount >>= 1;
     }
 
-    ENSURE(m_sampleCount != 0);
+    if (self.m_sampleCount == 0) {
+        R3_LOG(Error, "physical device sample count == 0");
+        return std::unexpected(Error::InitializationFailure);
+    }
 
-    m_handle = physicalDevice;
+    self.m_handle = physicalDevice;
+    return self;
 }
 
-uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const {
+Result<uint32> PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(m_handle, &memoryProperties);
 
@@ -68,7 +77,8 @@ uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags 
         }
     }
 
-    ENSURE(false); /* unable to find suitable memory type */
+    R3_LOG(Error, "unable to find suitable memory type");
+    return std::unexpected(Error::UnsupportedFeature);
 }
 
 int32 PhysicalDevice::evaluateDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) const {
@@ -83,8 +93,9 @@ int32 PhysicalDevice::evaluateDevice(VkPhysicalDevice physicalDevice, VkSurfaceK
     const auto deviceQueueIndices      = QueueFamilyIndices::query(physicalDevice, surface);
     const auto swapchainSupportDetails = SwapchainSupportDetails::query(physicalDevice, surface);
 
-    deviceScore += deviceQueueIndices.isValid() ? 0 : -1000;
-    deviceScore += swapchainSupportDetails.isValid() ? 0 : -1000;
+    if (!deviceQueueIndices) return INT32_MIN;
+    if (!swapchainSupportDetails) return INT32_MIN;
+
     deviceScore += checkExtensionSupport(physicalDevice, m_extensions) ? 0 : -1000;
     deviceScore += physicalDeviceFeatures.samplerAnisotropy ? 0 : -1000;
     deviceScore += physicalDeviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? 0 : -100;
