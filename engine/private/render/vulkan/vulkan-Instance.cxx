@@ -92,8 +92,7 @@ Result<Instance> Instance::create(const InstanceSpecification& spec) {
     instanceCreateInfo.ppEnabledLayerNames = spec.validationLayers.data();
 #endif
 
-    VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateInstance failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

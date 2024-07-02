@@ -112,8 +112,7 @@ Result<RenderPass> RenderPass::create(const RenderPassSpecification& spec) {
         .dependencyCount = 1,
         .pDependencies   = &subpassDependency,
     };
-    VkResult result = vkCreateRenderPass(spec.device.vk(), &renderPassCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateRenderPass(spec.device.vk(), &renderPassCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateRenderPass failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

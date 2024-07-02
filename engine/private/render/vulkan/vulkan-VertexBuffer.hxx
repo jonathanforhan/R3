@@ -8,6 +8,7 @@
 #if R3_VULKAN
 
 #include "../ShaderObjects.hxx"
+#include "vulkan-Buffer.hxx"
 #include "vulkan-fwd.hxx"
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
@@ -25,7 +26,7 @@ struct VertexBufferSpecification {
     std::span<const Vertex> vertices;
 };
 
-class VertexBuffer : public VulkanObject<VkBuffer> {
+class VertexBuffer : public Buffer {
 public:
     DEFAULT_CONSTRUCT(VertexBuffer);
     NO_COPY(VertexBuffer);

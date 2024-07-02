@@ -20,8 +20,7 @@ Result<CommandPool> CommandPool::create(const CommandPoolSpecification& spec) {
         .queueFamilyIndex = spec.queue.index(),
     };
 
-    VkResult result = vkCreateCommandPool(spec.device.vk(), &commandPoolCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateCommandPool(spec.device.vk(), &commandPoolCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateCommandPool failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }
@@ -35,8 +34,9 @@ Result<CommandPool> CommandPool::create(const CommandPoolSpecification& spec) {
     };
 
     self.m_commandBuffers.resize(spec.commandBufferCount);
-    result = vkAllocateCommandBuffers(self.m_device, &commandBufferAllocateInfo, self.m_commandBuffers.data());
-    if (result != VK_SUCCESS) {
+
+    if (VkResult result =
+            vkAllocateCommandBuffers(self.m_device, &commandBufferAllocateInfo, self.m_commandBuffers.data())) {
         R3_LOG(Error, "vkAllocateCommandBuffers failure {}", (int)result);
         return std::unexpected(Error::AllocationFailure);
     }

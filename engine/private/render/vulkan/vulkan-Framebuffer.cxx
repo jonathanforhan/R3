@@ -27,8 +27,7 @@ Result<Framebuffer> Framebuffer::create(const FramebufferSpecification& spec) {
         .layers          = 1,
     };
 
-    VkResult result = vkCreateFramebuffer(self.m_device, &framebufferCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateFramebuffer(self.m_device, &framebufferCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateFramebuffer failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

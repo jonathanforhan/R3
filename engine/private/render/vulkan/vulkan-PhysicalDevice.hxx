@@ -45,18 +45,18 @@ public:
 
     /// @brief Get the memory type index from PhysicalDevice.
     /// Memory type index identifies where certain type of memory is stored on the GPU. This function is used in the
-    /// creation of Buffers.
+    /// creation of Buffers. Fatal error on failure.
     /// @code
     /// VkMemoryRequirements requirements;
     /// vkGetBufferMemoryRequirements(device, buffer, &requirements);
     ///
     /// uint32 memoryTypeIndex = physicalDevice.queryMemoryType(
-    ///   requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT).value(); // TODO check result
+    ///   requirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
     /// @endcode
     /// @param typeFilter This is given by VkMemoryRequirements::memoryTypeBits
     /// @param propertyFlags Flags determining memory location and coherency
-    /// @return Memory type index | UnsupportedFeature
-    Result<uint32> queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const;
+    /// @return Memory type index
+    uint32 queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const;
 
     /// @brief Get stored PhyscialDevice extensions.
     /// @return Extensions

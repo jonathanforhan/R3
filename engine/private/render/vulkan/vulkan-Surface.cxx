@@ -14,8 +14,7 @@ Result<Surface> Surface::create(const SurfaceSpecification& spec) {
     self.m_instance = spec.instance.vk();
 
     VkSurfaceKHR surface;
-    VkResult result = glfwCreateWindowSurface(self.m_instance, spec.window, nullptr, &surface);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = glfwCreateWindowSurface(self.m_instance, spec.window, nullptr, &surface)) {
         R3_LOG(Error, "glfwCreateWindowSurface failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

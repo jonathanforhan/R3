@@ -27,12 +27,6 @@ struct DepthBufferSpecification {
 /// @brief Vulkan DepthBuffer RAII wrapper.
 /// Used in RenderPass.
 class DepthBuffer : public AttachmentBuffer {
-protected:
-    /// @brief Construct DepthBuffer from a moved AttachmentBuffer, needed for inheritance with fallible constructor.
-    /// @param parent Valid AttachmentBuffer created with AttachmentBuffer::create
-    DepthBuffer(AttachmentBuffer&& parent)
-        : AttachmentBuffer(std::move(parent)) {}
-
 public:
     DEFAULT_CONSTRUCT(DepthBuffer);
     NO_COPY(DepthBuffer);

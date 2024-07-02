@@ -28,12 +28,6 @@ struct ColorBufferSpecification {
 /// @brief Vulkan ColorBuffer RAII wrapper.
 /// Used in RenderPass.
 class ColorBuffer : public AttachmentBuffer {
-protected:
-    /// @brief Construct ColorBuffer from a moved AttachmentBuffer, needed for inheritance with fallible constructor.
-    /// @param parent Valid AttachmentBuffer created with AttachmentBuffer::create
-    ColorBuffer(AttachmentBuffer&& parent)
-        : AttachmentBuffer(std::move(parent)) {}
-
 public:
     DEFAULT_CONSTRUCT(ColorBuffer);
     NO_COPY(ColorBuffer);

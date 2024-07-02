@@ -164,10 +164,8 @@ Result<Renderer> Renderer::create(Window& window) {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
     };
 
-    VkResult result = vkCreateDescriptorSetLayout(
-        self.m_device.vk(), &descriptorSetLayoutCreateInfo, nullptr, &self.m_descriptorSetLayout);
-
-    if (result != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(
+            self.m_device.vk(), &descriptorSetLayoutCreateInfo, nullptr, &self.m_descriptorSetLayout)) {
         return std::unexpected(Error::InitializationFailure);
     }
 
@@ -198,16 +196,14 @@ Renderer::~Renderer() {
 void Renderer::render() {
     VkFence inFlight = m_inFlight[m_currentFrame].vk();
 
-    VkResult result = vkWaitForFences(m_device.vk(), 1, &inFlight, VK_FALSE, UINT64_MAX);
-    assert(result == VK_SUCCESS);
+    VkResult res = vkWaitForFences(m_device.vk(), 1, &inFlight, VK_FALSE, UINT64_MAX);
+    assert(res == VK_SUCCESS);
 
     VkSemaphore imageAvailable = m_imageAvailable[m_currentFrame].vk();
 
     uint32 imageIndex;
-    result =
-        vkAcquireNextImageKHR(m_device.vk(), m_swapchain.vk(), UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageIndex);
-
-    [[unlikely]] if (result != VK_SUCCESS) {
+    if (VkResult result = vkAcquireNextImageKHR(
+            m_device.vk(), m_swapchain.vk(), UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageIndex)) {
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             resize();
             return;
@@ -306,9 +302,7 @@ void Renderer::render() {
         .pResults           = nullptr,
     };
 
-    result = vkQueuePresentKHR(m_device.presentationQueue().vk(), &presentInfo);
-
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkQueuePresentKHR(m_device.presentationQueue().vk(), &presentInfo)) {
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR || m_window->shouldResize()) {
             resize();
         } else {

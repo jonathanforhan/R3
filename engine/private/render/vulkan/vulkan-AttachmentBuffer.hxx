@@ -11,22 +11,18 @@
 #include "vulkan-VulkanObject.hxx"
 #include <api/Construct.hpp>
 #include <api/Result.hpp>
-#include <api/Types.hpp>
 #include <vulkan/vulkan.h>
 
 namespace R3::vulkan {
 
 /// @brief AttachmentBuffer Specification.
+/// The VkImageViewCreateInfo passed in WILL get mutated, assigning it a new image field
 struct AttachmentBufferSpecification {
-    const PhysicalDevice& physicalDevice; ///< Valid PhysicalDevice.
-    const LogicalDevice& device;          ///< Valid LogicalDevice.
-    VkFormat format;                      ///< Image format.
-    VkExtent2D extent;                    ///< Image extent.
-    VkSampleCountFlagBits sampleCount;    ///< Image sample count.
-    VkImageAspectFlags aspectFlags;       ///< ImageView aspect flags.
-    VkImageUsageFlags imageUsage;         ///< Image usage.
-    VkMemoryPropertyFlags memoryProperty; ///< Memory allocation property.
-    uint32 mipLevels = 1;                 ///< Image miplevels.
+    const PhysicalDevice& physicalDevice;       ///< Valid PhysicalDevice.
+    const LogicalDevice& device;                ///< Valid LogicalDevice.
+    const VkImageCreateInfo& imageCreateInfo;   ///< Used for Image Creation.
+    VkImageViewCreateInfo& imageViewCreateInfo; ///< Used for ImageView Creation, image field MUST be VK_NULL_HANDLE.
+    VkMemoryPropertyFlags memoryPropertyFlags;  ///< Memory flags for allocation.
 };
 
 /// @brief AttachmentBuffer RAII wrapper.
@@ -42,19 +38,19 @@ public:
 
 protected:
     DEFAULT_CONSTRUCT(AttachmentBuffer);
-
-    /// @brief Construct AttachmentBuffer, allocating new Image.
-    /// @param spec
-    /// @return  AttachmentBuffer | UnsupportedFeature | InitializationFailure | AllocationFailure
-    static Result<AttachmentBuffer> create(const AttachmentBufferSpecification& spec);
-
-public:
     NO_COPY(AttachmentBuffer);
     DEFAULT_MOVE(AttachmentBuffer);
+
+    /// @brief Initialize AttachmentBuffer, allocating new Image.
+    /// Children of AttachmentBuffer MUST call initialize first in their create function.
+    /// @param spec
+    /// @return void | UnsupportedFeature | InitializationFailure | AllocationFailure
+    Result<void> initialize(const AttachmentBufferSpecification& spec);
 
     /// @brief Destroy VkImage, VkImageView, and free VkDeviceMemory.
     ~AttachmentBuffer();
 
+public:
     /// @brief Free all resources, VkImage, VkImageView, and VkDeviceMemory.
     /// Checks for validity of m_device, meaning it can be used when unitialized.
     void free();

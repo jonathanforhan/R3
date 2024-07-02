@@ -59,8 +59,7 @@ Result<LogicalDevice> LogicalDevice::create(const LogicalDeviceSpecification& sp
         .pEnabledFeatures        = &physicalDeviceFeatures,
     };
 
-    VkResult result = vkCreateDevice(spec.physicalDevice.vk(), &logicalDeviceCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateDevice(spec.physicalDevice.vk(), &logicalDeviceCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateDevice failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

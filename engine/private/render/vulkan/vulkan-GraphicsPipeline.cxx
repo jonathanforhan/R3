@@ -41,8 +41,7 @@ Result<GraphicsPipeline> GraphicsPipeline::create(const GraphicsPipelineSpecific
     };
 
     VkPipelineLayout layout;
-    VkResult result = vkCreatePipelineLayout(self.m_device, &pipelineLayoutCreateInfo, nullptr, &layout);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreatePipelineLayout(self.m_device, &pipelineLayoutCreateInfo, nullptr, &layout)) {
         R3_LOG(Error, "vkCreatePipelineLayout failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }
@@ -204,8 +203,8 @@ Result<GraphicsPipeline> GraphicsPipeline::create(const GraphicsPipelineSpecific
     };
 
     VkPipeline pipeline;
-    result = vkCreateGraphicsPipelines(self.m_device, nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline);
-    if (result != VK_SUCCESS) {
+    if (VkResult result =
+            vkCreateGraphicsPipelines(self.m_device, nullptr, 1, &graphicsPipelineCreateInfo, nullptr, &pipeline)) {
         R3_LOG(Error, "vkCreateGraphicsPipelines failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

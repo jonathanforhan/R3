@@ -37,8 +37,7 @@ Result<ShaderModule> ShaderModule::create(const ShaderModuleSpecification& spec)
         .pCode    = reinterpret_cast<const uint32*>(bytes.data()),
     };
 
-    VkResult result = vkCreateShaderModule(self.m_device, &shaderModuleCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateShaderModule(self.m_device, &shaderModuleCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateShaderModule failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }

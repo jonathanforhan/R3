@@ -145,8 +145,7 @@ Result<Swapchain> Swapchain::create(const SwapchainSpecification& spec) {
         .oldSwapchain          = VK_NULL_HANDLE,
     };
 
-    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &self.m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &self.m_handle)) {
         R3_LOG(Error, "vkCreateSwapchainKHR failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }
@@ -186,8 +185,8 @@ Result<Swapchain> Swapchain::create(const SwapchainSpecification& spec) {
                 },
         };
 
-        result = vkCreateImageView(spec.device.vk(), &imageViewCreateInfo, nullptr, &self.m_imageViews[i]);
-        if (result != VK_SUCCESS) {
+        if (VkResult result =
+                vkCreateImageView(spec.device.vk(), &imageViewCreateInfo, nullptr, &self.m_imageViews[i])) {
             R3_LOG(Error, "vkCreateImageView failure {}", (int)result);
             return std::unexpected(Error::InitializationFailure);
         }
@@ -250,8 +249,7 @@ Result<void> Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .oldSwapchain          = oldSwapchain,
     };
 
-    VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle);
-    if (result != VK_SUCCESS) {
+    if (VkResult result = vkCreateSwapchainKHR(spec.device.vk(), &swapchainCreateInfo, nullptr, &m_handle)) {
         R3_LOG(Error, "vkCreateSwapchainKHR failure {}", (int)result);
         return std::unexpected(Error::InitializationFailure);
     }
@@ -268,7 +266,9 @@ Result<void> Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
     });
     R3_PROPAGATE(colorBuffer);
 
-    spec.colorBuffer.free();
+    if (spec.colorBuffer.valid()) {
+        spec.colorBuffer.free();
+    }
     spec.colorBuffer = std::move(colorBuffer.value());
 
     // recreate depth buffer with new extent
@@ -278,7 +278,9 @@ Result<void> Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
         .extent         = m_extent,
         .sampleCount    = spec.physicalDevice.sampleCount(),
     });
-    spec.depthBuffer.free();
+    if (spec.depthBuffer.valid()) {
+        spec.depthBuffer.free();
+    }
     spec.depthBuffer = std::move(depthBuffer.value());
 
     // acquire images from device (don't free previous, they are not allocated by us)
@@ -320,8 +322,7 @@ Result<void> Swapchain::recreate(const SwapchainRecreationSpecification& spec) {
                 },
         };
 
-        result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_imageViews[i]);
-        if (result != VK_SUCCESS) {
+        if (VkResult result = vkCreateImageView(m_device, &imageViewCreateInfo, nullptr, &m_imageViews[i])) {
             R3_LOG(Error, "vkCreateImageView failure {}", (int)result);
             return std::unexpected(Error::InitializationFailure);
         }

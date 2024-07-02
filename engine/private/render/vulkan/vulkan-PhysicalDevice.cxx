@@ -9,6 +9,7 @@
 #include <api/Types.hpp>
 #include <expected>
 #include <span>
+#include <stdlib.h>
 #include <string_view>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -66,7 +67,7 @@ Result<PhysicalDevice> PhysicalDevice::query(const PhysicalDeviceSpecification& 
     return self;
 }
 
-Result<uint32> PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const {
+uint32 PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryPropertyFlags propertyFlags) const {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(m_handle, &memoryProperties);
 
@@ -77,8 +78,8 @@ Result<uint32> PhysicalDevice::queryMemoryType(uint32 typeFilter, VkMemoryProper
         }
     }
 
-    R3_LOG(Error, "unable to find suitable memory type");
-    return std::unexpected(Error::UnsupportedFeature);
+    R3_LOG(Error, "unable to find suitable memory type unrecoverable");
+    std::exit(1);
 }
 
 int32 PhysicalDevice::evaluateDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) const {
