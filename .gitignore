@@ -1,0 +1,12 @@
+.vs
+.vscode
+.idea
+out/
+*-build*/
+*build*/
+.cache/*
+.shader.lock.json
+compile_commands.json
+vcpkg_installed
+
+assets/*/*
