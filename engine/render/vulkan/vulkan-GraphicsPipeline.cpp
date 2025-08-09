@@ -1,18 +1,21 @@
-#include "vulkan-GraphicsPipeline.hpp"
+#if R3_VULKAN
+
+#include "render/GraphicsPipeline.hpp"
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
+#include "Types.hpp"
+#include "render/RenderContext.hpp"
+#include "render/RenderPass.hpp"
+#include "render/Shader.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-RenderContext.hpp"
-#include "vulkan-RenderPass.hpp"
-#include "vulkan-Shader.hpp"
 
 namespace R3 {
 
-VkVertexInputBindingDescription Vertex::getBindingDescription() {
+VkVertexInputBindingDescription Vertex::getBindingDescription() noexcept {
     const VkVertexInputBindingDescription vertexInputBindingDescription = {
         .binding   = 0,
         .stride    = sizeof(Vertex),
@@ -21,7 +24,7 @@ VkVertexInputBindingDescription Vertex::getBindingDescription() {
     return vertexInputBindingDescription;
 }
 
-std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions() {
+std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions() noexcept {
     const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
         // Position attribute
         {
@@ -45,14 +48,14 @@ void GraphicsPipeline::create(RenderContext& ctx,
                               RenderPass& renderPass,
                               Shader& vertexShader,
                               Shader& fragmentShader,
-                              VkExtent2D extent) noexcept(false) {
+                              uvec2 extent) {
     m_device = ctx.device();
 
     const VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
         .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .pNext               = nullptr,
         .flags               = 0,
-        .stage               = vertexShader.stage(),
+        .stage               = (VkShaderStageFlagBits)vertexShader.type(),
         .module              = vertexShader.handle(),
         .pName               = "main",
         .pSpecializationInfo = nullptr,
@@ -62,7 +65,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .pNext               = nullptr,
         .flags               = 0,
-        .stage               = fragmentShader.stage(),
+        .stage               = (VkShaderStageFlagBits)fragmentShader.type(),
         .module              = fragmentShader.handle(),
         .pName               = "main",
         .pSpecializationInfo = nullptr,
@@ -91,18 +94,20 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .primitiveRestartEnable = VK_FALSE,
     };
 
+    VkExtent2D extent2D{extent.x, extent.y};
+
     const VkViewport viewport = {
         .x        = 0.0f,
         .y        = 0.0f,
-        .width    = static_cast<float>(extent.width),
-        .height   = static_cast<float>(extent.height),
+        .width    = static_cast<float>(extent2D.width),
+        .height   = static_cast<float>(extent2D.height),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
 
     const VkRect2D scissor = {
         .offset = {0, 0},
-        .extent = extent,
+        .extent = extent2D,
     };
 
     const VkPipelineViewportStateCreateInfo viewportState = {
@@ -213,7 +218,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
     }
 }
 
-void GraphicsPipeline::destroy() noexcept(true) {
+void GraphicsPipeline::destroy() noexcept {
     if (m_pipeline != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
         vkDestroyPipeline(m_device, m_pipeline, nullptr);
         m_pipeline = VK_NULL_HANDLE;
@@ -232,3 +237,5 @@ void GraphicsPipeline::bind(VkCommandBuffer commandBuffer) const {
 }
 
 } // namespace R3
+
+#endif // R3_VULKAN

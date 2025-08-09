@@ -1,19 +1,31 @@
-#include "vulkan-Buffer.hpp"
+#if R3_VULKAN
+
+#include "render/Buffer.hpp"
 
 #include <cstring>
 #include <format>
 #include <vulkan/vulkan_core.h>
-#include <Exception.hpp>
-#include <Types.hpp>
+#include "Exception.hpp"
+#include "Types.hpp"
+#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3 {
 
-void Buffer::create(RenderContext& ctx,
-                    VkDeviceSize size,
-                    VkBufferUsageFlags usage,
-                    VkMemoryPropertyFlags properties) noexcept(false) {
+static uint32 findMemoryType(VkPhysicalDevice physicalDevice, uint32 typeFilter, MemoryProperties properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw Exception("Failed to find suitable memory type");
+}
+
+void Buffer::create(RenderContext& ctx, usize size, BufferUsage usage, MemoryProperties properties) {
     m_device         = ctx.device();
     m_physicalDevice = ctx.physicalDevice();
     m_size           = size;
@@ -50,7 +62,7 @@ void Buffer::create(RenderContext& ctx,
     VK_CHECK(vkBindBufferMemory(m_device, m_buffer, m_bufferMemory, 0));
 }
 
-void Buffer::destroy() noexcept(true) {
+void Buffer::destroy() noexcept {
     if (m_mappedMemory) {
         unmap();
     }
@@ -70,22 +82,22 @@ void Buffer::destroy() noexcept(true) {
     m_size           = 0;
 }
 
-void* Buffer::map() noexcept(false) {
+void* Buffer::map() {
     if (m_mappedMemory) {
-        return m_mappedMemory;
+        throw Exception{__FUNCTION__ " called on already mapped memory"};
     }
     VK_CHECK(vkMapMemory(m_device, m_bufferMemory, 0, m_size, 0, &m_mappedMemory));
     return m_mappedMemory;
 }
 
-void Buffer::unmap() noexcept(true) {
+void Buffer::unmap() noexcept {
     if (m_mappedMemory) {
         vkUnmapMemory(m_device, m_bufferMemory);
         m_mappedMemory = nullptr;
     }
 }
 
-void Buffer::copyData(const void* data, VkDeviceSize size) noexcept(false) {
+void Buffer::copyData(const void* data, usize size) {
     if (size > m_size) {
         throw Exception{std::format("data size {} exceeds buffer size {}", size, m_size)};
     }
@@ -95,19 +107,6 @@ void Buffer::copyData(const void* data, VkDeviceSize size) noexcept(false) {
     unmap();
 }
 
-uint32 Buffer::findMemoryType(VkPhysicalDevice physicalDevice,
-                              uint32 typeFilter,
-                              VkMemoryPropertyFlags properties) const {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw Exception("Failed to find suitable memory type");
-}
-
 } // namespace R3
+
+#endif // R3_VULKAN

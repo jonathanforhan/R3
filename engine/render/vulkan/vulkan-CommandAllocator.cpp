@@ -1,18 +1,20 @@
-#include "vulkan-CommandAllocator.hpp"
+#if R3_VULKAN
+
+#include "render/CommandAllocator.hpp"
 
 #include <cstdint>
 #include <functional>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include <Types.hpp>
 #include "Exception.hpp"
+#include "Types.hpp"
+#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3 {
 
-void CommandAllocator::create(RenderContext& ctx, uint32 queueIndex, CommandPoolMode mode) noexcept(false) {
+void CommandAllocator::create(RenderContext& ctx, uint32 queueIndex, CommandPoolMode mode) {
     m_device = ctx.device();
     m_mode   = mode;
 
@@ -20,13 +22,13 @@ void CommandAllocator::create(RenderContext& ctx, uint32 queueIndex, CommandPool
     const VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext            = nullptr,
-        .flags            = getModeFlags(mode),
+        .flags            = mode,
         .queueFamilyIndex = queueIndex,
     };
     VK_CHECK(vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_pool));
 }
 
-void CommandAllocator::destroy() noexcept(true) {
+void CommandAllocator::destroy() noexcept {
     if (m_pool != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
         vkDestroyCommandPool(m_device, m_pool, nullptr);
         m_pool = VK_NULL_HANDLE;
@@ -34,7 +36,7 @@ void CommandAllocator::destroy() noexcept(true) {
     m_device = VK_NULL_HANDLE;
 }
 
-VkCommandBuffer CommandAllocator::allocateBuffer(VkCommandBufferLevel level) noexcept(false) {
+VkCommandBuffer CommandAllocator::allocateBuffer(bool primary) {
     if (m_pool == VK_NULL_HANDLE) {
         throw Exception(__FUNCTION__ " called on unitialized CommandAllocator");
     }
@@ -43,7 +45,7 @@ VkCommandBuffer CommandAllocator::allocateBuffer(VkCommandBufferLevel level) noe
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext              = nullptr,
         .commandPool        = m_pool,
-        .level              = level,
+        .level              = (VkCommandBufferLevel)(!primary), // 0 == primary, 1 == secondary
         .commandBufferCount = 1,
     };
 
@@ -53,8 +55,7 @@ VkCommandBuffer CommandAllocator::allocateBuffer(VkCommandBufferLevel level) noe
     return commandBuffer;
 }
 
-std::vector<VkCommandBuffer> CommandAllocator::allocateBuffers(uint32_t count,
-                                                               VkCommandBufferLevel level) noexcept(false) {
+std::vector<VkCommandBuffer> CommandAllocator::allocateBuffers(uint32_t count, bool primary) {
     if (count == 0) {
         return {};
     }
@@ -67,7 +68,7 @@ std::vector<VkCommandBuffer> CommandAllocator::allocateBuffers(uint32_t count,
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext              = nullptr,
         .commandPool        = m_pool,
-        .level              = level,
+        .level              = (VkCommandBufferLevel)(!primary), // 0 == primary, 1 == secondary
         .commandBufferCount = count,
     };
 
@@ -77,26 +78,26 @@ std::vector<VkCommandBuffer> CommandAllocator::allocateBuffers(uint32_t count,
     return commandBuffers;
 }
 
-void CommandAllocator::freeBuffer(VkCommandBuffer commandBuffer) noexcept(true) {
+void CommandAllocator::freeBuffer(VkCommandBuffer commandBuffer) noexcept {
     if (commandBuffer != VK_NULL_HANDLE && m_pool != VK_NULL_HANDLE) {
         vkFreeCommandBuffers(m_device, m_pool, 1, &commandBuffer);
     }
 }
 
-void CommandAllocator::freeBuffers(std::span<VkCommandBuffer> commandBuffers) noexcept(true) {
+void CommandAllocator::freeBuffers(std::span<VkCommandBuffer> commandBuffers) noexcept {
     if (!commandBuffers.empty() && m_pool != VK_NULL_HANDLE) {
         vkFreeCommandBuffers(m_device, m_pool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
 }
 
-void CommandAllocator::reset(VkCommandPoolResetFlags flags) noexcept(false) {
+void CommandAllocator::reset(bool releaseResources) {
     if (m_pool == VK_NULL_HANDLE) {
         throw Exception("Command pool not created");
     }
-    VK_CHECK(vkResetCommandPool(m_device, m_pool, flags));
+    VK_CHECK(vkResetCommandPool(m_device, m_pool, (VkCommandPoolResetFlags)releaseResources));
 }
 
-void CommandAllocator::executeImmediate(Queue& queue, std::function<void(VkCommandBuffer)> function) noexcept(false) {
+void CommandAllocator::executeImmediate(Queue& queue, std::function<void(VkCommandBuffer)> function) {
     if (queue.handle == VK_NULL_HANDLE) {
         throw Exception("No queue available for immediate execution");
     }
@@ -146,17 +147,6 @@ void CommandAllocator::executeImmediate(Queue& queue, std::function<void(VkComma
     freeBuffer(commandBuffer);
 }
 
-VkCommandPoolCreateFlags CommandAllocator::getModeFlags(CommandPoolMode mode) const noexcept(true) {
-    switch (mode) {
-        case CommandPoolMode::Protected:
-            return VK_COMMAND_POOL_CREATE_PROTECTED_BIT;
-        case CommandPoolMode::Reset:
-            return VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        case CommandPoolMode::Transient:
-            return VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        default:
-            return 0;
-    }
-}
-
 } // namespace R3
+
+#endif // R3_VULKAN

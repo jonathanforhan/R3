@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef _WIN32
-#include <io.h>
-#include <windows.h>
-#endif
-
 #include <cstdio>
 #include <print>
 
@@ -18,7 +13,7 @@
 #define R3_ANSI_CYAN    "\033[36m"
 #define R3_ANSI_WHITE   "\033[37m"
 
-// Brigt colors
+// Bright colors
 #define R3_ANSI_BRIGHT_BLACK   "\033[90m"
 #define R3_ANSI_BRIGHT_RED     "\033[91m"
 #define R3_ANSI_BRIGHT_GREEN   "\033[92m"
@@ -48,23 +43,9 @@
 #define R3_ANSI_STRIKETHROUGH "\033[9m"
 
 #ifdef _WIN32
-namespace detail {
-
-inline void enableWindowsConsoleColors() {
-    HANDLE hOut  = GetStdHandle(STD_OUTPUT_HANDLE);
-    HANDLE hErr  = GetStdHandle(STD_ERROR_HANDLE);
-    DWORD dwMode = 0;
-
-    if (GetConsoleMode(hOut, &dwMode)) {
-        SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
-
-    if (GetConsoleMode(hErr, &dwMode)) {
-        SetConsoleMode(hErr, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-    }
-}
-
-} // namespace detail
+namespace R3::detail {
+void enableWindowsConsoleColors() noexcept;
+} // namespace R3::detail
 #endif
 
 #define LOG_ERROR(_Fmt, ...)   (std::println(stderr, R3_ANSI_RED "[ERROR] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))

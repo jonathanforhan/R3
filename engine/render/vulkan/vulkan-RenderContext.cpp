@@ -1,4 +1,6 @@
-#include "vulkan-RenderContext.hpp"
+#if R3_VULKAN
+
+#include "render/RenderContext.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -20,6 +22,8 @@
 #else
 #define R3_VALIDATION_LAYERS_ENABLED 0
 #endif
+
+namespace R3 {
 
 #if R3_VALIDATION_LAYERS_ENABLED
 static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -50,57 +54,22 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 }
 #endif
 
-namespace R3 {
-
-void RenderContext::create(Window& window) noexcept(false) {
-    std::error_code error;
-
-    try {
-        const vkb::Instance instance             = createInstance();
-        m_instance                               = instance.instance;
-        m_debug                                  = instance.debug_messenger;
-        m_surface                                = createSurface(window);
-        const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance);
-        m_physicalDevice                         = physicalDevice.physical_device;
-        const vkb::Device device                 = createLogicalDevice(physicalDevice);
-        m_logicalDevice                          = device.device;
-
-        /* get queue handles */
-        auto initQueue = [&](vkb::QueueType queueType, Queue& queue) {
-            queue.type = queueType;
-
-            if (auto result = device.get_queue(queueType); !result) {
-                throw Exception{std::format("failed to get VkQueue: {}", result.error().value())};
-            } else {
-                queue.handle = result.value();
-            }
-
-            if (auto result = device.get_queue_index(queueType); !result) {
-                throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
-            } else {
-                queue.index = result.value();
-            }
-        };
-
-        initQueue(vkb::QueueType::graphics, m_graphicsQueue);
-        initQueue(vkb::QueueType::present, m_presentQueue);
-        initQueue(vkb::QueueType::compute, m_computeQueue);
-    } catch (const Exception& ex) {
-        destroy();
-        throw ex;
+static vkb::QueueType getQueueType(QueueType queueType) {
+    switch (queueType) {
+        case QueueType::Present:
+            return vkb::QueueType::present;
+        case QueueType::Graphics:
+            return vkb::QueueType::graphics;
+        case QueueType::Compute:
+            return vkb::QueueType::compute;
+        case QueueType::Transfer:
+            return vkb::QueueType::transfer;
+        default:
+            throw Exception{std::format(__FUNCTION__ " called with unknown QueueType {}", (uint32)queueType)};
     }
-} // namespace R3
-
-void RenderContext::destroy() noexcept(true) {
-    vkDestroyDevice(m_logicalDevice, nullptr);
-    if (m_instance != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
-    }
-    vkDestroyInstance(m_instance, nullptr);
 }
 
-vkb::Instance RenderContext::createInstance() const noexcept(false) {
+static vkb::Instance createInstance() {
     /* get instance extensions required by glfw */
     uint32 extensionCount;
     const char** pRequiredExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -139,13 +108,13 @@ vkb::Instance RenderContext::createInstance() const noexcept(false) {
     return result.value();
 }
 
-VkSurfaceKHR RenderContext::createSurface(Window& window) const noexcept(false) {
+static VkSurfaceKHR createSurface(Window& window, VkInstance instance) {
     VkSurfaceKHR surface;
-    VK_CHECK(glfwCreateWindowSurface(m_instance, window.glfw(), nullptr, &surface));
+    VK_CHECK(glfwCreateWindowSurface(instance, window.glfw(), nullptr, &surface));
     return surface;
 }
 
-vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& instance) const noexcept(false) {
+static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface) {
     auto result = vkb::PhysicalDeviceSelector(instance)
                       .set_minimum_version(1, 3)
                       .set_required_features({
@@ -166,7 +135,7 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                       .require_dedicated_transfer_queue()
                       .require_separate_compute_queue()
                       .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
-                      .set_surface(m_surface)
+                      .set_surface(surface)
                       .select();
 
     if (!result) {
@@ -176,7 +145,7 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
     return result.value();
 }
 
-vkb::Device RenderContext::createLogicalDevice(const vkb::PhysicalDevice& physicalDevice) const noexcept(false) {
+static vkb::Device createLogicalDevice(const vkb::PhysicalDevice& physicalDevice) {
     auto result = vkb::DeviceBuilder(physicalDevice).build();
 
     if (!result) {
@@ -186,4 +155,64 @@ vkb::Device RenderContext::createLogicalDevice(const vkb::PhysicalDevice& physic
     return result.value();
 }
 
+void RenderContext::create(Window& window) {
+    std::error_code error;
+
+    try {
+        const vkb::Instance instance             = createInstance();
+        m_instance                               = instance.instance;
+        m_debug                                  = instance.debug_messenger;
+        m_surface                                = createSurface(window, m_instance);
+        const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
+        m_physicalDevice                         = physicalDevice.physical_device;
+        const vkb::Device device                 = createLogicalDevice(physicalDevice);
+        m_logicalDevice                          = device.device;
+
+        /* get queue handles */
+        auto initQueue = [&](QueueType queueType, Queue& queue) {
+            queue.type = queueType;
+
+            vkb::QueueType vkbQueueType = getQueueType(queueType);
+
+            if (auto result = device.get_queue(vkbQueueType); !result) {
+                throw Exception{std::format("failed to get VkQueue: {}", result.error().value())};
+            } else {
+                queue.handle = result.value();
+            }
+
+            if (auto result = device.get_queue_index(vkbQueueType); !result) {
+                throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
+            } else {
+                queue.index = result.value();
+            }
+        };
+
+        initQueue(QueueType::Graphics, m_graphicsQueue);
+        initQueue(QueueType::Present, m_presentQueue);
+        initQueue(QueueType::Compute, m_computeQueue);
+    } catch (const Exception& ex) {
+        destroy();
+        throw ex;
+    }
+}
+
+void RenderContext::destroy() noexcept {
+    vkDestroyDevice(m_logicalDevice, nullptr);
+    if (m_instance != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
+    }
+    vkDestroyInstance(m_instance, nullptr);
+
+    m_logicalDevice  = VK_NULL_HANDLE;
+    m_physicalDevice = VK_NULL_HANDLE;
+    m_instance       = VK_NULL_HANDLE;
+}
+
+void RenderContext::waitIdle() {
+    VK_CHECK(vkDeviceWaitIdle(m_logicalDevice));
+}
+
 } // namespace R3
+
+#endif // R3_VULKAN

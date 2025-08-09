@@ -1,15 +1,17 @@
-#include "vulkan-RenderPass.hpp"
+#if R3_VULKAN
+
+#include "render/RenderPass.hpp"
 
 #include <cstdint>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3 {
 
-void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> attachments) noexcept(false) {
+void RenderPass::create(RenderContext& ctx, std::span<const AttachmentDescription> attachments) {
     m_device = ctx.device();
 
     auto attachmentsDescs    = std::vector<VkAttachmentDescription>(attachments.size());
@@ -18,7 +20,7 @@ void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> att
     for (size_t i = 0; i < attachments.size(); ++i) {
         const auto& desc = attachments[i];
 
-        VkAttachmentDescription attachmentDesc = {
+        const VkAttachmentDescription attachmentDesc = {
             .flags          = 0,
             .format         = desc.format,
             .samples        = desc.samples,
@@ -32,14 +34,14 @@ void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> att
         attachmentsDescs[i] = attachmentDesc;
 
         // For now, assume all attachments are color attachments
-        VkAttachmentReference colorAttachmentRef = {
+        const VkAttachmentReference colorAttachmentRef = {
             .attachment = static_cast<uint32_t>(i),
             .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         };
         colorAttachmentRefs[i] = colorAttachmentRef;
     }
 
-    VkSubpassDescription subpass = {
+    const VkSubpassDescription subpass = {
         .flags                   = 0,
         .pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS,
         .inputAttachmentCount    = 0,
@@ -52,7 +54,7 @@ void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> att
         .pPreserveAttachments    = nullptr,
     };
 
-    VkSubpassDependency dependency = {
+    const VkSubpassDependency dependency = {
         .srcSubpass      = VK_SUBPASS_EXTERNAL,
         .dstSubpass      = 0,
         .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -62,7 +64,7 @@ void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> att
         .dependencyFlags = 0,
     };
 
-    VkRenderPassCreateInfo renderPassInfo = {
+    const VkRenderPassCreateInfo renderPassInfo = {
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext           = nullptr,
         .flags           = 0,
@@ -77,12 +79,15 @@ void RenderPass::create(RenderContext& ctx, std::span<AttachmentDescription> att
     VK_CHECK(vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass));
 }
 
-void RenderPass::destroy() noexcept(true) {
+void RenderPass::destroy() noexcept {
     if (m_renderPass != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
         vkDestroyRenderPass(m_device, m_renderPass, nullptr);
         m_renderPass = VK_NULL_HANDLE;
     }
+
     m_device = VK_NULL_HANDLE;
 }
 
 } // namespace R3
+
+#endif // R3_VULKAN

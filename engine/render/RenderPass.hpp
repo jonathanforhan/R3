@@ -20,13 +20,13 @@ struct AttachmentDescription {
 
 class RenderPass {
 public:
-    void create(RenderContext& ctx, std::span<AttachmentDescription> attachments) noexcept(false);
+    void create(RenderContext& ctx, std::span<const AttachmentDescription> attachments);
 
-    void destroy() noexcept(true);
+    void destroy() noexcept;
 
-    VkRenderPass handle() const { return m_renderPass; }
+    VkRenderPass handle() noexcept { return m_renderPass; }
 
-    bool isValid() const { return m_renderPass != VK_NULL_HANDLE; }
+    bool isValid() const noexcept { return m_renderPass != VK_NULL_HANDLE; }
 
 private:
     VkDevice m_device         = VK_NULL_HANDLE;

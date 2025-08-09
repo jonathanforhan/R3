@@ -1,4 +1,6 @@
-#include "vulkan-Shader.hpp"
+#if R3_VULKAN
+
+#include "render/Shader.hpp"
 
 #include <cstdint>
 #include <format>
@@ -10,19 +12,17 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
+#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3 {
 
-void Shader::createFromFile(RenderContext& ctx, const std::string& filename, ShaderStage type) noexcept(false) {
+void Shader::createFromFile(RenderContext& ctx, const std::string& filename, ShaderStage type) {
     auto spirvCode = readFile(filename);
     createFromSource(ctx, spirvCode, type);
 }
 
-void Shader::createFromSource(RenderContext& ctx,
-                              std::span<const uint32_t> spirvCode,
-                              ShaderStage type) noexcept(false) {
+void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, ShaderStage type) {
     m_device = ctx.device();
     m_type   = type;
 
@@ -37,35 +37,13 @@ void Shader::createFromSource(RenderContext& ctx,
     VK_CHECK(vkCreateShaderModule(m_device, &shaderModuleCreateInfo, nullptr, &m_shaderModule));
 }
 
-void Shader::destroy() noexcept(true) {
+void Shader::destroy() noexcept {
     if (m_shaderModule != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
         vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
         m_shaderModule = VK_NULL_HANDLE;
     }
+
     m_device = VK_NULL_HANDLE;
-}
-
-VkShaderStageFlagBits Shader::stage() const {
-    return getStageFlags(m_type);
-}
-
-VkShaderStageFlagBits Shader::getStageFlags(ShaderStage type) const {
-    switch (type) {
-        case ShaderStage::Vertex:
-            return VK_SHADER_STAGE_VERTEX_BIT;
-        case ShaderStage::Fragment:
-            return VK_SHADER_STAGE_FRAGMENT_BIT;
-        case ShaderStage::Geometry:
-            return VK_SHADER_STAGE_GEOMETRY_BIT;
-        case ShaderStage::TessellationControl:
-            return VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-        case ShaderStage::TessellationEvaluation:
-            return VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-        case ShaderStage::Compute:
-            return VK_SHADER_STAGE_COMPUTE_BIT;
-        default:
-            return VK_SHADER_STAGE_VERTEX_BIT;
-    }
 }
 
 std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
@@ -86,3 +64,5 @@ std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
 }
 
 } // namespace R3
+
+#endif // R3_VULKAN

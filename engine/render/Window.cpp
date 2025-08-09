@@ -16,11 +16,7 @@
 
 namespace R3 {
 
-void Window::create() {
-    if (m_window != nullptr) {
-        throw Exception(__FUNCTION__ " called when window already exists");
-    }
-
+Window::Window() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -56,10 +52,12 @@ void Window::create() {
     glfwSetErrorCallback(error_callback);
 }
 
-void Window::destroy() {
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
-    m_window = nullptr;
+Window::~Window() {
+    if (m_window) {
+        glfwDestroyWindow(m_window);
+        glfwTerminate();
+        m_window = nullptr;
+    }
 }
 
 void Window::setTitle(std::string_view title) {

@@ -1,4 +1,6 @@
-#include "vulkan-Swapchain.hpp"
+#if R3_VULKAN
+
+#include "render/Swapchain.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -10,12 +12,12 @@
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
+#include "render/RenderContext.hpp"
 #include "render/Window.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3 {
 
-void Swapchain::create(RenderContext& ctx, Window& window) noexcept(false) {
+void Swapchain::create(RenderContext& ctx, Window& window) {
     m_device = ctx.device();
 
     int width, height;
@@ -45,26 +47,28 @@ void Swapchain::create(RenderContext& ctx, Window& window) noexcept(false) {
     m_extent      = swapchain.extent;
 }
 
-void Swapchain::recreate(RenderContext& ctx, Window& window) noexcept(false) {
+void Swapchain::recreate(RenderContext& ctx, Window& window) {
     destroy();
     create(ctx, window);
 }
 
-void Swapchain::destroy() noexcept(true) {
+void Swapchain::destroy() noexcept {
     for (VkImageView imageView : m_imageViews) {
         vkDestroyImageView(m_device, imageView, nullptr);
     }
     vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+
     m_images.clear();
     m_imageViews.clear();
+
+    m_device = VK_NULL_HANDLE;
 }
 
-VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32_t& imageIndex, uint64_t timeout) const
-    noexcept(true) {
+VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32& imageIndex, uint64 timeout) const noexcept {
     return vkAcquireNextImageKHR(m_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
 }
 
-VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32_t imageIndex) const noexcept(true) {
+VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32 imageIndex) const noexcept {
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext              = nullptr,
@@ -79,3 +83,5 @@ VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uin
 }
 
 } // namespace R3
+
+#endif // R3_VULKAN

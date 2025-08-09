@@ -9,9 +9,15 @@ namespace R3 {
 
 class Window {
 public:
-    void create();
+    Window();
 
-    void destroy();
+    Window(const Window&)            = delete;
+    Window& operator=(const Window&) = delete;
+
+    Window(Window&&) noexcept            = delete;
+    Window& operator=(Window&&) noexcept = delete;
+
+    ~Window();
 
     void setTitle(std::string_view title);
 

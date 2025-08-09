@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.20)
+﻿cmake_minimum_required (VERSION 3.21)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED  ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -52,34 +52,40 @@ target_include_directories(
     ${imgui_SOURCE_DIR}/backends
 )
 
-target_link_libraries(imgui PUBLIC glfw Vulkan::Vulkan)
+target_link_libraries(imgui PRIVATE glfw Vulkan::Vulkan)
 
 ################################################################################
 # ENGINE
 ################################################################################
 
-file(GLOB_RECURSE ENGINE_C_SRCS   ${CMAKE_CURRENT_SOURCE_DIR}/engine/*.c)
-file(GLOB_RECURSE ENGINE_CXX_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp)
-
-add_library(R3_ENGINE STATIC ${ENGINE_C_SRCS} ${ENGINE_CXX_SRCS})
+file(GLOB_RECURSE ENGINE_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/engine/*.c
+	${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp
+)
+add_library(R3_ENGINE STATIC ${ENGINE_SRCS})
 
 target_link_libraries(
-    R3_ENGINE PUBLIC
-		glfw
+    R3_ENGINE
+	PUBLIC
 		glm::glm
 		EnTT::EnTT
-		Tracy::TracyClient
+	PRIVATE
+		glfw
 		imgui
+		Tracy::TracyClient
 		Vulkan::Vulkan
 		vk-bootstrap::vk-bootstrap
 )
 
-target_include_directories(R3_ENGINE PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/engine/)
+target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/")
 
 target_compile_definitions(
     R3_ENGINE PUBLIC
         $<$<CONFIG:Debug>:R3_DEBUG>
         $<$<CONFIG:Release>:R3_RELEASE>
+		$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
+		$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>
+		$<$<BOOL:${R3_DIRECTX12}>:R3_DIRECTX12>
 )
 
 if (MSVC)
@@ -89,11 +95,6 @@ if (MSVC)
 			/Zc:preprocessor
 			/EHsc
 			/W3
-	)
-
-	set_target_properties(
-		R3_ENGINE PROPERTIES
-		"VS_GLOBAL_EnableClangTidyCodeAnalysis" true
 	)
 else()
 	target_compile_options(
@@ -109,19 +110,15 @@ endif()
 # APP
 ################################################################################
 
-file(GLOB_RECURSE APP_C_SRCS   ${CMAKE_CURRENT_SOURCE_DIR}/app/*.c)
-file(GLOB_RECURSE APP_CXX_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/app/*.cpp)
-
-add_executable(R3 ${APP_C_SRCS} ${APP_CXX_SRCS})
+file(GLOB_RECURSE APP_SRCS
+	${CMAKE_CURRENT_SOURCE_DIR}/app/*.c
+	${CMAKE_CURRENT_SOURCE_DIR}/app/*.cpp
+)
+add_executable(R3 ${APP_SRCS})
 
 target_link_libraries(R3 PRIVATE R3_ENGINE)
 
 target_include_directories(R3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/)
-
-set_target_properties(
-	R3_ENGINE PROPERTIES
-	"VS_GLOBAL_EnableClangTidyCodeAnalysis" true
-)
 
 ################################################################################
 # TESTING (TODO)
@@ -137,12 +134,6 @@ execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
 		${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
-)
-
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy
-        ${CMAKE_CURRENT_SOURCE_DIR}/.clang-tidy
-		${R3_RUNTIME_OUTPUT_DIRECTORY}/.clang-tidy
 )
 
 find_package(Python3 COMPONENTS Interpreter)
