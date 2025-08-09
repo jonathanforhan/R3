@@ -65,7 +65,7 @@ VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32_t& imageIndex
 }
 
 VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32_t imageIndex) const noexcept(true) {
-    VkPresentInfoKHR presentInfo{
+    VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext              = nullptr,
         .waitSemaphoreCount = 1,

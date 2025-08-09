@@ -26,7 +26,7 @@ void Shader::createFromSource(RenderContext& ctx,
     m_device = ctx.device();
     m_type   = type;
 
-    VkShaderModuleCreateInfo shaderModuleCreateInfo{
+    VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .pNext    = nullptr,
         .flags    = {},

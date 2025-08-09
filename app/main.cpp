@@ -2,6 +2,7 @@
 #include <exception>
 #include <format>
 #include <iterator>
+#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
@@ -65,7 +66,7 @@ int main() {
         VkDevice device = renderContext.device();
 
         // Create render pass
-        AttachmentDescription colorAttachment{
+        AttachmentDescription colorAttachment = {
             .format         = swapchain.format(),
             .samples        = VK_SAMPLE_COUNT_1_BIT,
             .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -75,7 +76,7 @@ int main() {
             .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
             .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
         };
-        renderPass.create(renderContext, {colorAttachment});
+        renderPass.create(renderContext, std::span{&colorAttachment, 1});
 
         // Load shaders
         vertexShader.createFromFile(renderContext, "_spirv/basic.vert.spv", ShaderStage::Vertex);
@@ -230,10 +231,10 @@ int main() {
             VkCommandBuffer commandBuffer = commandBuffers[currentFrame];
             vkResetCommandBuffer(commandBuffer, 0);
 
-            VkCommandBufferBeginInfo beginInfo{
+            VkCommandBufferBeginInfo beginInfo = {
                 .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
                 .pNext            = nullptr,
-                .flags            = 0,
+                .flags            = {},
                 .pInheritanceInfo = nullptr,
             };
             VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));

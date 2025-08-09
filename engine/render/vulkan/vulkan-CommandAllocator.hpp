@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
@@ -31,7 +32,7 @@ public:
 
     void freeBuffer(VkCommandBuffer commandBuffer) noexcept(true);
 
-    void freeBuffers(const std::vector<VkCommandBuffer>& commandBuffers) noexcept(true);
+    void freeBuffers(std::span<VkCommandBuffer> commandBuffers) noexcept(true);
 
     void reset(VkCommandPoolResetFlags flags = 0) noexcept(false);
 

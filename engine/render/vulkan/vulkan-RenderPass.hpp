@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vector>
+#include <span>
 #include <vulkan/vulkan_core.h>
 
 namespace R3 {
@@ -20,7 +20,7 @@ struct AttachmentDescription {
 
 class RenderPass {
 public:
-    void create(RenderContext& ctx, const std::vector<AttachmentDescription>& attachments) noexcept(false);
+    void create(RenderContext& ctx, std::span<AttachmentDescription> attachments) noexcept(false);
 
     void destroy() noexcept(true);
 

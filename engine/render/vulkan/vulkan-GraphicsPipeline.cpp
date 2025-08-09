@@ -13,7 +13,7 @@
 namespace R3 {
 
 VkVertexInputBindingDescription Vertex::getBindingDescription() {
-    VkVertexInputBindingDescription vertexInputBindingDescription{
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
         .binding   = 0,
         .stride    = sizeof(Vertex),
         .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
@@ -22,7 +22,7 @@ VkVertexInputBindingDescription Vertex::getBindingDescription() {
 }
 
 std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions() {
-    std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
+    const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
         // Position attribute
         {
             .location = 0,
@@ -38,7 +38,6 @@ std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions(
             .offset   = offsetof(Vertex, color),
         },
     };
-
     return vertexInputAttributeDescription;
 }
 
@@ -49,7 +48,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
                               VkExtent2D extent) noexcept(false) {
     m_device = ctx.device();
 
-    VkPipelineShaderStageCreateInfo vertShaderStageInfo{
+    const VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
         .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .pNext               = nullptr,
         .flags               = 0,
@@ -59,7 +58,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pSpecializationInfo = nullptr,
     };
 
-    VkPipelineShaderStageCreateInfo fragShaderStageInfo{
+    const VkPipelineShaderStageCreateInfo fragShaderStageInfo = {
         .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         .pNext               = nullptr,
         .flags               = 0,
@@ -69,12 +68,12 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pSpecializationInfo = nullptr,
     };
 
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    const VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
-    auto bindingDescription    = Vertex::getBindingDescription();
-    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+    const auto bindingDescription    = Vertex::getBindingDescription();
+    const auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
-    VkPipelineVertexInputStateCreateInfo vertexInputInfo{
+    const VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext                           = nullptr,
         .flags                           = 0,
@@ -84,7 +83,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pVertexAttributeDescriptions    = attributeDescriptions.data(),
     };
 
-    VkPipelineInputAssemblyStateCreateInfo inputAssembly{
+    const VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .pNext                  = nullptr,
         .flags                  = 0,
@@ -92,7 +91,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .primitiveRestartEnable = VK_FALSE,
     };
 
-    VkViewport viewport{
+    const VkViewport viewport = {
         .x        = 0.0f,
         .y        = 0.0f,
         .width    = static_cast<float>(extent.width),
@@ -101,12 +100,12 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .maxDepth = 1.0f,
     };
 
-    VkRect2D scissor{
+    const VkRect2D scissor = {
         .offset = {0, 0},
         .extent = extent,
     };
 
-    VkPipelineViewportStateCreateInfo viewportState{
+    const VkPipelineViewportStateCreateInfo viewportState = {
         .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .pNext         = nullptr,
         .flags         = 0,
@@ -116,7 +115,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pScissors     = &scissor,
     };
 
-    VkPipelineRasterizationStateCreateInfo rasterizer{
+    const VkPipelineRasterizationStateCreateInfo rasterizer = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pNext                   = nullptr,
         .flags                   = 0,
@@ -132,7 +131,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .lineWidth               = 1.0f,
     };
 
-    VkPipelineMultisampleStateCreateInfo multisampling{
+    const VkPipelineMultisampleStateCreateInfo multisampling = {
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = 0,
@@ -144,7 +143,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .alphaToOneEnable      = VK_FALSE,
     };
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachment{
+    const VkPipelineColorBlendAttachmentState colorBlendAttachment = {
         .blendEnable         = VK_FALSE,
         .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
         .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
@@ -156,7 +155,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
-    VkPipelineColorBlendStateCreateInfo colorBlending{
+    const VkPipelineColorBlendStateCreateInfo colorBlending = {
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .pNext           = nullptr,
         .flags           = 0,
@@ -173,7 +172,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
             },
     };
 
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{
+    const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext                  = nullptr,
         .flags                  = 0,
@@ -184,7 +183,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
 
-    VkGraphicsPipelineCreateInfo graphicsPipelineInfo{
+    const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = nullptr,
         .flags               = 0,

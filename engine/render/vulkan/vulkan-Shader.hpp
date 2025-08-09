@@ -10,7 +10,14 @@ namespace R3 {
 
 class RenderContext;
 
-enum class ShaderStage { Vertex, Fragment, Geometry, TessellationControl, TessellationEvaluation, Compute };
+enum class ShaderStage {
+    Vertex,
+    Fragment,
+    Geometry,
+    TessellationControl,
+    TessellationEvaluation,
+    Compute,
+};
 
 class Shader {
 public:

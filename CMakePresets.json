@@ -64,14 +64,17 @@
             }
         },
         {
-            "name": "linux-debug",
+          "name": "VS2022",
+          "displayName": "Visual Studio 17 2022",
+          "inherits": "windows-base",
+          "generator": "Visual Studio 17 2022"
+        },
+        {
+            "name": "linux",
             "displayName": "Linux Debug",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",
@@ -84,14 +87,11 @@
             }
         },
         {
-            "name": "macos-debug",
+            "name": "macos",
             "displayName": "macOS Debug",
             "generator": "Ninja",
             "binaryDir": "${sourceDir}/out/build/${presetName}",
             "installDir": "${sourceDir}/out/install/${presetName}",
-            "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug"
-            },
             "condition": {
                 "type": "equals",
                 "lhs": "${hostSystemName}",

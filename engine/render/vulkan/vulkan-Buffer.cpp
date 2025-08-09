@@ -18,7 +18,7 @@ void Buffer::create(RenderContext& ctx,
     m_physicalDevice = ctx.physicalDevice();
     m_size           = size;
 
-    VkBufferCreateInfo bufferCreateInfo{
+    const VkBufferCreateInfo bufferCreateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = {},
@@ -33,7 +33,7 @@ void Buffer::create(RenderContext& ctx,
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(m_device, m_buffer, &memoryRequirements);
 
-    VkMemoryAllocateInfo memoryAllocateInfo{
+    const VkMemoryAllocateInfo memoryAllocateInfo = {
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext           = nullptr,
         .allocationSize  = memoryRequirements.size,

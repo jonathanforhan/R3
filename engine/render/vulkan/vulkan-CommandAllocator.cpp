@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <Types.hpp>
@@ -16,13 +17,12 @@ void CommandAllocator::create(RenderContext& ctx, uint32 queueIndex, CommandPool
     m_mode   = mode;
 
     // Create the command pool
-    VkCommandPoolCreateInfo commandPoolCreateInfo{
+    const VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext            = nullptr,
         .flags            = getModeFlags(mode),
         .queueFamilyIndex = queueIndex,
     };
-
     VK_CHECK(vkCreateCommandPool(m_device, &commandPoolCreateInfo, nullptr, &m_pool));
 }
 
@@ -39,7 +39,7 @@ VkCommandBuffer CommandAllocator::allocateBuffer(VkCommandBufferLevel level) noe
         throw Exception(__FUNCTION__ " called on unitialized CommandAllocator");
     }
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo{
+    const VkCommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext              = nullptr,
         .commandPool        = m_pool,
@@ -63,7 +63,7 @@ std::vector<VkCommandBuffer> CommandAllocator::allocateBuffers(uint32_t count,
         throw Exception(__FUNCTION__ " called on unitialized CommandAllocator");
     }
 
-    VkCommandBufferAllocateInfo commandBufferAllocateInfo{
+    const VkCommandBufferAllocateInfo commandBufferAllocateInfo = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext              = nullptr,
         .commandPool        = m_pool,
@@ -83,7 +83,7 @@ void CommandAllocator::freeBuffer(VkCommandBuffer commandBuffer) noexcept(true) 
     }
 }
 
-void CommandAllocator::freeBuffers(const std::vector<VkCommandBuffer>& commandBuffers) noexcept(true) {
+void CommandAllocator::freeBuffers(std::span<VkCommandBuffer> commandBuffers) noexcept(true) {
     if (!commandBuffers.empty() && m_pool != VK_NULL_HANDLE) {
         vkFreeCommandBuffers(m_device, m_pool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
     }
@@ -105,7 +105,7 @@ void CommandAllocator::executeImmediate(Queue& queue, std::function<void(VkComma
     VkCommandBuffer commandBuffer = allocateBuffer();
 
     // Begin recording
-    VkCommandBufferBeginInfo commandBufferBeginInfo{
+    const VkCommandBufferBeginInfo commandBufferBeginInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .pNext            = nullptr,
         .flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
@@ -122,7 +122,7 @@ void CommandAllocator::executeImmediate(Queue& queue, std::function<void(VkComma
         VK_CHECK(vkEndCommandBuffer(commandBuffer));
 
         // Submit and wait
-        VkSubmitInfo submitInfo{
+        const VkSubmitInfo submitInfo = {
             .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .pNext                = nullptr,
             .waitSemaphoreCount   = 0,

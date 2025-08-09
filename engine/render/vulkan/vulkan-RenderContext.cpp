@@ -56,14 +56,14 @@ void RenderContext::create(Window& window) noexcept(false) {
     std::error_code error;
 
     try {
-        vkb::Instance instance             = createInstance();
-        m_instance                         = instance.instance;
-        m_debug                            = instance.debug_messenger;
-        m_surface                          = createSurface(window);
-        vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance);
-        m_physicalDevice                   = physicalDevice.physical_device;
-        vkb::Device device                 = createLogicalDevice(physicalDevice);
-        m_logicalDevice                    = device.device;
+        const vkb::Instance instance             = createInstance();
+        m_instance                               = instance.instance;
+        m_debug                                  = instance.debug_messenger;
+        m_surface                                = createSurface(window);
+        const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance);
+        m_physicalDevice                         = physicalDevice.physical_device;
+        const vkb::Device device                 = createLogicalDevice(physicalDevice);
+        m_logicalDevice                          = device.device;
 
         /* get queue handles */
         auto initQueue = [&](vkb::QueueType queueType, Queue& queue) {
