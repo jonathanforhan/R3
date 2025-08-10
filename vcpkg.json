@@ -28,8 +28,8 @@
       "version>=": "0.11.1"
     },
     {
-      "name": "nlohmann-json",
-      "version>=": "3.12.0"
+      "name": "rapidjson",
+      "version>=": "2023-07-17#2"
     }
   ],
   "builtin-baseline": "3bdaa9b42070c241c1bdb02b4cf01f90de579738"

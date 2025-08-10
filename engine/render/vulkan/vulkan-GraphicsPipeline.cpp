@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
@@ -48,7 +49,8 @@ void GraphicsPipeline::create(RenderContext& ctx,
                               RenderPass& renderPass,
                               Shader& vertexShader,
                               Shader& fragmentShader,
-                              uvec2 extent) {
+                              uvec2 extent,
+                              std::span<const VkDescriptorSetLayout> layouts) {
     m_device = ctx.device();
 
     const VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
@@ -181,8 +183,8 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext                  = nullptr,
         .flags                  = 0,
-        .setLayoutCount         = 0,
-        .pSetLayouts            = nullptr,
+        .setLayoutCount         = static_cast<uint32>(layouts.size()),
+        .pSetLayouts            = layouts.data(),
         .pushConstantRangeCount = 0,
         .pPushConstantRanges    = nullptr,
     };

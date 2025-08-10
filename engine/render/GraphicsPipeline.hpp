@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
@@ -20,7 +21,12 @@ struct Vertex {
 
 class GraphicsPipeline {
 public:
-    void create(RenderContext& ctx, RenderPass& renderPass, Shader& vertexShader, Shader& fragmentShader, uvec2 extent);
+    void create(RenderContext& ctx,
+                RenderPass& renderPass,
+                Shader& vertexShader,
+                Shader& fragmentShader,
+                uvec2 extent,
+                std::span<const VkDescriptorSetLayout> layouts);
 
     void destroy() noexcept;
 

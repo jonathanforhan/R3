@@ -47,9 +47,9 @@ void Shader::destroy() noexcept {
 }
 
 std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    std::ifstream file{filename, std::ios::ate | std::ios::binary};
 
-    if (!file.is_open()) {
+    if (!(file.is_open() && file.good())) {
         throw Exception{std::format("Failed to open shader file: {}", filename)};
     }
 

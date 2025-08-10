@@ -7,3 +7,7 @@
 #define R3_VERSION_MAJOR 0
 #define R3_VERSION_MINOR 0
 #define R3_VERSION_PATCH 0
+
+#define R3_GLTF_VERSION_MAJOR 2
+#define R3_GLTF_VERSION_MINOR 0
+#define R3_GLB_VERSION        2

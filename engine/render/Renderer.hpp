@@ -4,6 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include "Buffer.hpp"
 #include "CommandAllocator.hpp"
+#include "DescriptorAllocator.hpp"
 #include "FrameSync.hpp"
 #include "Framebuffer.hpp"
 #include "GraphicsPipeline.hpp"
@@ -13,6 +14,12 @@
 #include "Swapchain.hpp"
 
 namespace R3 {
+
+struct UniformBufferObject {
+    alignas(16) mat4 model;
+    alignas(16) mat4 view;
+    alignas(16) mat4 proj;
+};
 
 class Window;
 
@@ -30,16 +37,23 @@ public:
 
     void render();
 
+    void handleWindowResize();
+
+    void updateUniformBuffer(uint32 frameIndex);
+
 private:
     Window& m_window; // must out-live renderer
     RenderContext m_ctx;
     Swapchain m_swapchain;
     RenderPass m_renderPass;
+    DescriptorAllocator m_descriptorAllocator;
+    std::vector<VkDescriptorSet> m_descriptorSets;
     GraphicsPipeline m_graphicsPipeline;
     CommandAllocator m_commandAllocator;
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Buffer m_vertexBuffer;
+    std::vector<Buffer> m_ubos;
     std::vector<Framebuffer> m_framebuffers;
     std::vector<VkCommandBuffer> m_commandBuffers;
     FrameSync m_frameSync;

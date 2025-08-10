@@ -5,7 +5,13 @@ layout(location = 1) in vec3 a_Color;
 
 layout(location = 0) out vec3 v_Color;
 
+layout(binding = 0) uniform MVP {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} u_MVP;
+
 void main() {
-    gl_Position = vec4(a_Position, 1.0);
+    gl_Position = u_MVP.proj * u_MVP.view * u_MVP.model * vec4(a_Position, 1.0);
     v_Color = a_Color;
 }

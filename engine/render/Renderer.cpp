@@ -5,13 +5,14 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <glm/gtc/matrix_transform.hpp>
 #include "Buffer.hpp"
 #include "CommandAllocator.hpp"
+#include "DescriptorAllocator.hpp"
 #include "Exception.hpp"
 #include "FrameSync.hpp"
 #include "Framebuffer.hpp"
 #include "GraphicsPipeline.hpp"
-#include "Log.hpp"
 #include "RenderContext.hpp"
 #include "RenderPass.hpp"
 #include "Shader.hpp"
@@ -38,8 +39,13 @@ static const Vertex s_vertices[3] = {
 
 Renderer::Renderer(Window& window)
     : m_window{window} {
+    // create instance logical and phsyical device
     m_ctx.create(m_window);
+
+    // create swapchain for drawing
     m_swapchain.create(m_ctx, m_window);
+
+    // create render pass with colorAttachment for subpass
     const AttachmentDescription colorAttachment = {
         .format         = m_swapchain.format(),
         .samples        = VK_SAMPLE_COUNT_1_BIT,
@@ -51,14 +57,70 @@ Renderer::Renderer(Window& window)
         .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
     };
     m_renderPass.create(m_ctx, std::span{&colorAttachment, 1});
+
+    // shaders
     m_vertexShader.createFromFile(m_ctx, "_spirv/basic.vert.spv", ShaderStageFlags::Vertex);
     m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", ShaderStageFlags::Fragment);
-    m_graphicsPipeline.create(m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, m_swapchain.extent());
+
+    // vertex buffer
     m_vertexBuffer.create(m_ctx,
                           sizeof(s_vertices[0]) * std::size(s_vertices),
                           BufferUsageFlags::VertexBuffer,
                           MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
     m_vertexBuffer.copyData(s_vertices);
+
+    // uniform buffers
+    m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
+    for (auto& ubo : m_ubos) {
+        ubo.create(m_ctx,
+                   sizeof(UniformBufferObject),
+                   BufferUsageFlags::UniformBuffer,
+                   MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
+    }
+
+    // descriptor pool
+    VkDescriptorPoolSize poolSize = {
+        .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+    };
+    m_descriptorAllocator.create(m_ctx, {&poolSize, 1}, MAX_FRAMES_IN_FLIGHT);
+
+    // descriptor sets and layouts
+    const VkDescriptorSetLayoutBinding binding = {
+        .binding            = 0,
+        .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount    = 1,
+        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
+        .pImmutableSamplers = nullptr,
+    };
+    m_descriptorSets = m_descriptorAllocator.allocate(binding, MAX_FRAMES_IN_FLIGHT);
+
+    // graphics pipeline
+    auto layout = m_descriptorAllocator.layout();
+    m_graphicsPipeline.create(
+        m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, m_swapchain.extent(), {&layout, 1});
+
+    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        const VkDescriptorBufferInfo bufferInfo = {
+            .buffer = m_ubos[i].handle(),
+            .offset = 0,
+            .range  = sizeof(UniformBufferObject),
+        };
+
+        const VkWriteDescriptorSet descriptorWrite = {
+            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext            = nullptr,
+            .dstSet           = m_descriptorSets[i],
+            .dstBinding       = 0,
+            .dstArrayElement  = 0,
+            .descriptorCount  = 1,
+            .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .pImageInfo       = nullptr,
+            .pBufferInfo      = &bufferInfo,
+            .pTexelBufferView = nullptr,
+        };
+        vkUpdateDescriptorSets(m_ctx.device(), 1, &descriptorWrite, 0, nullptr);
+    }
 
     m_framebuffers.resize(m_swapchain.imageViews().size());
     for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
@@ -74,19 +136,21 @@ Renderer::Renderer(Window& window)
 }
 
 Renderer::~Renderer() noexcept {
-    // Wait for device to finish
     m_ctx.waitIdle();
 
-    // Cleanup
     m_frameSync.destroy();
     for (auto& framebuffer : m_framebuffers) {
         framebuffer.destroy();
     }
-    m_commandAllocator.destroy();
+    for (auto& ubo : m_ubos) {
+        ubo.destroy();
+    }
     m_vertexBuffer.destroy();
-    m_graphicsPipeline.destroy();
     m_fragmentShader.destroy();
+    m_commandAllocator.destroy();
     m_vertexShader.destroy();
+    m_graphicsPipeline.destroy();
+    m_descriptorAllocator.destroy();
     m_renderPass.destroy();
     m_swapchain.destroy();
     m_ctx.destroy();
@@ -99,23 +163,7 @@ void Renderer::render() {
 
         // Handle m_window resize
         if (m_window.shouldResize()) {
-            m_ctx.waitIdle();
-
-            // Destroy old framebuffers
-            for (auto& framebuffer : m_framebuffers) {
-                framebuffer.destroy();
-            }
-
-            m_swapchain.recreate(m_ctx, m_window);
-            m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
-
-            // Recreate framebuffers
-            m_framebuffers.resize(m_swapchain.imageViews().size());
-            for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
-                const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
-                m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
-            }
-
+            handleWindowResize();
             m_window.setShouldResize(false);
             continue;
         }
@@ -128,8 +176,10 @@ void Renderer::render() {
         m_frameSync.waitForCurrentFrame();
         m_frameSync.resetCurrentFrame();
 
+        updateUniformBuffer(m_frameSync.currentFrameIndex());
+
         // Acquire next image
-        uint32_t imageIndex;
+        uint32 imageIndex;
         VkResult result = m_swapchain.acquireNextImage(m_frameSync.currentImageAvailableSemaphore(), imageIndex);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -151,7 +201,7 @@ void Renderer::render() {
         VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
 
         // Begin render pass
-        const VkClearValue clearValue{{{1.0f, 0.0f, 1.0f, 1.0f}}};
+        const VkClearValue clearValue{{{0.0f, 0.0f, 0.0f, 1.0f}}};
         const VkRenderPassBeginInfo renderPassInfo{
             .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             .pNext       = nullptr,
@@ -170,6 +220,15 @@ void Renderer::render() {
 
         // Bind pipeline and draw
         m_graphicsPipeline.bind(commandBuffer);
+
+        vkCmdBindDescriptorSets(commandBuffer,
+                                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                m_graphicsPipeline.layout(),
+                                0,
+                                1,
+                                &m_descriptorSets[m_frameSync.currentFrameIndex()],
+                                0,
+                                nullptr);
 
         const VkBuffer vertexBuffers[] = {m_vertexBuffer.handle()};
         const VkDeviceSize offsets[]   = {0};
@@ -207,6 +266,37 @@ void Renderer::render() {
 
         m_frameSync.advanceFrame();
     }
+}
+
+void Renderer::handleWindowResize() {
+    m_ctx.waitIdle();
+
+    for (auto& framebuffer : m_framebuffers) {
+        framebuffer.destroy();
+    }
+
+    m_swapchain.recreate(m_ctx, m_window);
+    m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
+
+    m_framebuffers.resize(m_swapchain.imageViews().size());
+    for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
+        const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
+        m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
+    }
+}
+
+void Renderer::updateUniformBuffer(uint32 frameIndex) {
+    UniformBufferObject ubo = {
+        .model = mat4(1.0f),
+        .view  = glm::lookAt(vec3(2.0f, 2.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f)),
+        .proj =
+            glm::perspective(glm::radians(45.0f),
+                             static_cast<float>(m_swapchain.extent().x) / static_cast<float>(m_swapchain.extent().y),
+                             0.1f,
+                             10.0f),
+    };
+
+    m_ubos[frameIndex].copyData(&ubo, sizeof(ubo));
 }
 
 } // namespace R3
