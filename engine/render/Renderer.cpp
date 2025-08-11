@@ -9,6 +9,7 @@
 #include "Buffer.hpp"
 #include "CommandAllocator.hpp"
 #include "DescriptorAllocator.hpp"
+#include "EventHandler.hpp"
 #include "Exception.hpp"
 #include "FrameSync.hpp"
 #include "Framebuffer.hpp"
@@ -20,11 +21,10 @@
 #include "Types.hpp"
 #include "Window.hpp"
 
-namespace R3 {
+#include <Camera.hpp>
+#include "render/vulkan/vulkan-Check.hpp"
 
-#define VK_CHECK(_Exp)                                    \
-    if (VkResult _result = (_Exp); _result != VK_SUCCESS) \
-    throw ::R3::Exception(std::format(#_Exp " returned: ", static_cast<int>(_result)))
+namespace R3 {
 
 using namespace R3;
 
@@ -33,8 +33,8 @@ static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 // Triangle vertices - matches your vertex shader (vec3 position, vec3 color)
 static const Vertex s_vertices[3] = {
     {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, // Top - Red
-    {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom left - Green
     {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},  // Bottom right - Blue
+    {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom left - Green
 };
 
 Renderer::Renderer(Window& window)
@@ -70,6 +70,16 @@ Renderer::Renderer(Window& window)
     m_vertexBuffer.copyData(s_vertices);
 
     // uniform buffers
+    m_ubo = {
+        .model = mat4(1.0f),
+        .view  = glm::lookAt(vec3(2.0f, 2.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f)),
+        .proj =
+            glm::perspective(glm::radians(45.0f),
+                             static_cast<float>(m_swapchain.extent().x) / static_cast<float>(m_swapchain.extent().y),
+                             0.1f,
+                             10.0f),
+    };
+
     m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& ubo : m_ubos) {
         ubo.create(m_ctx,
@@ -97,8 +107,7 @@ Renderer::Renderer(Window& window)
 
     // graphics pipeline
     auto layout = m_descriptorAllocator.layout();
-    m_graphicsPipeline.create(
-        m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, m_swapchain.extent(), {&layout, 1});
+    m_graphicsPipeline.create(m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, std::span{&layout, 1});
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         const VkDescriptorBufferInfo bufferInfo = {
@@ -133,6 +142,8 @@ Renderer::Renderer(Window& window)
 
     const size_t imageCount = m_swapchain.images().size();
     m_frameSync.create(m_ctx, MAX_FRAMES_IN_FLIGHT, imageCount);
+
+    m_camera.setActive(true);
 }
 
 Renderer::~Renderer() noexcept {
@@ -156,116 +167,133 @@ Renderer::~Renderer() noexcept {
     m_ctx.destroy();
 }
 
-void Renderer::render() {
-    // Main render loop
-    while (!m_window.shouldClose()) {
-        m_window.update();
-
-        // Handle m_window resize
-        if (m_window.shouldResize()) {
-            handleWindowResize();
-            m_window.setShouldResize(false);
-            continue;
-        }
-
-        // Skip rendering if minimized
-        if (m_window.isMinimized()) {
-            continue;
-        }
-
-        m_frameSync.waitForCurrentFrame();
-        m_frameSync.resetCurrentFrame();
-
-        updateUniformBuffer(m_frameSync.currentFrameIndex());
-
-        // Acquire next image
-        uint32 imageIndex;
-        VkResult result = m_swapchain.acquireNextImage(m_frameSync.currentImageAvailableSemaphore(), imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            continue; // Will be handled by resize logic
-        } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
-        }
-
-        // Record command buffer
-        const VkCommandBuffer commandBuffer = m_commandBuffers[m_frameSync.currentFrameIndex()];
-        vkResetCommandBuffer(commandBuffer, 0);
-
-        const VkCommandBufferBeginInfo beginInfo = {
-            .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-            .pNext            = nullptr,
-            .flags            = {},
-            .pInheritanceInfo = nullptr,
-        };
-        VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-
-        // Begin render pass
-        const VkClearValue clearValue{{{0.0f, 0.0f, 0.0f, 1.0f}}};
-        const VkRenderPassBeginInfo renderPassInfo{
-            .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-            .pNext       = nullptr,
-            .renderPass  = m_renderPass.handle(),
-            .framebuffer = m_framebuffers[imageIndex].handle(),
-            .renderArea =
-                {
-                    .offset = {0, 0},
-                    .extent = {m_swapchain.extent().x, m_swapchain.extent().y},
-                },
-            .clearValueCount = 1,
-            .pClearValues    = &clearValue,
-        };
-
-        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-        // Bind pipeline and draw
-        m_graphicsPipeline.bind(commandBuffer);
-
-        vkCmdBindDescriptorSets(commandBuffer,
-                                VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                m_graphicsPipeline.layout(),
-                                0,
-                                1,
-                                &m_descriptorSets[m_frameSync.currentFrameIndex()],
-                                0,
-                                nullptr);
-
-        const VkBuffer vertexBuffers[] = {m_vertexBuffer.handle()};
-        const VkDeviceSize offsets[]   = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdDraw(commandBuffer, static_cast<uint32_t>(std::size(s_vertices)), 1, 0, 0);
-
-        vkCmdEndRenderPass(commandBuffer);
-        VK_CHECK(vkEndCommandBuffer(commandBuffer));
-
-        // Submit command buffer - use per-frame acquire, per-image render finished
-        const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        const VkSubmitInfo submitInfo{
-            .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-            .pNext                = nullptr,
-            .waitSemaphoreCount   = 1,
-            .pWaitSemaphores      = &m_frameSync.currentImageAvailableSemaphore(),
-            .pWaitDstStageMask    = waitStages,
-            .commandBufferCount   = 1,
-            .pCommandBuffers      = &commandBuffer,
-            .signalSemaphoreCount = 1,
-            .pSignalSemaphores    = &m_frameSync.renderFinishedSemaphore(imageIndex),
-        };
-        VK_CHECK(vkQueueSubmit(m_ctx.graphicsQueue().handle, 1, &submitInfo, m_frameSync.currentFence()));
-
-        // Present - use per-image semaphore
-        result = m_swapchain.present(
-            m_ctx.presentQueue().handle, m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            // Will be handled by resize logic on next frame
-        } else if (result != VK_SUCCESS) {
-            throw Exception{std::format("Failed to present swap chain image: {}", static_cast<int>(result))};
-        }
-
-        m_frameSync.advanceFrame();
+void Renderer::render(double dt) {
+    // Handle m_window resize
+    if (m_window.shouldResize()) {
+        handleWindowResize();
+        m_window.setShouldResize(false);
+        return;
     }
+
+    // Skip rendering if minimized
+    if (m_window.isMinimized()) {
+        return;
+    }
+
+    m_frameSync.waitForCurrentFrame();
+    m_frameSync.resetCurrentFrame();
+
+    m_camera.tick(dt);
+    m_camera.apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
+    m_ubos[m_frameSync.currentFrameIndex()].copyData(&m_ubo, sizeof(m_ubo));
+
+    // Acquire next image
+    uint32 imageIndex;
+    VkResult result = m_swapchain.acquireNextImage(m_frameSync.currentImageAvailableSemaphore(), imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        return; // Will be handled by resize logic
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
+    }
+
+    // Record command buffer
+    const VkCommandBuffer cmd = m_commandBuffers[m_frameSync.currentFrameIndex()];
+    vkResetCommandBuffer(cmd, 0);
+
+    const VkCommandBufferBeginInfo beginInfo = {
+        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .pNext            = nullptr,
+        .flags            = {},
+        .pInheritanceInfo = nullptr,
+    };
+    VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
+
+    // Begin render pass
+    const VkClearValue clearValue{{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    const VkRenderPassBeginInfo renderPassInfo{
+        .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .pNext       = nullptr,
+        .renderPass  = m_renderPass.handle(),
+        .framebuffer = m_framebuffers[imageIndex].handle(),
+        .renderArea =
+            {
+                .offset = {0, 0},
+                .extent = {m_swapchain.extent().x, m_swapchain.extent().y},
+            },
+        .clearValueCount = 1,
+        .pClearValues    = &clearValue,
+    };
+
+    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    // Bind pipeline and draw
+    m_graphicsPipeline.bind(cmd);
+
+    const VkViewport viewport = {
+        .x        = 0.0f,
+        .y        = 0.0f,
+        .width    = static_cast<float>(m_swapchain.extent().x),
+        .height   = static_cast<float>(m_swapchain.extent().y),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    };
+
+    const VkRect2D scissor = {
+        .offset = {0, 0},
+        .extent = {m_swapchain.extent().x, m_swapchain.extent().y},
+    };
+
+    m_graphicsPipeline.setScissor(cmd, scissor);
+    m_graphicsPipeline.setViewport(cmd, viewport);
+    m_graphicsPipeline.setCullMode(cmd, VK_CULL_MODE_BACK_BIT);
+    m_graphicsPipeline.setFrontFace(cmd, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    m_graphicsPipeline.setLineWidth(cmd, 1.0f);
+
+    vkCmdBindDescriptorSets(cmd,
+                            VK_PIPELINE_BIND_POINT_GRAPHICS,
+                            m_graphicsPipeline.layout(),
+                            0,
+                            1,
+                            &m_descriptorSets[m_frameSync.currentFrameIndex()],
+                            0,
+                            nullptr);
+
+    const VkBuffer vertexBuffers[] = {m_vertexBuffer.handle()};
+    const VkDeviceSize offsets[]   = {0};
+    vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
+
+    vkCmdDraw(cmd, static_cast<uint32>(std::size(s_vertices)), 1, 0, 0);
+
+    vkCmdEndRenderPass(cmd);
+    VK_CHECK(vkEndCommandBuffer(cmd));
+
+    // Submit command buffer - use per-frame acquire, per-image render finished
+    const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    const VkSubmitInfo submitInfo{
+        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext                = nullptr,
+        .waitSemaphoreCount   = 1,
+        .pWaitSemaphores      = &m_frameSync.currentImageAvailableSemaphore(),
+        .pWaitDstStageMask    = waitStages,
+        .commandBufferCount   = 1,
+        .pCommandBuffers      = &cmd,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores    = &m_frameSync.renderFinishedSemaphore(imageIndex),
+    };
+    VK_CHECK(vkQueueSubmit(m_ctx.graphicsQueue().handle, 1, &submitInfo, m_frameSync.currentFence()));
+
+    // Present - use per-image semaphore
+    result =
+        m_swapchain.present(m_ctx.presentQueue().handle, m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        // Will be handled by resize logic on next frame
+    } else if (result != VK_SUCCESS) {
+        throw Exception{std::format("Failed to present swap chain image: {}", static_cast<int>(result))};
+    }
+
+    m_frameSync.advanceFrame();
 }
 
 void Renderer::handleWindowResize() {
@@ -283,20 +311,6 @@ void Renderer::handleWindowResize() {
         const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
         m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
-}
-
-void Renderer::updateUniformBuffer(uint32 frameIndex) {
-    UniformBufferObject ubo = {
-        .model = mat4(1.0f),
-        .view  = glm::lookAt(vec3(2.0f, 2.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f)),
-        .proj =
-            glm::perspective(glm::radians(45.0f),
-                             static_cast<float>(m_swapchain.extent().x) / static_cast<float>(m_swapchain.extent().y),
-                             0.1f,
-                             10.0f),
-    };
-
-    m_ubos[frameIndex].copyData(&ubo, sizeof(ubo));
 }
 
 } // namespace R3

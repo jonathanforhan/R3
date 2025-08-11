@@ -1,25 +1,51 @@
+#include <chrono>
 #include <exception>
+#include <EventHandler.hpp>
 #include <Exception.hpp>
 #include <Log.hpp>
-#include <media/glTF/glTF-Model.hpp>
+#include <Types.hpp>
+#include <input/InputEvents.hpp>
 #include <render/Renderer.hpp>
 #include <render/Window.hpp>
 
 using namespace R3;
 
-int main() {
+static double deltaTime() {
+    using namespace std::chrono;
+    static auto s_prev = system_clock::now();
+    auto now           = system_clock::now();
+    double dt          = duration<double>(now - s_prev).count();
+    s_prev             = now;
+    return dt;
+}
+
+int main(int argc, char* argv[]) {
 #ifdef _WIN32
     detail::enableWindowsConsoleColors();
 #endif
-    Window window;
-    Renderer renderer(window);
-
-    glTF::Model sponza{"assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf"};
-    glTF::Model helmet{"assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf"};
-    glTF::Model mosquito{"assets/glTF-samples/Models/MosquitoInAmber/glTF/MosquitoInAmber.gltf"};
 
     try {
-        renderer.render();
+        Window window;
+        Renderer renderer(window);
+
+        EventHandler::instance().bindEventListener("key-press"_event, [](const Event<KeyboardEventData>& event) {
+            char c = (char)(event.data.key);
+            LOG_INFO("pressed key: {}", c);
+        });
+
+        // Main render loop
+        while (!window.shouldClose()) {
+            double dt = deltaTime();
+
+            window.update();
+
+            usize remainingEvents;
+            do {
+                remainingEvents = EventHandler::instance().dispatchEvent();
+            } while (remainingEvents > 0);
+
+            renderer.render(dt);
+        }
     } catch (const Exception& ex) {
         LOG_ERROR("R3 Engine error: {}", ex.what());
         return -1;

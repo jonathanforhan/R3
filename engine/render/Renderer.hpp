@@ -3,6 +3,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Buffer.hpp"
+#include "Camera.hpp"
 #include "CommandAllocator.hpp"
 #include "DescriptorAllocator.hpp"
 #include "FrameSync.hpp"
@@ -35,11 +36,9 @@ public:
 
     ~Renderer() noexcept;
 
-    void render();
+    void render(double dt);
 
     void handleWindowResize();
-
-    void updateUniformBuffer(uint32 frameIndex);
 
 private:
     Window& m_window; // must out-live renderer
@@ -53,10 +52,13 @@ private:
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Buffer m_vertexBuffer;
+    UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
     std::vector<Framebuffer> m_framebuffers;
     std::vector<VkCommandBuffer> m_commandBuffers;
     FrameSync m_frameSync;
+
+    Camera m_camera;
 };
 
 } // namespace R3

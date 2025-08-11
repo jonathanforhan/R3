@@ -10,9 +10,12 @@
 #include <GLFW/glfw3native.h>
 
 #include <string_view>
+#include "EventHandler.hpp"
 #include "Exception.hpp"
 #include "Log.hpp"
 #include "Types.hpp"
+#include "input/InputCodes.hpp"
+#include "input/InputEvents.hpp"
 
 namespace R3 {
 
@@ -39,17 +42,89 @@ Window::Window() {
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);
     glfwSetWindowUserPointer(m_window, this);
+    glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GLFW_TRUE);
 
-    auto resize_callback = [](GLFWwindow* window, int width, int height) {
-        (void)width; // TODO
-        (void)height;
+    //--- Error Callback
+    auto errorCallback = [](int code, const char* msg) { LOG_ERROR("glfw error code: {}, {}", code, msg); };
+    glfwSetErrorCallback(errorCallback);
+
+    //--- Resize Callback
+    auto resizeCallback = [](GLFWwindow* window, int width, int height) {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
         _this->setShouldResize(true);
+        (void)width;
+        (void)height;
+        // EventHandler::instance().pushEvent("window-resize"_event, ivec2{width, height});
     };
-    glfwSetFramebufferSizeCallback(m_window, resize_callback);
+    glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
-    auto error_callback = [](int code, const char* msg) { LOG_ERROR("glfw error code: {}, {}", code, msg); };
-    glfwSetErrorCallback(error_callback);
+    //--- Keyboard Input Callback
+    auto keyCallback = [](GLFWwindow*, int key, int, int action, int mods) {
+        KeyboardEventData data = {
+            .key       = Key(key),
+            .modifiers = InputModifiers(mods),
+        };
+
+        uint64 id;
+
+        switch (action) {
+            case GLFW_PRESS:
+                id = "key-press"_event;
+                break;
+            case GLFW_REPEAT:
+                id = "key-repeat"_event;
+                break;
+            case GLFW_RELEASE:
+                id = "key-release"_event;
+                break;
+            default:
+                return;
+        }
+
+        EventHandler::instance().pushEvent(id, data);
+    };
+    glfwSetKeyCallback(m_window, keyCallback);
+
+    //--- MouseButton Callback
+    auto mouseCallback = [](GLFWwindow*, int button, int action, int mods) {
+        MouseButtonEventData data = {
+            .button    = MouseButton(button),
+            .modifiers = InputModifiers(mods),
+        };
+
+        uint64 id;
+
+        switch (action) {
+            case GLFW_PRESS:
+                id = "mouse-press"_event;
+                break;
+            case GLFW_RELEASE:
+                id = "mouse-release"_event;
+                break;
+            default:
+                return;
+        }
+
+        EventHandler::instance().pushEvent(id, data);
+    };
+    glfwSetMouseButtonCallback(m_window, mouseCallback);
+
+    //--- Cursor Input Callback
+    auto cursorCallback = [](GLFWwindow* window, double x, double y) {
+        int w, h;
+        glfwGetFramebufferSize(window, &w, &h);
+        float posX = static_cast<float>(x) / static_cast<float>(w);
+        float posY = static_cast<float>(y) / static_cast<float>(h);
+
+        MouseCursorEventData data = {
+            .cursorPosition = fvec2{posX, posY},
+        };
+
+        uint64 id = "cursor-move"_event;
+
+        EventHandler::instance().pushEvent(id, data);
+    };
+    glfwSetCursorPosCallback(m_window, cursorCallback);
 }
 
 Window::~Window() {

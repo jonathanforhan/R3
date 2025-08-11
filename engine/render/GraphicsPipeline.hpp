@@ -25,12 +25,21 @@ public:
                 RenderPass& renderPass,
                 Shader& vertexShader,
                 Shader& fragmentShader,
-                uvec2 extent,
                 std::span<const VkDescriptorSetLayout> layouts);
 
     void destroy() noexcept;
 
     void bind(VkCommandBuffer commandBuffer) const;
+
+    void setViewport(VkCommandBuffer cmd, const VkViewport& viewport);
+
+    void setScissor(VkCommandBuffer cmd, const VkRect2D& scissor);
+
+    void setCullMode(VkCommandBuffer cmd, VkCullModeFlags cullMode);
+
+    void setFrontFace(VkCommandBuffer cmd, VkFrontFace frontFace);
+
+    void setLineWidth(VkCommandBuffer cmd, float lineWidth);
 
     VkPipeline handle() noexcept { return m_pipeline; }
 

@@ -14,9 +14,9 @@ struct Queue;
 
 struct CommandPoolModeFlags {
     enum : uint32 {
-        Transient = 0x00000001, // short-lived command buffers
-        Reset     = 0x00000002, // individual command buffer reset
-        Protected = 0x00000004, // for protected memory
+        Transient = 0x00000001,
+        Reset     = 0x00000002,
+        Protected = 0x00000004,
     };
 };
 using CommandPoolMode = uint32;

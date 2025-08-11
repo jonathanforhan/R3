@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.21)
+﻿cmake_minimum_required (VERSION 3.26)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED  ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -86,6 +86,8 @@ target_compile_definitions(
 		$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
 		$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>
 		$<$<BOOL:${R3_DIRECTX12}>:R3_DIRECTX12>
+		GLM_FORCE_RADIANS=1
+		GLM_FORCE_DEPTH_ZERO_TO_ONE=1
 )
 
 if (MSVC)
@@ -131,7 +133,7 @@ enable_testing()
 ################################################################################
 
 execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
 		${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
 )

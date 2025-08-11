@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <iterator>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -49,7 +50,6 @@ void GraphicsPipeline::create(RenderContext& ctx,
                               RenderPass& renderPass,
                               Shader& vertexShader,
                               Shader& fragmentShader,
-                              uvec2 extent,
                               std::span<const VkDescriptorSetLayout> layouts) {
     m_device = ctx.device();
 
@@ -73,12 +73,12 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pSpecializationInfo = nullptr,
     };
 
-    const VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    const VkPipelineShaderStageCreateInfo shaderStagesInfo[] = {vertShaderStageInfo, fragShaderStageInfo};
 
     const auto bindingDescription    = Vertex::getBindingDescription();
     const auto attributeDescriptions = Vertex::getAttributeDescriptions();
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext                           = nullptr,
         .flags                           = 0,
@@ -88,7 +88,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pVertexAttributeDescriptions    = attributeDescriptions.data(),
     };
 
-    const VkPipelineInputAssemblyStateCreateInfo inputAssembly = {
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
         .pNext                  = nullptr,
         .flags                  = 0,
@@ -96,41 +96,46 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .primitiveRestartEnable = VK_FALSE,
     };
 
-    VkExtent2D extent2D{extent.x, extent.y};
-
-    const VkViewport viewport = {
-        .x        = 0.0f,
-        .y        = 0.0f,
-        .width    = static_cast<float>(extent2D.width),
-        .height   = static_cast<float>(extent2D.height),
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
+    const VkDynamicState dynamicStates[] = {
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+        VK_DYNAMIC_STATE_CULL_MODE,
+        VK_DYNAMIC_STATE_FRONT_FACE,
+        VK_DYNAMIC_STATE_LINE_WIDTH,
+        // VK_DYNAMIC_STATE_DEPTH_BIAS,
+        // VK_DYNAMIC_STATE_BLEND_CONSTANTS,
+        // VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+        // VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
+        // VK_DYNAMIC_STATE_STENCIL_REFERENCE,
     };
 
-    const VkRect2D scissor = {
-        .offset = {0, 0},
-        .extent = extent2D,
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        .pNext             = nullptr,
+        .flags             = 0,
+        .dynamicStateCount = static_cast<uint32_t>(std::size(dynamicStates)),
+        .pDynamicStates    = dynamicStates,
     };
 
-    const VkPipelineViewportStateCreateInfo viewportState = {
+    const VkPipelineViewportStateCreateInfo viewportStateInfo = {
         .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
         .pNext         = nullptr,
         .flags         = 0,
         .viewportCount = 1,
-        .pViewports    = &viewport,
+        .pViewports    = nullptr, // dynamic
         .scissorCount  = 1,
-        .pScissors     = &scissor,
+        .pScissors     = nullptr, // dynamic
     };
 
-    const VkPipelineRasterizationStateCreateInfo rasterizer = {
+    const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         .pNext                   = nullptr,
         .flags                   = 0,
         .depthClampEnable        = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode             = VK_POLYGON_MODE_FILL,
-        .cullMode                = VK_CULL_MODE_BACK_BIT,
-        .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        .cullMode                = VK_CULL_MODE_BACK_BIT,           // dynamic
+        .frontFace               = VK_FRONT_FACE_COUNTER_CLOCKWISE, // dynamic
         .depthBiasEnable         = VK_FALSE,
         .depthBiasConstantFactor = 0.0f,
         .depthBiasClamp          = 0.0f,
@@ -138,7 +143,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .lineWidth               = 1.0f,
     };
 
-    const VkPipelineMultisampleStateCreateInfo multisampling = {
+    const VkPipelineMultisampleStateCreateInfo multisampeStateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = 0,
@@ -150,7 +155,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .alphaToOneEnable      = VK_FALSE,
     };
 
-    const VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
         .blendEnable         = VK_FALSE,
         .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
         .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
@@ -162,21 +167,15 @@ void GraphicsPipeline::create(RenderContext& ctx,
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
-    const VkPipelineColorBlendStateCreateInfo colorBlending = {
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         .pNext           = nullptr,
         .flags           = 0,
         .logicOpEnable   = VK_FALSE,
         .logicOp         = VK_LOGIC_OP_COPY,
         .attachmentCount = 1,
-        .pAttachments    = &colorBlendAttachment,
-        .blendConstants =
-            {
-                0.0f,
-                0.0f,
-                0.0f,
-                0.0f,
-            },
+        .pAttachments    = &colorBlendAttachmentState,
+        .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
@@ -195,16 +194,16 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pNext               = nullptr,
         .flags               = 0,
         .stageCount          = 2,
-        .pStages             = shaderStages,
-        .pVertexInputState   = &vertexInputInfo,
-        .pInputAssemblyState = &inputAssembly,
+        .pStages             = shaderStagesInfo,
+        .pVertexInputState   = &vertexInputStateInfo,
+        .pInputAssemblyState = &inputAssemblyStateInfo,
         .pTessellationState  = nullptr,
-        .pViewportState      = &viewportState,
-        .pRasterizationState = &rasterizer,
-        .pMultisampleState   = &multisampling,
+        .pViewportState      = &viewportStateInfo,
+        .pRasterizationState = &rasterizationStateInfo,
+        .pMultisampleState   = &multisampeStateInfo,
         .pDepthStencilState  = nullptr,
-        .pColorBlendState    = &colorBlending,
-        .pDynamicState       = nullptr,
+        .pColorBlendState    = &colorBlendStateInfo,
+        .pDynamicState       = &dynamicStateInfo,
         .layout              = m_pipelineLayout,
         .renderPass          = renderPass.handle(),
         .subpass             = 0,
@@ -236,6 +235,26 @@ void GraphicsPipeline::destroy() noexcept {
 
 void GraphicsPipeline::bind(VkCommandBuffer commandBuffer) const {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
+}
+
+void GraphicsPipeline::setViewport(VkCommandBuffer cmd, const VkViewport& viewport) {
+    vkCmdSetViewport(cmd, 0, 1, &viewport);
+}
+
+void GraphicsPipeline::setScissor(VkCommandBuffer cmd, const VkRect2D& scissor) {
+    vkCmdSetScissor(cmd, 0, 1, &scissor);
+}
+
+void GraphicsPipeline::setCullMode(VkCommandBuffer cmd, VkCullModeFlags cullMode) {
+    vkCmdSetCullMode(cmd, cullMode);
+}
+
+void GraphicsPipeline::setFrontFace(VkCommandBuffer cmd, VkFrontFace frontFace) {
+    vkCmdSetFrontFace(cmd, frontFace);
+}
+
+void GraphicsPipeline::setLineWidth(VkCommandBuffer cmd, float lineWidth) {
+    vkCmdSetLineWidth(cmd, lineWidth);
 }
 
 } // namespace R3

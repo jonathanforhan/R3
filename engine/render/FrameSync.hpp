@@ -31,9 +31,9 @@ public:
     uint32 currentFrameIndex() const noexcept { return m_currentFrame; };
 
 private:
-    VkDevice m_device = VK_NULL_HANDLE;
-    uint32 m_maxFramesInFlight;
-    uint32 m_currentFrame = 0;
+    VkDevice m_device          = VK_NULL_HANDLE;
+    uint32 m_maxFramesInFlight = 0;
+    uint32 m_currentFrame      = 0;
     std::vector<VkSemaphore> m_imageAvailableSemaphores; // one per frame in flight
     std::vector<VkFence> m_inFlightFences;               // one per frame in flight
     std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image

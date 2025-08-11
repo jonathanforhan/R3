@@ -85,9 +85,9 @@ static vkb::Instance createInstance() {
 
     auto result = vkb::InstanceBuilder()
                       .set_app_name("R3 Application")
-                      .set_app_version(R3_VERSION_MAJOR, R3_VERSION_MINOR, R3_VERSION_PATCH)
+                      .set_app_version(R3_ENGINE_VERSION_MAJOR, R3_ENGINE_VERSION_MINOR, R3_ENGINE_VERSION_PATCH)
                       .set_engine_name("R3 Engine")
-                      .set_engine_version(R3_VERSION_MAJOR, R3_VERSION_MINOR, R3_VERSION_PATCH)
+                      .set_engine_version(R3_ENGINE_VERSION_MAJOR, R3_ENGINE_VERSION_MINOR, R3_ENGINE_VERSION_PATCH)
                       .require_api_version(R3_VULKAN_VERSION_MAJOR, R3_VULKAN_VERSION_MINOR, R3_VULKAN_VERSION_PATCH)
                       .request_validation_layers(R3_VALIDATION_LAYERS_ENABLED)
                       .enable_extensions(requiredExtensions)
