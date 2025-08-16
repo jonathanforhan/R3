@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "EventHandler.hpp"
+#include "Hash.hpp"
 #include "Types.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
@@ -13,7 +14,7 @@ namespace R3 {
 Camera::Camera(CameraType type)
     : m_cameraType(type) {
     auto keyCallback = [this](const Event<KeyboardEventData>& e) {
-        bool pressed = (e.id == EventHandler::id("key-press"));
+        bool pressed = e.id == "key-press";
 
         switch (e.data.key) {
             case Key::W:
@@ -38,11 +39,10 @@ Camera::Camera(CameraType type)
                 break;
         }
     };
-
     EventHandler::instance().bindEventListener({"key-press", "key-release"}, keyCallback);
 
     auto mouseCallback = [this](const Event<MouseButtonEventData>& e) {
-        bool pressed = (e.id == EventHandler::id("mouse-press"));
+        bool pressed = e.id == "mouse-press";
 
         if (e.data.button == MouseButton::Left) {
             m_mouseDown = pressed;

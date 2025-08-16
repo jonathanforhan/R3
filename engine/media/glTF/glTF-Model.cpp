@@ -1,6 +1,7 @@
 #include "glTF-Model.hpp"
 
 #include <array>
+#include <cstdlib>
 #include <exception>
 #include <filesystem>
 #include <format>
@@ -11,6 +12,7 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -20,8 +22,6 @@
 #include "Types.hpp"
 #include "Version.hpp"
 #include "glTF.hpp"
-// #include "glTF-Extensions.hxx"
-// #include "glTF-Util.hxx"
 
 namespace R3::glTF {
 

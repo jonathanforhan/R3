@@ -34,9 +34,6 @@ int Engine::run() {
 
     window.show();
 
-    EventHandler::instance().bindEventListener(
-        "key-press", [](const Event<KeyboardEventData>& e) { LOG_INFO("pressed: {}", (char)e.data.key); });
-
     while (!window.shouldClose()) {
         const double dt = deltaTime();
 

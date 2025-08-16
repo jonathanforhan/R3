@@ -8,6 +8,7 @@
 #pragma once
 
 #include <string_view>
+#include <utility>
 #include "Types.hpp"
 
 namespace R3::hash {
@@ -15,7 +16,7 @@ namespace R3::hash {
 /**
  * @brief Computes FNV-1a compile time hash
  *
- * @param str String view to hash
+ * @param str string view to hash
  * @return FNV-1a hash value
  *
  * @code
@@ -34,7 +35,7 @@ constexpr uint64 fnv1a(std::string_view str) noexcept {
 /**
  * @brief Computes DJB2 compile time hash
  *
- * @param str String view to hash
+ * @param str string view to hash
  * @return DJB2 hash value
  *
  * @code
@@ -49,21 +50,43 @@ constexpr uint64 djb2(std::string_view str) noexcept {
     return hash;
 }
 
-struct Param {
+/**
+ * @brief Container for 64-bit uint uuid
+ */
+class uuid {
+public:
     /**
-     * @brief Param constructor is NOT explicit making it useful as a parameter when costeval hashing is needed.
-     * @param str String view to hash
+     * @brief uuid constructor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+     * @param str string view to hash
      */
-    constexpr Param(std::string_view str) noexcept
-        : id{fnv1a(str)} {}
+    constexpr uuid(std::string_view str) noexcept
+        : m_id{fnv1a(str)} {}
 
+    /**
+     * @brief uuid constructor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+     * @tparam N  implicit
+     * @param str static cstring to hash
+     */
     template <usize N>
-    constexpr Param(const char (&str)[N]) noexcept
-        : id{fnv1a(std::string_view{str, N - 1})} {}
+    constexpr uuid(const char (&str)[N]) noexcept
+        : m_id{fnv1a(std::string_view{str, N - 1})} {}
 
-    constexpr operator uint64() const { return id; }
+    ~uuid() noexcept = default;
 
-    const uint64 id;
+    uuid(const uuid&)            = default;
+    uuid& operator=(const uuid&) = default;
+
+    uuid(uuid&&) noexcept            = default;
+    uuid& operator=(uuid&&) noexcept = default;
+
+    constexpr operator uint64() const noexcept { return m_id; }
+
+    constexpr bool operator==(uuid other) const noexcept { return m_id == other.m_id; }
+
+    constexpr bool operator!=(uuid other) const noexcept { return m_id != other.m_id; }
+
+private:
+    const uint64 m_id;
 };
 
 } // namespace R3::hash

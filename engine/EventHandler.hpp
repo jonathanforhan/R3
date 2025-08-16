@@ -20,7 +20,7 @@ namespace R3 {
  */
 struct EventBase {
 protected:
-    constexpr EventBase(uint64 id) noexcept
+    constexpr EventBase(hash::uuid id) noexcept
         : id{id} {}
 
 public:
@@ -32,8 +32,7 @@ public:
     EventBase(EventBase&&) noexcept            = default;
     EventBase& operator=(EventBase&&) noexcept = default;
 
-public:
-    const uint64 id; /**< unique event id */
+    const hash::uuid id; /**< unique event id */
 };
 
 /**
@@ -44,7 +43,7 @@ template <typename Data>
 struct Event : public EventBase {
     using DataType = Data;
 
-    constexpr Event(uint64 id, const Data& data) noexcept
+    constexpr Event(hash::uuid id, const Data& data) noexcept
         : EventBase{id},
           data{data} {}
 
@@ -106,20 +105,13 @@ public:
     }
 
     /**
-     * @brief Convert string id to uint64 id
-     * @param id String view id
-     * @return uuid
-     */
-    static uint64 id(hash::Param id) noexcept { return id; }
-
-    /**
      * @brief Push an event onto the event queue
      * @tparam Data Event DataType
      * @param id    Event id e.g. "key-press"
      * @param data  Event data payload
      */
     template <typename Data>
-    void push(hash::Param id, const Data& data) {
+    void push(hash::uuid id, const Data& data) {
         using EventType = Event<Data>;
 
         // calculate the next aligned offset
@@ -171,7 +163,7 @@ public:
      */
     template <typename F>
     requires EventListener<F>
-    void bindEventListener(hash::Param id, F callback) {
+    void bindEventListener(hash::uuid id, F callback) {
         using EventType       = EventTypeDeduced<F>;
         EventCallback wrapper = [callback](const EventBase& base) { callback(static_cast<const EventType&>(base)); };
         m_eventRegistry.insert(std::make_pair(id, wrapper));
@@ -179,7 +171,7 @@ public:
 
     template <typename F>
     requires EventListener<F>
-    void bindEventListener(std::initializer_list<hash::Param> ids, F callback) {
+    void bindEventListener(std::initializer_list<hash::uuid> ids, F callback) {
         for (auto& id : ids) {
             bindEventListener(id, callback);
         }
