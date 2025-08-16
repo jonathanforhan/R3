@@ -22,17 +22,18 @@ namespace R3 {
 Window::Window() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
     GLFWmonitor* primary = glfwGetPrimaryMonitor();
 
-    float content_scale_x, content_scale_y;
-    glfwGetMonitorContentScale(primary, &content_scale_x, &content_scale_y);
+    float contentScaleX, contentScaleY;
+    glfwGetMonitorContentScale(primary, &contentScaleX, &contentScaleY);
 
     static constexpr float scale = 1.5f;
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(primary);
-    const int width            = static_cast<int>(vidmode->width / (content_scale_x * scale));
-    const int height           = static_cast<int>(vidmode->height / (content_scale_y * scale));
+    const int width            = static_cast<int>(vidmode->width / (contentScaleX * scale));
+    const int height           = static_cast<int>(vidmode->height / (contentScaleY * scale));
     static const char* title   = "R3";
 
     if (!(m_window = glfwCreateWindow(width, height, title, nullptr, nullptr))) {
@@ -60,52 +61,54 @@ Window::Window() {
 
     //--- Keyboard Input Callback
     auto keyCallback = [](GLFWwindow*, int key, int, int action, int mods) {
-        KeyboardEventData data = {
+        const KeyboardEventData data = {
             .key       = Key(key),
             .modifiers = InputModifiers(mods),
         };
 
-        uint64 id;
-
         switch (action) {
             case GLFW_PRESS:
-                id = "key-press"_event;
+                EventHandler::instance().push("key-press", data);
                 break;
             case GLFW_REPEAT:
-                id = "key-repeat"_event;
+                EventHandler::instance().push("key-repeat", data);
                 break;
             case GLFW_RELEASE:
-                id = "key-release"_event;
+                EventHandler::instance().push("key-release", data);
                 break;
             default:
                 return;
         }
-
-        EventHandler::instance().pushEvent(id, data);
     };
     glfwSetKeyCallback(m_window, keyCallback);
 
-    //--- MouseButton Callback
+    //--- Mouse Button Callback
     auto mouseCallback = [](GLFWwindow*, int button, int action, int mods) {
-        MouseButtonEventData data = {
+        const MouseButtonEventData data = {
             .button    = MouseButton(button),
             .modifiers = InputModifiers(mods),
         };
 
-        uint64 id;
-
         switch (action) {
             case GLFW_PRESS:
-                id = "mouse-press"_event;
+                EventHandler::instance().push("mouse-press", data);
                 break;
             case GLFW_RELEASE:
-                id = "mouse-release"_event;
+                EventHandler::instance().push("mouse-release", data);
                 break;
             default:
                 return;
         }
+    };
+    glfwSetMouseButtonCallback(m_window, mouseCallback);
 
-        EventHandler::instance().pushEvent(id, data);
+    //--- Mouse Scroll Callback
+    auto scrollCallback = [](GLFWwindow*, double xoffset, double yoffset) {
+        const MouseScrollEventData data = {
+            .offset = dvec2{xoffset, yoffset},
+        };
+
+        EventHandler::instance().push("mouse-scroll", data);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
@@ -113,21 +116,19 @@ Window::Window() {
     auto cursorCallback = [](GLFWwindow* window, double x, double y) {
         int w, h;
         glfwGetFramebufferSize(window, &w, &h);
-        float posX = static_cast<float>(x) / static_cast<float>(w);
-        float posY = static_cast<float>(y) / static_cast<float>(h);
+        double posX = static_cast<double>(x) / static_cast<double>(w);
+        double posY = static_cast<double>(y) / static_cast<double>(h);
 
-        MouseCursorEventData data = {
-            .cursorPosition = fvec2{posX, posY},
+        const MouseCursorEventData data = {
+            .cursorPosition = dvec2{posX, posY},
         };
 
-        uint64 id = "cursor-move"_event;
-
-        EventHandler::instance().pushEvent(id, data);
+        EventHandler::instance().push("cursor-move", data);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
 }
 
-Window::~Window() {
+Window::~Window() noexcept {
     if (m_window) {
         glfwDestroyWindow(m_window);
         glfwTerminate();
@@ -188,7 +189,7 @@ void Window::setPosition(int32 x, int32 y) {
 }
 
 float Window::aspectRatio() const {
-    vec2 extent{static_cast<vec2>(size())};
+    fvec2 extent{static_cast<fvec2>(size())};
     return extent.x / extent.y;
 }
 

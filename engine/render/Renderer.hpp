@@ -17,9 +17,9 @@
 namespace R3 {
 
 struct UniformBufferObject {
-    alignas(16) mat4 model;
-    alignas(16) mat4 view;
-    alignas(16) mat4 proj;
+    alignas(16) fmat4 model;
+    alignas(16) fmat4 view;
+    alignas(16) fmat4 proj;
 };
 
 class Window;
@@ -28,13 +28,13 @@ class Renderer {
 public:
     explicit Renderer(Window& window);
 
+    ~Renderer() noexcept;
+
     Renderer(const Renderer&)            = delete;
     Renderer& operator=(const Renderer&) = delete;
 
     Renderer(Renderer&&) noexcept            = delete;
     Renderer& operator=(Renderer&&) noexcept = delete;
-
-    ~Renderer() noexcept;
 
     void render(double dt);
 

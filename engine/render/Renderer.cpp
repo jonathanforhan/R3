@@ -71,8 +71,8 @@ Renderer::Renderer(Window& window)
 
     // uniform buffers
     m_ubo = {
-        .model = mat4(1.0f),
-        .view  = glm::lookAt(vec3(2.0f, 2.0f, 2.0f), vec3(0.0f, 0.0f, 0.0f), vec3(0.0f, 0.0f, 1.0f)),
+        .model = fmat4(1.0f),
+        .view  = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
         .proj =
             glm::perspective(glm::radians(45.0f),
                              static_cast<float>(m_swapchain.extent().x) / static_cast<float>(m_swapchain.extent().y),

@@ -21,29 +21,28 @@ public:
     void translateLeft(float magnitude);
     void translateUp(float magnitude);
     void translateDown(float magnitude);
-    void lookAround(float x, float y);
-    void lookAround(vec2 pos) { lookAround(pos.x, pos.y); }
+    void lookAround(float dx, float dy);
 
-    vec3 front() const { return m_front; }
+    fvec3 front() const { return m_front; }
     float fov() const { return m_fov; }
     void setFov(float fov) { m_fov = fov; }
-    vec3 position() const { return m_position; }
-    void setPosition(vec3 position) { m_position = position; }
+    fvec3 position() const { return m_position; }
+    void setPosition(fvec3 position) { m_position = position; }
     bool active() const { return m_active; }
     void setActive(bool active = true) { m_active = active; }
 
-    void apply(float aspectRatio, ivec2 windowSize, mat4& view, mat4& projection) const;
+    void apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const;
 
 private:
     CameraType m_cameraType;
 
-    float m_fov{45};
-    float m_yaw{90};
-    float m_pitch{0};
+    float m_fov{45.0f};
+    float m_yaw{90.0f};
+    float m_pitch{0.0f};
 
-    vec3 m_position{0.0f, 0.0f, 0.0f};
-    vec3 m_front{0.0f, 0.0f, 1.0f};
-    vec3 m_up{0.0f, 1.0f, 0.0f};
+    fvec3 m_position{0.0f, 0.0f, 0.0f};
+    fvec3 m_front{0.0f, 0.0f, 1.0f};
+    fvec3 m_up{0.0f, 1.0f, 0.0f};
 
     bool m_active = false;
 
@@ -58,8 +57,8 @@ private:
 
     bool m_mouseDown = false;
 
-    vec2 m_cursorPosition     = vec2(0.0f);
-    vec2 m_prevCursorPosition = vec2(0.0f);
+    fvec2 m_cursorPosition{0.0f, 0.0f};
+    fvec2 m_prevCursorPosition{0.0f, 0.0f};
 };
 
 } // namespace R3

@@ -12,76 +12,50 @@ namespace R3 {
 
 Camera::Camera(CameraType type)
     : m_cameraType(type) {
-    auto keyPressCallback = [this](const Event<KeyboardEventData>& e) {
+    auto keyCallback = [this](const Event<KeyboardEventData>& e) {
+        bool pressed = (e.id == EventHandler::id("key-press"));
+
         switch (e.data.key) {
             case Key::W:
-                m_activeKeys.w = true;
+                m_activeKeys.w = pressed;
                 break;
             case Key::A:
-                m_activeKeys.a = true;
+                m_activeKeys.a = pressed;
                 break;
             case Key::S:
-                m_activeKeys.s = true;
+                m_activeKeys.s = pressed;
                 break;
             case Key::D:
-                m_activeKeys.d = true;
+                m_activeKeys.d = pressed;
                 break;
             case Key::E:
-                m_activeKeys.e = true;
+                m_activeKeys.e = pressed;
                 break;
             case Key::Q:
-                m_activeKeys.q = true;
+                m_activeKeys.q = pressed;
                 break;
             default:
                 break;
         }
     };
-    EventHandler::instance().bindEventListener("key-press"_event, keyPressCallback);
 
-    auto keyReleaseCallback = [this](const Event<KeyboardEventData>& e) {
-        switch (e.data.key) {
-            case Key::W:
-                m_activeKeys.w = false;
-                break;
-            case Key::A:
-                m_activeKeys.a = false;
-                break;
-            case Key::S:
-                m_activeKeys.s = false;
-                break;
-            case Key::D:
-                m_activeKeys.d = false;
-                break;
-            case Key::E:
-                m_activeKeys.e = false;
-                break;
-            case Key::Q:
-                m_activeKeys.q = false;
-                break;
-            default:
-                break;
-        }
-    };
-    EventHandler::instance().bindEventListener("key-release"_event, keyReleaseCallback);
+    EventHandler::instance().bindEventListener({"key-press", "key-release"}, keyCallback);
 
-    auto mousePressCallback = [this](const Event<MouseButtonEventData>& e) {
+    auto mouseCallback = [this](const Event<MouseButtonEventData>& e) {
+        bool pressed = (e.id == EventHandler::id("mouse-press"));
+
         if (e.data.button == MouseButton::Left) {
-            m_mouseDown = true;
+            m_mouseDown = pressed;
         }
     };
-    EventHandler::instance().bindEventListener("mouse-press"_event, mousePressCallback);
-
-    auto mouseReleaseCallback = [this](const Event<MouseButtonEventData>& e) {
-        if (e.data.button == MouseButton::Left) {
-            m_mouseDown = false;
-        }
-    };
-    EventHandler::instance().bindEventListener("mouse-release"_event, mouseReleaseCallback);
+    EventHandler::instance().bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
 
     auto cursorPositionCallback = [this](const Event<MouseCursorEventData>& e) {
         m_cursorPosition = e.data.cursorPosition;
     };
-    EventHandler::instance().bindEventListener("cursor-move"_event, cursorPositionCallback);
+    EventHandler::instance().bindEventListener("cursor-move", cursorPositionCallback);
+
+    translateBackward(2.0f);
 }
 
 void Camera::tick(double dt) {
@@ -91,10 +65,10 @@ void Camera::tick(double dt) {
         static constexpr float mouseSensitivity    = 360.0f;
         static constexpr float movementSensitivity = 8.0f;
 
-        const float deltaX       = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
-        const float deltaY       = m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f;
-        const vec2 deltaPosition = vec2(deltaX, deltaY);
-        m_prevCursorPosition     = m_cursorPosition;
+        const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
+        const float deltaY        = m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f;
+        const fvec2 deltaPosition = fvec2(deltaX, deltaY);
+        m_prevCursorPosition      = m_cursorPosition;
 
         const float deltaMovement = deltaT * movementSensitivity;
 
@@ -117,13 +91,14 @@ void Camera::tick(double dt) {
         }
 
         if (m_mouseDown) {
-            lookAround(deltaPosition * mouseSensitivity);
+            fvec2 dpos = deltaPosition * mouseSensitivity;
+            lookAround(dpos.x, dpos.y);
         }
     }
 }
 
 void Camera::translateForward(float magnitude) {
-    m_position += magnitude * glm::normalize(vec3(m_front.x, 0, m_front.z));
+    m_position += magnitude * glm::normalize(fvec3(m_front.x, 0, m_front.z));
 }
 
 void Camera::translateBackward(float magnitude) {
@@ -146,9 +121,9 @@ void Camera::translateDown(float magnitude) {
     translateUp(-magnitude);
 }
 
-void Camera::lookAround(float x, float y) {
-    m_yaw += x;
-    m_pitch += y;
+void Camera::lookAround(float dx, float dy) {
+    m_yaw += dx;
+    m_pitch += dy;
 
     m_pitch = std::clamp(m_pitch, -89.0f, 89.0f);
 
@@ -158,7 +133,7 @@ void Camera::lookAround(float x, float y) {
     m_front   = glm::normalize(m_front);
 }
 
-void Camera::apply(float aspectRatio, ivec2 windowSize, mat4& view, mat4& projection) const {
+void Camera::apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const {
     if (m_cameraType == CameraType::Perspective) {
         projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
     } else {

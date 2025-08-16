@@ -15,13 +15,13 @@ class Model : public Root {
 public:
     explicit Model(const std::filesystem::path& path);
 
+    ~Model() noexcept = default;
+
     Model(const Model&)            = delete;
     Model& operator=(const Model&) = delete;
 
     Model(Model&&) noexcept            = delete;
     Model& operator=(Model&&) noexcept = delete;
-
-    ~Model() noexcept = default;
 
     [[nodiscard]] constexpr const std::vector<uint8>& buffer() const { return m_buffer; }
 

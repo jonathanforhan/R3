@@ -1,59 +1,47 @@
 #pragma once
 
-#include <concepts>
 #include <cstdint>
 #include <glm/glm.hpp>
 
 namespace R3 {
 
-using uint8  = std::uint8_t;
-using uint16 = std::uint16_t;
-using uint32 = std::uint32_t;
-using uint64 = std::uint64_t;
-using usize  = std::size_t;
+using uint8  = std::uint8_t;  /**< 8-bit unsigned integer */
+using uint16 = std::uint16_t; /**< 16-bit unsigned integer */
+using uint32 = std::uint32_t; /**< 32-bit unsigned integer */
+using uint64 = std::uint64_t; /**< 64-bit unsigned integer */
+using usize  = std::size_t;   /**< unsigned platform size type */
 
-using int8  = std::int8_t;
-using int16 = std::int16_t;
-using int32 = std::int32_t;
-using int64 = std::int64_t;
+using int8  = std::int8_t;  /**< 8-bit signed integer */
+using int16 = std::int16_t; /**< 16-bit signed integer */
+using int32 = std::int32_t; /**< 32-bit signed integer */
+using int64 = std::int64_t; /**< 64-bit signed integer */
 
-using glm::vec1;
-using glm::vec2;
-using glm::vec3;
-using glm::vec4;
+using glm::uvec2; /**< 32-bit unsigned integer 2 dimensional vector */
+using glm::uvec3; /**< 32-bit unsigned integer 3 dimensional vector */
+using glm::uvec4; /**< 32-bit unsigned integer 4 dimensional vector */
 
-using glm::ivec1;
-using glm::ivec2;
-using glm::ivec3;
-using glm::ivec4;
+using glm::ivec2; /**< 32-bit signed integer 2 dimensional vector */
+using glm::ivec3; /**< 32-bit signed integer 3 dimensional vector */
+using glm::ivec4; /**< 32-bit signed integer 4 dimensional vector */
 
-using glm::uvec1;
-using glm::uvec2;
-using glm::uvec3;
-using glm::uvec4;
+using glm::fvec2; /**< 32-bit floating point 2 dimensional vector */
+using glm::fvec3; /**< 32-bit floating point 3 dimensional vector */
+using glm::fvec4; /**< 32-bit floating point 4 dimensional vector */
 
-using glm::fvec1;
-using glm::fvec2;
-using glm::fvec3;
-using glm::fvec4;
+using glm::dvec2; /**< 64-bit floating point 2 dimensional vector */
+using glm::dvec3; /**< 64-bit floating point 3 dimensional vector */
+using glm::dvec4; /**< 64-bit floating point 4 dimensional vector */
 
-using glm::dvec1;
-using glm::dvec2;
-using glm::dvec3;
-using glm::dvec4;
+using glm::fmat2; /**< 32-bit floating point 2x2 dimensional matrix */
+using glm::fmat3; /**< 32-bit floating point 3x3 dimensional matrix */
+using glm::fmat4; /**< 32-bit floating point 4x4 dimensional matrix */
 
-using glm::mat2;
-using glm::mat3;
-using glm::mat4;
+using glm::dmat2; /**< 64-bit floating point 2x2 dimensional matrix */
+using glm::dmat3; /**< 64-bit floating point 3x3 dimensional matrix */
+using glm::dmat4; /**< 64-bit floating point 4x4 dimensional matrix */
 
-using glm::fmat2;
-using glm::fmat3;
-using glm::fmat4;
+using glm::fquat; /**< 32-bit floating point quaternion */
 
-using glm::dmat2;
-using glm::dmat3;
-using glm::dmat4;
-
-using glm::quat;
+using glm::dquat; /**< 32-bit floating point quaternion */
 
 } // namespace R3
