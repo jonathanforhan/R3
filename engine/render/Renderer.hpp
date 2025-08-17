@@ -13,6 +13,7 @@
 #include "RenderPass.hpp"
 #include "Shader.hpp"
 #include "Swapchain.hpp"
+#include "Texture.hpp"
 
 namespace R3 {
 
@@ -52,6 +53,7 @@ private:
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Buffer m_vertexBuffer;
+    Texture m_texture;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
     std::vector<Framebuffer> m_framebuffers;

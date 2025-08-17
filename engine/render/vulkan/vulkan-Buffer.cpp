@@ -7,53 +7,41 @@
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
 #include "Types.hpp"
+#include "render/Flags.hpp"
 #include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
 
 namespace R3 {
 
-static uint32 findMemoryType(VkPhysicalDevice physicalDevice, uint32 typeFilter, MemoryProperties properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw Exception("Failed to find suitable memory type");
-}
-
-void Buffer::create(RenderContext& ctx, usize size, BufferUsage usage, MemoryProperties properties) {
+void Buffer::allocate(RenderContext& ctx, usize sizeBytes, BufferUsage usage, MemoryProperties properties) {
     m_device         = ctx.device();
     m_physicalDevice = ctx.physicalDevice();
-    m_size           = size;
+    m_size           = sizeBytes;
 
-    const VkBufferCreateInfo bufferCreateInfo = {
+    const VkBufferCreateInfo bufferInfo = {
         .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = {},
-        .size                  = size,
+        .size                  = sizeBytes,
         .usage                 = usage,
         .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
         .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices   = nullptr,
+        .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
     };
-    VK_CHECK(vkCreateBuffer(m_device, &bufferCreateInfo, nullptr, &m_buffer));
+    VK_CHECK(vkCreateBuffer(m_device, &bufferInfo, nullptr, &m_buffer));
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(m_device, m_buffer, &memoryRequirements);
 
-    const VkMemoryAllocateInfo memoryAllocateInfo = {
+    const VkMemoryAllocateInfo memoryInfo = {
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext           = nullptr,
         .allocationSize  = memoryRequirements.size,
-        .memoryTypeIndex = findMemoryType(m_physicalDevice, memoryRequirements.memoryTypeBits, properties),
+        .memoryTypeIndex = ctx.deviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
     };
 
     try {
-        VK_CHECK(vkAllocateMemory(m_device, &memoryAllocateInfo, nullptr, &m_bufferMemory));
+        VK_CHECK(vkAllocateMemory(m_device, &memoryInfo, nullptr, &m_bufferMemory));
     } catch (const Exception& ex) {
         vkDestroyBuffer(m_device, m_buffer, nullptr);
         throw ex;
@@ -62,7 +50,7 @@ void Buffer::create(RenderContext& ctx, usize size, BufferUsage usage, MemoryPro
     VK_CHECK(vkBindBufferMemory(m_device, m_buffer, m_bufferMemory, 0));
 }
 
-void Buffer::destroy() noexcept {
+void Buffer::free() noexcept {
     if (m_mappedMemory) {
         unmap();
     }
@@ -82,6 +70,16 @@ void Buffer::destroy() noexcept {
     m_size           = 0;
 }
 
+void Buffer::copy(const void* src, usize size) {
+    if (size > m_size) {
+        throw Exception{std::format("data size {} exceeds buffer size {}", size, m_size)};
+    }
+
+    void* mappedData = map();
+    std::memcpy(mappedData, src, static_cast<size_t>(size));
+    unmap();
+}
+
 void* Buffer::map() {
     if (m_mappedMemory) {
         throw Exception{__FUNCTION__ " called on already mapped memory"};
@@ -95,16 +93,6 @@ void Buffer::unmap() noexcept {
         vkUnmapMemory(m_device, m_bufferMemory);
         m_mappedMemory = nullptr;
     }
-}
-
-void Buffer::copyData(const void* data, usize size) {
-    if (size > m_size) {
-        throw Exception{std::format("data size {} exceeds buffer size {}", size, m_size)};
-    }
-
-    void* mappedData = map();
-    std::memcpy(mappedData, data, static_cast<size_t>(size));
-    unmap();
 }
 
 } // namespace R3

@@ -14,6 +14,7 @@
 #include "Log.hpp"
 #include "Types.hpp"
 #include "Version.hpp"
+#include "render/Flags.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 
@@ -78,7 +79,6 @@ static vkb::Instance createInstance() {
     }
     std::vector<const char*> requiredExtensions{pRequiredExtensions, pRequiredExtensions + extensionCount};
 
-    /* add debug */
 #if R3_VALIDATION_LAYERS_ENABLED
     requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
@@ -115,7 +115,7 @@ static VkSurfaceKHR createSurface(Window& window, VkInstance instance) {
 }
 
 static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface) {
-    auto result = vkb::PhysicalDeviceSelector(instance)
+    auto result = vkb::PhysicalDeviceSelector(instance, surface)
                       .set_minimum_version(1, 3)
                       .set_required_features({
                           .geometryShader     = VK_TRUE,
@@ -135,7 +135,6 @@ static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, V
                       .require_dedicated_transfer_queue()
                       .require_separate_compute_queue()
                       .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
-                      .set_surface(surface)
                       .select();
 
     if (!result) {
@@ -155,7 +154,7 @@ static vkb::Device createLogicalDevice(const vkb::PhysicalDevice& physicalDevice
     return result.value();
 }
 
-void RenderContext::create(Window& window) {
+RenderContext::RenderContext(Window& window) {
     std::error_code error;
 
     try {
@@ -166,7 +165,7 @@ void RenderContext::create(Window& window) {
         const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
         m_physicalDevice                         = physicalDevice.physical_device;
         const vkb::Device device                 = createLogicalDevice(physicalDevice);
-        m_logicalDevice                          = device.device;
+        m_device                                 = device.device;
 
         /* get queue handles */
         auto initQueue = [&](QueueType queueType, Queue& queue) {
@@ -191,26 +190,51 @@ void RenderContext::create(Window& window) {
         initQueue(QueueType::Present, m_presentQueue);
         initQueue(QueueType::Compute, m_computeQueue);
     } catch (const Exception& ex) {
-        destroy();
+        this->~RenderContext();
         throw ex;
     }
 }
 
-void RenderContext::destroy() noexcept {
-    vkDestroyDevice(m_logicalDevice, nullptr);
-    if (m_instance != VK_NULL_HANDLE) {
-        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
+RenderContext::~RenderContext() noexcept {
+    // destroy device
+    if (m_device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(m_device);
+        vkDestroyDevice(m_device, nullptr);
+        m_device = VK_NULL_HANDLE;
     }
-    vkDestroyInstance(m_instance, nullptr);
 
-    m_logicalDevice  = VK_NULL_HANDLE;
+    if (m_instance != VK_NULL_HANDLE) {
+        // destroy surface
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        m_surface = VK_NULL_HANDLE;
+
+        // destroy debug messenger
+        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
+        m_debug = VK_NULL_HANDLE;
+    }
+
+    // destroy instance
+    vkDestroyInstance(m_instance, nullptr);
+    m_instance = VK_NULL_HANDLE;
+
     m_physicalDevice = VK_NULL_HANDLE;
-    m_instance       = VK_NULL_HANDLE;
 }
 
 void RenderContext::waitIdle() {
-    VK_CHECK(vkDeviceWaitIdle(m_logicalDevice));
+    VK_CHECK(vkDeviceWaitIdle(m_device));
+}
+
+uint32 RenderContext::deviceMemoryTypeIndex(uint32 typeFilter, MemoryProperties properties) const {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
+
+    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw Exception("Failed to find suitable memory type");
 }
 
 } // namespace R3

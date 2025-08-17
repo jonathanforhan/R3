@@ -5,26 +5,31 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <cstdint>
 #include <format>
 #include <system_error>
 #include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
+#include "Types.hpp"
 #include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 
+#include "Log.hpp"
+
 namespace R3 {
 
-void Swapchain::create(RenderContext& ctx, Window& window) {
+Swapchain::Swapchain(Window& window, RenderContext& ctx) {
     m_device = ctx.device();
 
     int width, height;
     glfwGetFramebufferSize(window.glfw(), &width, &height);
 
+    uint32 iGraphics = ctx.graphicsQueue().index;
+    uint32 iPresent  = ctx.presentQueue().index;
+
     /* RenderContext gives special access to private members during Swapchain::create */
-    auto result = vkb::SwapchainBuilder(ctx.physicalDevice(), ctx.device(), ctx.surface())
+    auto result = vkb::SwapchainBuilder(ctx.physicalDevice(), ctx.device(), ctx.surface(), iGraphics, iPresent)
                       .set_desired_format({VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                       .set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR) // prefer triple buffering
                       .add_fallback_present_mode(VK_PRESENT_MODE_FIFO_KHR)   // guaranteed fallback
@@ -47,20 +52,17 @@ void Swapchain::create(RenderContext& ctx, Window& window) {
     m_extent      = swapchain.extent;
 }
 
-void Swapchain::recreate(RenderContext& ctx, Window& window) {
-    destroy();
-    create(ctx, window);
-}
+Swapchain::~Swapchain() noexcept {
+    if (m_device != VK_NULL_HANDLE) {
+        for (VkImageView imageView : m_imageViews) {
+            vkDestroyImageView(m_device, imageView, nullptr);
+        }
+        m_images.clear();
+        m_imageViews.clear();
 
-void Swapchain::destroy() noexcept {
-    for (VkImageView imageView : m_imageViews) {
-        vkDestroyImageView(m_device, imageView, nullptr);
+        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+        m_swapchain = VK_NULL_HANDLE;
     }
-    vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
-
-    m_images.clear();
-    m_imageViews.clear();
-
     m_device = VK_NULL_HANDLE;
 }
 
@@ -75,7 +77,7 @@ VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uin
         .waitSemaphoreCount = 1,
         .pWaitSemaphores    = &waitSemaphore,
         .swapchainCount     = 1,
-        .pSwapchains        = &m_swapchain,
+        .pSwapchains        = &m_swapchain.get(),
         .pImageIndices      = &imageIndex,
         .pResults           = nullptr,
     };

@@ -6,38 +6,37 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
+#include "Flags.hpp"
+#include "Handle.hpp"
 #include "Types.hpp"
 
 namespace R3 {
 
 class Window;
 
-enum class QueueType {
-    Present,
-    Graphics,
-    Compute,
-    Transfer,
-};
-
 struct Queue {
     QueueType type = QueueType::Graphics;
-    VkQueue handle = VK_NULL_HANDLE;
-    uint32 index   = static_cast<uint32>(-1);
+    uint32 index   = 0xFFFFFFFF;
+#if R3_VULKAN
+    VkQueue handle = nullptr;
+#endif
 };
 
 class RenderContext {
 public:
-    void create(Window& window);
+    RenderContext() = default;
 
-    void destroy() noexcept;
+    explicit RenderContext(Window& window);
+
+    ~RenderContext() noexcept;
+
+    RenderContext(const RenderContext&)            = delete;
+    RenderContext& operator=(const RenderContext&) = delete;
+
+    RenderContext(RenderContext&&) noexcept            = default;
+    RenderContext& operator=(RenderContext&&) noexcept = default;
 
     void waitIdle();
-
-    VkDevice device() noexcept { return m_logicalDevice; }
-
-    VkPhysicalDevice physicalDevice() noexcept { return m_physicalDevice; }
-
-    VkSurfaceKHR surface() noexcept { return m_surface; }
 
     const Queue& graphicsQueue() const noexcept { return m_graphicsQueue; }
 
@@ -45,15 +44,26 @@ public:
 
     const Queue& computeQueue() const noexcept { return m_computeQueue; }
 
+    uint32 deviceMemoryTypeIndex(uint32 typeFilter, MemoryProperties properties) const;
+
+    VkDevice device() noexcept { return m_device; }
+
+    VkPhysicalDevice physicalDevice() noexcept { return m_physicalDevice; }
+
+    VkSurfaceKHR surface() noexcept { return m_surface; }
+
 private:
-    VkInstance m_instance             = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debug  = VK_NULL_HANDLE;
-    VkSurfaceKHR m_surface            = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VkDevice m_logicalDevice          = VK_NULL_HANDLE;
     Queue m_graphicsQueue;
     Queue m_presentQueue;
     Queue m_computeQueue;
+
+#if R3_VULKAN
+    Handle<VkInstance> m_instance;
+    Handle<VkDebugUtilsMessengerEXT> m_debug;
+    Handle<VkSurfaceKHR> m_surface;
+    Handle<VkPhysicalDevice> m_physicalDevice;
+    Handle<VkDevice> m_device;
+#endif
 };
 
 } // namespace R3

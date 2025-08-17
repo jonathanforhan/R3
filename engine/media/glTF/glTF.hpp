@@ -1,11 +1,9 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <vector>
 #include "JSON.hpp"
 #include "Types.hpp"
@@ -76,7 +74,7 @@
 [ ] NV_materials_mdl
 
     --- Archived ---
-[w] KHR_materials_pbrSpecularGlossiness (currently only supports diffuse color)
+[ ] KHR_materials_pbrSpecularGlossiness
 [ ] KHR_techniques_webgl
 [ ] KHR_xmp
 

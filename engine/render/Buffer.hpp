@@ -2,66 +2,36 @@
 
 #include <span>
 #include <vulkan/vulkan_core.h>
+#include "Flags.hpp"
 #include "Types.hpp"
 
 namespace R3 {
-
-struct MemoryPropertyFlags {
-    enum : uint32 {
-        DeviceLocal       = 0x00000001,
-        HostVisible       = 0x00000002,
-        HostCoherent      = 0x00000004,
-        HostCached        = 0x00000008,
-        LazilyAllocated   = 0x00000010,
-        Protected         = 0x00000020,
-        DeviceCoherentAmd = 0x00000040,
-        DeviceUncachedAmd = 0x00000080,
-        RdmaCapableNv     = 0x00000100,
-    };
-};
-using MemoryProperties = uint32;
-
-struct BufferUsageFlags {
-    enum : uint32 {
-        TransferSrc        = 0x00000001,
-        TransferDst        = 0x00000002,
-        UniformTexelBuffer = 0x00000004,
-        StorageTexelBuffer = 0x00000008,
-        UniformBuffer      = 0x00000010,
-        StorageBuffer      = 0x00000020,
-        IndexBuffer        = 0x00000040,
-        VertexBuffer       = 0x00000080,
-        IndirectBuffer     = 0x00000100,
-    };
-};
-using BufferUsage = uint32;
 
 class RenderContext;
 
 class Buffer {
 public:
-    void create(RenderContext& ctx, usize size, BufferUsage usage, MemoryProperties properties);
+    void allocate(RenderContext& ctx, usize sizeBytes, BufferUsage usage, MemoryProperties properties);
 
-    void destroy() noexcept;
+    void free() noexcept;
 
-    void* map();
-
-    void unmap() noexcept;
-
-    void copyData(const void* data, usize size);
-
-    void copyData(const auto& data) { copyData(static_cast<const void*>(&data), sizeof(data)); }
+    void copy(const void* src, usize size);
 
     template <typename T>
-    void copyData(std::span<const T> data) {
-        copyData(static_cast<const void*>(data.data()), data.size_bytes());
+    void copy(std::span<const T> src) {
+        copy(static_cast<const void*>(src.data()), src.size_bytes());
     }
 
-    VkBuffer handle() noexcept { return m_buffer; }
+    VkBuffer buffer() noexcept { return m_buffer; }
 
     usize size() const noexcept { return m_size; }
 
     bool isValid() const noexcept { return m_buffer != nullptr; }
+
+private:
+    void* map();
+
+    void unmap() noexcept;
 
 private:
     VkDevice m_device                 = VK_NULL_HANDLE;

@@ -39,11 +39,15 @@ static const Vertex s_vertices[3] = {
 
 Renderer::Renderer(Window& window)
     : m_window{window} {
-    // create instance logical and phsyical device
-    m_ctx.create(m_window);
+    //--- Render Context
+    //    - instance
+    //    - surface
+    //    - physical device
+    //    - logical device
+    m_ctx = RenderContext{m_window};
 
-    // create swapchain for drawing
-    m_swapchain.create(m_ctx, m_window);
+    //--- Swapchain
+    m_swapchain = Swapchain{m_window, m_ctx};
 
     // create render pass with colorAttachment for subpass
     const AttachmentDescription colorAttachment = {
@@ -63,11 +67,11 @@ Renderer::Renderer(Window& window)
     m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", ShaderStageFlags::Fragment);
 
     // vertex buffer
-    m_vertexBuffer.create(m_ctx,
-                          sizeof(s_vertices[0]) * std::size(s_vertices),
-                          BufferUsageFlags::VertexBuffer,
-                          MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
-    m_vertexBuffer.copyData(s_vertices);
+    m_vertexBuffer.allocate(m_ctx,
+                            sizeof(s_vertices[0]) * std::size(s_vertices),
+                            BufferUsageFlags::VertexBuffer,
+                            MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
+    m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
 
     // uniform buffers
     m_ubo = {
@@ -82,10 +86,10 @@ Renderer::Renderer(Window& window)
 
     m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& ubo : m_ubos) {
-        ubo.create(m_ctx,
-                   sizeof(UniformBufferObject),
-                   BufferUsageFlags::UniformBuffer,
-                   MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
+        ubo.allocate(m_ctx,
+                     sizeof(UniformBufferObject),
+                     BufferUsageFlags::UniformBuffer,
+                     MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
     }
 
     // descriptor pool
@@ -111,7 +115,7 @@ Renderer::Renderer(Window& window)
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         const VkDescriptorBufferInfo bufferInfo = {
-            .buffer = m_ubos[i].handle(),
+            .buffer = m_ubos[i].buffer(),
             .offset = 0,
             .range  = sizeof(UniformBufferObject),
         };
@@ -154,17 +158,15 @@ Renderer::~Renderer() noexcept {
         framebuffer.destroy();
     }
     for (auto& ubo : m_ubos) {
-        ubo.destroy();
+        ubo.free();
     }
-    m_vertexBuffer.destroy();
+    m_vertexBuffer.free();
     m_fragmentShader.destroy();
     m_commandAllocator.destroy();
     m_vertexShader.destroy();
     m_graphicsPipeline.destroy();
     m_descriptorAllocator.destroy();
     m_renderPass.destroy();
-    m_swapchain.destroy();
-    m_ctx.destroy();
 }
 
 void Renderer::render(double dt) {
@@ -185,7 +187,7 @@ void Renderer::render(double dt) {
 
     m_camera.tick(dt);
     m_camera.apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
-    m_ubos[m_frameSync.currentFrameIndex()].copyData(&m_ubo, sizeof(m_ubo));
+    m_ubos[m_frameSync.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
 
     // Acquire next image
     uint32 imageIndex;
@@ -259,7 +261,7 @@ void Renderer::render(double dt) {
                             0,
                             nullptr);
 
-    const VkBuffer vertexBuffers[] = {m_vertexBuffer.handle()};
+    const VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
     const VkDeviceSize offsets[]   = {0};
     vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
 
@@ -303,7 +305,7 @@ void Renderer::handleWindowResize() {
         framebuffer.destroy();
     }
 
-    m_swapchain.recreate(m_ctx, m_window);
+    m_swapchain = Swapchain{m_window, m_ctx};
     m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
 
     m_framebuffers.resize(m_swapchain.imageViews().size());

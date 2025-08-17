@@ -12,6 +12,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
+#include "render/Flags.hpp"
 #include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
 

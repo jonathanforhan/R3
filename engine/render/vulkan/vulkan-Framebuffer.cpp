@@ -11,10 +11,7 @@
 
 namespace R3 {
 
-void Framebuffer::create(RenderContext& ctx,
-                         RenderPass& renderPass,
-                         std::span<const VkImageView> attachments,
-                         uvec2 extent) {
+void Framebuffer::create(RenderContext& ctx, RenderPass& renderPass, std::span<const VkImageView> attachments, uvec2 extent) {
     m_device = ctx.device();
 
     const VkFramebufferCreateInfo framebufferInfo = {

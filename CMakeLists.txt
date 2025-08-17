@@ -138,6 +138,12 @@ execute_process(
 		${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
 )
 
+execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/textures
+		${R3_RUNTIME_OUTPUT_DIRECTORY}/textures
+)
+
 find_package(Python3 COMPONENTS Interpreter)
 
 # compile shaders on configure

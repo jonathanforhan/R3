@@ -8,7 +8,6 @@
 #pragma once
 
 #include <string_view>
-#include <utility>
 #include "Types.hpp"
 
 namespace R3::hash {
