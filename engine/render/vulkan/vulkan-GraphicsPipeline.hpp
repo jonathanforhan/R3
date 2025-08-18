@@ -4,12 +4,11 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
+#include "vulkan-RenderContext.hpp"
+#include "vulkan-RenderPass.hpp"
+#include "vulkan-Shader.hpp"
 
-namespace R3 {
-
-class RenderContext;
-class RenderPass;
-class Shader;
+namespace R3::vulkan {
 
 struct Vertex {
     fvec3 position; // x, y, z
@@ -41,11 +40,9 @@ public:
 
     void setLineWidth(VkCommandBuffer cmd, float lineWidth);
 
-    VkPipeline handle() noexcept { return m_pipeline; }
+    VkPipeline pipeline() const noexcept { return m_pipeline; }
 
-    VkPipelineLayout layout() noexcept { return m_pipelineLayout; }
-
-    bool isValid() const noexcept { return m_pipeline != VK_NULL_HANDLE; }
+    VkPipelineLayout layout() const noexcept { return m_pipelineLayout; }
 
 private:
     VkDevice m_device                 = VK_NULL_HANDLE;
@@ -53,4 +50,4 @@ private:
     VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
 };
 
-} // namespace R3
+} // namespace R3::vulkan

@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Swapchain.hpp"
+#include "vulkan-Swapchain.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -12,21 +12,19 @@
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
 #include "Types.hpp"
-#include "render/RenderContext.hpp"
 #include "render/Window.hpp"
+#include "vulkan-RenderContext.hpp"
 
-#include "Log.hpp"
+namespace R3::vulkan {
 
-namespace R3 {
-
-Swapchain::Swapchain(Window& window, RenderContext& ctx) {
+void Swapchain::create(Window& window, RenderContext& ctx) {
     m_device = ctx.device();
 
     int width, height;
     glfwGetFramebufferSize(window.glfw(), &width, &height);
 
-    uint32 iGraphics = ctx.graphicsQueue().index;
-    uint32 iPresent  = ctx.presentQueue().index;
+    uint32 iGraphics = ctx.graphicsQueueIndex();
+    uint32 iPresent  = ctx.presentQueueIndex();
 
     /* RenderContext gives special access to private members during Swapchain::create */
     auto result = vkb::SwapchainBuilder(ctx.physicalDevice(), ctx.device(), ctx.surface(), iGraphics, iPresent)
@@ -52,7 +50,7 @@ Swapchain::Swapchain(Window& window, RenderContext& ctx) {
     m_extent      = swapchain.extent;
 }
 
-Swapchain::~Swapchain() noexcept {
+void Swapchain::destroy() noexcept {
     if (m_device != VK_NULL_HANDLE) {
         for (VkImageView imageView : m_imageViews) {
             vkDestroyImageView(m_device, imageView, nullptr);
@@ -66,6 +64,11 @@ Swapchain::~Swapchain() noexcept {
     m_device = VK_NULL_HANDLE;
 }
 
+void Swapchain::recreate(Window& window, RenderContext& ctx) {
+    destroy();
+    create(window, ctx);
+}
+
 VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32& imageIndex, uint64 timeout) const noexcept {
     return vkAcquireNextImageKHR(m_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
 }
@@ -77,13 +80,13 @@ VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uin
         .waitSemaphoreCount = 1,
         .pWaitSemaphores    = &waitSemaphore,
         .swapchainCount     = 1,
-        .pSwapchains        = &m_swapchain.get(),
+        .pSwapchains        = &m_swapchain,
         .pImageIndices      = &imageIndex,
         .pResults           = nullptr,
     };
     return vkQueuePresentKHR(presentQueue, &presentInfo);
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

@@ -1,3 +1,5 @@
+#if R3_VULKAN
+
 #include "render/Window.hpp"
 
 #if WIN32
@@ -242,3 +244,5 @@ void Window::kill() {
 }
 
 } // namespace R3
+
+#endif // R3_VULKAN

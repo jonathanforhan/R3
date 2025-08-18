@@ -2,16 +2,15 @@
 
 #include <span>
 #include <vulkan/vulkan_core.h>
-#include "Flags.hpp"
 #include "Types.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 class RenderContext;
 
 class Buffer {
 public:
-    void allocate(RenderContext& ctx, usize sizeBytes, BufferUsage usage, MemoryProperties properties);
+    void allocate(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
     void free() noexcept;
 
@@ -22,11 +21,9 @@ public:
         copy(static_cast<const void*>(src.data()), src.size_bytes());
     }
 
-    VkBuffer buffer() noexcept { return m_buffer; }
+    VkBuffer buffer() const noexcept { return m_buffer; }
 
     usize size() const noexcept { return m_size; }
-
-    bool isValid() const noexcept { return m_buffer != nullptr; }
 
 private:
     void* map();
@@ -42,4 +39,4 @@ private:
     void* m_mappedMemory              = nullptr;
 };
 
-} // namespace R3
+} // namespace R3::vulkan

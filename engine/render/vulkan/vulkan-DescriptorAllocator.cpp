@@ -1,15 +1,15 @@
 #if R3_VULKAN
 
+#include "vulkan-DescriptorAllocator.hpp"
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
 #include <Types.hpp>
-#include "render/DescriptorAllocator.hpp"
-#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 void DescriptorAllocator::create(RenderContext& ctx, std::span<const VkDescriptorPoolSize> poolSizes, uint32 maxSets) {
     m_device = ctx.device();
@@ -26,20 +26,17 @@ void DescriptorAllocator::create(RenderContext& ctx, std::span<const VkDescripto
 }
 
 void DescriptorAllocator::destroy() noexcept {
-    if (m_device == VK_NULL_HANDLE) {
-        return;
-    }
+    if (m_device != VK_NULL_HANDLE) {
+        if (m_layout != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
+            m_layout = VK_NULL_HANDLE;
+        }
 
-    if (m_layout != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(m_device, m_layout, nullptr);
-        m_layout = VK_NULL_HANDLE;
+        if (m_descriptorPool != VK_NULL_HANDLE) {
+            vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
+            m_descriptorPool = VK_NULL_HANDLE;
+        }
     }
-
-    if (m_descriptorPool != VK_NULL_HANDLE) {
-        vkDestroyDescriptorPool(m_device, m_descriptorPool, nullptr);
-        m_descriptorPool = VK_NULL_HANDLE;
-    }
-
     m_device = VK_NULL_HANDLE;
 }
 
@@ -58,9 +55,9 @@ std::vector<VkDescriptorSet> DescriptorAllocator::allocate(const VkDescriptorSet
 
     VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_layout));
 
-    std::vector<VkDescriptorSetLayout> layouts{count, m_layout};
+    std::vector<VkDescriptorSetLayout> layouts(count, m_layout);
 
-    VkDescriptorSetAllocateInfo allocInfo = {
+    VkDescriptorSetAllocateInfo descriptorInfo = {
         .sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         .pNext              = nullptr,
         .descriptorPool     = m_descriptorPool,
@@ -69,10 +66,10 @@ std::vector<VkDescriptorSet> DescriptorAllocator::allocate(const VkDescriptorSet
     };
 
     std::vector<VkDescriptorSet> descriptorSets(layouts.size());
-    VK_CHECK(vkAllocateDescriptorSets(m_device, &allocInfo, descriptorSets.data()));
+    VK_CHECK(vkAllocateDescriptorSets(m_device, &descriptorInfo, descriptorSets.data()));
     return descriptorSets;
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

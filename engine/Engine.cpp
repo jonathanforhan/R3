@@ -3,8 +3,8 @@
 #include <chrono>
 #include "EventHandler.hpp"
 #include "Types.hpp"
-#include "render/Renderer.hpp"
 #include "render/Window.hpp"
+#include "render/vulkan/vulkan-Renderer.hpp"
 
 #include "Log.hpp"
 #include "input/InputEvents.hpp"
@@ -30,7 +30,7 @@ double Engine::deltaTime() {
 
 int Engine::run() {
     Window window;
-    Renderer renderer(window);
+    vulkan::Renderer renderer(window);
 
     window.show();
 

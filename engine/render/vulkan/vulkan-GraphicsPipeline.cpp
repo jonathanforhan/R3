@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/GraphicsPipeline.hpp"
+#include "vulkan-GraphicsPipeline.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -10,12 +10,12 @@
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
 #include "Types.hpp"
-#include "render/RenderContext.hpp"
-#include "render/RenderPass.hpp"
-#include "render/Shader.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
+#include "vulkan-RenderPass.hpp"
+#include "vulkan-Shader.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 VkVertexInputBindingDescription Vertex::getBindingDescription() noexcept {
     const VkVertexInputBindingDescription vertexInputBindingDescription = {
@@ -58,7 +58,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pNext               = nullptr,
         .flags               = 0,
         .stage               = (VkShaderStageFlagBits)vertexShader.type(),
-        .module              = vertexShader.handle(),
+        .module              = vertexShader.shader(),
         .pName               = "main",
         .pSpecializationInfo = nullptr,
     };
@@ -68,7 +68,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pNext               = nullptr,
         .flags               = 0,
         .stage               = (VkShaderStageFlagBits)fragmentShader.type(),
-        .module              = fragmentShader.handle(),
+        .module              = fragmentShader.shader(),
         .pName               = "main",
         .pSpecializationInfo = nullptr,
     };
@@ -97,7 +97,11 @@ void GraphicsPipeline::create(RenderContext& ctx,
     };
 
     const VkDynamicState dynamicStates[] = {
-        VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_CULL_MODE, VK_DYNAMIC_STATE_FRONT_FACE, VK_DYNAMIC_STATE_LINE_WIDTH,
+        VK_DYNAMIC_STATE_VIEWPORT,
+        VK_DYNAMIC_STATE_SCISSOR,
+        VK_DYNAMIC_STATE_CULL_MODE,
+        VK_DYNAMIC_STATE_FRONT_FACE,
+        VK_DYNAMIC_STATE_LINE_WIDTH,
         // VK_DYNAMIC_STATE_DEPTH_BIAS,
         // VK_DYNAMIC_STATE_BLEND_CONSTANTS,
         // VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
@@ -159,7 +163,8 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
         .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
         .alphaBlendOp        = VK_BLEND_OP_ADD,
-        .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
+        .colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
     };
 
     const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {
@@ -200,7 +205,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pColorBlendState    = &colorBlendStateInfo,
         .pDynamicState       = &dynamicStateInfo,
         .layout              = m_pipelineLayout,
-        .renderPass          = renderPass.handle(),
+        .renderPass          = renderPass.renderPass(),
         .subpass             = 0,
         .basePipelineHandle  = VK_NULL_HANDLE,
         .basePipelineIndex   = -1,
@@ -215,16 +220,17 @@ void GraphicsPipeline::create(RenderContext& ctx,
 }
 
 void GraphicsPipeline::destroy() noexcept {
-    if (m_pipeline != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkDestroyPipeline(m_device, m_pipeline, nullptr);
-        m_pipeline = VK_NULL_HANDLE;
-    }
+    if (m_device != VK_NULL_HANDLE) {
+        if (m_pipeline != VK_NULL_HANDLE) {
+            vkDestroyPipeline(m_device, m_pipeline, nullptr);
+            m_pipeline = VK_NULL_HANDLE;
+        }
 
-    if (m_pipelineLayout != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-        m_pipelineLayout = VK_NULL_HANDLE;
+        if (m_pipelineLayout != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
+            m_pipelineLayout = VK_NULL_HANDLE;
+        }
     }
-
     m_device = VK_NULL_HANDLE;
 }
 
@@ -252,6 +258,6 @@ void GraphicsPipeline::setLineWidth(VkCommandBuffer cmd, float lineWidth) {
     vkCmdSetLineWidth(cmd, lineWidth);
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

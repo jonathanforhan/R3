@@ -4,10 +4,9 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
-
-class RenderContext;
+namespace R3::vulkan {
 
 class DescriptorAllocator {
 public:
@@ -25,4 +24,4 @@ private:
     VkDescriptorSetLayout m_layout    = VK_NULL_HANDLE;
 };
 
-} // namespace R3
+} // namespace R3::vulkan

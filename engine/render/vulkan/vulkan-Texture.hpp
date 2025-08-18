@@ -1,13 +1,19 @@
 #pragma once
 
 #include <vulkan/vulkan_core.h>
-#include "Flags.hpp"
-#include "Image.hpp"
 #include "Types.hpp"
+#include "vulkan-Image.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
-class RenderContext;
+enum class TextureType {
+    Albedo            = 0,
+    MetallicRoughness = 1,
+    Normal            = 2,
+    AmbientOcclusion  = 3,
+    Emissive          = 4,
+};
 
 class Texture {
 public:
@@ -19,11 +25,11 @@ public:
 
     void destroy() noexcept;
 
-    VkImage image() noexcept { return m_image.image(); }
+    VkImage image() const noexcept { return m_image.image(); }
 
-    VkImageView imageView() noexcept { return m_image.imageView(); }
+    VkImageView imageView() const noexcept { return m_image.imageView(); }
 
-    VkSampler sampler() noexcept { return m_sampler; }
+    VkSampler sampler() const noexcept { return m_sampler; }
 
     TextureType type() const noexcept { return m_type; }
 
@@ -34,4 +40,4 @@ private:
     TextureType m_type = TextureType::Albedo;
 };
 
-} // namespace R3
+} // namespace R3::vulkan

@@ -1,22 +1,20 @@
 #if R3_VULKAN
 
-#include "render/Buffer.hpp"
+#include "vulkan-Buffer.hpp"
 
 #include <cstring>
 #include <format>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
 #include "Types.hpp"
-#include "render/Flags.hpp"
-#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
-void Buffer::allocate(RenderContext& ctx, usize sizeBytes, BufferUsage usage, MemoryProperties properties) {
-    m_device         = ctx.device();
-    m_physicalDevice = ctx.physicalDevice();
-    m_size           = sizeBytes;
+void Buffer::allocate(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+    m_device = ctx.device();
+    m_size   = sizeBytes;
 
     const VkBufferCreateInfo bufferInfo = {
         .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -55,19 +53,20 @@ void Buffer::free() noexcept {
         unmap();
     }
 
-    if (m_buffer != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkDestroyBuffer(m_device, m_buffer, nullptr);
-        m_buffer = VK_NULL_HANDLE;
-    }
+    if (m_device != VK_NULL_HANDLE) {
+        if (m_buffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(m_device, m_buffer, nullptr);
+            m_buffer = VK_NULL_HANDLE;
+        }
 
-    if (m_bufferMemory != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkFreeMemory(m_device, m_bufferMemory, nullptr);
-        m_bufferMemory = VK_NULL_HANDLE;
+        if (m_bufferMemory != VK_NULL_HANDLE) {
+            vkFreeMemory(m_device, m_bufferMemory, nullptr);
+            m_bufferMemory = VK_NULL_HANDLE;
+        }
     }
+    m_device = VK_NULL_HANDLE;
 
-    m_device         = VK_NULL_HANDLE;
-    m_physicalDevice = VK_NULL_HANDLE;
-    m_size           = 0;
+    m_size = 0;
 }
 
 void Buffer::copy(const void* src, usize size) {
@@ -95,6 +94,6 @@ void Buffer::unmap() noexcept {
     }
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

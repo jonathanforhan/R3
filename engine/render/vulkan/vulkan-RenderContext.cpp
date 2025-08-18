@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/RenderContext.hpp"
+#include "vulkan-RenderContext.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -14,63 +14,76 @@
 #include "Log.hpp"
 #include "Types.hpp"
 #include "Version.hpp"
-#include "render/Flags.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 
-#ifdef R3_DEBUG
-#define R3_VALIDATION_LAYERS_ENABLED 1
-#else
-#define R3_VALIDATION_LAYERS_ENABLED 0
-#endif
+namespace R3::vulkan {
 
-namespace R3 {
+void RenderContext::create(Window& window) {
+    std::error_code error;
 
-#if R3_VALIDATION_LAYERS_ENABLED
-static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                              VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                              void* pUserData) {
-    (void)messageType;
-    (void)pCallbackData;
-    (void)pUserData;
+    try {
+        const vkb::Instance instance             = createInstance();
+        m_instance                               = instance.instance;
+        m_debug                                  = instance.debug_messenger;
+        m_surface                                = createSurface(window, m_instance);
+        const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
+        m_physicalDevice                         = physicalDevice.physical_device;
+        const vkb::Device device                 = createLogicalDevice(physicalDevice);
+        m_device                                 = device.device;
 
-    switch (messageSeverity) {
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            LOG_INFO("{}", pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
-            LOG_WARNING("{}", pCallbackData->pMessage);
-            break;
-        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
-            LOG_ERROR("{}", pCallbackData->pMessage);
-            break;
-        default:
-            break;
-    }
-
-    return VK_FALSE;
-}
-#endif
-
-static vkb::QueueType getQueueType(QueueType queueType) {
-    switch (queueType) {
-        case QueueType::Present:
-            return vkb::QueueType::present;
-        case QueueType::Graphics:
-            return vkb::QueueType::graphics;
-        case QueueType::Compute:
-            return vkb::QueueType::compute;
-        case QueueType::Transfer:
-            return vkb::QueueType::transfer;
-        default:
-            throw Exception{std::format(__FUNCTION__ " called with unknown QueueType {}", (uint32)queueType)};
+        setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);
+        setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
+        setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
+    } catch (const Exception& ex) {
+        destroy();
+        throw ex;
     }
 }
 
-static vkb::Instance createInstance() {
+void RenderContext::destroy() noexcept {
+    // destroy device
+    if (m_device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(m_device);
+        vkDestroyDevice(m_device, nullptr);
+        m_device = VK_NULL_HANDLE;
+    }
+
+    if (m_instance != VK_NULL_HANDLE) {
+        // destroy surface
+        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+        m_surface = VK_NULL_HANDLE;
+
+        // destroy debug messenger
+        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
+        m_debug = VK_NULL_HANDLE;
+    }
+
+    // destroy instance
+    vkDestroyInstance(m_instance, nullptr);
+    m_instance = VK_NULL_HANDLE;
+
+    m_physicalDevice = VK_NULL_HANDLE;
+}
+
+void RenderContext::waitIdle() {
+    VK_CHECK(vkDeviceWaitIdle(m_device));
+}
+
+uint32 RenderContext::deviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
+
+    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+
+    throw Exception("Failed to find suitable memory type");
+}
+
+vkb::Instance RenderContext::createInstance() {
     /* get instance extensions required by glfw */
     uint32 extensionCount;
     const char** pRequiredExtensions = glfwGetRequiredInstanceExtensions(&extensionCount);
@@ -108,13 +121,13 @@ static vkb::Instance createInstance() {
     return result.value();
 }
 
-static VkSurfaceKHR createSurface(Window& window, VkInstance instance) {
+VkSurfaceKHR RenderContext::createSurface(Window& window, VkInstance instance) {
     VkSurfaceKHR surface;
     VK_CHECK(glfwCreateWindowSurface(instance, window.glfw(), nullptr, &surface));
     return surface;
 }
 
-static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface) {
+vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface) {
     auto result = vkb::PhysicalDeviceSelector(instance, surface)
                       .set_minimum_version(1, 3)
                       .set_required_features({
@@ -144,7 +157,7 @@ static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, V
     return result.value();
 }
 
-static vkb::Device createLogicalDevice(const vkb::PhysicalDevice& physicalDevice) {
+vkb::Device RenderContext::createLogicalDevice(const vkb::PhysicalDevice& physicalDevice) {
     auto result = vkb::DeviceBuilder(physicalDevice).build();
 
     if (!result) {
@@ -154,89 +167,51 @@ static vkb::Device createLogicalDevice(const vkb::PhysicalDevice& physicalDevice
     return result.value();
 }
 
-RenderContext::RenderContext(Window& window) {
-    std::error_code error;
+void RenderContext::setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index) {
+    if (auto result = device.get_queue(queueType); !result) {
+        throw Exception{std::format("failed to get VkQueue: {}", result.error().value())};
+    } else {
+        queue = result.value();
+    }
 
-    try {
-        const vkb::Instance instance             = createInstance();
-        m_instance                               = instance.instance;
-        m_debug                                  = instance.debug_messenger;
-        m_surface                                = createSurface(window, m_instance);
-        const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
-        m_physicalDevice                         = physicalDevice.physical_device;
-        const vkb::Device device                 = createLogicalDevice(physicalDevice);
-        m_device                                 = device.device;
-
-        /* get queue handles */
-        auto initQueue = [&](QueueType queueType, Queue& queue) {
-            queue.type = queueType;
-
-            vkb::QueueType vkbQueueType = getQueueType(queueType);
-
-            if (auto result = device.get_queue(vkbQueueType); !result) {
-                throw Exception{std::format("failed to get VkQueue: {}", result.error().value())};
-            } else {
-                queue.handle = result.value();
-            }
-
-            if (auto result = device.get_queue_index(vkbQueueType); !result) {
-                throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
-            } else {
-                queue.index = result.value();
-            }
-        };
-
-        initQueue(QueueType::Graphics, m_graphicsQueue);
-        initQueue(QueueType::Present, m_presentQueue);
-        initQueue(QueueType::Compute, m_computeQueue);
-    } catch (const Exception& ex) {
-        this->~RenderContext();
-        throw ex;
+    if (auto result = device.get_queue_index(queueType); !result) {
+        throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
+    } else {
+        index = result.value();
     }
 }
 
-RenderContext::~RenderContext() noexcept {
-    // destroy device
-    if (m_device != VK_NULL_HANDLE) {
-        vkDeviceWaitIdle(m_device);
-        vkDestroyDevice(m_device, nullptr);
-        m_device = VK_NULL_HANDLE;
+#if R3_VALIDATION_LAYERS_ENABLED
+
+VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                       VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                       void* pUserData) {
+    (void)messageType;
+    (void)pCallbackData;
+    (void)pUserData;
+
+    switch (messageSeverity) {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+            LOG_INFO("{}", pCallbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+            LOG_WARNING("{}", pCallbackData->pMessage);
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            LOG_ERROR("{}", pCallbackData->pMessage);
+            break;
+        default:
+            break;
     }
 
-    if (m_instance != VK_NULL_HANDLE) {
-        // destroy surface
-        vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-        m_surface = VK_NULL_HANDLE;
-
-        // destroy debug messenger
-        vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
-        m_debug = VK_NULL_HANDLE;
-    }
-
-    // destroy instance
-    vkDestroyInstance(m_instance, nullptr);
-    m_instance = VK_NULL_HANDLE;
-
-    m_physicalDevice = VK_NULL_HANDLE;
+    return VK_FALSE;
 }
 
-void RenderContext::waitIdle() {
-    VK_CHECK(vkDeviceWaitIdle(m_device));
-}
+#endif
 
-uint32 RenderContext::deviceMemoryTypeIndex(uint32 typeFilter, MemoryProperties properties) const {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
-
-    for (uint32 i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw Exception("Failed to find suitable memory type");
-}
-
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

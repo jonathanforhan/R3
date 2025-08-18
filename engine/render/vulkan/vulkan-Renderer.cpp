@@ -1,4 +1,6 @@
-#include "Renderer.hpp"
+#if R3_VULKAN
+
+#include "vulkan-Renderer.hpp"
 
 #include <format>
 #include <iterator>
@@ -6,27 +8,25 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Buffer.hpp"
-#include "CommandAllocator.hpp"
-#include "DescriptorAllocator.hpp"
-#include "EventHandler.hpp"
+#include "Camera.hpp"
 #include "Exception.hpp"
-#include "FrameSync.hpp"
-#include "Framebuffer.hpp"
-#include "GraphicsPipeline.hpp"
-#include "RenderContext.hpp"
-#include "RenderPass.hpp"
-#include "Shader.hpp"
-#include "Swapchain.hpp"
 #include "Types.hpp"
-#include "Window.hpp"
+#include "render/Window.hpp"
+#include "vulkan-Buffer.hpp"
+#include "vulkan-Check.hpp"
+#include "vulkan-CommandAllocator.hpp"
+#include "vulkan-DescriptorAllocator.hpp"
+#include "vulkan-FrameSync.hpp"
+#include "vulkan-Framebuffer.hpp"
+#include "vulkan-GraphicsPipeline.hpp"
+#include "vulkan-RenderContext.hpp"
+#include "vulkan-RenderPass.hpp"
+#include "vulkan-Shader.hpp"
+#include "vulkan-Swapchain.hpp"
 
-#include <Camera.hpp>
-#include "render/vulkan/vulkan-Check.hpp"
+namespace R3::vulkan {
 
-namespace R3 {
-
-using namespace R3;
+using namespace R3::vulkan;
 
 static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 
@@ -44,13 +44,14 @@ Renderer::Renderer(Window& window)
     //    - surface
     //    - physical device
     //    - logical device
-    m_ctx = RenderContext{m_window};
+    m_ctx.create(m_window);
 
     //--- Swapchain
-    m_swapchain = Swapchain{m_window, m_ctx};
+    m_swapchain.create(m_window, m_ctx);
 
     // create render pass with colorAttachment for subpass
-    const AttachmentDescription colorAttachment = {
+    const VkAttachmentDescription colorAttachment = {
+        .flags          = {},
         .format         = m_swapchain.format(),
         .samples        = VK_SAMPLE_COUNT_1_BIT,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
@@ -63,33 +64,33 @@ Renderer::Renderer(Window& window)
     m_renderPass.create(m_ctx, std::span{&colorAttachment, 1});
 
     // shaders
-    m_vertexShader.createFromFile(m_ctx, "_spirv/basic.vert.spv", ShaderStageFlags::Vertex);
-    m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", ShaderStageFlags::Fragment);
+    m_vertexShader.createFromFile(m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+    m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // vertex buffer
     m_vertexBuffer.allocate(m_ctx,
                             sizeof(s_vertices[0]) * std::size(s_vertices),
-                            BufferUsageFlags::VertexBuffer,
-                            MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
+                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
 
     // uniform buffers
     m_ubo = {
         .model = fmat4(1.0f),
         .view  = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
-        .proj =
-            glm::perspective(glm::radians(45.0f),
-                             static_cast<float>(m_swapchain.extent().x) / static_cast<float>(m_swapchain.extent().y),
-                             0.1f,
-                             10.0f),
+        .proj  = glm::perspective(
+            glm::radians(45.0f),
+            static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height),
+            0.1f,
+            10.0f),
     };
 
     m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& ubo : m_ubos) {
         ubo.allocate(m_ctx,
                      sizeof(UniformBufferObject),
-                     BufferUsageFlags::UniformBuffer,
-                     MemoryPropertyFlags::HostVisible | MemoryPropertyFlags::HostCoherent);
+                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
     // descriptor pool
@@ -141,7 +142,7 @@ Renderer::Renderer(Window& window)
         m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
 
-    m_commandAllocator.create(m_ctx, m_ctx.graphicsQueue().index, CommandPoolModeFlags::Reset);
+    m_commandAllocator.create(m_ctx, m_ctx.graphicsQueueIndex(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
     m_commandBuffers = m_commandAllocator.allocateBuffers(MAX_FRAMES_IN_FLIGHT);
 
     const size_t imageCount = m_swapchain.images().size();
@@ -167,6 +168,8 @@ Renderer::~Renderer() noexcept {
     m_graphicsPipeline.destroy();
     m_descriptorAllocator.destroy();
     m_renderPass.destroy();
+    m_swapchain.destroy();
+    m_ctx.destroy();
 }
 
 void Renderer::render(double dt) {
@@ -216,12 +219,12 @@ void Renderer::render(double dt) {
     const VkRenderPassBeginInfo renderPassInfo{
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext       = nullptr,
-        .renderPass  = m_renderPass.handle(),
-        .framebuffer = m_framebuffers[imageIndex].handle(),
+        .renderPass  = m_renderPass.renderPass(),
+        .framebuffer = m_framebuffers[imageIndex].framebuffer(),
         .renderArea =
             {
                 .offset = {0, 0},
-                .extent = {m_swapchain.extent().x, m_swapchain.extent().y},
+                .extent = m_swapchain.extent(),
             },
         .clearValueCount = 1,
         .pClearValues    = &clearValue,
@@ -235,15 +238,15 @@ void Renderer::render(double dt) {
     const VkViewport viewport = {
         .x        = 0.0f,
         .y        = 0.0f,
-        .width    = static_cast<float>(m_swapchain.extent().x),
-        .height   = static_cast<float>(m_swapchain.extent().y),
+        .width    = static_cast<float>(m_swapchain.extent().width),
+        .height   = static_cast<float>(m_swapchain.extent().height),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     };
 
     const VkRect2D scissor = {
         .offset = {0, 0},
-        .extent = {m_swapchain.extent().x, m_swapchain.extent().y},
+        .extent = m_swapchain.extent(),
     };
 
     m_graphicsPipeline.setScissor(cmd, scissor);
@@ -283,11 +286,10 @@ void Renderer::render(double dt) {
         .signalSemaphoreCount = 1,
         .pSignalSemaphores    = &m_frameSync.renderFinishedSemaphore(imageIndex),
     };
-    VK_CHECK(vkQueueSubmit(m_ctx.graphicsQueue().handle, 1, &submitInfo, m_frameSync.currentFence()));
+    VK_CHECK(vkQueueSubmit(m_ctx.graphicsQueue(), 1, &submitInfo, m_frameSync.currentFence()));
 
     // Present - use per-image semaphore
-    result =
-        m_swapchain.present(m_ctx.presentQueue().handle, m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
+    result = m_swapchain.present(m_ctx.presentQueue(), m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Will be handled by resize logic on next frame
@@ -296,7 +298,7 @@ void Renderer::render(double dt) {
     }
 
     m_frameSync.advanceFrame();
-}
+} // namespace R3::vulkan
 
 void Renderer::handleWindowResize() {
     m_ctx.waitIdle();
@@ -305,7 +307,7 @@ void Renderer::handleWindowResize() {
         framebuffer.destroy();
     }
 
-    m_swapchain = Swapchain{m_window, m_ctx};
+    m_swapchain.recreate(m_window, m_ctx);
     m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
 
     m_framebuffers.resize(m_swapchain.imageViews().size());
@@ -315,4 +317,6 @@ void Renderer::handleWindowResize() {
     }
 }
 
-} // namespace R3
+} // namespace R3::vulkan
+
+#endif // R3_VULKAN

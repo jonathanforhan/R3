@@ -4,7 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 class RenderContext;
 
@@ -39,4 +39,4 @@ private:
     std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image
 };
 
-} // namespace R3
+} // namespace R3::vulkan

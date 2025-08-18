@@ -1,13 +1,13 @@
-#include "render/FrameSync.hpp"
+#include "vulkan-FrameSync.hpp"
 
 #include <cstdint>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
-#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 void FrameSync::create(RenderContext& ctx, uint32 maxFramesInFlight, usize swapchainImageCount) {
     m_device            = ctx.device();
@@ -46,21 +46,22 @@ void FrameSync::create(RenderContext& ctx, uint32 maxFramesInFlight, usize swapc
 }
 
 void FrameSync::destroy() noexcept {
-    for (auto& sem : m_imageAvailableSemaphores) {
-        vkDestroySemaphore(m_device, sem, nullptr);
-    }
-    m_imageAvailableSemaphores.clear();
+    if (m_device != VK_NULL_HANDLE) {
+        for (auto& sem : m_imageAvailableSemaphores) {
+            vkDestroySemaphore(m_device, sem, nullptr);
+        }
+        m_imageAvailableSemaphores.clear();
 
-    for (auto& fence : m_inFlightFences) {
-        vkDestroyFence(m_device, fence, nullptr);
-    }
-    m_inFlightFences.clear();
+        for (auto& fence : m_inFlightFences) {
+            vkDestroyFence(m_device, fence, nullptr);
+        }
+        m_inFlightFences.clear();
 
-    for (auto& sem : m_renderFinishedSemaphores) {
-        vkDestroySemaphore(m_device, sem, nullptr);
+        for (auto& sem : m_renderFinishedSemaphores) {
+            vkDestroySemaphore(m_device, sem, nullptr);
+        }
+        m_renderFinishedSemaphores.clear();
     }
-    m_renderFinishedSemaphores.clear();
-
     m_device = VK_NULL_HANDLE;
 }
 
@@ -89,4 +90,4 @@ void FrameSync::resetCurrentFrame() {
     VK_CHECK(vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]));
 }
 
-} // namespace R3
+} // namespace R3::vulkan

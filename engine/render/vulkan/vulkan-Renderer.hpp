@@ -2,28 +2,27 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "Buffer.hpp"
 #include "Camera.hpp"
-#include "CommandAllocator.hpp"
-#include "DescriptorAllocator.hpp"
-#include "FrameSync.hpp"
-#include "Framebuffer.hpp"
-#include "GraphicsPipeline.hpp"
-#include "RenderContext.hpp"
-#include "RenderPass.hpp"
-#include "Shader.hpp"
-#include "Swapchain.hpp"
-#include "Texture.hpp"
+#include "render/Window.hpp"
+#include "vulkan-Buffer.hpp"
+#include "vulkan-CommandAllocator.hpp"
+#include "vulkan-DescriptorAllocator.hpp"
+#include "vulkan-FrameSync.hpp"
+#include "vulkan-Framebuffer.hpp"
+#include "vulkan-GraphicsPipeline.hpp"
+#include "vulkan-RenderContext.hpp"
+#include "vulkan-RenderPass.hpp"
+#include "vulkan-Shader.hpp"
+#include "vulkan-Swapchain.hpp"
+#include "vulkan-Texture.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
 struct UniformBufferObject {
     alignas(16) fmat4 model;
     alignas(16) fmat4 view;
     alignas(16) fmat4 proj;
 };
-
-class Window;
 
 class Renderer {
 public:
@@ -63,4 +62,4 @@ private:
     Camera m_camera;
 };
 
-} // namespace R3
+} // namespace R3::vulkan

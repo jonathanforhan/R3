@@ -1,38 +1,22 @@
 #if R3_VULKAN
 
-#include "render/RenderPass.hpp"
+#include "vulkan-RenderPass.hpp"
 
 #include <cstdint>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
-void RenderPass::create(RenderContext& ctx, std::span<const AttachmentDescription> attachments) {
+void RenderPass::create(RenderContext& ctx, std::span<const VkAttachmentDescription> attachments) {
     m_device = ctx.device();
 
-    auto attachmentsDescs    = std::vector<VkAttachmentDescription>(attachments.size());
     auto colorAttachmentRefs = std::vector<VkAttachmentReference>(attachments.size());
 
     for (size_t i = 0; i < attachments.size(); ++i) {
-        const auto& desc = attachments[i];
-
-        const VkAttachmentDescription attachmentDesc = {
-            .flags          = 0,
-            .format         = desc.format,
-            .samples        = desc.samples,
-            .loadOp         = desc.loadOp,
-            .storeOp        = desc.storeOp,
-            .stencilLoadOp  = desc.stencilLoadOp,
-            .stencilStoreOp = desc.stencilStoreOp,
-            .initialLayout  = desc.initialLayout,
-            .finalLayout    = desc.finalLayout,
-        };
-        attachmentsDescs[i] = attachmentDesc;
-
         // For now, assume all attachments are color attachments
         const VkAttachmentReference colorAttachmentRef = {
             .attachment = static_cast<uint32_t>(i),
@@ -68,8 +52,8 @@ void RenderPass::create(RenderContext& ctx, std::span<const AttachmentDescriptio
         .sType           = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .pNext           = nullptr,
         .flags           = 0,
-        .attachmentCount = static_cast<uint32_t>(attachmentsDescs.size()),
-        .pAttachments    = attachmentsDescs.data(),
+        .attachmentCount = static_cast<uint32_t>(attachments.size()),
+        .pAttachments    = attachments.data(),
         .subpassCount    = 1,
         .pSubpasses      = &subpass,
         .dependencyCount = 1,
@@ -80,14 +64,15 @@ void RenderPass::create(RenderContext& ctx, std::span<const AttachmentDescriptio
 }
 
 void RenderPass::destroy() noexcept {
-    if (m_renderPass != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkDestroyRenderPass(m_device, m_renderPass, nullptr);
-        m_renderPass = VK_NULL_HANDLE;
+    if (m_device != VK_NULL_HANDLE) {
+        if (m_renderPass != VK_NULL_HANDLE) {
+            vkDestroyRenderPass(m_device, m_renderPass, nullptr);
+            m_renderPass = VK_NULL_HANDLE;
+        }
     }
-
     m_device = VK_NULL_HANDLE;
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN

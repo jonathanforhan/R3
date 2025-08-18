@@ -1,6 +1,6 @@
 #if R3_VULKAN
 
-#include "render/Shader.hpp"
+#include "vulkan-Shader.hpp"
 
 #include <cstdint>
 #include <format>
@@ -12,18 +12,17 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
-#include "render/Flags.hpp"
-#include "render/RenderContext.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-RenderContext.hpp"
 
-namespace R3 {
+namespace R3::vulkan {
 
-void Shader::createFromFile(RenderContext& ctx, const std::string& filename, ShaderStage type) {
+void Shader::createFromFile(RenderContext& ctx, const std::string& filename, VkShaderStageFlags type) {
     auto spirvCode = readFile(filename);
     createFromSource(ctx, spirvCode, type);
 }
 
-void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, ShaderStage type) {
+void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, VkShaderStageFlags type) {
     m_device = ctx.device();
     m_type   = type;
 
@@ -39,11 +38,12 @@ void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spir
 }
 
 void Shader::destroy() noexcept {
-    if (m_shaderModule != VK_NULL_HANDLE && m_device != VK_NULL_HANDLE) {
-        vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
-        m_shaderModule = VK_NULL_HANDLE;
+    if (m_device != VK_NULL_HANDLE) {
+        if (m_shaderModule != VK_NULL_HANDLE) {
+            vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
+            m_shaderModule = VK_NULL_HANDLE;
+        }
     }
-
     m_device = VK_NULL_HANDLE;
 }
 
@@ -64,6 +64,6 @@ std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
     return buffer;
 }
 
-} // namespace R3
+} // namespace R3::vulkan
 
 #endif // R3_VULKAN
