@@ -13,12 +13,6 @@ public:
 
     virtual ~Exception() noexcept override {}
 
-    Exception(const Exception&)            = default;
-    Exception& operator=(const Exception&) = default;
-
-    Exception(Exception&&) noexcept            = default;
-    Exception& operator=(Exception&&) noexcept = default;
-
     constexpr auto file() const noexcept { return _source_location.file_name(); }
 
     constexpr auto function() const noexcept { return _source_location.function_name(); }

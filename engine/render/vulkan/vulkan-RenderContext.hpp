@@ -15,19 +15,15 @@
 
 namespace R3::vulkan {
 
-/**
- * @brief RenderContext holds vulkan resources:
- *   - Instance
- *   - Surface
- *   - Device
- *   - PhysicalDevice
- */
+/// @brief RenderContext holds vulkan resources:
+///   - Instance
+///   - Surface
+///   - Device
+///   - PhysicalDevice
 class RenderContext {
 public:
-    /**
-     * @brief Create new RenderContext
-     * @param window Must be a valid Window for surface creation
-     */
+    /// @brief Create new RenderContext
+    /// @param window Must be a valid Window for surface creation
     void create(Window& window);
 
     /// Destroys the RenderContext

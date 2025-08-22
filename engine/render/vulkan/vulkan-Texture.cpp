@@ -12,6 +12,7 @@
 #include "Log.hpp"
 #include "Types.hpp"
 #include "vulkan-Buffer.hpp"
+#include "vulkan-Check.hpp"
 #include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -68,22 +69,94 @@ void Texture::create(RenderContext& ctx,
 
     // create staging buffer for CPU writes
     Buffer stagingBuffer;
-    stagingBuffer.allocate(ctx,
-                           imageSize,
-                           VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    stagingBuffer.create(ctx,
+                         imageSize,
+                         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     stagingBuffer.copy(raw, imageSize);
 
-    m_image.allocate(ctx,
-                     preferredFormat,
-                     VkExtent3D{(uint32)width, (uint32)height, 1},
-                     mipLevels,
-                     1,
-                     VK_IMAGE_TILING_OPTIMAL,
-                     VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    // image used for texture
+    m_image.create(ctx,
+                   preferredFormat,
+                   VkExtent3D{(uint32)width, (uint32)height, 1},
+                   mipLevels,
+                   1,
+                   VK_IMAGE_TILING_OPTIMAL,
+                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    //
+    const VkImageMemoryBarrier memoryBarrierWrite = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+        .pNext               = nullptr,
+        .srcAccessMask       = 0,
+        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = m_image.image(),
+        .subresourceRange =
+            {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel   = 0,
+                .levelCount     = mipLevels,
+                .baseArrayLayer = 0,
+                .layerCount     = 1,
+            },
+    };
+    m_image.transition(cmd,
+                       ctx.graphicsQueue(),
+                       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                       VK_PIPELINE_STAGE_TRANSFER_BIT,
+                       memoryBarrierWrite);
+
+    // copy staging buffer to image
+    const VkBufferImageCopy bufferToImage = {
+        .bufferOffset      = 0,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = 1,
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {static_cast<uint32>(width), static_cast<uint32>(height), 1},
+    };
+    m_image.copy(cmd, ctx.graphicsQueue(), stagingBuffer.buffer(), bufferToImage);
+
+    m_image.generateMipMaps(cmd, ctx.graphicsQueue());
+
+    // free staging buffer used in copy
+    stagingBuffer.destroy();
+
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);
+
+    // create sampler for texture
+    const VkSamplerCreateInfo samplerInfo = {
+        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        .pNext                   = nullptr,
+        .flags                   = {},
+        .magFilter               = VK_FILTER_LINEAR,
+        .minFilter               = VK_FILTER_LINEAR,
+        .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        .addressModeU            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeV            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .addressModeW            = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        .mipLodBias              = 0.0f,
+        .anisotropyEnable        = VK_TRUE,
+        .maxAnisotropy           = properties.limits.maxSamplerAnisotropy,
+        .compareEnable           = VK_FALSE,
+        .compareOp               = VK_COMPARE_OP_ALWAYS,
+        .minLod                  = 0.0f,
+        .maxLod                  = static_cast<float>(mipLevels),
+        .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        .unnormalizedCoordinates = VK_FALSE,
+    };
+    VK_CHECK(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_sampler));
 }
 
 void Texture::create(RenderContext& ctx, VkCommandBuffer cmd, const uint8* compressed, usize size, TextureType type) {
@@ -107,7 +180,7 @@ void Texture::destroy() noexcept {
     }
     m_device = VK_NULL_HANDLE;
 
-    m_image.free();
+    m_image.destroy();
 }
 
 } // namespace R3::vulkan

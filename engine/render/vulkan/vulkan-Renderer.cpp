@@ -68,10 +68,10 @@ Renderer::Renderer(Window& window)
     m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
     // vertex buffer
-    m_vertexBuffer.allocate(m_ctx,
-                            sizeof(s_vertices[0]) * std::size(s_vertices),
-                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    m_vertexBuffer.create(m_ctx,
+                          sizeof(s_vertices[0]) * std::size(s_vertices),
+                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
 
     // uniform buffers
@@ -87,10 +87,10 @@ Renderer::Renderer(Window& window)
 
     m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& ubo : m_ubos) {
-        ubo.allocate(m_ctx,
-                     sizeof(UniformBufferObject),
-                     VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        ubo.create(m_ctx,
+                   sizeof(UniformBufferObject),
+                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
     // descriptor pool
@@ -159,9 +159,9 @@ Renderer::~Renderer() noexcept {
         framebuffer.destroy();
     }
     for (auto& ubo : m_ubos) {
-        ubo.free();
+        ubo.destroy();
     }
-    m_vertexBuffer.free();
+    m_vertexBuffer.destroy();
     m_fragmentShader.destroy();
     m_commandAllocator.destroy();
     m_vertexShader.destroy();

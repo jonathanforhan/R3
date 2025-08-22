@@ -4,10 +4,6 @@
   "description": "Game Engine for GFX experimentation",
   "dependencies": [
     {
-      "name": "vulkan",
-      "version>=": "2023-12-17"
-    },
-    {
       "name": "vk-bootstrap",
       "version>=": "1.3.279"
     },

@@ -1,3 +1,5 @@
+/// @file glTF.hpp
+
 #pragma once
 
 #include <array>
@@ -8,13 +10,13 @@
 #include "JSON.hpp"
 #include "Types.hpp"
 
-// glTF file format spec info
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
-// public version info is stored in engine/public/api/Version.hpp
-//
-// glTF version major : 2
-// glTF version minor : 0
-// glb container version : 2
+/// glTF file format spec info
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
+/// public version info is stored in engine/public/api/Version.hpp
+///
+/// glTF version major : 2
+/// glTF version minor : 0
+/// glb container version : 2
 
 /*
     x - supported
@@ -159,17 +161,13 @@ static constexpr auto SAMPLER_LINEAR      = "LINEAR";
 static constexpr auto SAMPLER_STEP        = "STEP";
 static constexpr auto SAMPLER_CUBICSPLINE = "CUBICSPLINE";
 
-/**
- * @brief Parameter required by glTF spec
- * @tparam T Datatype
- */
+/// @brief Parameter required by glTF spec
+/// @tparam T Datatype
 template <typename T>
 using Required = T;
 
-/**
- * @brief Parameter not required by glTF spec but has default value
- * @tparam T Datatype
- */
+/// @brief Parameter not required by glTF spec but has default value
+/// @tparam T Datatype
 template <typename T>
 using Default = T;
 
@@ -201,27 +199,25 @@ struct OptionalType<std::string> {
 
 } // namespace detail
 
-/**
- * @brief Parameter not required by glTF spec
- * @tparam T Datatype
- */
+/// @brief Parameter not required by glTF spec
+/// @tparam T Datatype
 template <typename T>
 using Optional = typename detail::OptionalType<T>::type;
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
 struct Header {
     alignas(4) uint32 magic;
     alignas(4) uint32 version;
     alignas(4) uint32 length;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#chunks
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#chunks
 struct ChunkHeader {
     alignas(4) uint32 length;
     alignas(4) uint32 type;
 };
 
-// Virtual Base class for Supported glTF extensions
+/// Virtual Base class for Supported glTF extensions
 struct Extension {
     Extension(const char* name)
         : name(name) {}
@@ -260,7 +256,7 @@ struct Skin;
 struct Texture;
 struct TextureInfo;
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-indices
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-indices
 struct AccessorSparseIndices {
     Required<uint32> bufferView;
     Default<uint32> byteOffset = 0;
@@ -269,7 +265,7 @@ struct AccessorSparseIndices {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-values
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse-values
 struct AccessorSparseValues {
     Required<uint32> bufferView;
     Default<uint32> byteOffset = 0;
@@ -277,7 +273,7 @@ struct AccessorSparseValues {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor-sparse
 struct AccessorSparse {
     Required<uint32> count;
     Required<AccessorSparseIndices> indices;
@@ -286,7 +282,7 @@ struct AccessorSparse {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-accessor
 struct Accessor {
     Optional<uint32> bufferView;
     Default<uint32> byteOffset = 0;
@@ -302,7 +298,7 @@ struct Accessor {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel-target
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel-target
 struct AnimationChannelTarget {
     Optional<uint32> node;
     Required<std::string> path;
@@ -310,7 +306,7 @@ struct AnimationChannelTarget {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-channel
 struct AnimationChannel {
     Required<uint32> sampler;
     Required<AnimationChannelTarget> target;
@@ -318,7 +314,7 @@ struct AnimationChannel {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-sampler
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation-sampler
 struct AnimationSampler {
     Required<uint32> input;
     Default<std::string> interpolation = SAMPLER_LINEAR;
@@ -327,7 +323,7 @@ struct AnimationSampler {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-animation
 struct Animation {
     Required<std::vector<AnimationChannel>> channels;
     Required<std::vector<AnimationSampler>> samplers;
@@ -336,7 +332,7 @@ struct Animation {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-asset
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-asset
 struct Asset {
     Optional<std::string> copyright;
     Optional<std::string> generator;
@@ -346,7 +342,7 @@ struct Asset {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-buffer
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-buffer
 struct Buffer {
     Optional<std::string> uri;
     Required<uint32> byteLength;
@@ -355,7 +351,7 @@ struct Buffer {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-bufferview
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-bufferview
 struct BufferView {
     Required<uint32> buffer;
     Default<uint32> byteOffset = 0;
@@ -367,7 +363,7 @@ struct BufferView {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-orthographic
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-orthographic
 struct CameraOrthographic {
     Required<float> xmag;
     Required<float> ymag;
@@ -377,7 +373,7 @@ struct CameraOrthographic {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-perspective
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera-perspective
 struct CameraPerspective {
     Optional<float> aspectRatio;
     Required<float> yfov;
@@ -387,7 +383,7 @@ struct CameraPerspective {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-camera
 struct Camera {
     Optional<CameraOrthographic> orthographic;
     Optional<CameraPerspective> perspective;
@@ -397,13 +393,13 @@ struct Camera {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extension
-// DOCUMENTATION
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extension
+/// DOCUMENTATION
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extras
-// DOCUMENTATION
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-extras
+/// DOCUMENTATION
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-image
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-image
 struct Image {
     Optional<std::string> uri;
     Optional<std::string> mimeType;
@@ -413,7 +409,7 @@ struct Image {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-texture
 struct Texture {
     Optional<uint32> sampler;
     Optional<uint32> source;
@@ -422,7 +418,7 @@ struct Texture {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-textureinfo
 struct TextureInfo {
     Required<uint32> index;
     Default<uint32> texCoord = 0;
@@ -430,7 +426,7 @@ struct TextureInfo {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-normaltextureinfo
 struct NormalTextureInfo {
     Required<uint32> index;
     Default<uint32> texCoord = 0;
@@ -439,7 +435,7 @@ struct NormalTextureInfo {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-occlusiontextureinfo
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-occlusiontextureinfo
 struct OcclusionTextureInfo {
     Required<uint32> index;
     Default<uint32> texCoord = 0;
@@ -448,7 +444,7 @@ struct OcclusionTextureInfo {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material-pbrmetallicroughness
 struct PBRMetallicRoughness {
     Default<std::array<float, 4>> baseColorFactor = std::array{1.0f, 1.0f, 1.0f, 1.0f};
     Optional<TextureInfo> baseColorTexture;
@@ -459,7 +455,7 @@ struct PBRMetallicRoughness {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-material
 struct Material {
     Optional<PBRMetallicRoughness> pbrMetallicRoughness;
     Optional<NormalTextureInfo> normalTexture;
@@ -474,7 +470,7 @@ struct Material {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
 struct MeshPrimitive {
     Required<json::Value> attributes;
     Optional<uint32> indices;
@@ -485,7 +481,7 @@ struct MeshPrimitive {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh
 struct Mesh {
     Required<std::vector<MeshPrimitive>> primitives;
     Optional<std::vector<float>> weights;
@@ -494,7 +490,7 @@ struct Mesh {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-node
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-node
 struct Node {
     Optional<uint32> camera;
     Optional<std::vector<uint32>> children;
@@ -511,7 +507,7 @@ struct Node {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-sampler
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-sampler
 struct Sampler {
     Optional<uint32> magFilter;
     Optional<uint32> minFilter;
@@ -522,7 +518,7 @@ struct Sampler {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-scene
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-scene
 struct Scene {
     Optional<std::vector<uint32>> nodes;
     Optional<std::string> name;
@@ -530,7 +526,7 @@ struct Scene {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-skin
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-skin
 struct Skin {
     Optional<uint32> inverseBindMatrices;
     Optional<uint32> skeleton;
@@ -540,7 +536,7 @@ struct Skin {
     Optional<json::Value> extras;
 };
 
-// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-gltf
+/// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-gltf
 struct Root {
     Optional<std::vector<std::string>> extensionsUsed;
     Optional<std::vector<std::string>> extensionsRequired;

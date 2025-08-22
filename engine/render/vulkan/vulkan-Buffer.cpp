@@ -12,7 +12,7 @@
 
 namespace R3::vulkan {
 
-void Buffer::allocate(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+void Buffer::create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     m_device = ctx.device();
     m_size   = sizeBytes;
 
@@ -48,7 +48,7 @@ void Buffer::allocate(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags us
     VK_CHECK(vkBindBufferMemory(m_device, m_buffer, m_bufferMemory, 0));
 }
 
-void Buffer::free() noexcept {
+void Buffer::destroy() noexcept {
     if (m_mappedMemory) {
         unmap();
     }

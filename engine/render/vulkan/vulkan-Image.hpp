@@ -8,22 +8,28 @@ namespace R3::vulkan {
 
 class Image {
 public:
-    void allocate(RenderContext& ctx,
-                  VkFormat format,
-                  VkExtent3D extent,
-                  uint32 mipLevels,
-                  uint32 sampleCount,
-                  VkImageTiling tiling,
-                  VkImageUsageFlags usage,
-                  VkMemoryPropertyFlags properties);
+    void create(RenderContext& ctx,
+                VkFormat format,
+                VkExtent3D extent,
+                uint32 mipLevels,
+                uint32 sampleCount,
+                VkImageTiling tiling,
+                VkImageUsageFlags usage,
+                VkMemoryPropertyFlags properties);
 
-    void free() noexcept;
+    void destroy() noexcept;
 
-    void copy(VkCommandBuffer cmd, VkBuffer buffer, const VkBufferImageCopy& bufferToImage);
+    void copy(VkCommandBuffer cmd, VkQueue queue, VkBuffer buffer, const VkBufferImageCopy& bufferToImage);
 
-    void copy(VkCommandBuffer cmd, VkImage image, const VkImageCopy& imageToImage);
+    void copy(VkCommandBuffer cmd, VkQueue queue, VkImage image, const VkImageCopy& imageToImage);
 
-    void generateMipMaps();
+    void transition(VkCommandBuffer cmd,
+                    VkQueue queue,
+                    VkPipelineStageFlags srcStage,
+                    VkPipelineStageFlags dstStage,
+                    const VkImageMemoryBarrier& memoryBarrier);
+
+    void generateMipMaps(VkCommandBuffer cmd, VkQueue queue);
 
     VkImage image() const noexcept { return m_image; }
 
@@ -37,11 +43,12 @@ private:
     void unmap() noexcept;
 
 private:
-    RenderContext* m_ctx         = nullptr;
+    VkDevice m_device            = VK_NULL_HANDLE;
     VkImage m_image              = VK_NULL_HANDLE;
     VkDeviceMemory m_imageMemory = VK_NULL_HANDLE;
     VkImageView m_imageView      = VK_NULL_HANDLE;
     VkExtent3D m_extent          = {};
+    uint32 m_mipLevels           = 0;
     void* m_mappedMemory         = nullptr;
 };
 

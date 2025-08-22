@@ -70,7 +70,7 @@ Window::Window() {
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler::instance().push("key-press", data);
+                EventHandler::instance().emplace<KeyboardEventData>("key-press", Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
                 EventHandler::instance().push("key-repeat", data);
