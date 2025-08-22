@@ -81,10 +81,6 @@ void Image::create(RenderContext& ctx,
 }
 
 void Image::destroy() noexcept {
-    if (m_mappedMemory) {
-        unmap();
-    }
-
     if (m_device != nullptr) {
         if (m_image != VK_NULL_HANDLE) {
             vkDestroyImage(m_device, m_image, nullptr);

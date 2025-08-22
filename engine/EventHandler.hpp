@@ -148,10 +148,8 @@ public:
     /// @param data  Copied event data payload
     template <typename Data>
     void push(hash::uuid id, const Data& data) {
-        using EventType  = Event<Data>;
-        void* alignedPtr = allocateAligned<EventType>();
-        // construct event in place
-        new (alignedPtr) EventType{id, data};
+        void* alignedPtr = allocateAligned<Event<Data>>();
+        new (alignedPtr) Event<Data>{id, data}; // construct event in place
     }
 
     /// @brief Push an event onto the event queue
@@ -160,10 +158,8 @@ public:
     /// @param data  Moved event data payload
     template <typename Data>
     void push(hash::uuid id, Data&& data) {
-        using EventType  = Event<Data>;
-        void* alignedPtr = allocateAligned<EventType>();
-        // construct event in place
-        new (alignedPtr) EventType{id, std::move(data)};
+        void* alignedPtr = allocateAligned<Event<Data>>();
+        new (alignedPtr) Event<Data>{id, std::move(data)}; // construct event in place
     }
 
     /// @brief Emplace an event onto the event queue
@@ -173,10 +169,8 @@ public:
     /// @note Must explicitly specify the Data type, this is useful for events that have no data
     template <typename Data, typename... Args>
     void emplace(hash::uuid id, Args&&... args) {
-        using EventType  = Event<Data>;
-        void* alignedPtr = allocateAligned<EventType>();
-        // construct event in place
-        new (alignedPtr) EventType{id, std::forward<Args>(args)...};
+        void* alignedPtr = allocateAligned<Event<Data>>();
+        new (alignedPtr) Event<Data>{id, std::forward<Args>(args)...}; // construct event in place
     }
 
     /// @brief Dispatch all event by calling every listener and then destructing the event objects

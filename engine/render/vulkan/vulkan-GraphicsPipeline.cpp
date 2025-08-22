@@ -42,6 +42,13 @@ std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions(
             .format   = VK_FORMAT_R32G32B32_SFLOAT,
             .offset   = offsetof(Vertex, color),
         },
+        // TexCoord attribute
+        {
+            .location = 2,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = offsetof(Vertex, texCoord),
+        },
     };
     return vertexInputAttributeDescription;
 }

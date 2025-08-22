@@ -13,6 +13,7 @@ namespace R3::vulkan {
 struct Vertex {
     fvec3 position; // x, y, z
     fvec3 color;    // r, g, b
+    fvec2 texCoord; // u, v
 
     static VkVertexInputBindingDescription getBindingDescription() noexcept;
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() noexcept;

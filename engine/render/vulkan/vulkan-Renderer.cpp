@@ -23,6 +23,7 @@
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
+#include "vulkan-Texture.hpp"
 
 namespace R3::vulkan {
 
@@ -31,11 +32,14 @@ using namespace R3::vulkan;
 static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 
 // Triangle vertices - matches your vertex shader (vec3 position, vec3 color)
-static const Vertex s_vertices[3] = {
-    {{0.0f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}}, // Top - Red
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}},  // Bottom right - Blue
-    {{-0.5f, 0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}}, // Bottom left - Green
+static const Vertex s_vertices[] = {
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
 };
+
+static const uint16_t s_indices[] = {0, 1, 2, 2, 3, 0};
 
 Renderer::Renderer(Window& window)
     : m_window{window} {
@@ -49,7 +53,7 @@ Renderer::Renderer(Window& window)
     //--- Swapchain
     m_swapchain.create(m_window, m_ctx);
 
-    // create render pass with colorAttachment for subpass
+    //--- Render Pass with colorAttachment for subpass
     const VkAttachmentDescription colorAttachment = {
         .flags          = {},
         .format         = m_swapchain.format(),
@@ -63,18 +67,52 @@ Renderer::Renderer(Window& window)
     };
     m_renderPass.create(m_ctx, std::span{&colorAttachment, 1});
 
-    // shaders
+    //--- Framebuffers
+    m_framebuffers.resize(m_swapchain.imageViews().size());
+    for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
+        const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
+        m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
+    }
+
+    //--- Command Buffers
+    m_commandAllocator.create(m_ctx, m_ctx.graphicsQueueIndex(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+    m_commandBuffers = m_commandAllocator.allocateBuffers(MAX_FRAMES_IN_FLIGHT);
+
+    //--- Shaders
     m_vertexShader.createFromFile(m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
     m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
-    // vertex buffer
+    //--- Descriptor Pool
+    VkDescriptorPoolSize poolSizes[] = {
+        {
+            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+        },
+        {
+            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+        },
+    };
+    m_descriptorAllocator.create(m_ctx, poolSizes, MAX_FRAMES_IN_FLIGHT);
+
+    //--- Vertex Buffer
     m_vertexBuffer.create(m_ctx,
                           sizeof(s_vertices[0]) * std::size(s_vertices),
                           VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
 
-    // uniform buffers
+    //--- Index Buffer
+    m_indexBuffer.create(m_ctx,
+                         sizeof(s_indices[0]) * std::size(s_indices),
+                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    m_indexBuffer.copy(&s_indices, sizeof(s_indices));
+
+    //--- Texture
+    m_texture.create(m_ctx, m_commandAllocator.allocateBuffer(), "textures/statue_head.jpg", TextureType::Albedo);
+
+    //--- Uniform Buffers
     m_ubo = {
         .model = fmat4(1.0f),
         .view  = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
@@ -93,24 +131,28 @@ Renderer::Renderer(Window& window)
                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     }
 
-    // descriptor pool
-    VkDescriptorPoolSize poolSize = {
-        .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+    //--- Descriptor Sets and Layouts
+    VkDescriptorSetLayoutBinding bindings[] = {
+        // vertices
+        {
+            .binding            = 0,
+            .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount    = 1,
+            .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
+            .pImmutableSamplers = nullptr,
+        },
+        // sampler
+        {
+            .binding            = 1,
+            .descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount    = 1,
+            .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .pImmutableSamplers = nullptr,
+        },
     };
-    m_descriptorAllocator.create(m_ctx, {&poolSize, 1}, MAX_FRAMES_IN_FLIGHT);
+    m_descriptorSets = m_descriptorAllocator.allocate(bindings, MAX_FRAMES_IN_FLIGHT);
 
-    // descriptor sets and layouts
-    const VkDescriptorSetLayoutBinding binding = {
-        .binding            = 0,
-        .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount    = 1,
-        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
-        .pImmutableSamplers = nullptr,
-    };
-    m_descriptorSets = m_descriptorAllocator.allocate(binding, MAX_FRAMES_IN_FLIGHT);
-
-    // graphics pipeline
+    //--- Graphics Pipeline
     auto layout = m_descriptorAllocator.layout();
     m_graphicsPipeline.create(m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, std::span{&layout, 1});
 
@@ -121,30 +163,42 @@ Renderer::Renderer(Window& window)
             .range  = sizeof(UniformBufferObject),
         };
 
-        const VkWriteDescriptorSet descriptorWrite = {
-            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .pNext            = nullptr,
-            .dstSet           = m_descriptorSets[i],
-            .dstBinding       = 0,
-            .dstArrayElement  = 0,
-            .descriptorCount  = 1,
-            .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .pImageInfo       = nullptr,
-            .pBufferInfo      = &bufferInfo,
-            .pTexelBufferView = nullptr,
+        const VkDescriptorImageInfo imageInfo = {
+            .sampler     = m_texture.sampler(),
+            .imageView   = m_texture.imageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
-        vkUpdateDescriptorSets(m_ctx.device(), 1, &descriptorWrite, 0, nullptr);
+
+        const VkWriteDescriptorSet descriptorWrites[] = {
+            {
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = m_descriptorSets[i],
+                .dstBinding       = 0,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo       = nullptr,
+                .pBufferInfo      = &bufferInfo,
+                .pTexelBufferView = nullptr,
+            },
+            {
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = m_descriptorSets[i],
+                .dstBinding       = 1,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo       = &imageInfo,
+                .pBufferInfo      = nullptr,
+                .pTexelBufferView = nullptr,
+            },
+        };
+        vkUpdateDescriptorSets(m_ctx.device(), (uint32)std::size(descriptorWrites), descriptorWrites, 0, nullptr);
     }
 
-    m_framebuffers.resize(m_swapchain.imageViews().size());
-    for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
-        const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
-        m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
-    }
-
-    m_commandAllocator.create(m_ctx, m_ctx.graphicsQueueIndex(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    m_commandBuffers = m_commandAllocator.allocateBuffers(MAX_FRAMES_IN_FLIGHT);
-
+    //--- Frame Sync
     const size_t imageCount = m_swapchain.images().size();
     m_frameSync.create(m_ctx, MAX_FRAMES_IN_FLIGHT, imageCount);
 
@@ -155,18 +209,20 @@ Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
 
     m_frameSync.destroy();
-    for (auto& framebuffer : m_framebuffers) {
-        framebuffer.destroy();
-    }
+    m_graphicsPipeline.destroy();
+    m_descriptorAllocator.destroy();
     for (auto& ubo : m_ubos) {
         ubo.destroy();
     }
-    m_vertexBuffer.destroy();
-    m_fragmentShader.destroy();
-    m_commandAllocator.destroy();
+    m_texture.destroy();
+    m_indexBuffer.destroy();
     m_vertexShader.destroy();
-    m_graphicsPipeline.destroy();
-    m_descriptorAllocator.destroy();
+    m_fragmentShader.destroy();
+    m_vertexBuffer.destroy();
+    m_commandAllocator.destroy();
+    for (auto& framebuffer : m_framebuffers) {
+        framebuffer.destroy();
+    }
     m_renderPass.destroy();
     m_swapchain.destroy();
     m_ctx.destroy();
@@ -267,8 +323,8 @@ void Renderer::render(double dt) {
     const VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
     const VkDeviceSize offsets[]   = {0};
     vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-
-    vkCmdDraw(cmd, static_cast<uint32>(std::size(s_vertices)), 1, 0, 0);
+    vkCmdBindIndexBuffer(cmd, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+    vkCmdDrawIndexed(cmd, static_cast<uint32>(std::size(s_indices)), 1, 0, 0, 0);
 
     vkCmdEndRenderPass(cmd);
     VK_CHECK(vkEndCommandBuffer(cmd));

@@ -40,7 +40,8 @@ void DescriptorAllocator::destroy() noexcept {
     m_device = VK_NULL_HANDLE;
 }
 
-std::vector<VkDescriptorSet> DescriptorAllocator::allocate(const VkDescriptorSetLayoutBinding& binding, uint32 count) {
+std::vector<VkDescriptorSet> DescriptorAllocator::allocate(std::span<const VkDescriptorSetLayoutBinding> bindings,
+                                                           uint32 count) {
     if (m_layout != VK_NULL_HANDLE) {
         throw Exception{__FUNCTION__ " FIXME"};
     }
@@ -49,8 +50,8 @@ std::vector<VkDescriptorSet> DescriptorAllocator::allocate(const VkDescriptorSet
         .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         .pNext        = nullptr,
         .flags        = {},
-        .bindingCount = 1,
-        .pBindings    = &binding,
+        .bindingCount = static_cast<uint32>(bindings.size()),
+        .pBindings    = bindings.data(),
     };
 
     VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_layout));

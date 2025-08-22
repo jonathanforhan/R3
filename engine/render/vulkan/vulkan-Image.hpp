@@ -38,18 +38,12 @@ public:
     const VkExtent3D& extent() const noexcept { return m_extent; }
 
 private:
-    void* map();
-
-    void unmap() noexcept;
-
-private:
     VkDevice m_device            = VK_NULL_HANDLE;
     VkImage m_image              = VK_NULL_HANDLE;
     VkDeviceMemory m_imageMemory = VK_NULL_HANDLE;
     VkImageView m_imageView      = VK_NULL_HANDLE;
     VkExtent3D m_extent          = {};
     uint32 m_mipLevels           = 0;
-    void* m_mappedMemory         = nullptr;
 };
 
 } // namespace R3::vulkan

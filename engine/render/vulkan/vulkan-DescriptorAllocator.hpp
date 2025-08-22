@@ -14,7 +14,7 @@ public:
 
     void destroy() noexcept;
 
-    std::vector<VkDescriptorSet> allocate(const VkDescriptorSetLayoutBinding& binding, uint32 count);
+    std::vector<VkDescriptorSet> allocate(std::span<const VkDescriptorSetLayoutBinding> bindings, uint32 count);
 
     VkDescriptorSetLayout layout() const noexcept { return m_layout; }
 

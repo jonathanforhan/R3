@@ -45,18 +45,19 @@ private:
     RenderContext m_ctx;
     Swapchain m_swapchain;
     RenderPass m_renderPass;
-    DescriptorAllocator m_descriptorAllocator;
-    std::vector<VkDescriptorSet> m_descriptorSets;
-    GraphicsPipeline m_graphicsPipeline;
+    std::vector<Framebuffer> m_framebuffers;
     CommandAllocator m_commandAllocator;
+    std::vector<VkCommandBuffer> m_commandBuffers;
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Buffer m_vertexBuffer;
+    Buffer m_indexBuffer;
     Texture m_texture;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
-    std::vector<Framebuffer> m_framebuffers;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    DescriptorAllocator m_descriptorAllocator;
+    GraphicsPipeline m_graphicsPipeline;
+    std::vector<VkDescriptorSet> m_descriptorSets;
     FrameSync m_frameSync;
 
     Camera m_camera;
