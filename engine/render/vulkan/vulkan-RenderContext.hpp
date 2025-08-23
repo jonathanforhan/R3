@@ -1,11 +1,12 @@
 #pragma once
 
-#if R3_VULKAN
-
+#include <span>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
 #include "render/Window.hpp"
+#include "vulkan-Handle.hpp"
 
 #ifdef R3_DEBUG
 #define R3_VALIDATION_LAYERS_ENABLED 1
@@ -22,18 +23,30 @@ namespace R3::vulkan {
 ///   - PhysicalDevice
 class RenderContext {
 public:
+    R3_CTOR_DEFAULT(RenderContext);
+    R3_COPY_DELETE(RenderContext);
+    R3_MOVE_DEFAULT(RenderContext);
+
     /// @brief Create new RenderContext
     /// @param window Must be a valid Window for surface creation
-    void create(Window& window);
+    explicit RenderContext(Window& window);
 
     /// Destroys the RenderContext
-    void destroy() noexcept;
+    ~RenderContext() noexcept;
 
     /// Wait on the host for the completion of outstanding queue operations for all queues in this context
     void waitIdle();
 
-    /// get the index of memory type which satisfies ```typeFilter``` and ```properties```
-    uint32 deviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const;
+    /// Get the index of memory type which satisfies ```typeFilter``` and ```properties```
+    uint32 queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const;
+
+    /// Get physical device depth format
+    VkFormat queryDepthFormat() const noexcept;
+
+    /// Get physical device supported format chosen from a list of formats
+    VkFormat querySupportedFormat(std::span<const VkFormat> formats,
+                                  VkImageTiling tiling,
+                                  VkFormatFeatureFlags features) const noexcept;
 
     /// VkSurfaceKHR getter
     VkSurfaceKHR surface() const noexcept { return m_surface; }
@@ -64,28 +77,17 @@ private:
     static void setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index);
 
 private:
-    VkInstance m_instance             = VK_NULL_HANDLE;
-    VkDebugUtilsMessengerEXT m_debug  = VK_NULL_HANDLE;
-    VkSurfaceKHR m_surface            = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
-    VkDevice m_device                 = VK_NULL_HANDLE;
-    VkQueue m_graphicsQueue           = VK_NULL_HANDLE;
-    VkQueue m_presentQueue            = VK_NULL_HANDLE;
-    VkQueue m_computeQueue            = VK_NULL_HANDLE;
-    uint32 m_graphicsQueueIndex       = 0xFFFFFFFF;
-    uint32 m_presentQueueIndex        = 0xFFFFFFFF;
-    uint32 m_computeQueueIndex        = 0xFFFFFFFF;
+    Handle<VkInstance> m_instance;
+    Handle<VkDebugUtilsMessengerEXT> m_debug;
+    Handle<VkSurfaceKHR> m_surface;
+    Handle<VkPhysicalDevice> m_physicalDevice;
+    Handle<VkDevice> m_device;
+    Handle<VkQueue> m_graphicsQueue;
+    Handle<VkQueue> m_presentQueue;
+    Handle<VkQueue> m_computeQueue;
+    uint32 m_graphicsQueueIndex = 0xFFFFFFFF;
+    uint32 m_presentQueueIndex  = 0xFFFFFFFF;
+    uint32 m_computeQueueIndex  = 0xFFFFFFFF;
 };
 
-#if R3_VALIDATION_LAYERS_ENABLED
-
-VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-                                                       VkDebugUtilsMessageTypeFlagsEXT messageType,
-                                                       const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-                                                       void* pUserData);
-
-#endif
-
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

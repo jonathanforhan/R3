@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "vulkan-Swapchain.hpp"
 
 #define GLFW_INCLUDE_VULKAN
@@ -12,16 +10,61 @@
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
 #include "Types.hpp"
-#include "render/Window.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-void Swapchain::create(Window& window, RenderContext& ctx) {
-    m_device = ctx.device();
+Swapchain::Swapchain(RenderContext& ctx, ivec2 framebufferSize) {
+    create(ctx, framebufferSize.x, framebufferSize.y);
+}
 
-    int width, height;
-    glfwGetFramebufferSize(window.glfw(), &width, &height);
+Swapchain::Swapchain(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight) {
+    create(ctx, framebufferWidth, framebufferHeight);
+}
+
+Swapchain::~Swapchain() noexcept {
+    if (m_device) {
+        for (VkImageView imageView : m_imageViews) {
+            vkDestroyImageView(m_device, imageView, nullptr);
+        }
+        m_images.clear();
+        m_imageViews.clear();
+
+        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+    }
+}
+
+void Swapchain::recreate(RenderContext& ctx, ivec2 framebufferSize) {
+    this->~Swapchain();
+    create(ctx, framebufferSize.x, framebufferSize.y);
+}
+
+void Swapchain::recreate(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight) {
+    this->~Swapchain();
+    create(ctx, framebufferWidth, framebufferHeight);
+}
+
+VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32& imageIndex, uint64 timeout) const noexcept {
+    return vkAcquireNextImageKHR(m_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
+}
+
+VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32 imageIndex) const noexcept {
+    VkPresentInfoKHR presentInfo = {
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .pNext              = nullptr,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores    = &waitSemaphore,
+        .swapchainCount     = 1,
+        .pSwapchains        = &*m_swapchain,
+        .pImageIndices      = &imageIndex,
+        .pResults           = nullptr,
+    };
+    return vkQueuePresentKHR(presentQueue, &presentInfo);
+}
+
+void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight) {
+    m_device = ctx.device();
 
     uint32 iGraphics = ctx.graphicsQueueIndex();
     uint32 iPresent  = ctx.presentQueueIndex();
@@ -31,7 +74,7 @@ void Swapchain::create(Window& window, RenderContext& ctx) {
                       .set_desired_format({VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})
                       .set_desired_present_mode(VK_PRESENT_MODE_MAILBOX_KHR) // prefer triple buffering
                       .add_fallback_present_mode(VK_PRESENT_MODE_FIFO_KHR)   // guaranteed fallback
-                      .set_desired_extent(width, height)
+                      .set_desired_extent(static_cast<uint32>(framebufferWidth), static_cast<uint32>(framebufferHeight))
                       .set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
                       .set_composite_alpha_flags(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
                       .set_clipped(true)
@@ -50,43 +93,4 @@ void Swapchain::create(Window& window, RenderContext& ctx) {
     m_extent      = swapchain.extent;
 }
 
-void Swapchain::destroy() noexcept {
-    if (m_device != VK_NULL_HANDLE) {
-        for (VkImageView imageView : m_imageViews) {
-            vkDestroyImageView(m_device, imageView, nullptr);
-        }
-        m_images.clear();
-        m_imageViews.clear();
-
-        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
-        m_swapchain = VK_NULL_HANDLE;
-    }
-    m_device = VK_NULL_HANDLE;
-}
-
-void Swapchain::recreate(Window& window, RenderContext& ctx) {
-    destroy();
-    create(window, ctx);
-}
-
-VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32& imageIndex, uint64 timeout) const noexcept {
-    return vkAcquireNextImageKHR(m_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
-}
-
-VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32 imageIndex) const noexcept {
-    VkPresentInfoKHR presentInfo = {
-        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .pNext              = nullptr,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores    = &waitSemaphore,
-        .swapchainCount     = 1,
-        .pSwapchains        = &m_swapchain,
-        .pImageIndices      = &imageIndex,
-        .pResults           = nullptr,
-    };
-    return vkQueuePresentKHR(presentQueue, &presentInfo);
-}
-
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

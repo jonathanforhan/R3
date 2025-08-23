@@ -3,7 +3,9 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
@@ -21,34 +23,26 @@ struct Vertex {
 
 class GraphicsPipeline {
 public:
-    void create(RenderContext& ctx,
-                RenderPass& renderPass,
-                Shader& vertexShader,
-                Shader& fragmentShader,
-                std::span<const VkDescriptorSetLayout> layouts);
+    R3_CTOR_DEFAULT(GraphicsPipeline);
+    R3_COPY_DELETE(GraphicsPipeline);
+    R3_MOVE_DEFAULT(GraphicsPipeline);
 
-    void destroy() noexcept;
+    GraphicsPipeline(RenderContext& ctx,
+                     RenderPass& renderPass,
+                     Shader& vertexShader,
+                     Shader& fragmentShader,
+                     std::span<const VkDescriptorSetLayout> layouts);
 
-    void bind(VkCommandBuffer commandBuffer) const;
-
-    void setViewport(VkCommandBuffer cmd, const VkViewport& viewport);
-
-    void setScissor(VkCommandBuffer cmd, const VkRect2D& scissor);
-
-    void setCullMode(VkCommandBuffer cmd, VkCullModeFlags cullMode);
-
-    void setFrontFace(VkCommandBuffer cmd, VkFrontFace frontFace);
-
-    void setLineWidth(VkCommandBuffer cmd, float lineWidth);
+    ~GraphicsPipeline() noexcept;
 
     VkPipeline pipeline() const noexcept { return m_pipeline; }
 
     VkPipelineLayout layout() const noexcept { return m_pipelineLayout; }
 
 private:
-    VkDevice m_device                 = VK_NULL_HANDLE;
-    VkPipeline m_pipeline             = VK_NULL_HANDLE;
-    VkPipelineLayout m_pipelineLayout = VK_NULL_HANDLE;
+    Handle<VkDevice> m_device;
+    Handle<VkPipeline> m_pipeline;
+    Handle<VkPipelineLayout> m_pipelineLayout;
 };
 
 } // namespace R3::vulkan

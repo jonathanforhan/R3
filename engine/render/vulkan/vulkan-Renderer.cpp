@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "vulkan-Renderer.hpp"
 
 #include <format>
@@ -13,12 +11,12 @@
 #include "Types.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
-#include "vulkan-Check.hpp"
-#include "vulkan-CommandAllocator.hpp"
+#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorAllocator.hpp"
 #include "vulkan-FrameSync.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
+#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
@@ -33,84 +31,76 @@ static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 
 // Triangle vertices - matches your vertex shader (vec3 position, vec3 color)
 static const Vertex s_vertices[] = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
 };
 
-static const uint16_t s_indices[] = {0, 1, 2, 2, 3, 0};
+static const uint16 s_indices[] = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 Renderer::Renderer(Window& window)
-    : m_window{window} {
+    : m_window(window) {
     //--- Render Context
     //    - instance
     //    - surface
     //    - physical device
     //    - logical device
-    m_ctx.create(m_window);
+    m_ctx = RenderContext{m_window};
 
     //--- Swapchain
-    m_swapchain.create(m_window, m_ctx);
+    //    - images
+    //    - image views
+    m_swapchain = Swapchain{m_ctx, m_window.framebufferSize()};
 
-    //--- Render Pass with colorAttachment for subpass
-    const VkAttachmentDescription colorAttachment = {
-        .flags          = {},
-        .format         = m_swapchain.format(),
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
-        .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-    };
-    m_renderPass.create(m_ctx, std::span{&colorAttachment, 1});
-
-    //--- Framebuffers
-    m_framebuffers.resize(m_swapchain.imageViews().size());
-    for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
-        const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
-        m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
-    }
+    //--- Render Pass with colorAttachment and depthAttachment
+    m_renderPass = RenderPassBuilder()
+                       .addSwapchainColorAttachment(m_swapchain.format())
+                       .setDepthStencilAttachment(m_ctx.queryDepthFormat())
+                       .build(m_ctx);
 
     //--- Command Buffers
-    m_commandAllocator.create(m_ctx, m_ctx.graphicsQueueIndex(), VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-    m_commandBuffers = m_commandAllocator.allocateBuffers(MAX_FRAMES_IN_FLIGHT);
+    //    - Each collection shares a VkCommandPool
+    const VkCommandPoolCreateFlags poolFlags =
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    m_graphicsQueueCmds = CommandBuffer::allocate(m_ctx, m_ctx.graphicsQueueIndex(), poolFlags, MAX_FRAMES_IN_FLIGHT);
+    m_computeQueueCmds  = CommandBuffer::allocate(m_ctx, m_ctx.computeQueueIndex(), poolFlags, MAX_FRAMES_IN_FLIGHT);
 
     //--- Shaders
-    m_vertexShader.createFromFile(m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-    m_fragmentShader.createFromFile(m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+    m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
-    //--- Descriptor Pool
-    VkDescriptorPoolSize poolSizes[] = {
-        {
-            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
-        },
-        {
-            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
-        },
-    };
-    m_descriptorAllocator.create(m_ctx, poolSizes, MAX_FRAMES_IN_FLIGHT);
-
-    //--- Vertex Buffer
-    m_vertexBuffer.create(m_ctx,
-                          sizeof(s_vertices[0]) * std::size(s_vertices),
-                          VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                          VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    //--- Vertex/Index Buffers
+    const VkMemoryPropertyFlags bufferMemoryFlags =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    m_vertexBuffer = Buffer{m_ctx, sizeof(s_vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, bufferMemoryFlags};
     m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
-
-    //--- Index Buffer
-    m_indexBuffer.create(m_ctx,
-                         sizeof(s_indices[0]) * std::size(s_indices),
-                         VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    m_indexBuffer = Buffer{m_ctx, sizeof(s_indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, bufferMemoryFlags};
     m_indexBuffer.copy(&s_indices, sizeof(s_indices));
 
     //--- Texture
-    m_texture.create(m_ctx, m_commandAllocator.allocateBuffer(), "textures/statue_head.jpg", TextureType::Albedo);
+    CommandBuffer& cmd = m_graphicsQueueCmds[0];
+    cmd.reset();
+    cmd.begin();
+    m_texture = Texture{m_ctx, cmd, "textures/statue_head.jpg", TextureType::Albedo};
+    cmd.end();
+    cmd.submit(m_ctx.graphicsQueue());
+
+    //--- Depth Image
+    m_depthImage = Image{m_ctx,
+                         m_ctx.queryDepthFormat(),
+                         m_swapchain.extent(),
+                         1,
+                         VK_SAMPLE_COUNT_1_BIT,
+                         VK_IMAGE_TILING_OPTIMAL,
+                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                         VK_IMAGE_ASPECT_DEPTH_BIT,
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
     //--- Uniform Buffers
     m_ubo = {
@@ -125,11 +115,21 @@ Renderer::Renderer(Window& window)
 
     m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
     for (auto& ubo : m_ubos) {
-        ubo.create(m_ctx,
-                   sizeof(UniformBufferObject),
-                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        ubo = Buffer{m_ctx, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, bufferMemoryFlags};
     }
+
+    //--- Descriptor Pool
+    VkDescriptorPoolSize poolSizes[] = {
+        {
+            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+        },
+        {
+            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
+        },
+    };
+    m_descriptorAllocator.create(m_ctx, poolSizes, MAX_FRAMES_IN_FLIGHT);
 
     //--- Descriptor Sets and Layouts
     VkDescriptorSetLayoutBinding bindings[] = {
@@ -153,8 +153,8 @@ Renderer::Renderer(Window& window)
     m_descriptorSets = m_descriptorAllocator.allocate(bindings, MAX_FRAMES_IN_FLIGHT);
 
     //--- Graphics Pipeline
-    auto layout = m_descriptorAllocator.layout();
-    m_graphicsPipeline.create(m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, std::span{&layout, 1});
+    auto layout        = m_descriptorAllocator.layout();
+    m_graphicsPipeline = GraphicsPipeline{m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, std::span{&layout, 1}};
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         const VkDescriptorBufferInfo bufferInfo = {
@@ -198,34 +198,24 @@ Renderer::Renderer(Window& window)
         vkUpdateDescriptorSets(m_ctx.device(), (uint32)std::size(descriptorWrites), descriptorWrites, 0, nullptr);
     }
 
+    //--- Framebuffers
+    for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
+        const VkImageView attachments[] = {
+            m_swapchain.imageViews()[i],
+            m_depthImage.imageView(),
+        };
+        m_framebuffers.emplace_back(m_ctx, m_renderPass, attachments, m_swapchain.extent());
+    }
+
     //--- Frame Sync
-    const size_t imageCount = m_swapchain.images().size();
-    m_frameSync.create(m_ctx, MAX_FRAMES_IN_FLIGHT, imageCount);
+    m_frameSync = FrameSync{m_ctx, MAX_FRAMES_IN_FLIGHT, m_swapchain.images().size()};
 
     m_camera.setActive(true);
 }
 
 Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
-
-    m_frameSync.destroy();
-    m_graphicsPipeline.destroy();
     m_descriptorAllocator.destroy();
-    for (auto& ubo : m_ubos) {
-        ubo.destroy();
-    }
-    m_texture.destroy();
-    m_indexBuffer.destroy();
-    m_vertexShader.destroy();
-    m_fragmentShader.destroy();
-    m_vertexBuffer.destroy();
-    m_commandAllocator.destroy();
-    for (auto& framebuffer : m_framebuffers) {
-        framebuffer.destroy();
-    }
-    m_renderPass.destroy();
-    m_swapchain.destroy();
-    m_ctx.destroy();
 }
 
 void Renderer::render(double dt) {
@@ -259,20 +249,16 @@ void Renderer::render(double dt) {
     }
 
     // Record command buffer
-    const VkCommandBuffer cmd = m_commandBuffers[m_frameSync.currentFrameIndex()];
-    vkResetCommandBuffer(cmd, 0);
-
-    const VkCommandBufferBeginInfo beginInfo = {
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext            = nullptr,
-        .flags            = {},
-        .pInheritanceInfo = nullptr,
-    };
-    VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
+    CommandBuffer& cmd = m_graphicsQueueCmds[m_frameSync.currentFrameIndex()];
+    cmd.reset();
+    cmd.begin();
 
     // Begin render pass
-    const VkClearValue clearValue{{{0.0f, 0.0f, 0.0f, 1.0f}}};
-    const VkRenderPassBeginInfo renderPassInfo{
+    const VkClearValue clearValues[] = {
+        {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
+        {.depthStencil = {1.0f, 0}},
+    };
+    const VkRenderPassBeginInfo renderPassInfo = {
         .sType       = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .pNext       = nullptr,
         .renderPass  = m_renderPass.renderPass(),
@@ -282,67 +268,46 @@ void Renderer::render(double dt) {
                 .offset = {0, 0},
                 .extent = m_swapchain.extent(),
             },
-        .clearValueCount = 1,
-        .pClearValues    = &clearValue,
+        .clearValueCount = static_cast<uint32>(std::size(clearValues)),
+        .pClearValues    = clearValues,
     };
-
-    vkCmdBeginRenderPass(cmd, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-
-    // Bind pipeline and draw
-    m_graphicsPipeline.bind(cmd);
-
-    const VkViewport viewport = {
+    cmd.beginRenderPass(renderPassInfo);
+    cmd.bindGraphicsPipeline(m_graphicsPipeline.pipeline());
+    cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
+    cmd.setViewport({
         .x        = 0.0f,
         .y        = 0.0f,
         .width    = static_cast<float>(m_swapchain.extent().width),
         .height   = static_cast<float>(m_swapchain.extent().height),
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
-    };
+    });
+    cmd.setCullMode(VK_CULL_MODE_NONE); // TODO revert back to VK_CULL_MODE_BACK_BIT
+    cmd.setLineWidth(1.0f);
+    cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    cmd.setDepthTestEnable(true);
 
-    const VkRect2D scissor = {
-        .offset = {0, 0},
-        .extent = m_swapchain.extent(),
-    };
-
-    m_graphicsPipeline.setScissor(cmd, scissor);
-    m_graphicsPipeline.setViewport(cmd, viewport);
-    m_graphicsPipeline.setCullMode(cmd, VK_CULL_MODE_BACK_BIT);
-    m_graphicsPipeline.setFrontFace(cmd, VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    m_graphicsPipeline.setLineWidth(cmd, 1.0f);
-
-    vkCmdBindDescriptorSets(cmd,
-                            VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_graphicsPipeline.layout(),
-                            0,
-                            1,
-                            &m_descriptorSets[m_frameSync.currentFrameIndex()],
-                            0,
-                            nullptr);
-
+    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
+                           m_graphicsPipeline.layout(),
+                           0,
+                           {&m_descriptorSets[m_frameSync.currentFrameIndex()], 1},
+                           {});
     const VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
     const VkDeviceSize offsets[]   = {0};
-    vkCmdBindVertexBuffers(cmd, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(cmd, m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
-    vkCmdDrawIndexed(cmd, static_cast<uint32>(std::size(s_indices)), 1, 0, 0, 0);
+    cmd.bindVertexBuffers(0, vertexBuffers, offsets);
+    cmd.bindIndexBuffer(m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
+    cmd.drawIndexed(static_cast<uint32>(std::size(s_indices)), 1, 0, 0, 0);
 
-    vkCmdEndRenderPass(cmd);
-    VK_CHECK(vkEndCommandBuffer(cmd));
+    cmd.endRenderPass();
+    cmd.end();
 
     // Submit command buffer - use per-frame acquire, per-image render finished
     const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    const VkSubmitInfo submitInfo{
-        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext                = nullptr,
-        .waitSemaphoreCount   = 1,
-        .pWaitSemaphores      = &m_frameSync.currentImageAvailableSemaphore(),
-        .pWaitDstStageMask    = waitStages,
-        .commandBufferCount   = 1,
-        .pCommandBuffers      = &cmd,
-        .signalSemaphoreCount = 1,
-        .pSignalSemaphores    = &m_frameSync.renderFinishedSemaphore(imageIndex),
-    };
-    VK_CHECK(vkQueueSubmit(m_ctx.graphicsQueue(), 1, &submitInfo, m_frameSync.currentFence()));
+    cmd.submit(m_ctx.graphicsQueue(),
+               {&m_frameSync.currentImageAvailableSemaphore(), 1},
+               waitStages,
+               {&m_frameSync.renderFinishedSemaphore(imageIndex), 1},
+               m_frameSync.currentFence());
 
     // Present - use per-image semaphore
     result = m_swapchain.present(m_ctx.presentQueue(), m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
@@ -354,25 +319,33 @@ void Renderer::render(double dt) {
     }
 
     m_frameSync.advanceFrame();
-} // namespace R3::vulkan
+}
 
 void Renderer::handleWindowResize() {
     m_ctx.waitIdle();
 
-    for (auto& framebuffer : m_framebuffers) {
-        framebuffer.destroy();
-    }
+    m_swapchain.recreate(m_ctx, m_window.framebufferSize());
+    m_depthImage = Image{m_ctx,
+                         m_ctx.queryDepthFormat(),
+                         m_swapchain.extent(),
+                         1,
+                         VK_SAMPLE_COUNT_1_BIT,
+                         VK_IMAGE_TILING_OPTIMAL,
+                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                         VK_IMAGE_ASPECT_DEPTH_BIT,
+                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-    m_swapchain.recreate(m_window, m_ctx);
-    m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
+    m_framebuffers.clear();
 
-    m_framebuffers.resize(m_swapchain.imageViews().size());
     for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
-        const VkImageView attachments[] = {m_swapchain.imageViews()[i]};
-        m_framebuffers[i].create(m_ctx, m_renderPass, attachments, m_swapchain.extent());
+        const VkImageView attachments[] = {
+            m_swapchain.imageViews()[i],
+            m_depthImage.imageView(),
+        };
+        m_framebuffers.emplace_back(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
+
+    m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

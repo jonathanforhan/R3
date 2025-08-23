@@ -1,33 +1,38 @@
 #pragma once
 
+#include <filesystem>
 #include <span>
-#include <string>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
+#include "vulkan-Handle.hpp"
+#include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-class RenderContext;
-
 class Shader {
 public:
-    void createFromFile(RenderContext& ctx, const std::string& filename, VkShaderStageFlags type);
+    R3_CTOR_DEFAULT(Shader);
+    R3_COPY_DELETE(Shader);
+    R3_MOVE_DEFAULT(Shader);
 
-    void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode, VkShaderStageFlags type);
+    Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlags type);
 
-    void destroy() noexcept;
+    ~Shader() noexcept;
 
     VkShaderModule shader() const noexcept { return m_shaderModule; }
 
     VkShaderStageFlags type() const noexcept { return m_type; }
 
 private:
-    std::vector<uint32> readFile(const std::string& filename) const;
+    void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode, VkShaderStageFlags type);
+
+    std::vector<uint32> readFile(const std::filesystem::path& filename) const;
 
 private:
-    VkDevice m_device             = VK_NULL_HANDLE;
-    VkShaderModule m_shaderModule = VK_NULL_HANDLE;
+    Handle<VkDevice> m_device;
+    Handle<VkShaderModule> m_shaderModule;
     VkShaderStageFlags m_type;
 };
 

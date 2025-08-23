@@ -4,19 +4,28 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
-#include "render/Window.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
 class Swapchain {
 public:
-    void create(Window& window, RenderContext& ctx);
+    R3_CTOR_DEFAULT(Swapchain);
+    R3_COPY_DELETE(Swapchain);
+    R3_MOVE_DEFAULT(Swapchain);
 
-    void destroy() noexcept;
+    Swapchain(RenderContext& ctx, ivec2 framebufferSize);
 
-    void recreate(Window& window, RenderContext& ctx);
+    Swapchain(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight);
+
+    ~Swapchain() noexcept;
+
+    void recreate(RenderContext& ctx, ivec2 framebufferSize);
+
+    void recreate(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight);
 
     VkFormat format() const noexcept { return m_format; }
 
@@ -33,8 +42,11 @@ public:
     VkResult present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32 imageIndex) const noexcept;
 
 private:
-    VkDevice m_device              = VK_NULL_HANDLE;
-    VkSwapchainKHR m_swapchain     = VK_NULL_HANDLE;
+    void create(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight);
+
+private:
+    Handle<VkDevice> m_device;
+    Handle<VkSwapchainKHR> m_swapchain;
     VkFormat m_format              = VK_FORMAT_B8G8R8A8_SRGB;
     VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
     VkExtent2D m_extent            = {};

@@ -1,11 +1,10 @@
-#if R3_VULKAN
-
 #include "vulkan-RenderContext.hpp"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include <format>
+#include <span>
 #include <system_error>
 #include <vector>
 #include <VkBootstrap.h>
@@ -19,7 +18,16 @@
 
 namespace R3::vulkan {
 
-void RenderContext::create(Window& window) {
+#if R3_VALIDATION_LAYERS_ENABLED
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                              VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                              const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                              void* pUserData);
+
+#endif
+
+RenderContext::RenderContext(Window& window) {
     std::error_code error;
 
     try {
@@ -36,41 +44,36 @@ void RenderContext::create(Window& window) {
         setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
         setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
     } catch (const Exception& ex) {
-        destroy();
+        this->~RenderContext();
         throw ex;
     }
 }
 
-void RenderContext::destroy() noexcept {
-    // destroy device
-    if (m_device != VK_NULL_HANDLE) {
+RenderContext::~RenderContext() noexcept {
+    if (m_device) {
         vkDeviceWaitIdle(m_device);
+
+        // destroy device
         vkDestroyDevice(m_device, nullptr);
-        m_device = VK_NULL_HANDLE;
     }
 
-    if (m_instance != VK_NULL_HANDLE) {
+    if (m_instance) {
         // destroy surface
         vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
-        m_surface = VK_NULL_HANDLE;
 
         // destroy debug messenger
         vkb::destroy_debug_utils_messenger(m_instance, m_debug, nullptr);
-        m_debug = VK_NULL_HANDLE;
+
+        // destroy instance
+        vkDestroyInstance(m_instance, nullptr);
     }
-
-    // destroy instance
-    vkDestroyInstance(m_instance, nullptr);
-    m_instance = VK_NULL_HANDLE;
-
-    m_physicalDevice = VK_NULL_HANDLE;
 }
 
 void RenderContext::waitIdle() {
     VK_CHECK(vkDeviceWaitIdle(m_device));
 }
 
-uint32 RenderContext::deviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const {
+uint32 RenderContext::queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
 
@@ -81,6 +84,41 @@ uint32 RenderContext::deviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyF
     }
 
     throw Exception("Failed to find suitable memory type");
+}
+
+VkFormat RenderContext::queryDepthFormat() const noexcept {
+    static constexpr VkFormat formats[] = {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT,
+    };
+    return querySupportedFormat(formats, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+}
+
+VkFormat RenderContext::querySupportedFormat(std::span<const VkFormat> formats,
+                                             VkImageTiling tiling,
+                                             VkFormatFeatureFlags features) const noexcept {
+    for (VkFormat format : formats) {
+        VkFormatProperties formatProperties;
+        vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &formatProperties);
+
+        switch (tiling) {
+            case VK_IMAGE_TILING_LINEAR:
+                if ((formatProperties.linearTilingFeatures & features) == features) {
+                    return format;
+                }
+                break;
+            case VK_IMAGE_TILING_OPTIMAL:
+                if ((formatProperties.optimalTilingFeatures & features) == features) {
+                    return format;
+                }
+                break;
+            default:
+                continue;
+        }
+    }
+
+    return VK_FORMAT_UNDEFINED;
 }
 
 vkb::Instance RenderContext::createInstance() {
@@ -213,5 +251,3 @@ VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeveri
 #endif
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

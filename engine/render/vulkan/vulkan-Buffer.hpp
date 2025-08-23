@@ -2,16 +2,22 @@
 
 #include <span>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
 class Buffer {
 public:
-    void create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+    R3_CTOR_DEFAULT(Buffer);
+    R3_COPY_DELETE(Buffer);
+    R3_MOVE_DEFAULT(Buffer);
 
-    void destroy() noexcept;
+    Buffer(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+
+    ~Buffer() noexcept;
 
     void copy(const void* src, usize size);
 
@@ -30,11 +36,11 @@ private:
     void unmap() noexcept;
 
 private:
-    VkDevice m_device             = VK_NULL_HANDLE;
-    VkBuffer m_buffer             = VK_NULL_HANDLE;
-    VkDeviceMemory m_bufferMemory = VK_NULL_HANDLE;
-    usize m_size                  = 0;
-    void* m_mappedMemory          = nullptr;
+    Handle<VkDevice> m_device;
+    Handle<VkBuffer> m_buffer;
+    Handle<VkDeviceMemory> m_bufferMemory;
+    usize m_size         = 0;
+    void* m_mappedMemory = nullptr;
 };
 
 } // namespace R3::vulkan

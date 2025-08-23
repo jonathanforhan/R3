@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "vulkan-Texture.hpp"
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -7,46 +5,58 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <string>
+#include <utility>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
 #include "Log.hpp"
 #include "Types.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-CommandBuffer.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-static VkFormat getPreferredFormat(TextureType type) {
-    switch (type) {
-        case TextureType::Albedo:
-            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for color data
-        case TextureType::MetallicRoughness:
-            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for material properties
-        case TextureType::Normal:
-            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for normals
-        case TextureType::AmbientOcclusion:
-            return VK_FORMAT_R8_UNORM; // Single channel is enough
-        case TextureType::Emissive:
-            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for emissive colors
-        default:
-            return VK_FORMAT_R8G8B8A8_UNORM; // default
+Texture::Texture(RenderContext& ctx,
+                 CommandBuffer& cmd,
+                 const uint8* raw,
+                 usize width,
+                 usize height,
+                 TextureType type) {
+    create(ctx, cmd, raw, width, height, type);
+}
+
+Texture::Texture(RenderContext& ctx, CommandBuffer& cmd, const uint8* compressed, usize size, TextureType type) {
+    int width, height, channels;
+    uint8* raw = stbi_load_from_memory(compressed, static_cast<int>(size), &width, &height, &channels, 4);
+    create(ctx, cmd, raw, width, height, type);
+    stbi_image_free(raw);
+}
+
+Texture::Texture(RenderContext& ctx, CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type) {
+    std::string path = filepath.string();
+    if (path.back() != '\0') {
+        path.push_back('\0');
+    }
+
+    int width, height, channels;
+    uint8* raw = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    create(ctx, cmd, raw, width, height, type);
+    stbi_image_free(raw);
+}
+
+Texture::~Texture() noexcept {
+    if (m_device) {
+        vkDestroySampler(m_device, m_sampler, nullptr);
     }
 }
 
-static bool supportsBlitting(VkPhysicalDevice physicalDevice, VkFormat format) {
-    VkFormatProperties properties;
-    vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
-
-    static constexpr VkFormatFeatureFlags requireFeatures =
-        VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
-
-    return (properties.optimalTilingFeatures & requireFeatures) == requireFeatures;
-}
-
 void Texture::create(RenderContext& ctx,
-                     VkCommandBuffer cmd,
+                     CommandBuffer& cmd,
                      const uint8* raw,
                      usize width,
                      usize height,
@@ -58,9 +68,9 @@ void Texture::create(RenderContext& ctx,
         throw Exception{__FUNCTION__ " called with nullptr"};
     }
 
-    const VkFormat preferredFormat = getPreferredFormat(type);
+    const VkFormat preferredFormat = queryPreferredFormat(type);
 
-    if (!supportsBlitting(ctx.physicalDevice(), preferredFormat)) {
+    if (!supportsBlitting(ctx, preferredFormat)) {
         LOG_WARNING("Texture does not support blitting");
     }
 
@@ -68,47 +78,35 @@ void Texture::create(RenderContext& ctx,
     const usize imageSize  = width * height * 4;
 
     // create staging buffer for CPU writes
-    Buffer stagingBuffer;
-    stagingBuffer.create(ctx,
+    Buffer stagingBuffer{ctx,
                          imageSize,
                          VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
     stagingBuffer.copy(raw, imageSize);
 
     // image used for texture
-    m_image.create(ctx,
-                   preferredFormat,
-                   VkExtent3D{(uint32)width, (uint32)height, 1},
-                   mipLevels,
-                   1,
-                   VK_IMAGE_TILING_OPTIMAL,
-                   VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    m_image = Image{ctx,
+                    preferredFormat,
+                    VkExtent2D{(uint32)width, (uint32)height},
+                    mipLevels,
+                    1,
+                    VK_IMAGE_TILING_OPTIMAL,
+                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                    VK_IMAGE_ASPECT_COLOR_BIT,
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
 
-    const VkImageMemoryBarrier memoryBarrierWrite = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .pNext               = nullptr,
-        .srcAccessMask       = 0,
-        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image.image(),
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
-    };
-    m_image.transition(cmd,
-                       ctx.graphicsQueue(),
-                       VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                       VK_PIPELINE_STAGE_TRANSFER_BIT,
-                       memoryBarrierWrite);
+    cmd.transitionImageLayout(m_image.image(),
+                              VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              {
+                                  .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                                  .baseMipLevel   = 0,
+                                  .levelCount     = mipLevels,
+                                  .baseArrayLayer = 0,
+                                  .layerCount     = 1,
+                              },
+                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_TRANSFER_BIT);
 
     // copy staging buffer to image
     const VkBufferImageCopy bufferToImage = {
@@ -125,12 +123,13 @@ void Texture::create(RenderContext& ctx,
         .imageOffset = {0, 0, 0},
         .imageExtent = {static_cast<uint32>(width), static_cast<uint32>(height), 1},
     };
-    m_image.copy(cmd, ctx.graphicsQueue(), stagingBuffer.buffer(), bufferToImage);
+    cmd.copyBufferToImage(
+        stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {&bufferToImage, 1});
 
     m_image.generateMipMaps(cmd, ctx.graphicsQueue());
 
-    // free staging buffer used in copy
-    stagingBuffer.destroy();
+    // destroy staging buffer after cmd is submitted (TODO) this is hacky
+    cmd.addDeferredCallback([stagingBuffer = std::move(stagingBuffer)]() { auto&& _ = std::move(stagingBuffer); });
 
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);
@@ -156,33 +155,32 @@ void Texture::create(RenderContext& ctx,
         .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
         .unnormalizedCoordinates = VK_FALSE,
     };
-    VK_CHECK(vkCreateSampler(m_device, &samplerInfo, nullptr, &m_sampler));
+    VK_CHECK(vkCreateSampler(m_device, &samplerInfo, nullptr, &*m_sampler));
 }
 
-void Texture::create(RenderContext& ctx, VkCommandBuffer cmd, const uint8* compressed, usize size, TextureType type) {
-    int width, height, channels;
-    uint8* raw = stbi_load_from_memory(compressed, static_cast<int>(size), &width, &height, &channels, 4);
-    create(ctx, cmd, raw, width, height, type);
-    stbi_image_free(raw);
+bool Texture::supportsBlitting(RenderContext& ctx, VkFormat format) {
+    VkFormat fmt = ctx.querySupportedFormat(
+        {&format, 1},
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_BLIT_SRC_BIT | VK_FORMAT_FEATURE_BLIT_DST_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT);
+    return fmt != VK_FORMAT_UNDEFINED;
 }
 
-void Texture::create(RenderContext& ctx, VkCommandBuffer cmd, const char* path, TextureType type) {
-    int width, height, channels;
-    uint8* raw = stbi_load(path, &width, &height, &channels, 4);
-    create(ctx, cmd, raw, width, height, type);
-    stbi_image_free(raw);
-}
-
-void Texture::destroy() noexcept {
-    if (m_device != VK_NULL_HANDLE) {
-        vkDestroySampler(m_device, m_sampler, nullptr);
-        m_sampler = VK_NULL_HANDLE;
+VkFormat Texture::queryPreferredFormat(TextureType type) const noexcept {
+    switch (type) {
+        case TextureType::Albedo:
+            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for color data
+        case TextureType::MetallicRoughness:
+            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for material properties
+        case TextureType::Normal:
+            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for normals
+        case TextureType::AmbientOcclusion:
+            return VK_FORMAT_R8_UNORM; // Single channel is enough
+        case TextureType::Emissive:
+            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for emissive colors
+        default:
+            return VK_FORMAT_R8G8B8A8_UNORM; // default
     }
-    m_device = VK_NULL_HANDLE;
-
-    m_image.destroy();
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

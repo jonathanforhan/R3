@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "vulkan-Buffer.hpp"
 
 #include <cstring>
@@ -12,10 +10,9 @@
 
 namespace R3::vulkan {
 
-void Buffer::create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
-    m_device = ctx.device();
-    m_size   = sizeBytes;
-
+Buffer::Buffer(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+    : m_device(ctx.device()),
+      m_size(sizeBytes) {
     const VkBufferCreateInfo bufferInfo = {
         .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .pNext                 = nullptr,
@@ -26,7 +23,7 @@ void Buffer::create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usag
         .queueFamilyIndexCount = 0,
         .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
     };
-    VK_CHECK(vkCreateBuffer(m_device, &bufferInfo, nullptr, &m_buffer));
+    VK_CHECK(vkCreateBuffer(m_device, &bufferInfo, nullptr, &*m_buffer));
 
     VkMemoryRequirements memoryRequirements;
     vkGetBufferMemoryRequirements(m_device, m_buffer, &memoryRequirements);
@@ -35,11 +32,11 @@ void Buffer::create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usag
         .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .pNext           = nullptr,
         .allocationSize  = memoryRequirements.size,
-        .memoryTypeIndex = ctx.deviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
+        .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
     };
 
     try {
-        VK_CHECK(vkAllocateMemory(m_device, &memoryInfo, nullptr, &m_bufferMemory));
+        VK_CHECK(vkAllocateMemory(m_device, &memoryInfo, nullptr, &*m_bufferMemory));
     } catch (const Exception& ex) {
         vkDestroyBuffer(m_device, m_buffer, nullptr);
         throw ex;
@@ -48,25 +45,15 @@ void Buffer::create(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usag
     VK_CHECK(vkBindBufferMemory(m_device, m_buffer, m_bufferMemory, 0));
 }
 
-void Buffer::destroy() noexcept {
+Buffer::~Buffer() noexcept {
     if (m_mappedMemory) {
         unmap();
     }
 
-    if (m_device != VK_NULL_HANDLE) {
-        if (m_buffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(m_device, m_buffer, nullptr);
-            m_buffer = VK_NULL_HANDLE;
-        }
-
-        if (m_bufferMemory != VK_NULL_HANDLE) {
-            vkFreeMemory(m_device, m_bufferMemory, nullptr);
-            m_bufferMemory = VK_NULL_HANDLE;
-        }
+    if (m_device) {
+        vkDestroyBuffer(m_device, m_buffer, nullptr);
+        vkFreeMemory(m_device, m_bufferMemory, nullptr);
     }
-    m_device = VK_NULL_HANDLE;
-
-    m_size = 0;
 }
 
 void Buffer::copy(const void* src, usize size) {
@@ -95,5 +82,3 @@ void Buffer::unmap() noexcept {
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

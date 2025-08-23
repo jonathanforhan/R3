@@ -1,14 +1,12 @@
-#if R3_VULKAN
-
 #include "vulkan-Shader.hpp"
 
 #include <cstdint>
+#include <filesystem>
 #include <format>
 #include <fstream>
 #include <ios>
 #include <istream>
 #include <span>
-#include <string>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Exception.hpp"
@@ -17,9 +15,15 @@
 
 namespace R3::vulkan {
 
-void Shader::createFromFile(RenderContext& ctx, const std::string& filename, VkShaderStageFlags type) {
+Shader::Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlags type) {
     auto spirvCode = readFile(filename);
     createFromSource(ctx, spirvCode, type);
+}
+
+Shader::~Shader() noexcept {
+    if (m_device) {
+        vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
+    }
 }
 
 void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, VkShaderStageFlags type) {
@@ -34,24 +38,14 @@ void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spir
         .pCode    = spirvCode.data(),
     };
 
-    VK_CHECK(vkCreateShaderModule(m_device, &shaderModuleCreateInfo, nullptr, &m_shaderModule));
+    VK_CHECK(vkCreateShaderModule(m_device, &shaderModuleCreateInfo, nullptr, &*m_shaderModule));
 }
 
-void Shader::destroy() noexcept {
-    if (m_device != VK_NULL_HANDLE) {
-        if (m_shaderModule != VK_NULL_HANDLE) {
-            vkDestroyShaderModule(m_device, m_shaderModule, nullptr);
-            m_shaderModule = VK_NULL_HANDLE;
-        }
-    }
-    m_device = VK_NULL_HANDLE;
-}
-
-std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
+std::vector<uint32_t> Shader::readFile(const std::filesystem::path& filename) const {
     std::ifstream file{filename, std::ios::ate | std::ios::binary};
 
     if (!(file.is_open() && file.good())) {
-        throw Exception{std::format("Failed to open shader file: {}", filename)};
+        throw Exception{std::format("Failed to open shader file: {}", filename.string())};
     }
 
     size_t fileSize = static_cast<size_t>(file.tellg());
@@ -65,5 +59,3 @@ std::vector<uint32_t> Shader::readFile(const std::string& filename) const {
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

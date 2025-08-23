@@ -2,17 +2,22 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
+#include "vulkan-Handle.hpp"
+#include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-class RenderContext;
-
 class FrameSync {
 public:
-    void create(RenderContext& ctx, uint32 maxFramesInFlight, usize swapchainImageCount);
+    R3_CTOR_DEFAULT(FrameSync);
+    R3_COPY_DELETE(FrameSync);
+    R3_MOVE_DEFAULT(FrameSync);
 
-    void destroy() noexcept;
+    FrameSync(RenderContext& ctx, uint32 maxFramesInFlight, usize swapchainImageCount);
+
+    ~FrameSync() noexcept;
 
     void recreateImageSync(RenderContext& ctx, usize newSwapchainImageCount);
 
@@ -31,7 +36,7 @@ public:
     uint32 currentFrameIndex() const noexcept { return m_currentFrame; };
 
 private:
-    VkDevice m_device          = VK_NULL_HANDLE;
+    Handle<VkDevice> m_device;
     uint32 m_maxFramesInFlight = 0;
     uint32 m_currentFrame      = 0;
     std::vector<VkSemaphore> m_imageAvailableSemaphores; // one per frame in flight

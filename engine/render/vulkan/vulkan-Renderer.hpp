@@ -3,13 +3,15 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Camera.hpp"
+#include "Class.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
-#include "vulkan-CommandAllocator.hpp"
+#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorAllocator.hpp"
 #include "vulkan-FrameSync.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
+#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
@@ -26,15 +28,12 @@ struct UniformBufferObject {
 
 class Renderer {
 public:
+    R3_COPY_DELETE(Renderer);
+    R3_MOVE_DELETE(Renderer);
+
     explicit Renderer(Window& window);
 
     ~Renderer() noexcept;
-
-    Renderer(const Renderer&)            = delete;
-    Renderer& operator=(const Renderer&) = delete;
-
-    Renderer(Renderer&&) noexcept            = delete;
-    Renderer& operator=(Renderer&&) noexcept = delete;
 
     void render(double dt);
 
@@ -45,19 +44,20 @@ private:
     RenderContext m_ctx;
     Swapchain m_swapchain;
     RenderPass m_renderPass;
-    std::vector<Framebuffer> m_framebuffers;
-    CommandAllocator m_commandAllocator;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+    std::vector<CommandBuffer> m_graphicsQueueCmds;
+    std::vector<CommandBuffer> m_computeQueueCmds;
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Buffer m_vertexBuffer;
     Buffer m_indexBuffer;
     Texture m_texture;
+    Image m_depthImage;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
     DescriptorAllocator m_descriptorAllocator;
-    GraphicsPipeline m_graphicsPipeline;
     std::vector<VkDescriptorSet> m_descriptorSets;
+    GraphicsPipeline m_graphicsPipeline;
+    std::vector<Framebuffer> m_framebuffers;
     FrameSync m_frameSync;
 
     Camera m_camera;

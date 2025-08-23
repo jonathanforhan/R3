@@ -1,7 +1,11 @@
 #pragma once
 
+#include <filesystem>
 #include <vulkan/vulkan_core.h>
+#include "Class.hpp"
 #include "Types.hpp"
+#include "vulkan-CommandBuffer.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -17,13 +21,17 @@ enum class TextureType {
 
 class Texture {
 public:
-    void create(RenderContext& ctx, VkCommandBuffer cmd, const uint8* raw, usize width, usize height, TextureType type);
+    R3_CTOR_DEFAULT(Texture);
+    R3_COPY_DELETE(Texture);
+    R3_MOVE_DEFAULT(Texture);
 
-    void create(RenderContext& ctx, VkCommandBuffer cmd, const uint8* compressed, usize size, TextureType type);
+    Texture(RenderContext& ctx, CommandBuffer& cmd, const uint8* raw, usize width, usize height, TextureType type);
 
-    void create(RenderContext& ctx, VkCommandBuffer cmd, const char* path, TextureType type);
+    Texture(RenderContext& ctx, CommandBuffer& cmd, const uint8* compressed, usize size, TextureType type);
 
-    void destroy() noexcept;
+    Texture(RenderContext& ctx, CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type);
+
+    ~Texture() noexcept;
 
     VkImage image() const noexcept { return m_image.image(); }
 
@@ -34,8 +42,15 @@ public:
     TextureType type() const noexcept { return m_type; }
 
 private:
-    VkDevice m_device   = VK_NULL_HANDLE;
-    VkSampler m_sampler = VK_NULL_HANDLE;
+    void create(RenderContext& ctx, CommandBuffer& cmd, const uint8* raw, usize width, usize height, TextureType type);
+
+    bool supportsBlitting(RenderContext& ctx, VkFormat format);
+
+    VkFormat queryPreferredFormat(TextureType type) const noexcept;
+
+private:
+    Handle<VkDevice> m_device;
+    Handle<VkSampler> m_sampler;
     Image m_image;
     TextureType m_type = TextureType::Albedo;
 };

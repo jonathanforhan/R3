@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string_view>
+#include "Class.hpp"
 #include "Types.hpp"
 
 extern "C" struct GLFWwindow;
@@ -9,15 +10,12 @@ namespace R3 {
 
 class Window {
 public:
+    R3_COPY_DELETE(Window);
+    R3_MOVE_DELETE(Window);
+
     Window();
 
     ~Window() noexcept;
-
-    Window(const Window&)            = delete;
-    Window& operator=(const Window&) = delete;
-
-    Window(Window&&) noexcept            = delete;
-    Window& operator=(Window&&) noexcept = delete;
 
     void setTitle(std::string_view title);
 
@@ -30,6 +28,12 @@ public:
     int32 width() const;
 
     int32 height() const;
+
+    ivec2 framebufferSize() const;
+
+    int32 framebufferWidth() const;
+
+    int32 framebufferHeight() const;
 
     void setSize(ivec2 size);
 

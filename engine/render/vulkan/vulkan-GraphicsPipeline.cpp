@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "vulkan-GraphicsPipeline.hpp"
 
 #include <cstddef>
@@ -11,6 +9,7 @@
 #include "Exception.hpp"
 #include "Types.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
@@ -53,11 +52,11 @@ std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions(
     return vertexInputAttributeDescription;
 }
 
-void GraphicsPipeline::create(RenderContext& ctx,
-                              RenderPass& renderPass,
-                              Shader& vertexShader,
-                              Shader& fragmentShader,
-                              std::span<const VkDescriptorSetLayout> layouts) {
+GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
+                                   RenderPass& renderPass,
+                                   Shader& vertexShader,
+                                   Shader& fragmentShader,
+                                   std::span<const VkDescriptorSetLayout> layouts) {
     m_device = ctx.device();
 
     const VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
@@ -109,7 +108,9 @@ void GraphicsPipeline::create(RenderContext& ctx,
         VK_DYNAMIC_STATE_CULL_MODE,
         VK_DYNAMIC_STATE_FRONT_FACE,
         VK_DYNAMIC_STATE_LINE_WIDTH,
+        VK_DYNAMIC_STATE_DEPTH_TEST_ENABLE,
         // VK_DYNAMIC_STATE_DEPTH_BIAS,
+        // VK_DYNAMIC_STATE_DEPTH_BIAS_ENABLE,
         // VK_DYNAMIC_STATE_BLEND_CONSTANTS,
         // VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
         // VK_DYNAMIC_STATE_STENCIL_WRITE_MASK,
@@ -162,6 +163,21 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .alphaToOneEnable      = VK_FALSE,
     };
 
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = {
+        .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        .pNext                 = nullptr,
+        .flags                 = 0,
+        .depthTestEnable       = VK_TRUE,
+        .depthWriteEnable      = VK_TRUE,
+        .depthCompareOp        = VK_COMPARE_OP_LESS_OR_EQUAL,
+        .depthBoundsTestEnable = VK_FALSE,
+        .stencilTestEnable     = VK_FALSE,
+        .front                 = {},
+        .back                  = {},
+        .minDepthBounds        = 0.0f,
+        .maxDepthBounds        = 1.0f,
+    };
+
     const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
         .blendEnable         = VK_FALSE,
         .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
@@ -194,7 +210,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pushConstantRangeCount = 0,
         .pPushConstantRanges    = nullptr,
     };
-    VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &m_pipelineLayout));
+    VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 
     const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -208,7 +224,7 @@ void GraphicsPipeline::create(RenderContext& ctx,
         .pViewportState      = &viewportStateInfo,
         .pRasterizationState = &rasterizationStateInfo,
         .pMultisampleState   = &multisampeStateInfo,
-        .pDepthStencilState  = nullptr,
+        .pDepthStencilState  = &depthStencilStateInfo,
         .pColorBlendState    = &colorBlendStateInfo,
         .pDynamicState       = &dynamicStateInfo,
         .layout              = m_pipelineLayout,
@@ -219,52 +235,18 @@ void GraphicsPipeline::create(RenderContext& ctx,
     };
 
     try {
-        VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_pipeline));
+        VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &*m_pipeline));
     } catch (const Exception& ex) {
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
         throw ex;
     }
 }
 
-void GraphicsPipeline::destroy() noexcept {
-    if (m_device != VK_NULL_HANDLE) {
-        if (m_pipeline != VK_NULL_HANDLE) {
-            vkDestroyPipeline(m_device, m_pipeline, nullptr);
-            m_pipeline = VK_NULL_HANDLE;
-        }
-
-        if (m_pipelineLayout != VK_NULL_HANDLE) {
-            vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-            m_pipelineLayout = VK_NULL_HANDLE;
-        }
+GraphicsPipeline::~GraphicsPipeline() noexcept {
+    if (m_device) {
+        vkDestroyPipeline(m_device, m_pipeline, nullptr);
+        vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     }
-    m_device = VK_NULL_HANDLE;
-}
-
-void GraphicsPipeline::bind(VkCommandBuffer commandBuffer) const {
-    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
-}
-
-void GraphicsPipeline::setViewport(VkCommandBuffer cmd, const VkViewport& viewport) {
-    vkCmdSetViewport(cmd, 0, 1, &viewport);
-}
-
-void GraphicsPipeline::setScissor(VkCommandBuffer cmd, const VkRect2D& scissor) {
-    vkCmdSetScissor(cmd, 0, 1, &scissor);
-}
-
-void GraphicsPipeline::setCullMode(VkCommandBuffer cmd, VkCullModeFlags cullMode) {
-    vkCmdSetCullMode(cmd, cullMode);
-}
-
-void GraphicsPipeline::setFrontFace(VkCommandBuffer cmd, VkFrontFace frontFace) {
-    vkCmdSetFrontFace(cmd, frontFace);
-}
-
-void GraphicsPipeline::setLineWidth(VkCommandBuffer cmd, float lineWidth) {
-    vkCmdSetLineWidth(cmd, lineWidth);
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

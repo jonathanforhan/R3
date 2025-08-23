@@ -62,6 +62,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "Class.hpp"
 #include "FunctionTraits.hpp"
 #include "Hash.hpp"
 #include "Types.hpp"
@@ -121,18 +122,15 @@ private:
     using EventCallback = std::function<void(const EventBase&)>;
 
 private:
+    R3_COPY_DELETE(EventHandler);
+    R3_MOVE_DELETE(EventHandler);
+
     EventHandler() {
         m_eventQueue.reserve(10240); // 10kB
         m_eventArena.reserve(65536); // 64kB
     }
 
     ~EventHandler() noexcept { dispatchEvents(); };
-
-    EventHandler(const EventHandler&)            = delete;
-    EventHandler& operator=(const EventHandler&) = delete;
-
-    EventHandler(EventHandler&&) noexcept            = delete;
-    EventHandler& operator=(EventHandler&&) noexcept = delete;
 
 public:
     /// @brief Single EventHandler instance

@@ -1,6 +1,5 @@
-#if R3_VULKAN
-
 #include "vulkan-DescriptorAllocator.hpp"
+
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -72,5 +71,3 @@ std::vector<VkDescriptorSet> DescriptorAllocator::allocate(std::span<const VkDes
 }
 
 } // namespace R3::vulkan
-
-#endif // R3_VULKAN

@@ -1,5 +1,3 @@
-#if R3_VULKAN
-
 #include "render/Window.hpp"
 
 #if WIN32
@@ -168,6 +166,24 @@ int32 Window::height() const {
     return height;
 }
 
+ivec2 Window::framebufferSize() const {
+    int32 w, h;
+    glfwGetFramebufferSize(m_window, &w, &h);
+    return ivec2(w, h);
+}
+
+int32 Window::framebufferWidth() const {
+    int32 width;
+    glfwGetFramebufferSize(m_window, &width, nullptr);
+    return width;
+}
+
+int32 Window::framebufferHeight() const {
+    int32 height;
+    glfwGetFramebufferSize(m_window, nullptr, &height);
+    return height;
+}
+
 void Window::setSize(ivec2 extent) {
     glfwSetWindowSize(m_window, extent.x, extent.y);
 }
@@ -244,5 +260,3 @@ void Window::kill() {
 }
 
 } // namespace R3
-
-#endif // R3_VULKAN

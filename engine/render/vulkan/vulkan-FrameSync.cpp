@@ -5,11 +5,12 @@
 #include <vulkan/vulkan_core.h>
 #include "Types.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-void FrameSync::create(RenderContext& ctx, uint32 maxFramesInFlight, usize swapchainImageCount) {
+FrameSync::FrameSync(RenderContext& ctx, uint32 maxFramesInFlight, usize swapchainImageCount) {
     m_device            = ctx.device();
     m_maxFramesInFlight = maxFramesInFlight;
 
@@ -45,8 +46,8 @@ void FrameSync::create(RenderContext& ctx, uint32 maxFramesInFlight, usize swapc
     }
 }
 
-void FrameSync::destroy() noexcept {
-    if (m_device != VK_NULL_HANDLE) {
+FrameSync::~FrameSync() noexcept {
+    if (m_device) {
         for (auto& sem : m_imageAvailableSemaphores) {
             vkDestroySemaphore(m_device, sem, nullptr);
         }
@@ -62,7 +63,6 @@ void FrameSync::destroy() noexcept {
         }
         m_renderFinishedSemaphores.clear();
     }
-    m_device = VK_NULL_HANDLE;
 }
 
 void FrameSync::recreateImageSync(RenderContext& ctx, usize newSwapchainImageCount) {
