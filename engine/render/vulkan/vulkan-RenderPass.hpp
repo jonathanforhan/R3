@@ -1,10 +1,8 @@
 #pragma once
 
-#include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "Class.hpp"
-#include "Types.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -34,15 +32,16 @@ private:
 
 class RenderPassBuilder {
 public:
+    /// Add MSAA color attachment (will be used as color attachment in subpass)
     RenderPassBuilder& addMSAAColorAttachment(VkFormat format, VkSampleCountFlagBits samples);
 
-    RenderPassBuilder& addSwapchainColorAttachment(VkFormat format);
+    /// Add regular color attachment (no MSAA)
+    RenderPassBuilder& addColorAttachment(VkFormat format, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
 
-    RenderPassBuilder& addOffscreenColorAttachment(VkFormat format);
-
-    RenderPassBuilder& setDepthStencilAttachment(VkFormat format, bool storeDepth = false);
-
-    RenderPassBuilder& setResolveTarget(usize msaaIndex, usize resolveTargetIndex);
+    /// Set depth attachment
+    RenderPassBuilder& setDepthStencilAttachment(VkFormat format,
+                                                 VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
+                                                 bool storeDepth               = false);
 
     RenderPass build(RenderContext& ctx);
 

@@ -31,6 +31,7 @@ public:
                      RenderPass& renderPass,
                      Shader& vertexShader,
                      Shader& fragmentShader,
+                     VkSampleCountFlagBits msaaSamples,
                      std::span<const VkDescriptorSetLayout> layouts);
 
     ~GraphicsPipeline() noexcept;

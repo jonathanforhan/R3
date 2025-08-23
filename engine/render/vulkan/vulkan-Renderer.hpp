@@ -43,6 +43,8 @@ private:
     Window& m_window; // must out-live renderer
     RenderContext m_ctx;
     Swapchain m_swapchain;
+    Image m_colorImage;
+    Image m_depthImage;
     RenderPass m_renderPass;
     std::vector<CommandBuffer> m_graphicsQueueCmds;
     std::vector<CommandBuffer> m_computeQueueCmds;
@@ -51,7 +53,6 @@ private:
     Buffer m_vertexBuffer;
     Buffer m_indexBuffer;
     Texture m_texture;
-    Image m_depthImage;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
     DescriptorAllocator m_descriptorAllocator;

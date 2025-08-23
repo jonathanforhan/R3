@@ -1,5 +1,6 @@
 #include "vulkan-RenderPass.hpp"
 
+#include <cassert>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <Exception.hpp>
@@ -22,12 +23,14 @@ RenderPass::~RenderPass() noexcept {
 }
 
 RenderPassBuilder& RenderPassBuilder::addMSAAColorAttachment(VkFormat format, VkSampleCountFlagBits samples) {
+    assert(samples != VK_SAMPLE_COUNT_1_BIT && "MSAA color attachment must have samples > 1");
+
     m_attachments.push_back({
         .flags          = 0,
         .format         = format,
         .samples        = samples,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .storeOp        = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -39,43 +42,27 @@ RenderPassBuilder& RenderPassBuilder::addMSAAColorAttachment(VkFormat format, Vk
         .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     });
 
-    // Initialize corresponding resolve attachment as unused (will be set by setResolveTarget)
-    m_resolveAttachmentRefs.push_back({
-        .attachment = VK_ATTACHMENT_UNUSED,
-        .layout     = VK_IMAGE_LAYOUT_UNDEFINED,
-    });
-
-    return *this;
-}
-
-RenderPassBuilder& RenderPassBuilder::addSwapchainColorAttachment(VkFormat format) {
     m_attachments.push_back({
         .flags          = 0,
         .format         = format,
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,
+        .samples        = VK_SAMPLE_COUNT_1_BIT,           // Resolve targets are always 1x
+        .loadOp         = VK_ATTACHMENT_LOAD_OP_DONT_CARE, // Will be written by resolve
+        .storeOp        = VK_ATTACHMENT_STORE_OP_STORE,    // Store the resolved result
         .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout  = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+        .finalLayout    = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // Assume going to swapchain
     });
 
-    m_colorAttachmentRefs.push_back({
+    m_resolveAttachmentRefs.push_back({
         .attachment = static_cast<uint32>(m_attachments.size() - 1),
         .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
     });
 
-    // Swapchain attachments don't need resolve targets
-    m_resolveAttachmentRefs.push_back({
-        .attachment = VK_ATTACHMENT_UNUSED,
-        .layout     = VK_IMAGE_LAYOUT_UNDEFINED,
-    });
-
     return *this;
 }
 
-RenderPassBuilder& RenderPassBuilder::addOffscreenColorAttachment(VkFormat format) {
+RenderPassBuilder& RenderPassBuilder::addColorAttachment(VkFormat format, VkSampleCountFlagBits samples) {
     m_attachments.push_back({
         .flags          = 0,
         .format         = format,
@@ -102,11 +89,15 @@ RenderPassBuilder& RenderPassBuilder::addOffscreenColorAttachment(VkFormat forma
     return *this;
 }
 
-RenderPassBuilder& RenderPassBuilder::setDepthStencilAttachment(VkFormat format, bool storeDepth) {
+RenderPassBuilder& RenderPassBuilder::setDepthStencilAttachment(VkFormat format,
+                                                                VkSampleCountFlagBits samples,
+                                                                bool storeDepth) {
+    assert(m_hasDepthStencilAttachment == false && "Depth/stencil attachment already set");
+
     m_attachments.push_back({
         .flags          = 0,
         .format         = format,
-        .samples        = VK_SAMPLE_COUNT_1_BIT,
+        .samples        = samples,
         .loadOp         = VK_ATTACHMENT_LOAD_OP_CLEAR,
         .storeOp        = storeDepth ? VK_ATTACHMENT_STORE_OP_STORE : VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .stencilLoadOp  = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
@@ -121,16 +112,6 @@ RenderPassBuilder& RenderPassBuilder::setDepthStencilAttachment(VkFormat format,
     };
 
     m_hasDepthStencilAttachment = true;
-    return *this;
-}
-
-RenderPassBuilder& RenderPassBuilder::setResolveTarget(usize msaaIndex, usize resolveTargetIndex) {
-    // Set the resolve target for the MSAA attachment
-    m_resolveAttachmentRefs.at(msaaIndex) = {
-        .attachment = static_cast<uint32>(resolveTargetIndex),
-        .layout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-    };
-
     return *this;
 }
 
@@ -155,7 +136,7 @@ RenderPass RenderPassBuilder::build(RenderContext& ctx) {
         .dstSubpass      = 0,
         .srcStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
         .dstStageMask    = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        .srcAccessMask   = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .srcAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         .dstAccessMask   = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
         .dependencyFlags = 0,
     };

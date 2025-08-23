@@ -85,15 +85,17 @@ void Texture::create(RenderContext& ctx,
     stagingBuffer.copy(raw, imageSize);
 
     // image used for texture
-    m_image = Image{ctx,
-                    preferredFormat,
-                    VkExtent2D{(uint32)width, (uint32)height},
-                    mipLevels,
-                    1,
-                    VK_IMAGE_TILING_OPTIMAL,
-                    VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                    VK_IMAGE_ASPECT_COLOR_BIT,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+    m_image = Image{
+        ctx,
+        preferredFormat,
+        VkExtent2D{(uint32)width, (uint32)height},
+        mipLevels,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
 
     cmd.transitionImageLayout(m_image.image(),
                               VK_IMAGE_LAYOUT_UNDEFINED,

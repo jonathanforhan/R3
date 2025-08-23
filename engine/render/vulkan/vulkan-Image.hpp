@@ -19,7 +19,7 @@ public:
           VkFormat format,
           VkExtent2D extent,
           uint32 mipLevels,
-          uint32 sampleCount,
+          VkSampleCountFlagBits sampleCount,
           VkImageTiling tiling,
           VkImageUsageFlags usage,
           VkImageAspectFlags aspectFlags,

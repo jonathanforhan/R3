@@ -15,6 +15,7 @@
 #include "Version.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
@@ -84,6 +85,22 @@ uint32 RenderContext::queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryProp
     }
 
     throw Exception("Failed to find suitable memory type");
+}
+
+VkSampleCountFlagBits RenderContext::queryMaxUsableSampleCount() const noexcept {
+    VkPhysicalDeviceProperties physicalDeviceProperties;
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &physicalDeviceProperties);
+
+    const VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                                      physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+
+    return (counts & VK_SAMPLE_COUNT_64_BIT)   ? VK_SAMPLE_COUNT_64_BIT
+           : (counts & VK_SAMPLE_COUNT_32_BIT) ? VK_SAMPLE_COUNT_32_BIT
+           : (counts & VK_SAMPLE_COUNT_16_BIT) ? VK_SAMPLE_COUNT_16_BIT
+           : (counts & VK_SAMPLE_COUNT_8_BIT)  ? VK_SAMPLE_COUNT_8_BIT
+           : (counts & VK_SAMPLE_COUNT_4_BIT)  ? VK_SAMPLE_COUNT_4_BIT
+           : (counts & VK_SAMPLE_COUNT_2_BIT)  ? VK_SAMPLE_COUNT_2_BIT
+                                               : VK_SAMPLE_COUNT_1_BIT;
 }
 
 VkFormat RenderContext::queryDepthFormat() const noexcept {
@@ -171,6 +188,7 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                       .set_required_features({
                           .geometryShader     = VK_TRUE,
                           .tessellationShader = VK_TRUE,
+                          .sampleRateShading  = VK_TRUE,
                           .fillModeNonSolid   = VK_TRUE,
                           .samplerAnisotropy  = VK_TRUE,
                       })

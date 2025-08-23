@@ -40,6 +40,9 @@ public:
     /// Get the index of memory type which satisfies ```typeFilter``` and ```properties```
     uint32 queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const;
 
+    /// Get MSAA sample count supported by the physical device
+    VkSampleCountFlagBits queryMaxUsableSampleCount() const noexcept;
+
     /// Get physical device depth format
     VkFormat queryDepthFormat() const noexcept;
 

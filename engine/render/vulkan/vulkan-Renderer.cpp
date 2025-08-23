@@ -58,10 +58,35 @@ Renderer::Renderer(Window& window)
     //    - image views
     m_swapchain = Swapchain{m_ctx, m_window.framebufferSize()};
 
+    //--- Color/Depth Image
+    auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
+    m_colorImage     = Image{
+        m_ctx,
+        m_swapchain.format(),
+        m_swapchain.extent(),
+        1,
+        msaaSamples,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
+    m_depthImage = Image{
+        m_ctx,
+        m_ctx.queryDepthFormat(),
+        m_swapchain.extent(),
+        1,
+        msaaSamples,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
+
     //--- Render Pass with colorAttachment and depthAttachment
     m_renderPass = RenderPassBuilder()
-                       .addSwapchainColorAttachment(m_swapchain.format())
-                       .setDepthStencilAttachment(m_ctx.queryDepthFormat())
+                       .addMSAAColorAttachment(m_swapchain.format(), msaaSamples)
+                       .setDepthStencilAttachment(m_ctx.queryDepthFormat(), msaaSamples)
                        .build(m_ctx);
 
     //--- Command Buffers
@@ -91,17 +116,6 @@ Renderer::Renderer(Window& window)
     cmd.end();
     cmd.submit(m_ctx.graphicsQueue());
 
-    //--- Depth Image
-    m_depthImage = Image{m_ctx,
-                         m_ctx.queryDepthFormat(),
-                         m_swapchain.extent(),
-                         1,
-                         VK_SAMPLE_COUNT_1_BIT,
-                         VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                         VK_IMAGE_ASPECT_DEPTH_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
-
     //--- Uniform Buffers
     m_ubo = {
         .model = fmat4(1.0f),
@@ -120,14 +134,8 @@ Renderer::Renderer(Window& window)
 
     //--- Descriptor Pool
     VkDescriptorPoolSize poolSizes[] = {
-        {
-            .type            = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
-        },
-        {
-            .type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount = MAX_FRAMES_IN_FLIGHT,
-        },
+        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = MAX_FRAMES_IN_FLIGHT},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = MAX_FRAMES_IN_FLIGHT},
     };
     m_descriptorAllocator.create(m_ctx, poolSizes, MAX_FRAMES_IN_FLIGHT);
 
@@ -153,8 +161,15 @@ Renderer::Renderer(Window& window)
     m_descriptorSets = m_descriptorAllocator.allocate(bindings, MAX_FRAMES_IN_FLIGHT);
 
     //--- Graphics Pipeline
-    auto layout        = m_descriptorAllocator.layout();
-    m_graphicsPipeline = GraphicsPipeline{m_ctx, m_renderPass, m_vertexShader, m_fragmentShader, std::span{&layout, 1}};
+    auto layout{m_descriptorAllocator.layout()};
+    m_graphicsPipeline = GraphicsPipeline{
+        m_ctx,
+        m_renderPass,
+        m_vertexShader,
+        m_fragmentShader,
+        msaaSamples,
+        std::span{&layout, 1},
+    };
 
     for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         const VkDescriptorBufferInfo bufferInfo = {
@@ -201,6 +216,7 @@ Renderer::Renderer(Window& window)
     //--- Framebuffers
     for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
         const VkImageView attachments[] = {
+            m_colorImage.imageView(),
             m_swapchain.imageViews()[i],
             m_depthImage.imageView(),
         };
@@ -255,6 +271,7 @@ void Renderer::render(double dt) {
 
     // Begin render pass
     const VkClearValue clearValues[] = {
+        {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
         {.color = {{0.0f, 0.0f, 0.0f, 1.0f}}},
         {.depthStencil = {1.0f, 0}},
     };
@@ -325,20 +342,36 @@ void Renderer::handleWindowResize() {
     m_ctx.waitIdle();
 
     m_swapchain.recreate(m_ctx, m_window.framebufferSize());
-    m_depthImage = Image{m_ctx,
-                         m_ctx.queryDepthFormat(),
-                         m_swapchain.extent(),
-                         1,
-                         VK_SAMPLE_COUNT_1_BIT,
-                         VK_IMAGE_TILING_OPTIMAL,
-                         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                         VK_IMAGE_ASPECT_DEPTH_BIT,
-                         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT};
+
+    auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
+    m_colorImage     = Image{
+        m_ctx,
+        m_swapchain.format(),
+        m_swapchain.extent(),
+        1,
+        msaaSamples,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
+    m_depthImage = Image{
+        m_ctx,
+        m_ctx.queryDepthFormat(),
+        m_swapchain.extent(),
+        1,
+        msaaSamples,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_IMAGE_ASPECT_DEPTH_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+    };
 
     m_framebuffers.clear();
 
     for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
         const VkImageView attachments[] = {
+            m_colorImage.imageView(),
             m_swapchain.imageViews()[i],
             m_depthImage.imageView(),
         };
