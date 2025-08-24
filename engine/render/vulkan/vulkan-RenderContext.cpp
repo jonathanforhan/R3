@@ -9,10 +9,10 @@
 #include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
-#include "Exception.hpp"
-#include "Log.hpp"
-#include "Types.hpp"
-#include "Version.hpp"
+#include "api/Exception.hpp"
+#include "api/Types.hpp"
+#include "api/Version.hpp"
+#include "core/Log.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"

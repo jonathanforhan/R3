@@ -62,10 +62,10 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "Class.hpp"
-#include "FunctionTraits.hpp"
-#include "Hash.hpp"
-#include "Types.hpp"
+#include "api/Class.hpp"
+#include "api/FunctionTraits.hpp"
+#include "api/Hash.hpp"
+#include "api/Types.hpp"
 
 namespace R3 {
 

@@ -2,8 +2,7 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "Camera.hpp"
-#include "Class.hpp"
+#include "api/Class.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -60,8 +59,6 @@ private:
     GraphicsPipeline m_graphicsPipeline;
     std::vector<Framebuffer> m_framebuffers;
     FrameSync m_frameSync;
-
-    Camera m_camera;
 };
 
 } // namespace R3::vulkan

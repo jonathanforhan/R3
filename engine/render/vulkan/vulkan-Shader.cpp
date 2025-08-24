@@ -9,7 +9,7 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "Exception.hpp"
+#include "api/Exception.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 

@@ -1,11 +1,11 @@
 #include <exception>
-#include "Engine.hpp"
-#include "Exception.hpp"
-#include "Log.hpp"
+#include "api/Exception.hpp"
+#include "core/Engine.hpp"
+#include "core/Log.hpp"
+
+using namespace R3;
 
 int main(int argc, char* argv[]) {
-    using namespace R3;
-
 #ifdef _WIN32
     detail::enableWindowsConsoleColors();
 #endif

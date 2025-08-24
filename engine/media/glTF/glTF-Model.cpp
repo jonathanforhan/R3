@@ -16,11 +16,11 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
-#include "Exception.hpp"
-#include "JSON.hpp"
-#include "Log.hpp"
-#include "Types.hpp"
-#include "Version.hpp"
+#include "api/Exception.hpp"
+#include "api/JSON.hpp"
+#include "api/Types.hpp"
+#include "api/Version.hpp"
+#include "core/Log.hpp"
 #include "glTF.hpp"
 
 namespace R3::glTF {

@@ -4,8 +4,8 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "Class.hpp"
-#include "Types.hpp"
+#include "api/Class.hpp"
+#include "api/Types.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -33,7 +33,7 @@ private:
 private:
     Handle<VkDevice> m_device;
     Handle<VkShaderModule> m_shaderModule;
-    VkShaderStageFlags m_type;
+    VkShaderStageFlags m_type = {};
 };
 
 } // namespace R3::vulkan

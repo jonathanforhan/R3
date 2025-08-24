@@ -9,9 +9,9 @@
 #include <string>
 #include <utility>
 #include <vulkan/vulkan_core.h>
-#include "Exception.hpp"
-#include "Log.hpp"
-#include "Types.hpp"
+#include "api/Exception.hpp"
+#include "api/Types.hpp"
+#include "core/Log.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"

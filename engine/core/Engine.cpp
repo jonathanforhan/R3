@@ -2,12 +2,9 @@
 
 #include <chrono>
 #include "EventHandler.hpp"
-#include "Types.hpp"
+#include "core/World.hpp"
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"
-
-#include "Log.hpp"
-#include "input/InputEvents.hpp"
 
 namespace R3 {
 
@@ -40,6 +37,8 @@ int Engine::run() {
         window.update();
 
         EventHandler::instance().dispatchEvents();
+
+        World::instance().update(dt);
 
         renderer.render(dt);
     }

@@ -2,8 +2,8 @@
 
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include "Class.hpp"
-#include "Types.hpp"
+#include "api/Class.hpp"
+#include "api/Types.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 

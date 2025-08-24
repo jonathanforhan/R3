@@ -6,7 +6,7 @@
 #pragma once
 
 #include <string_view>
-#include "Types.hpp"
+#include "api/Types.hpp"
 
 namespace R3::hash {
 

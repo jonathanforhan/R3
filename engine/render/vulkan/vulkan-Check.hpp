@@ -2,7 +2,7 @@
 
 #include <format>
 #include <vulkan/vulkan_core.h>
-#include "Exception.hpp"
+#include "api/Exception.hpp"
 
 #define VK_CHECK(_Exp)                                    \
     if (VkResult _result = (_Exp); _result != VK_SUCCESS) \

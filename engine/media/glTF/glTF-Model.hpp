@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
-#include "JSON.hpp"
-#include "Types.hpp"
+#include "api/JSON.hpp"
+#include "api/Types.hpp"
 #include "glTF.hpp"
 
 namespace R3::glTF {

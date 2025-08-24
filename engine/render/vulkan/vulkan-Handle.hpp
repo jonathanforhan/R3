@@ -2,7 +2,7 @@
 
 #include <type_traits>
 #include <utility>
-#include "Class.hpp"
+#include "api/Class.hpp"
 
 namespace R3::vulkan {
 

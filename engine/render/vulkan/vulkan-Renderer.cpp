@@ -6,9 +6,10 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include "Camera.hpp"
-#include "Exception.hpp"
-#include "Types.hpp"
+#include "api/Exception.hpp"
+#include "api/Types.hpp"
+#include "core/Camera.hpp"
+#include "core/World.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -24,8 +25,6 @@
 #include "vulkan-Texture.hpp"
 
 namespace R3::vulkan {
-
-using namespace R3::vulkan;
 
 static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 
@@ -226,7 +225,7 @@ Renderer::Renderer(Window& window)
     //--- Frame Sync
     m_frameSync = FrameSync{m_ctx, MAX_FRAMES_IN_FLIGHT, m_swapchain.images().size()};
 
-    m_camera.setActive(true);
+    World::instance().camera().setActive(true);
 }
 
 Renderer::~Renderer() noexcept {
@@ -250,8 +249,7 @@ void Renderer::render(double dt) {
     m_frameSync.waitForCurrentFrame();
     m_frameSync.resetCurrentFrame();
 
-    m_camera.tick(dt);
-    m_camera.apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
+    World::instance().camera().apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
     m_ubos[m_frameSync.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
 
     // Acquire next image
@@ -341,7 +339,13 @@ void Renderer::render(double dt) {
 void Renderer::handleWindowResize() {
     m_ctx.waitIdle();
 
-    m_swapchain.recreate(m_ctx, m_window.framebufferSize());
+    ivec2 framebufferSize = m_window.framebufferSize();
+
+    if (framebufferSize.x == 0 || framebufferSize.y == 0) {
+        return; // Minimized, skip for now
+    }
+
+    m_swapchain.recreate(m_ctx, framebufferSize);
 
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
     m_colorImage     = Image{

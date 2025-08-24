@@ -3,8 +3,8 @@
 #include <span>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
-#include "Class.hpp"
-#include "Types.hpp"
+#include "api/Class.hpp"
+#include "api/Types.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Handle.hpp"
 

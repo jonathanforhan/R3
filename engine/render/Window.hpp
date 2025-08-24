@@ -1,8 +1,8 @@
 #pragma once
 
 #include <string_view>
-#include "Class.hpp"
-#include "Types.hpp"
+#include "api/Class.hpp"
+#include "api/Types.hpp"
 
 extern "C" struct GLFWwindow;
 

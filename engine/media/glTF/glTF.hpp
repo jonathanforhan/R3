@@ -7,8 +7,8 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include "JSON.hpp"
-#include "Types.hpp"
+#include "api/JSON.hpp"
+#include "api/Types.hpp"
 
 /// glTF file format spec info
 /// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html

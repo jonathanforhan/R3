@@ -3,9 +3,9 @@
 #include <algorithm>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "EventHandler.hpp"
-#include "Hash.hpp"
-#include "Types.hpp"
+#include "api/Hash.hpp"
+#include "api/Types.hpp"
+#include "core/EventHandler.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
 
@@ -18,22 +18,22 @@ Camera::Camera(CameraType type)
 
         switch (e.data.key) {
             case Key::W:
-                m_activeKeys.w = pressed;
+                m_activeKeys.w = pressed ? (m_activeKeys.s + 1) : 0;
                 break;
             case Key::A:
-                m_activeKeys.a = pressed;
+                m_activeKeys.a = pressed ? (m_activeKeys.d + 1) : 0;
                 break;
             case Key::S:
-                m_activeKeys.s = pressed;
+                m_activeKeys.s = pressed ? (m_activeKeys.w + 1) : 0;
                 break;
             case Key::D:
-                m_activeKeys.d = pressed;
+                m_activeKeys.d = pressed ? (m_activeKeys.a + 1) : 0;
                 break;
             case Key::E:
-                m_activeKeys.e = pressed;
+                m_activeKeys.e = pressed ? (m_activeKeys.q + 1) : 0;
                 break;
             case Key::Q:
-                m_activeKeys.q = pressed;
+                m_activeKeys.q = pressed ? (m_activeKeys.e + 1) : 0;
                 break;
             default:
                 break;
@@ -58,42 +58,44 @@ Camera::Camera(CameraType type)
     translateBackward(2.0f);
 }
 
-void Camera::tick(double dt) {
+void Camera::update(double dt) {
+    if (!active()) {
+        return;
+    }
+
     float deltaT = static_cast<float>(dt);
 
-    if (active()) {
-        static constexpr float mouseSensitivity    = 360.0f;
-        static constexpr float movementSensitivity = 8.0f;
+    static constexpr float mouseSensitivity    = 360.0f;
+    static constexpr float movementSensitivity = 8.0f;
 
-        const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
-        const float deltaY        = m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f;
-        const fvec2 deltaPosition = fvec2(deltaX, deltaY);
-        m_prevCursorPosition      = m_cursorPosition;
+    const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
+    const float deltaY        = m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f;
+    const fvec2 deltaPosition = fvec2(deltaX, deltaY);
+    m_prevCursorPosition      = m_cursorPosition;
 
-        const float deltaMovement = deltaT * movementSensitivity;
+    const float deltaMovement = deltaT * movementSensitivity;
 
-        if (m_activeKeys.w) {
-            translateForward(deltaMovement);
-        } else if (m_activeKeys.s) {
-            translateBackward(deltaMovement);
-        }
+    if (m_activeKeys.w && (m_activeKeys.w > m_activeKeys.s)) {
+        translateForward(deltaMovement);
+    } else if (m_activeKeys.s) {
+        translateBackward(deltaMovement);
+    }
 
-        if (m_activeKeys.a) {
-            translateLeft(deltaMovement);
-        } else if (m_activeKeys.d) {
-            translateRight(deltaMovement);
-        }
+    if (m_activeKeys.a && (m_activeKeys.a > m_activeKeys.d)) {
+        translateLeft(deltaMovement);
+    } else if (m_activeKeys.d) {
+        translateRight(deltaMovement);
+    }
 
-        if (m_activeKeys.e) {
-            translateUp(deltaMovement);
-        } else if (m_activeKeys.q) {
-            translateDown(deltaMovement);
-        }
+    if (m_activeKeys.e && (m_activeKeys.e > m_activeKeys.q)) {
+        translateUp(deltaMovement);
+    } else if (m_activeKeys.q) {
+        translateDown(deltaMovement);
+    }
 
-        if (m_mouseDown) {
-            fvec2 dpos = deltaPosition * mouseSensitivity;
-            lookAround(dpos.x, dpos.y);
-        }
+    if (m_mouseDown) {
+        fvec2 dpos = deltaPosition * mouseSensitivity;
+        lookAround(dpos.x, dpos.y);
     }
 }
 

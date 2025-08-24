@@ -1,8 +1,7 @@
 #pragma once
 
-#include "EventHandler.hpp"
 #include "InputCodes.hpp"
-#include "Types.hpp"
+#include "api/Types.hpp"
 
 namespace R3 {
 

@@ -10,10 +10,10 @@
 #include <GLFW/glfw3native.h>
 
 #include <string_view>
-#include "EventHandler.hpp"
-#include "Exception.hpp"
-#include "Log.hpp"
-#include "Types.hpp"
+#include "api/Exception.hpp"
+#include "api/Types.hpp"
+#include "core/EventHandler.hpp"
+#include "core/Log.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
 

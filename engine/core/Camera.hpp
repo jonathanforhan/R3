@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Types.hpp"
+#include "api/Types.hpp"
 
 namespace R3 {
 
@@ -13,7 +13,7 @@ class Camera {
 public:
     explicit Camera(CameraType type = CameraType::Perspective);
 
-    void tick(double dt);
+    void update(double dt);
 
     void translateForward(float magnitude);
     void translateBackward(float magnitude);
@@ -46,14 +46,16 @@ private:
 
     bool m_active = false;
 
+    // 0 = not pressed, 1 = pressed, 2 = pressed while opposite key is pressed
     struct ActiveKeys {
-        bool w = false;
-        bool a = false;
-        bool s = false;
-        bool d = false;
-        bool e = false;
-        bool q = false;
-    } m_activeKeys;
+        int w = 0;
+        int a = 0;
+        int s = 0;
+        int d = 0;
+        int e = 0;
+        int q = 0;
+    };
+    ActiveKeys m_activeKeys;
 
     bool m_mouseDown = false;
 
