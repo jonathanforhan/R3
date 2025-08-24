@@ -1,6 +1,7 @@
 #include "Camera.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Hash.hpp"
@@ -99,31 +100,31 @@ void Camera::update(double dt) {
     }
 }
 
-void Camera::translateForward(float magnitude) {
+void Camera::translateForward(float magnitude) noexcept {
     m_position += magnitude * glm::normalize(fvec3(m_front.x, 0, m_front.z));
 }
 
-void Camera::translateBackward(float magnitude) {
+void Camera::translateBackward(float magnitude) noexcept {
     translateForward(-magnitude);
 }
 
-void Camera::translateRight(float magnitude) {
+void Camera::translateRight(float magnitude) noexcept {
     m_position += magnitude * glm::normalize(glm::cross(m_front, m_up));
 }
 
-void Camera::translateLeft(float magnitude) {
+void Camera::translateLeft(float magnitude) noexcept {
     translateRight(-magnitude);
 }
 
-void Camera::translateUp(float magnitude) {
+void Camera::translateUp(float magnitude) noexcept {
     m_position += m_up * magnitude;
 }
 
-void Camera::translateDown(float magnitude) {
+void Camera::translateDown(float magnitude) noexcept {
     translateUp(-magnitude);
 }
 
-void Camera::lookAround(float dx, float dy) {
+void Camera::lookAround(float dx, float dy) noexcept {
     m_yaw += dx;
     m_pitch += dy;
 
@@ -135,14 +136,19 @@ void Camera::lookAround(float dx, float dy) {
     m_front   = glm::normalize(m_front);
 }
 
-void Camera::apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const {
-    if (m_cameraType == CameraType::Perspective) {
-        projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
-    } else {
-        float denom = std::max(windowSize.x, windowSize.y) / 2.0f;
-        float w     = windowSize.x / denom;
-        float h     = windowSize.y / denom;
-        projection  = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
+void Camera::apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept {
+    switch (m_cameraType) {
+        case CameraType::Perspective: {
+            projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
+        } break;
+        case CameraType::Orthographic: {
+            float denom = std::max(windowSize.x, windowSize.y) / 2.0f;
+            float w     = windowSize.x / denom;
+            float h     = windowSize.y / denom;
+            projection  = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
+        } break;
+        default:
+            break;
     }
     view = glm::lookAt(m_position, m_position + m_front, m_up);
 }

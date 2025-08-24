@@ -5,29 +5,20 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include "api/Class.hpp"
 #include "api/JSON.hpp"
 #include "api/Types.hpp"
 #include "glTF.hpp"
 
 namespace R3::glTF {
 
-class Model : public Root {
+class ModelImporter {
 public:
-    explicit Model(const std::filesystem::path& path);
-
-    ~Model() noexcept = default;
-
-    Model(const Model&)            = delete;
-    Model& operator=(const Model&) = delete;
-
-    Model(Model&&) noexcept            = delete;
-    Model& operator=(Model&&) noexcept = delete;
-
-    [[nodiscard]] constexpr const std::vector<uint8>& buffer() const { return m_buffer; }
+    glTF::Root import(const std::filesystem::path& path);
 
 private:
-    bool parseGLB(std::ifstream& ifs);  // return true if success
-    bool parseGLTF(std::ifstream& ifs); // return true if success
+    void parseGLB(std::ifstream& ifs);
+    void parseGLTF(std::ifstream& ifs);
 
     void populateRoot();
 
@@ -56,11 +47,14 @@ private:
     void checkVersion(uint32 major, uint32 minor) const;
 
     template <typename T>
-    static constexpr void maybeAssign(T& dst, const json::Value& value, const char* key);
+    static void maybeAssign(T& dst, const json::Value& value, const char* key);
+
+    static void maybeMove(json::Value& dst, json::Value& value, const char* key);
 
     static void populateTextureInfo(TextureInfo& textureInfo, json::Value& value);
 
 private:
+    glTF::Root* m_root = nullptr; // used by populate functions, denotes current root being populated in import()
     json::Document m_document;
     std::vector<uint8> m_buffer;
     std::string m_path;

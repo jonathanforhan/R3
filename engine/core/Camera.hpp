@@ -15,23 +15,25 @@ public:
 
     void update(double dt);
 
-    void translateForward(float magnitude);
-    void translateBackward(float magnitude);
-    void translateRight(float magnitude);
-    void translateLeft(float magnitude);
-    void translateUp(float magnitude);
-    void translateDown(float magnitude);
-    void lookAround(float dx, float dy);
+    void translateForward(float magnitude) noexcept;
+    void translateBackward(float magnitude) noexcept;
+    void translateRight(float magnitude) noexcept;
+    void translateLeft(float magnitude) noexcept;
+    void translateUp(float magnitude) noexcept;
+    void translateDown(float magnitude) noexcept;
+    void lookAround(float dx, float dy) noexcept;
 
-    fvec3 front() const { return m_front; }
-    float fov() const { return m_fov; }
-    void setFov(float fov) { m_fov = fov; }
-    fvec3 position() const { return m_position; }
-    void setPosition(fvec3 position) { m_position = position; }
-    bool active() const { return m_active; }
-    void setActive(bool active = true) { m_active = active; }
+    CameraType cameraType() const noexcept { return m_cameraType; }
+    void setCameraType(CameraType type) noexcept { m_cameraType = type; }
+    fvec3 front() const noexcept { return m_front; }
+    float fov() const noexcept { return m_fov; }
+    void setFov(float fov) noexcept { m_fov = fov; }
+    fvec3 position() const noexcept { return m_position; }
+    void setPosition(fvec3 position) noexcept { m_position = position; }
+    bool active() const noexcept { return m_active; }
+    void setActive(bool active = true) noexcept { m_active = active; }
 
-    void apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const;
+    void apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
 
 private:
     CameraType m_cameraType;
@@ -46,7 +48,7 @@ private:
 
     bool m_active = false;
 
-    // 0 = not pressed, 1 = pressed, 2 = pressed while opposite key is pressed
+    // 0 = not pressed, 1 = pressed, >1 = pressed while opposite key is pressed, highest gets priority
     struct ActiveKeys {
         int w = 0;
         int a = 0;

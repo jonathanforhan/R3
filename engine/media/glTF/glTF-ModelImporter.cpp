@@ -1,4 +1,4 @@
-#include "glTF-Model.hpp"
+#include "glTF-ModelImporter.hpp"
 
 #include <array>
 #include <cstdlib>
@@ -16,6 +16,7 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+#include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/JSON.hpp"
 #include "api/Types.hpp"
@@ -25,41 +26,47 @@
 
 namespace R3::glTF {
 
-Model::Model(const std::filesystem::path& path)
-    : m_path{path.string()} {
+glTF::Root ModelImporter::import(const std::filesystem::path& path) {
+    glTF::Root root;
+
+    m_root = &root;
+    m_path = path.string();
+
     std::ifstream ifs{path, std::ios::binary};
     if (!(ifs.is_open() && ifs.good())) {
         throw Exception{std::format("Failed to open asset file: {}", path.string())};
     }
 
-    bool glbSuccess  = parseGLB(ifs);
-    bool gltfSuccess = parseGLTF(ifs);
+    Header header;
+    ifs.read(reinterpret_cast<char*>(&header), sizeof(header));
+    ifs.seekg(0);
 
-    if (!(glbSuccess || gltfSuccess)) {
-        throw Exception{std::format("Failed to parse asset: {}", path.string())};
+    if (header.magic == HEADER_MAGIC) {
+        parseGLB(ifs);
+    } else {
+        parseGLTF(ifs);
     }
 
     populateRoot();
 
     LOG_INFO("=== Extensions Used ===");
-    for (auto& extension : extensionsUsed) {
+    for (auto& extension : m_root->extensionsUsed) {
         LOG_INFO("\t- {}", extension);
     }
 
     LOG_INFO("=== Extensions Required ===");
-    for (auto& extension : extensionsRequired) {
+    for (auto& extension : m_root->extensionsRequired) {
         LOG_INFO("\t- {}", extension);
     }
+
+    return root;
 }
 
-bool Model::parseGLB(std::ifstream& ifs) {
-    Header header = {};
-    ifs.read((char*)(&header), sizeof(header));
+void ModelImporter::parseGLB(std::ifstream& ifs) {
+    Header header;
+    ifs.read(reinterpret_cast<char*>(&header), sizeof(header));
 
-    if (header.magic != HEADER_MAGIC) {
-        ifs.seekg(0);
-        return false; // early exit, not glb file
-    }
+    R3_ASSERT(header.magic == HEADER_MAGIC && "GLB files must have magic number");
 
     if (header.version > R3_GLB_VERSION) {
         LOG_WARNING(
@@ -96,17 +103,14 @@ bool Model::parseGLB(std::ifstream& ifs) {
     } else {
         throw Exception("invalid chunk header type");
     }
-
-    return true;
 }
 
-bool Model::parseGLTF(std::ifstream& ifs) {
+void ModelImporter::parseGLTF(std::ifstream& ifs) {
     std::string json = (std::stringstream() << ifs.rdbuf()).str();
     m_document.Parse(json.c_str());
-    return true;
 }
 
-void Model::populateRoot() {
+void ModelImporter::populateRoot() {
     populateExtensionsUsed();
     populateExtensionsRequired();
     populateAccessors();
@@ -128,33 +132,33 @@ void Model::populateRoot() {
     populateExtras();
 }
 
-void Model::populateExtensionsUsed() {
+void ModelImporter::populateExtensionsUsed() {
     if (!m_document.HasMember("extensionsUsed")) {
         return;
     }
 
     for (auto& extension : m_document["extensionsUsed"].GetArray()) {
-        extensionsUsed.emplace_back(extension.GetString());
+        m_root->extensionsUsed.emplace_back(extension.GetString());
     }
 }
 
-void Model::populateExtensionsRequired() {
+void ModelImporter::populateExtensionsRequired() {
     if (!m_document.HasMember("extensionsRequired")) {
         return;
     }
 
     for (auto& extension : m_document["extensionsRequired"].GetArray()) {
-        extensionsRequired.emplace_back(extension.GetString());
+        m_root->extensionsRequired.emplace_back(extension.GetString());
     }
 }
 
-void Model::populateAccessors() {
+void ModelImporter::populateAccessors() {
     if (!m_document.HasMember("accessors")) {
         return;
     }
 
     for (auto& itAccessor : m_document["accessors"].GetArray()) {
-        Accessor& accessor = accessors.emplace_back();
+        Accessor& accessor = m_root->accessors.emplace_back();
 
         // bufferView
         maybeAssign(accessor.bufferView, itAccessor, "bufferView");
@@ -176,14 +180,14 @@ void Model::populateAccessors() {
 
         // max
         if (itAccessor.HasMember("max")) {
-            for (auto& elem : itAccessor.GetObject()["max"].GetArray()) {
+            for (auto& elem : itAccessor["max"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
             }
         }
 
         // min
         if (itAccessor.HasMember("min")) {
-            for (auto& elem : itAccessor.GetObject()["min"].GetArray()) {
+            for (auto& elem : itAccessor["min"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
             }
         }
@@ -197,24 +201,20 @@ void Model::populateAccessors() {
         maybeAssign(accessor.name, itAccessor, "name");
 
         // extensions
-        if (itAccessor.HasMember("extensions")) {
-            accessor.extensions = std::move(itAccessor["extensions"]);
-        }
+        maybeMove(accessor.extensions, itAccessor, "extensions");
 
         // extras
-        if (itAccessor.HasMember("extras")) {
-            accessor.extras = std::move(itAccessor["extras"]);
-        }
+        maybeMove(accessor.extras, itAccessor, "extras");
     }
 }
 
-void Model::populateAnimations() {
+void ModelImporter::populateAnimations() {
     if (!m_document.HasMember("animations")) {
         return;
     }
 
     for (auto& itAnimation : m_document["animations"].GetArray()) {
-        Animation& animation = animations.emplace_back();
+        Animation& animation = m_root->animations.emplace_back();
 
         // channels
         for (auto& itChannel : itAnimation["channels"].GetArray()) {
@@ -234,25 +234,17 @@ void Model::populateAnimations() {
                 channel.target.path = jsTarget["path"].GetString();
 
                 // extensions
-                if (jsTarget.HasMember("extensions")) {
-                    channel.extensions = std::move(jsTarget["extensions"]);
-                }
+                maybeMove(channel.extensions, jsTarget, "extensions");
 
                 // extras
-                if (jsTarget.HasMember("extras")) {
-                    channel.extras = std::move(jsTarget["extras"]);
-                }
+                maybeMove(channel.extras, jsTarget, "extras");
             }
 
             // extensions
-            if (itChannel.HasMember("extensions")) {
-                channel.extensions = std::move(itChannel["extensions"]);
-            }
+            maybeMove(channel.extensions, itChannel, "extensions");
 
             // extras
-            if (itChannel.HasMember("extras")) {
-                channel.extras = std::move(itChannel["extras"]);
-            }
+            maybeMove(channel.extras, itChannel, "extras");
         }
 
         // samplers
@@ -269,32 +261,24 @@ void Model::populateAnimations() {
             sampler.output = itSampler["output"].GetUint();
 
             // extensions
-            if (itSampler.HasMember("extensions")) {
-                sampler.extensions = std::move(itSampler["extensions"]);
-            }
+            maybeMove(sampler.extensions, itSampler, "extensions");
 
             // extras
-            if (itSampler.HasMember("extras")) {
-                sampler.extras = std::move(itSampler["extras"]);
-            }
+            maybeMove(sampler.extras, itSampler, "extras");
         }
 
         // name
         maybeAssign(animation.name, itAnimation, "name");
 
         // extensions
-        if (itAnimation.HasMember("extensions")) {
-            animation.extensions = std::move(itAnimation["extensions"]);
-        }
+        maybeMove(animation.extensions, itAnimation, "extensions");
 
         // extras
-        if (itAnimation.HasMember("extras")) {
-            animation.extras = std::move(itAnimation["extras"]);
-        }
+        maybeMove(animation.extras, itAnimation, "extras");
     }
 }
 
-void Model::populateAsset() {
+void ModelImporter::populateAsset() {
     auto& jsAsset = m_document["asset"];
 
     // copyright -- ignore
@@ -302,30 +286,26 @@ void Model::populateAsset() {
     // generator -- ignore
 
     // version
-    asset.version = jsAsset["version"].GetString();
-    checkVersion(asset.version);
+    m_root->asset.version = jsAsset["version"].GetString();
+    checkVersion(m_root->asset.version);
 
     // minVersion
-    maybeAssign(asset.minVersion, jsAsset, "minVersion");
+    maybeAssign(m_root->asset.minVersion, jsAsset, "minVersion");
 
     // extensions
-    if (jsAsset.HasMember("extensions")) {
-        asset.extensions = std::move(jsAsset["extensions"]);
-    }
+    maybeMove(m_root->asset.extensions, jsAsset, "extensions");
 
     // extras
-    if (jsAsset.HasMember("extras")) {
-        asset.extras = std::move(jsAsset["extras"]);
-    }
+    maybeMove(m_root->asset.extras, jsAsset, "extras");
 }
 
-void Model::populateBuffers() {
+void ModelImporter::populateBuffers() {
     if (!m_document.HasMember("buffers")) {
         return;
     }
 
     for (auto& itBuffer : m_document["buffers"].GetArray()) {
-        Buffer& buffer = buffers.emplace_back();
+        Buffer& buffer = m_root->buffers.emplace_back();
 
         // uri
         maybeAssign(buffer.uri, itBuffer, "uri");
@@ -337,14 +317,10 @@ void Model::populateBuffers() {
         maybeAssign(buffer.name, itBuffer, "name");
 
         // extensions
-        if (itBuffer.HasMember("extensions")) {
-            buffer.extensions = std::move(itBuffer["extensions"]);
-        }
+        maybeMove(buffer.extensions, itBuffer, "extensions");
 
         // extras
-        if (itBuffer.HasMember("extras")) {
-            buffer.extras = std::move(itBuffer["extras"]);
-        }
+        maybeMove(buffer.extras, itBuffer, "extras");
 
         /* load in buffer if external file */
         if (!buffer.uri.empty()) {
@@ -365,13 +341,13 @@ void Model::populateBuffers() {
     }
 }
 
-void Model::populateBufferViews() {
+void ModelImporter::populateBufferViews() {
     if (!m_document.HasMember("bufferViews")) {
         return;
     }
 
     for (auto& itBufferView : m_document["bufferViews"].GetArray()) {
-        BufferView& bufferView = bufferViews.emplace_back();
+        BufferView& bufferView = m_root->bufferViews.emplace_back();
 
         // buffer
         bufferView.buffer = itBufferView["buffer"].GetUint();
@@ -392,18 +368,14 @@ void Model::populateBufferViews() {
         maybeAssign(bufferView.name, itBufferView, "name");
 
         // extensions
-        if (itBufferView.HasMember("extensions")) {
-            bufferView.extensions = std::move(itBufferView["extensions"]);
-        }
+        maybeMove(bufferView.extensions, itBufferView, "extensions");
 
         // extras
-        if (itBufferView.HasMember("extras")) {
-            bufferView.extras = std::move(itBufferView["extras"]);
-        }
+        maybeMove(bufferView.extras, itBufferView, "extras");
     }
 }
 
-void Model::populateCameras() {
+void ModelImporter::populateCameras() {
     if (!m_document.HasMember("cameras")) {
         return;
     }
@@ -411,12 +383,12 @@ void Model::populateCameras() {
     LOG_WARNING("TODO cameras");
 }
 
-void Model::populateImages() {
+void ModelImporter::populateImages() {
     if (!m_document.HasMember("images"))
         return;
 
     for (auto& itImage : m_document["images"].GetArray()) {
-        Image& image = images.emplace_back();
+        Image& image = m_root->images.emplace_back();
 
         // uri
         maybeAssign(image.uri, itImage, "uri");
@@ -431,24 +403,20 @@ void Model::populateImages() {
         maybeAssign(image.name, itImage, "name");
 
         // extensions
-        if (itImage.HasMember("extensions")) {
-            image.extensions = std::move(itImage["extensions"]);
-        }
+        maybeMove(image.extensions, itImage, "extensions");
 
         // extras
-        if (itImage.HasMember("extras")) {
-            image.extras = std::move(itImage["extras"]);
-        }
+        maybeMove(image.extras, itImage, "extras");
     }
 }
 
-void Model::populateMaterials() {
+void ModelImporter::populateMaterials() {
     if (!m_document.HasMember("materials")) {
         return;
     }
 
     for (auto& itMaterial : m_document["materials"].GetArray()) {
-        Material& material = materials.emplace_back();
+        Material& material = m_root->materials.emplace_back();
 
         // pbrMetallicRoughness
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
@@ -482,14 +450,10 @@ void Model::populateMaterials() {
             }
 
             // extensions
-            if (jsPbr.HasMember("extensions")) {
-                pbrMetallicRoughness.metallicRoughnessTexture->extensions = std::move(jsPbr["extensions"]);
-            }
+            maybeMove(pbrMetallicRoughness.extensions, jsPbr, "extensions");
 
             // extras
-            if (jsPbr.HasMember("extras")) {
-                pbrMetallicRoughness.metallicRoughnessTexture->extras = std::move(jsPbr["extras"]);
-            }
+            maybeMove(pbrMetallicRoughness.extras, jsPbr, "extras");
         }
 
         // normalTexture
@@ -508,14 +472,10 @@ void Model::populateMaterials() {
             maybeAssign(normalTexture.scale, jsNormal, "scale");
 
             // extensions
-            if (jsNormal.HasMember("extensions")) {
-                normalTexture.extensions = std::move(jsNormal["extensions"]);
-            }
+            maybeMove(normalTexture.extensions, jsNormal, "extensions");
 
             // extras
-            if (jsNormal.HasMember("extras")) {
-                normalTexture.extras = std::move(jsNormal["extras"]);
-            }
+            maybeMove(normalTexture.extras, jsNormal, "extras");
         }
 
         // occlusionTexture
@@ -534,14 +494,10 @@ void Model::populateMaterials() {
             maybeAssign(occlusionTexture.strength, jsOcclusion, "strength");
 
             // extensions
-            if (jsOcclusion.HasMember("extensions")) {
-                occlusionTexture.extensions = std::move(jsOcclusion["extensions"]);
-            }
+            maybeMove(occlusionTexture.extensions, jsOcclusion, "extensions");
 
             // extras
-            if (jsOcclusion.HasMember("extras")) {
-                occlusionTexture.extras = std::move(jsOcclusion["extras"]);
-            }
+            maybeMove(occlusionTexture.extras, jsOcclusion, "extras");
         }
 
         // emissiveTexture
@@ -585,19 +541,17 @@ void Model::populateMaterials() {
         }
 
         // extras
-        if (itMaterial.HasMember("extras")) {
-            material.extras = std::move(itMaterial["extras"]);
-        }
+        maybeMove(material.extras, itMaterial, "extras");
     }
 }
 
-void Model::populateMeshes() {
+void ModelImporter::populateMeshes() {
     if (!m_document.HasMember("meshes")) {
         return;
     }
 
     for (auto& itMesh : m_document["meshes"].GetArray()) {
-        Mesh& mesh = meshes.emplace_back();
+        Mesh& mesh = m_root->meshes.emplace_back();
 
         // primitives
         for (auto& itPrimitive : itMesh["primitives"].GetArray()) {
@@ -623,14 +577,10 @@ void Model::populateMeshes() {
             }
 
             // extensions
-            if (itPrimitive.HasMember("extensions")) {
-                primitive.extensions = std::move(itPrimitive["extensions"]);
-            }
+            maybeMove(primitive.extensions, itPrimitive, "extensions");
 
             // extras
-            if (itPrimitive.HasMember("extras")) {
-                primitive.extras = std::move(itPrimitive["extras"]);
-            }
+            maybeMove(primitive.extras, itPrimitive, "extras");
         }
 
         // weights
@@ -644,24 +594,20 @@ void Model::populateMeshes() {
         maybeAssign(mesh.name, itMesh, "name");
 
         // extensions
-        if (itMesh.HasMember("extensions")) {
-            mesh.extensions = std::move(itMesh["extensions"]);
-        }
+        maybeMove(mesh.extensions, itMesh, "extensions");
 
         // extras
-        if (itMesh.HasMember("extras")) {
-            mesh.extras = std::move(itMesh["extras"]);
-        }
+        maybeMove(mesh.extras, itMesh, "extras");
     }
 }
 
-void Model::populateNodes() {
+void ModelImporter::populateNodes() {
     if (!m_document.HasMember("nodes")) {
         return;
     }
 
     for (auto& itNode : m_document["nodes"].GetArray()) {
-        Node& node = nodes.emplace_back();
+        Node& node = m_root->nodes.emplace_back();
 
         // camera
         maybeAssign(node.camera, itNode, "camera");
@@ -718,24 +664,20 @@ void Model::populateNodes() {
         maybeAssign(node.name, itNode, "name");
 
         // extensions
-        if (itNode.HasMember("extensions")) {
-            node.extensions = std::move(itNode["extensions"]);
-        }
+        maybeMove(node.extensions, itNode, "extensions");
 
         // extras
-        if (itNode.HasMember("extras")) {
-            node.extras = std::move(itNode["extras"]);
-        }
+        maybeMove(node.extras, itNode, "extras");
     }
 }
 
-void Model::populateSamplers() {
+void ModelImporter::populateSamplers() {
     if (!m_document.HasMember("samplers")) {
         return;
     }
 
     for (auto& itSampler : m_document["samplers"].GetArray()) {
-        Sampler& sampler = samplers.emplace_back();
+        Sampler& sampler = m_root->samplers.emplace_back();
 
         // magFilter
         maybeAssign(sampler.magFilter, itSampler, "magFilter");
@@ -753,28 +695,24 @@ void Model::populateSamplers() {
         maybeAssign(sampler.name, itSampler, "name");
 
         // extensions
-        if (itSampler.HasMember("extensions")) {
-            sampler.extensions = std::move(itSampler["extensions"]);
-        }
+        maybeMove(sampler.extensions, itSampler, "extensions");
 
         // extras
-        if (itSampler.HasMember("extras")) {
-            sampler.extras = std::move(itSampler["extras"]);
-        }
+        maybeMove(sampler.extras, itSampler, "extras");
     }
 }
 
-void Model::populateScene() {
-    maybeAssign(scene, m_document, "scene");
+void ModelImporter::populateScene() {
+    maybeAssign(m_root->scene, m_document, "scene");
 }
 
-void Model::populateScenes() {
+void ModelImporter::populateScenes() {
     if (!m_document.HasMember("scenes")) {
         return;
     }
 
     for (auto& itScene : m_document["scenes"].GetArray()) {
-        Scene& nthScene = scenes.emplace_back();
+        Scene& nthScene = m_root->scenes.emplace_back();
 
         // nodes
         if (itScene.HasMember("nodes")) {
@@ -787,24 +725,20 @@ void Model::populateScenes() {
         maybeAssign(nthScene.name, itScene, "name");
 
         // extensions
-        if (itScene.HasMember("extensions")) {
-            nthScene.extensions = std::move(itScene["extensions"]);
-        }
+        maybeMove(nthScene.extensions, itScene, "extensions");
 
         // extras
-        if (itScene.HasMember("extras")) {
-            nthScene.extras = std::move(itScene["extras"]);
-        }
+        maybeMove(nthScene.extras, itScene, "extras");
     }
 }
 
-void Model::populateSkins() {
+void ModelImporter::populateSkins() {
     if (!m_document.HasMember("skins")) {
         return;
     }
 
     for (auto& itSkin : m_document["skins"].GetArray()) {
-        Skin& skin = skins.emplace_back();
+        Skin& skin = m_root->skins.emplace_back();
 
         // inverseBindMatrices
         maybeAssign(skin.inverseBindMatrices, itSkin, "inverseBindMatrices");
@@ -821,24 +755,20 @@ void Model::populateSkins() {
         maybeAssign(skin.name, itSkin, "name");
 
         // extensions
-        if (itSkin.HasMember("extensions")) {
-            skin.extensions = std::move(itSkin["extensions"]);
-        }
+        maybeMove(skin.extensions, itSkin, "extensions");
 
         // extras
-        if (itSkin.HasMember("extras")) {
-            skin.extras = std::move(itSkin["extras"]);
-        }
+        maybeMove(skin.extras, itSkin, "extras");
     }
 }
 
-void Model::populateTextures() {
+void ModelImporter::populateTextures() {
     if (!m_document.HasMember("textures")) {
         return;
     }
 
     for (auto& itTexture : m_document["textures"].GetArray()) {
-        Texture& texture = textures.emplace_back();
+        Texture& texture = m_root->textures.emplace_back();
 
         // sampler
         maybeAssign(texture.sampler, itTexture, "sampler");
@@ -850,41 +780,37 @@ void Model::populateTextures() {
         maybeAssign(texture.name, itTexture, "name");
 
         // extensions
-        if (itTexture.HasMember("extensions")) {
-            texture.extensions = std::move(itTexture["extensions"]);
-        }
+        maybeMove(texture.extensions, itTexture, "extensions");
 
         // extras
-        if (itTexture.HasMember("extras")) {
-            texture.extras = std::move(itTexture["extras"]);
-        }
+        maybeMove(texture.extras, itTexture, "extras");
     }
 }
 
-void Model::populateExtensions() {
+void ModelImporter::populateExtensions() {
     if (!m_document.HasMember("extensions")) {
         return;
     }
 
-    extensions = std::move(m_document["extensions"]);
+    m_root->extensions = std::move(m_document["extensions"]);
 }
 
-void Model::populateExtras() {
+void ModelImporter::populateExtras() {
     if (!m_document.HasMember("extras")) {
         return;
     }
 
-    extras = std::move(m_document["extras"]);
+    m_root->extras = std::move(m_document["extras"]);
 }
 
-void Model::checkVersion(std::string_view version) const {
+void ModelImporter::checkVersion(std::string_view version) const {
     char* end;
     uint32 major = strtol(version.data(), &end, 10);
     uint32 minor = strtol(end, NULL, 10);
     checkVersion(major, minor);
 }
 
-void Model::checkVersion(uint32 major, uint32 minor) const {
+void ModelImporter::checkVersion(uint32 major, uint32 minor) const {
     if (major < R3_GLTF_VERSION_MAJOR) {
         return;
     }
@@ -901,32 +827,44 @@ void Model::checkVersion(uint32 major, uint32 minor) const {
                 engineGltfVersion);
 }
 
-template <typename T>
-constexpr void Model::maybeAssign(T& dst, const json::Value& value, const char* key) {
-    if (!value.HasMember(key))
-        return;
+template <typename T, typename U>
+constexpr bool is_same_or_optional_v = (std::is_same_v<T, U> || std::is_same_v<T, std::optional<U>>);
 
-    if constexpr (std::is_same_v<T, bool>) {
+template <typename T>
+void ModelImporter::maybeAssign(T& dst, const json::Value& value, const char* key) {
+    if (!value.HasMember(key)) {
+        return;
+    }
+
+    if constexpr (is_same_or_optional_v<T, bool>) {
         dst = value[key].GetBool();
-    } else if constexpr (std::is_same_v<T, uint32>) {
+    } else if constexpr (is_same_or_optional_v<T, uint32>) {
         dst = value[key].GetUint();
-    } else if constexpr (std::is_same_v<T, int32>) {
+    } else if constexpr (is_same_or_optional_v<T, int32>) {
         dst = value[key].GetInt();
-    } else if constexpr (std::is_same_v<T, uint64>) {
+    } else if constexpr (is_same_or_optional_v<T, uint64>) {
         dst = value[key].GetUint64();
-    } else if constexpr (std::is_same_v<T, int64>) {
+    } else if constexpr (is_same_or_optional_v<T, int64>) {
         dst = value[key].GetInt64();
-    } else if constexpr (std::is_same_v<T, float>) {
+    } else if constexpr (is_same_or_optional_v<T, float>) {
         dst = value[key].GetFloat();
-    } else if constexpr (std::is_same_v<T, double>) {
+    } else if constexpr (is_same_or_optional_v<T, double>) {
         dst = value[key].GetDouble();
-    } else if constexpr (std::is_same_v<T, std::string>) {
+    } else if constexpr (is_same_or_optional_v<T, std::string>) {
         dst = value[key].GetString();
     }
 }
 
+void ModelImporter::maybeMove(json::Value& dst, json::Value& value, const char* key) {
+    if (!value.HasMember(key)) {
+        return;
+    }
+
+    dst = std::move(value[key]);
+}
+
 // TextureInfo helper
-void Model::populateTextureInfo(TextureInfo& textureInfo, json::Value& value) {
+void ModelImporter::populateTextureInfo(TextureInfo& textureInfo, json::Value& value) {
     // index
     textureInfo.index = value["index"].GetUint();
 
@@ -934,14 +872,10 @@ void Model::populateTextureInfo(TextureInfo& textureInfo, json::Value& value) {
     maybeAssign(textureInfo.texCoord, value, "texCoord");
 
     // extensions
-    if (value.HasMember("extensions")) {
-        textureInfo.extensions = std::move(value["extensions"]);
-    }
+    maybeMove(textureInfo.extensions, value, "extensions");
 
     // extras
-    if (value.HasMember("extras")) {
-        textureInfo.extras = std::move(value["extras"]);
-    }
+    maybeMove(textureInfo.extras, value, "extras");
 }
 
 } // namespace R3::glTF
