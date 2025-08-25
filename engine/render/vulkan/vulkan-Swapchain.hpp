@@ -7,7 +7,7 @@
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
+#include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 

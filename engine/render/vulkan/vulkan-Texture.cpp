@@ -12,6 +12,7 @@
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Log.hpp"
+#include "render/Flags.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -128,10 +129,11 @@ void Texture::create(RenderContext& ctx,
     cmd.copyBufferToImage(
         stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {&bufferToImage, 1});
 
-    m_image.generateMipMaps(cmd, ctx.graphicsQueue());
+    m_image.generateMipMaps(cmd);
 
     // destroy staging buffer after cmd is submitted (TODO) this is hacky
-    cmd.addDeferredCallback([stagingBuffer = std::move(stagingBuffer)]() { auto&& _ = std::move(stagingBuffer); });
+    cmd.addDeferredCallback(
+        [stagingBuffer = std::move(stagingBuffer)]() { [[maybe_unused]] auto&& _ = std::move(stagingBuffer); });
 
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);

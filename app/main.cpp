@@ -2,12 +2,11 @@
 #include "api/Exception.hpp"
 #include "core/Engine.hpp"
 #include "core/Log.hpp"
-#include "media/glTF/glTF-ModelImporter.hpp"
-#include "media/glTF/glTF.hpp"
 
 using namespace R3;
 
 int main(int argc, char* argv[]) {
+    (void)argc, (void)argv;
 #ifdef _WIN32
     detail::enableWindowsConsoleColors();
 #endif
@@ -15,10 +14,7 @@ int main(int argc, char* argv[]) {
     int ret = -1;
 
     try {
-        glTF::ModelImporter importer;
-        glTF::Root root = importer.import("assets/glTF-samples/Models/Avocado/glTF-Binary/Avocado.glb");
-
-        ret = Engine::instance().run();
+        ret = Engine()->run();
     } catch (const Exception& ex) {
         LOG_ERROR("R3 Engine error: {}", ex.what());
         return -1;

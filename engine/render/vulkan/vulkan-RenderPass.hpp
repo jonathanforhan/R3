@@ -4,7 +4,7 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
+#include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 
@@ -36,7 +36,7 @@ public:
     RenderPassBuilder& addMSAAColorAttachment(VkFormat format, VkSampleCountFlagBits samples);
 
     /// Add regular color attachment (no MSAA)
-    RenderPassBuilder& addColorAttachment(VkFormat format, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT);
+    RenderPassBuilder& addColorAttachment(VkFormat format);
 
     /// Set depth attachment
     RenderPassBuilder& setDepthStencilAttachment(VkFormat format,

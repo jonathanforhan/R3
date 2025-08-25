@@ -5,7 +5,7 @@
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
+#include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 
@@ -19,7 +19,7 @@ public:
 
     ~FrameSync() noexcept;
 
-    void recreateImageSync(RenderContext& ctx, usize newSwapchainImageCount);
+    void recreateImageSync(usize newSwapchainImageCount);
 
     void waitForCurrentFrame();
 

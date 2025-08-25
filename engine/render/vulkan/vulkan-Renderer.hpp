@@ -3,9 +3,9 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
+#include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
-#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorAllocator.hpp"
 #include "vulkan-FrameSync.hpp"
 #include "vulkan-Framebuffer.hpp"
@@ -30,7 +30,7 @@ public:
     R3_COPY_DELETE(Renderer);
     R3_MOVE_DELETE(Renderer);
 
-    explicit Renderer(Window& window);
+    Renderer(Window& window, RenderContext& ctx);
 
     ~Renderer() noexcept;
 
@@ -38,19 +38,17 @@ public:
 
     void handleWindowResize();
 
+    IRenderContext* context() noexcept { return &m_ctx; }
+
 private:
-    Window& m_window; // must out-live renderer
-    RenderContext m_ctx;
+    Window& m_window;     // must out-live renderer
+    RenderContext& m_ctx; // must out-live renderer
     Swapchain m_swapchain;
     Image m_colorImage;
     Image m_depthImage;
     RenderPass m_renderPass;
-    std::vector<CommandBuffer> m_graphicsQueueCmds;
-    std::vector<CommandBuffer> m_computeQueueCmds;
     Shader m_vertexShader;
     Shader m_fragmentShader;
-    Buffer m_vertexBuffer;
-    Buffer m_indexBuffer;
     Texture m_texture;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;

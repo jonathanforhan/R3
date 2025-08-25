@@ -3,9 +3,8 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
-#include "vulkan-CommandBuffer.hpp"
+#include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
@@ -27,7 +26,7 @@ public:
 
     ~Image() noexcept;
 
-    void generateMipMaps(CommandBuffer& cmd, VkQueue queue);
+    void generateMipMaps(CommandBuffer& cmd);
 
     VkImage image() const noexcept { return m_image; }
 

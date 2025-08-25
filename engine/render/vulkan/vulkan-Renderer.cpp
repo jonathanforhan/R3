@@ -8,8 +8,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "components/MeshComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/World.hpp"
+#include "render/Flags.hpp"
+#include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -26,32 +29,9 @@
 
 namespace R3::vulkan {
 
-static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
-
-// Triangle vertices - matches your vertex shader (vec3 position, vec3 color)
-static const Vertex s_vertices[] = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-};
-
-static const uint16 s_indices[] = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
-
-Renderer::Renderer(Window& window)
-    : m_window(window) {
-    //--- Render Context
-    //    - instance
-    //    - surface
-    //    - physical device
-    //    - logical device
-    m_ctx = RenderContext{m_window};
-
+Renderer::Renderer(Window& window, RenderContext& ctx)
+    : m_window(window),
+      m_ctx{ctx} {
     //--- Swapchain
     //    - images
     //    - image views
@@ -88,27 +68,12 @@ Renderer::Renderer(Window& window)
                        .setDepthStencilAttachment(m_ctx.queryDepthFormat(), msaaSamples)
                        .build(m_ctx);
 
-    //--- Command Buffers
-    //    - Each collection shares a VkCommandPool
-    const VkCommandPoolCreateFlags poolFlags =
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    m_graphicsQueueCmds = CommandBuffer::allocate(m_ctx, m_ctx.graphicsQueueIndex(), poolFlags, MAX_FRAMES_IN_FLIGHT);
-    m_computeQueueCmds  = CommandBuffer::allocate(m_ctx, m_ctx.computeQueueIndex(), poolFlags, MAX_FRAMES_IN_FLIGHT);
-
     //--- Shaders
     m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
     m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
-    //--- Vertex/Index Buffers
-    const VkMemoryPropertyFlags bufferMemoryFlags =
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-    m_vertexBuffer = Buffer{m_ctx, sizeof(s_vertices), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, bufferMemoryFlags};
-    m_vertexBuffer.copy(&s_vertices, sizeof(s_vertices));
-    m_indexBuffer = Buffer{m_ctx, sizeof(s_indices), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, bufferMemoryFlags};
-    m_indexBuffer.copy(&s_indices, sizeof(s_indices));
-
     //--- Texture
-    CommandBuffer& cmd = m_graphicsQueueCmds[0];
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(0);
     cmd.reset();
     cmd.begin();
     m_texture = Texture{m_ctx, cmd, "textures/statue_head.jpg", TextureType::Albedo};
@@ -116,48 +81,50 @@ Renderer::Renderer(Window& window)
     cmd.submit(m_ctx.graphicsQueue());
 
     //--- Uniform Buffers
+    float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
+
     m_ubo = {
         .model = fmat4(1.0f),
         .view  = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
-        .proj  = glm::perspective(
-            glm::radians(45.0f),
-            static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height),
-            0.1f,
-            10.0f),
+        .proj  = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f),
     };
 
-    m_ubos.resize(MAX_FRAMES_IN_FLIGHT);
+    m_ubos.resize(m_ctx.maxFramesInFlight());
     for (auto& ubo : m_ubos) {
+        const VkMemoryPropertyFlags bufferMemoryFlags =
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
         ubo = Buffer{m_ctx, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, bufferMemoryFlags};
     }
 
     //--- Descriptor Pool
     VkDescriptorPoolSize poolSizes[] = {
-        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = MAX_FRAMES_IN_FLIGHT},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = MAX_FRAMES_IN_FLIGHT},
+        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = m_ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
     };
-    m_descriptorAllocator.create(m_ctx, poolSizes, MAX_FRAMES_IN_FLIGHT);
+    m_descriptorAllocator.create(m_ctx, poolSizes, m_ctx.maxFramesInFlight());
 
     //--- Descriptor Sets and Layouts
     VkDescriptorSetLayoutBinding bindings[] = {
-        // vertices
-        {
-            .binding            = 0,
-            .descriptorType     = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount    = 1,
-            .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT,
-            .pImmutableSamplers = nullptr,
-        },
-        // sampler
-        {
-            .binding            = 1,
-            .descriptorType     = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .descriptorCount    = 1,
-            .stageFlags         = VK_SHADER_STAGE_FRAGMENT_BIT,
-            .pImmutableSamplers = nullptr,
-        },
+        // { binding, type, count, stage }
+
+        // Uniform Buffer Object
+        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        // Albedo
+        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // MetallicRoughness
+        {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // Normal
+        {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // AmbientOcclusion
+        {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // Emissive
+        {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
     };
-    m_descriptorSets = m_descriptorAllocator.allocate(bindings, MAX_FRAMES_IN_FLIGHT);
+    m_descriptorSets = m_descriptorAllocator.allocate(bindings, m_ctx.maxFramesInFlight());
 
     //--- Graphics Pipeline
     auto layout{m_descriptorAllocator.layout()};
@@ -170,7 +137,7 @@ Renderer::Renderer(Window& window)
         std::span{&layout, 1},
     };
 
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+    for (uint32 i = 0; i < m_ctx.maxFramesInFlight(); i++) {
         const VkDescriptorBufferInfo bufferInfo = {
             .buffer = m_ubos[i].buffer(),
             .offset = 0,
@@ -223,9 +190,9 @@ Renderer::Renderer(Window& window)
     }
 
     //--- Frame Sync
-    m_frameSync = FrameSync{m_ctx, MAX_FRAMES_IN_FLIGHT, m_swapchain.images().size()};
+    m_frameSync = FrameSync{m_ctx, m_ctx.maxFramesInFlight(), m_swapchain.images().size()};
 
-    World::instance().camera().setActive(true);
+    World()->camera().setActive(true);
 }
 
 Renderer::~Renderer() noexcept {
@@ -249,7 +216,7 @@ void Renderer::render(double dt) {
     m_frameSync.waitForCurrentFrame();
     m_frameSync.resetCurrentFrame();
 
-    World::instance().camera().apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
+    World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
     m_ubos[m_frameSync.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
 
     // Acquire next image
@@ -263,7 +230,7 @@ void Renderer::render(double dt) {
     }
 
     // Record command buffer
-    CommandBuffer& cmd = m_graphicsQueueCmds[m_frameSync.currentFrameIndex()];
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(m_frameSync.currentFrameIndex());
     cmd.reset();
     cmd.begin();
 
@@ -291,13 +258,13 @@ void Renderer::render(double dt) {
     cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
     cmd.setViewport({
         .x        = 0.0f,
-        .y        = 0.0f,
+        .y        = static_cast<float>(m_swapchain.extent().height), // start from bottom
         .width    = static_cast<float>(m_swapchain.extent().width),
-        .height   = static_cast<float>(m_swapchain.extent().height),
+        .height   = -static_cast<float>(m_swapchain.extent().height), // flip Y
         .minDepth = 0.0f,
         .maxDepth = 1.0f,
     });
-    cmd.setCullMode(VK_CULL_MODE_NONE); // TODO revert back to VK_CULL_MODE_BACK_BIT
+    cmd.setCullMode(VK_CULL_MODE_BACK_BIT);
     cmd.setLineWidth(1.0f);
     cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
     cmd.setDepthTestEnable(true);
@@ -307,11 +274,15 @@ void Renderer::render(double dt) {
                            0,
                            {&m_descriptorSets[m_frameSync.currentFrameIndex()], 1},
                            {});
-    const VkBuffer vertexBuffers[] = {m_vertexBuffer.buffer()};
-    const VkDeviceSize offsets[]   = {0};
-    cmd.bindVertexBuffers(0, vertexBuffers, offsets);
-    cmd.bindIndexBuffer(m_indexBuffer.buffer(), 0, VK_INDEX_TYPE_UINT16);
-    cmd.drawIndexed(static_cast<uint32>(std::size(s_indices)), 1, 0, 0, 0);
+
+    World()->registry().view<MeshComponent>().each([&](const MeshComponent& mesh) {
+        const usize vboIndices[]     = {mesh.vertexBufferIndex};
+        const VkDeviceSize offsets[] = {0};
+        const usize iboIndex         = mesh.indexBufferIndex;
+        cmd.bindVertexBuffers(0, vboIndices, offsets);
+        cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
+        cmd.drawIndexed(static_cast<uint32>(mesh.indexCount), 1, 0, 0, 0);
+    });
 
     cmd.endRenderPass();
     cmd.end();
@@ -382,7 +353,7 @@ void Renderer::handleWindowResize() {
         m_framebuffers.emplace_back(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
 
-    m_frameSync.recreateImageSync(m_ctx, m_swapchain.images().size());
+    m_frameSync.recreateImageSync(m_swapchain.images().size());
 }
 
 } // namespace R3::vulkan

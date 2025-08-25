@@ -4,20 +4,12 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
-#include "vulkan-CommandBuffer.hpp"
+#include "render/Flags.hpp"
+#include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-Image.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
-
-enum class TextureType {
-    Albedo            = 0,
-    MetallicRoughness = 1,
-    Normal            = 2,
-    AmbientOcclusion  = 3,
-    Emissive          = 4,
-};
 
 class Texture {
 public:

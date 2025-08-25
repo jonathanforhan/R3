@@ -89,7 +89,7 @@ Image::~Image() noexcept {
     }
 }
 
-void Image::generateMipMaps(CommandBuffer& cmd, VkQueue queue) {
+void Image::generateMipMaps(CommandBuffer& cmd) {
     VkImageMemoryBarrier memoryBarrierWrite = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .pNext               = nullptr,

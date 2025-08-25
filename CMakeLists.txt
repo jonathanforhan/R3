@@ -96,7 +96,7 @@ if (MSVC)
 			$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
 			/Zc:preprocessor
 			/EHsc
-			/W3
+			/W4
 	)
 else()
 	target_compile_options(

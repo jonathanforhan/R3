@@ -27,22 +27,22 @@
 /// 3. Bind Listeners to Event IDs
 /// @code
 /// // Bind to single event
-/// EventHandler::instance().bindEventListener("player-move", moveListener);
+/// EventHandler().bindEventListener("player-move", moveListener);
 ///
 /// // Bind to multiple events
-/// EventHandler::instance().bindEventListener({"player-move", "player-teleport"}, moveListener);
+/// EventHandler().bindEventListener({"player-move", "player-teleport"}, moveListener);
 /// @endcode
 ///
 /// 4. Push Events to the Queue
 /// @code
 /// PlayerMoveData data{100.0f, 50.0f, 42};
-/// EventHandler::instance().push("player-move", data);
+/// EventHandler().push("player-move", data);
 /// @endcode
 ///
 /// 5. Dispatch All Queued Events
 /// @code
 /// // Called once per frame in engine main loop
-/// EventHandler::instance().dispatchEvents();
+/// EventHandler().dispatchEvents();
 /// @endcode
 ///
 /// @note
@@ -113,33 +113,26 @@ concept EventListener = std::is_const_v<EventTypeDeduced<F>> and requires {
 /// @brief Singleton event handler which you can push event to and bind listeners to
 ///
 /// @code
-/// EventHandler::instance().bindEventListener("key-press", [](const Event<KeyboardEventData>& e){
+/// EventHandler().bindEventListener("key-press", [](const Event<KeyboardEventData>& e){
 ///     LOG_INFO("key pressed: {}", (int)e.data.key);
 /// });
 /// @endcode
-class EventHandler {
+class EventHandlerSingleton {
 private:
     using EventCallback = std::function<void(const EventBase&)>;
 
 private:
-    R3_COPY_DELETE(EventHandler);
-    R3_MOVE_DELETE(EventHandler);
+    R3_COPY_DELETE(EventHandlerSingleton);
+    R3_MOVE_DELETE(EventHandlerSingleton);
 
-    EventHandler() {
+    EventHandlerSingleton() {
         m_eventQueue.reserve(10240); // 10kB
         m_eventArena.reserve(65536); // 64kB
     }
 
-    ~EventHandler() noexcept { dispatchEvents(); };
+    ~EventHandlerSingleton() noexcept { dispatchEvents(); };
 
 public:
-    /// @brief Single EventHandler instance
-    /// @return global static instance of EventHandler
-    static EventHandler& instance() {
-        static EventHandler instance;
-        return instance;
-    }
-
     /// @brief Push an event onto the event queue
     /// @tparam Data Event DataType
     /// @param id    Event id e.g. "key-press"
@@ -245,6 +238,17 @@ private:
     std::vector<std::pair<usize, void (*)(void*)>> m_eventQueue;    // tracks event indices and event destructors
     std::vector<std::byte> m_eventArena;                            // memory pool for allocations when pushing events
     std::unordered_multimap<uint64, EventCallback> m_eventRegistry; // mapping id to callback
+
+private:
+    friend struct EventHandler;
+};
+
+/// @brief Single EventHandler instance
+struct EventHandler {
+    EventHandlerSingleton* operator->() {
+        static EventHandlerSingleton instance;
+        return &instance;
+    }
 };
 
 } // namespace R3

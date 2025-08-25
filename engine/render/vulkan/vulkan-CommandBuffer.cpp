@@ -9,6 +9,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Types.hpp"
+#include "core/ResourceManager.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -140,9 +141,24 @@ void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
         m_commandBuffer, firstBinding, static_cast<uint32>(buffers.size()), buffers.data(), offsets.data());
 }
 
+void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
+                                      std::span<const usize> bufferIndices,
+                                      std::span<const VkDeviceSize> offsets) {
+    std::vector<VkBuffer> buffers(bufferIndices.size());
+    for (usize i = 0; i < bufferIndices.size(); ++i) {
+        buffers[i] = (VkBuffer)ResourceManager()->vertexBufferAt(bufferIndices[i]);
+    }
+    bindVertexBuffers(firstBinding, buffers, offsets);
+}
+
 void CommandBuffer::bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
     assert(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBindIndexBuffer(m_commandBuffer, buffer, offset, indexType);
+}
+
+void CommandBuffer::bindIndexBuffer(usize bufferIndex, VkDeviceSize offset, VkIndexType indexType) {
+    VkBuffer buffer = (VkBuffer)ResourceManager()->indexBufferAt(bufferIndex);
+    bindIndexBuffer(buffer, offset, indexType);
 }
 
 void CommandBuffer::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
@@ -375,6 +391,32 @@ void CommandBuffer::submit(VkQueue queue,
         }
         m_deferredCallbacks.clear();
     }
+}
+
+void CommandBuffer::submitSync(VkQueue queue) {
+    assert(!m_isRecording && "CommandBuffer must be ended before submission!");
+
+    const VkSubmitInfo submitInfo = {
+        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .pNext                = nullptr,
+        .waitSemaphoreCount   = 0,
+        .pWaitSemaphores      = nullptr,
+        .pWaitDstStageMask    = nullptr,
+        .commandBufferCount   = 1,
+        .pCommandBuffers      = &*m_commandBuffer,
+        .signalSemaphoreCount = 0,
+        .pSignalSemaphores    = nullptr,
+    };
+
+    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+
+    vkQueueWaitIdle(queue);
+
+    // Execute callbacks
+    for (auto& callback : m_deferredCallbacks) {
+        callback();
+    }
+    m_deferredCallbacks.clear();
 }
 
 } // namespace R3::vulkan

@@ -1,3 +1,8 @@
+#define LOG_ERROR(_Fmt, ...)
+#define LOG_WARNING(_Fmt, ...)
+#define LOG_INFO(_Fmt, ...)
+#define LOG_VERBOSE(_Fmt, ...)
+#define LOG(_Fmt, ...)
 #define VK_CHECK(_Exp)
 #define R3_CTOR_DEFAULT(_Class)
 #define R3_DTOR_DEFAULT(_Class)

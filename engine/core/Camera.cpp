@@ -40,7 +40,7 @@ Camera::Camera(CameraType type)
                 break;
         }
     };
-    EventHandler::instance().bindEventListener({"key-press", "key-release"}, keyCallback);
+    EventHandler()->bindEventListener({"key-press", "key-release"}, keyCallback);
 
     auto mouseCallback = [this](const Event<MouseButtonEventData>& e) noexcept {
         bool pressed = e.id == "mouse-press";
@@ -49,12 +49,12 @@ Camera::Camera(CameraType type)
             m_mouseDown = pressed;
         }
     };
-    EventHandler::instance().bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
+    EventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
 
     auto cursorPositionCallback = [this](const Event<MouseCursorEventData>& e) noexcept {
         m_cursorPosition = e.data.cursorPosition;
     };
-    EventHandler::instance().bindEventListener("cursor-move", cursorPositionCallback);
+    EventHandler()->bindEventListener("cursor-move", cursorPositionCallback);
 
     translateBackward(2.0f);
 }
@@ -70,7 +70,7 @@ void Camera::update(double dt) {
     static constexpr float movementSensitivity = 8.0f;
 
     const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
-    const float deltaY        = m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f;
+    const float deltaY        = -(m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f);
     const fvec2 deltaPosition = fvec2(deltaX, deltaY);
     m_prevCursorPosition      = m_cursorPosition;
 

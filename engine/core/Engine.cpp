@@ -2,18 +2,17 @@
 
 #include <chrono>
 #include "EventHandler.hpp"
+#include "core/Entity.hpp"
+#include "core/ResourceManager.hpp"
 #include "core/World.hpp"
+#include "media/ModelLoader.hpp"
 #include "render/Window.hpp"
+#include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"
 
 namespace R3 {
 
-Engine& Engine::instance() noexcept {
-    static Engine instance;
-    return instance;
-}
-
-double Engine::deltaTime() {
+double EngineSingleton::deltaTime() {
     using namespace std::chrono;
 
     static auto s_prev = system_clock::now();
@@ -25,9 +24,26 @@ double Engine::deltaTime() {
     return dt;
 }
 
-int Engine::run() {
+int EngineSingleton::run() {
+    //--- Window
     Window window;
-    vulkan::Renderer renderer(window);
+
+    //--- Render Context
+    //    - instance
+    //    - surface
+    //    - physical device
+    //    - logical device
+    //    - queues
+    //    - command buffers/pools
+    //      - each collection of command buffers shares a command pool
+    vulkan::RenderContext ctx{window};
+
+    ResourceManager()->bindContext(&ctx);
+
+    const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb";
+    (void)ModelLoader().glTFLoad(modelPath);
+
+    vulkan::Renderer renderer{window, ctx};
 
     window.show();
 
@@ -36,12 +52,16 @@ int Engine::run() {
 
         window.update();
 
-        EventHandler::instance().dispatchEvents();
+        EventHandler()->dispatchEvents();
 
-        World::instance().update(dt);
+        World()->update(dt);
 
         renderer.render(dt);
     }
+
+    ctx.waitIdle();
+
+    ResourceManager()->free();
 
     return 0;
 }

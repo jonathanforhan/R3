@@ -65,7 +65,7 @@ FrameSync::~FrameSync() noexcept {
     }
 }
 
-void FrameSync::recreateImageSync(RenderContext& ctx, usize newSwapchainImageCount) {
+void FrameSync::recreateImageSync(usize newSwapchainImageCount) {
     for (auto& sem : m_renderFinishedSemaphores) {
         vkDestroySemaphore(m_device, sem, nullptr);
     }

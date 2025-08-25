@@ -5,12 +5,7 @@
 
 namespace R3 {
 
-World& World::instance() {
-    static World world;
-    return world;
-}
-
-void World::update(double dt) {
+void WorldSingleton::update(double dt) {
     for (auto& system : m_systems) {
         system->update(dt);
     }

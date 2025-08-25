@@ -1,13 +1,12 @@
 #include "vulkan-GraphicsPipeline.hpp"
 
-#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <span>
-#include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "render/ShaderObjects.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -15,42 +14,6 @@
 #include "vulkan-Shader.hpp"
 
 namespace R3::vulkan {
-
-VkVertexInputBindingDescription Vertex::getBindingDescription() noexcept {
-    const VkVertexInputBindingDescription vertexInputBindingDescription = {
-        .binding   = 0,
-        .stride    = sizeof(Vertex),
-        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-    };
-    return vertexInputBindingDescription;
-}
-
-std::vector<VkVertexInputAttributeDescription> Vertex::getAttributeDescriptions() noexcept {
-    const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
-        // Position attribute
-        {
-            .location = 0,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, position),
-        },
-        // Color attribute
-        {
-            .location = 1,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32B32_SFLOAT,
-            .offset   = offsetof(Vertex, color),
-        },
-        // TexCoord attribute
-        {
-            .location = 2,
-            .binding  = 0,
-            .format   = VK_FORMAT_R32G32_SFLOAT,
-            .offset   = offsetof(Vertex, texCoord),
-        },
-    };
-    return vertexInputAttributeDescription;
-}
 
 GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
                                    RenderPass& renderPass,

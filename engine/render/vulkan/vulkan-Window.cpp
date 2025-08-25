@@ -68,13 +68,13 @@ Window::Window() {
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler::instance().emplace<KeyboardEventData>("key-press", Key(key), InputModifiers(mods));
+                EventHandler()->emplace<KeyboardEventData>("key-press", Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
-                EventHandler::instance().push("key-repeat", data);
+                EventHandler()->push("key-repeat", data);
                 break;
             case GLFW_RELEASE:
-                EventHandler::instance().push("key-release", data);
+                EventHandler()->push("key-release", data);
                 break;
             default:
                 return;
@@ -91,10 +91,10 @@ Window::Window() {
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler::instance().push("mouse-press", data);
+                EventHandler()->push("mouse-press", data);
                 break;
             case GLFW_RELEASE:
-                EventHandler::instance().push("mouse-release", data);
+                EventHandler()->push("mouse-release", data);
                 break;
             default:
                 return;
@@ -108,7 +108,7 @@ Window::Window() {
             .offset = dvec2{xoffset, yoffset},
         };
 
-        EventHandler::instance().push("mouse-scroll", data);
+        EventHandler()->push("mouse-scroll", data);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
@@ -123,7 +123,7 @@ Window::Window() {
             .cursorPosition = dvec2{posX, posY},
         };
 
-        EventHandler::instance().push("cursor-move", data);
+        EventHandler()->push("cursor-move", data);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
 }

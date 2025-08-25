@@ -5,21 +5,10 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
+#include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
-#include "vulkan-RenderPass.hpp"
-#include "vulkan-Shader.hpp"
 
 namespace R3::vulkan {
-
-struct Vertex {
-    fvec3 position; // x, y, z
-    fvec3 color;    // r, g, b
-    fvec2 texCoord; // u, v
-
-    static VkVertexInputBindingDescription getBindingDescription() noexcept;
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() noexcept;
-};
 
 class GraphicsPipeline {
 public:

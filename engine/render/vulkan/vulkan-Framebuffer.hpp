@@ -3,9 +3,8 @@
 #include <span>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
+#include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
-#include "vulkan-RenderPass.hpp"
 
 namespace R3::vulkan {
 

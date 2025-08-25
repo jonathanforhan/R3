@@ -1,6 +1,7 @@
 #include "glTF-ModelImporter.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstdlib>
 #include <exception>
 #include <filesystem>
@@ -14,7 +15,6 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <utility>
 #include <vector>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
@@ -26,11 +26,10 @@
 
 namespace R3::glTF {
 
-glTF::Root ModelImporter::import(const std::filesystem::path& path) {
-    glTF::Root root;
-
-    m_root = &root;
+glTF::Model ModelImporter::import(const std::filesystem::path& path) {
     m_path = path.string();
+
+    glTF::Model model;
 
     std::ifstream ifs{path, std::ios::binary};
     if (!(ifs.is_open() && ifs.good())) {
@@ -42,29 +41,29 @@ glTF::Root ModelImporter::import(const std::filesystem::path& path) {
     ifs.seekg(0);
 
     if (header.magic == HEADER_MAGIC) {
-        parseGLB(ifs);
+        parseGLB(model, ifs);
     } else {
-        parseGLTF(ifs);
+        parseGLTF(model, ifs);
     }
 
-    populateRoot();
+    populateModel(model);
 
     LOG_INFO("=== Extensions Used ===");
-    for (auto& extension : m_root->extensionsUsed) {
+    for (auto& extension : model.root.extensionsUsed) {
         LOG_INFO("\t- {}", extension);
     }
 
     LOG_INFO("=== Extensions Required ===");
-    for (auto& extension : m_root->extensionsRequired) {
+    for (auto& extension : model.root.extensionsRequired) {
         LOG_INFO("\t- {}", extension);
     }
 
-    return root;
+    return model; // nrvo
 }
 
-void ModelImporter::parseGLB(std::ifstream& ifs) {
+void ModelImporter::parseGLB(glTF::Model& model, std::ifstream& ifs) {
     Header header;
-    ifs.read(reinterpret_cast<char*>(&header), sizeof(header));
+    ifs.read((char*)(&header), sizeof(header));
 
     R3_ASSERT(header.magic == HEADER_MAGIC && "GLB files must have magic number");
 
@@ -73,92 +72,86 @@ void ModelImporter::parseGLB(std::ifstream& ifs) {
             "glb version for {} is {} while R3 supports up to glb version {}", m_path, header.version, R3_GLB_VERSION);
     }
 
-    ChunkHeader chunkHeader = {};
+    ChunkHeader chunkHeader;
 
     auto readJson = [&] {
         std::string jsonFile(chunkHeader.length, '\0');
         ifs.read(jsonFile.data(), chunkHeader.length);
-        m_document.Parse(jsonFile.c_str());
+        model.document.Parse(jsonFile.data(), chunkHeader.length);
     };
 
     auto readBin = [&] {
-        m_buffer.resize(chunkHeader.length);
-        ifs.read((char*)m_buffer.data(), chunkHeader.length);
+        model.bin.resize(chunkHeader.length);
+        ifs.read((char*)model.bin.data(), chunkHeader.length);
     };
 
-    ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    if (chunkHeader.type == CHUNK_TYPE_JSON) {
-        readJson();
-    } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
-        readBin();
-    } else {
-        throw Exception("invalid chunk header type");
-    }
-
-    ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
-    if (chunkHeader.type == CHUNK_TYPE_JSON) {
-        readJson();
-    } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
-        readBin();
-    } else {
-        throw Exception("invalid chunk header type");
+    /* glb files have 2 chunks */
+    for (int i = 0; i < 2; i++) {
+        ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
+        if (chunkHeader.type == CHUNK_TYPE_JSON) {
+            readJson();
+        } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
+            readBin();
+        } else {
+            throw Exception("invalid chunk header type");
+        }
     }
 }
 
-void ModelImporter::parseGLTF(std::ifstream& ifs) {
+void ModelImporter::parseGLTF(glTF::Model& model, std::ifstream& ifs) {
     std::string json = (std::stringstream() << ifs.rdbuf()).str();
-    m_document.Parse(json.c_str());
+    model.document.Parse(json.c_str());
 }
 
-void ModelImporter::populateRoot() {
-    populateExtensionsUsed();
-    populateExtensionsRequired();
-    populateAccessors();
-    populateAnimations();
-    populateAsset();
-    populateBuffers();
-    populateBufferViews();
-    populateCameras();
-    populateImages();
-    populateMaterials();
-    populateMeshes();
-    populateNodes();
-    populateSamplers();
-    populateScene();
-    populateScenes();
-    populateSkins();
-    populateTextures();
-    populateExtensions();
-    populateExtras();
+void ModelImporter::populateModel(glTF::Model& model) {
+    populateExtensionsUsed(model);
+    populateExtensionsRequired(model);
+    populateAccessors(model);
+    populateAnimations(model);
+    populateAsset(model);
+    populateBuffers(model, model.bin);
+    populateBufferViews(model);
+    populateCameras(model);
+    populateImages(model);
+    populateMaterials(model);
+    populateMeshes(model);
+    populateNodes(model);
+    populateSamplers(model);
+    populateScene(model);
+    populateScenes(model);
+    populateSkins(model);
+    populateTextures(model);
+    populateExtensions(model);
+    populateExtras(model);
 }
 
-void ModelImporter::populateExtensionsUsed() {
-    if (!m_document.HasMember("extensionsUsed")) {
+void ModelImporter::populateExtensionsUsed(glTF::Model& model) {
+    if (!model.document.HasMember("extensionsUsed")) {
         return;
     }
 
-    for (auto& extension : m_document["extensionsUsed"].GetArray()) {
-        m_root->extensionsUsed.emplace_back(extension.GetString());
+    for (auto& extension : model.document["extensionsUsed"].GetArray()) {
+        model.root.extensionsUsed.emplace_back(extension.GetString());
     }
 }
 
-void ModelImporter::populateExtensionsRequired() {
-    if (!m_document.HasMember("extensionsRequired")) {
+void ModelImporter::populateExtensionsRequired(glTF::Model& model) {
+    if (!model.document.HasMember("extensionsRequired")) {
         return;
     }
 
-    for (auto& extension : m_document["extensionsRequired"].GetArray()) {
-        m_root->extensionsRequired.emplace_back(extension.GetString());
+    for (auto& extension : model.document["extensionsRequired"].GetArray()) {
+        model.root.extensionsRequired.emplace_back(extension.GetString());
     }
 }
 
-void ModelImporter::populateAccessors() {
-    if (!m_document.HasMember("accessors")) {
+void ModelImporter::populateAccessors(glTF::Model& model) {
+    if (!model.document.HasMember("accessors")) {
         return;
     }
 
-    for (auto& itAccessor : m_document["accessors"].GetArray()) {
-        Accessor& accessor = m_root->accessors.emplace_back();
+    for (auto& itAccessor : model.document["accessors"].GetArray()) {
+        Accessor& accessor = model.root.accessors.emplace_back();
 
         // bufferView
         maybeAssign(accessor.bufferView, itAccessor, "bufferView");
@@ -208,13 +201,13 @@ void ModelImporter::populateAccessors() {
     }
 }
 
-void ModelImporter::populateAnimations() {
-    if (!m_document.HasMember("animations")) {
+void ModelImporter::populateAnimations(glTF::Model& model) {
+    if (!model.document.HasMember("animations")) {
         return;
     }
 
-    for (auto& itAnimation : m_document["animations"].GetArray()) {
-        Animation& animation = m_root->animations.emplace_back();
+    for (auto& itAnimation : model.document["animations"].GetArray()) {
+        Animation& animation = model.root.animations.emplace_back();
 
         // channels
         for (auto& itChannel : itAnimation["channels"].GetArray()) {
@@ -278,34 +271,34 @@ void ModelImporter::populateAnimations() {
     }
 }
 
-void ModelImporter::populateAsset() {
-    auto& jsAsset = m_document["asset"];
+void ModelImporter::populateAsset(glTF::Model& model) {
+    auto& jsAsset = model.document["asset"];
 
     // copyright -- ignore
 
     // generator -- ignore
 
     // version
-    m_root->asset.version = jsAsset["version"].GetString();
-    checkVersion(m_root->asset.version);
+    model.root.asset.version = jsAsset["version"].GetString();
+    checkVersion(model.root.asset.version);
 
     // minVersion
-    maybeAssign(m_root->asset.minVersion, jsAsset, "minVersion");
+    maybeAssign(model.root.asset.minVersion, jsAsset, "minVersion");
 
     // extensions
-    maybeMove(m_root->asset.extensions, jsAsset, "extensions");
+    maybeMove(model.root.asset.extensions, jsAsset, "extensions");
 
     // extras
-    maybeMove(m_root->asset.extras, jsAsset, "extras");
+    maybeMove(model.root.asset.extras, jsAsset, "extras");
 }
 
-void ModelImporter::populateBuffers() {
-    if (!m_document.HasMember("buffers")) {
+void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& bin) {
+    if (!model.document.HasMember("buffers")) {
         return;
     }
 
-    for (auto& itBuffer : m_document["buffers"].GetArray()) {
-        Buffer& buffer = m_root->buffers.emplace_back();
+    for (auto& itBuffer : model.document["buffers"].GetArray()) {
+        Buffer& buffer = model.root.buffers.emplace_back();
 
         // uri
         maybeAssign(buffer.uri, itBuffer, "uri");
@@ -332,8 +325,8 @@ void ModelImporter::populateBuffers() {
 
             try {
                 ifs.open(dir + buffer.uri, std::ios::binary);
-                m_buffer.resize(buffer.byteLength);
-                ifs.read((char*)m_buffer.data(), buffer.byteLength);
+                bin.resize(buffer.byteLength);
+                ifs.read((char*)bin.data(), buffer.byteLength);
             } catch (std::exception& e) {
                 LOG_ERROR("glTF buffer read error {}", e.what());
             }
@@ -341,13 +334,13 @@ void ModelImporter::populateBuffers() {
     }
 }
 
-void ModelImporter::populateBufferViews() {
-    if (!m_document.HasMember("bufferViews")) {
+void ModelImporter::populateBufferViews(glTF::Model& model) {
+    if (!model.document.HasMember("bufferViews")) {
         return;
     }
 
-    for (auto& itBufferView : m_document["bufferViews"].GetArray()) {
-        BufferView& bufferView = m_root->bufferViews.emplace_back();
+    for (auto& itBufferView : model.document["bufferViews"].GetArray()) {
+        BufferView& bufferView = model.root.bufferViews.emplace_back();
 
         // buffer
         bufferView.buffer = itBufferView["buffer"].GetUint();
@@ -375,20 +368,20 @@ void ModelImporter::populateBufferViews() {
     }
 }
 
-void ModelImporter::populateCameras() {
-    if (!m_document.HasMember("cameras")) {
+void ModelImporter::populateCameras(glTF::Model& model) {
+    if (!model.document.HasMember("cameras")) {
         return;
     }
 
     LOG_WARNING("TODO cameras");
 }
 
-void ModelImporter::populateImages() {
-    if (!m_document.HasMember("images"))
+void ModelImporter::populateImages(glTF::Model& model) {
+    if (!model.document.HasMember("images"))
         return;
 
-    for (auto& itImage : m_document["images"].GetArray()) {
-        Image& image = m_root->images.emplace_back();
+    for (auto& itImage : model.document["images"].GetArray()) {
+        Image& image = model.root.images.emplace_back();
 
         // uri
         maybeAssign(image.uri, itImage, "uri");
@@ -410,13 +403,13 @@ void ModelImporter::populateImages() {
     }
 }
 
-void ModelImporter::populateMaterials() {
-    if (!m_document.HasMember("materials")) {
+void ModelImporter::populateMaterials(glTF::Model& model) {
+    if (!model.document.HasMember("materials")) {
         return;
     }
 
-    for (auto& itMaterial : m_document["materials"].GetArray()) {
-        Material& material = m_root->materials.emplace_back();
+    for (auto& itMaterial : model.document["materials"].GetArray()) {
+        Material& material = model.root.materials.emplace_back();
 
         // pbrMetallicRoughness
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
@@ -537,6 +530,8 @@ void ModelImporter::populateMaterials() {
                 KHR_materials_pbrSpecularGlossiness::parse(material.extensions.back().get(),
                                                            jsExtensions[EXTENSION_KHR_materials_pbrSpecularGlossiness]);
             }
+#else
+            (void)jsExtensions;
 #endif
         }
 
@@ -545,20 +540,20 @@ void ModelImporter::populateMaterials() {
     }
 }
 
-void ModelImporter::populateMeshes() {
-    if (!m_document.HasMember("meshes")) {
+void ModelImporter::populateMeshes(glTF::Model& model) {
+    if (!model.document.HasMember("meshes")) {
         return;
     }
 
-    for (auto& itMesh : m_document["meshes"].GetArray()) {
-        Mesh& mesh = m_root->meshes.emplace_back();
+    for (auto& itMesh : model.document["meshes"].GetArray()) {
+        Mesh& mesh = model.root.meshes.emplace_back();
 
         // primitives
         for (auto& itPrimitive : itMesh["primitives"].GetArray()) {
             MeshPrimitive& primitive = mesh.primitives.emplace_back();
 
             // attributes
-            primitive.attributes = std::move(itPrimitive["attributes"]);
+            primitive.attributes = itPrimitive["attributes"].Move();
 
             // indices
             maybeAssign(primitive.indices, itPrimitive, "indices");
@@ -601,13 +596,13 @@ void ModelImporter::populateMeshes() {
     }
 }
 
-void ModelImporter::populateNodes() {
-    if (!m_document.HasMember("nodes")) {
+void ModelImporter::populateNodes(glTF::Model& model) {
+    if (!model.document.HasMember("nodes")) {
         return;
     }
 
-    for (auto& itNode : m_document["nodes"].GetArray()) {
-        Node& node = m_root->nodes.emplace_back();
+    for (auto& itNode : model.document["nodes"].GetArray()) {
+        Node& node = model.root.nodes.emplace_back();
 
         // camera
         maybeAssign(node.camera, itNode, "camera");
@@ -671,13 +666,13 @@ void ModelImporter::populateNodes() {
     }
 }
 
-void ModelImporter::populateSamplers() {
-    if (!m_document.HasMember("samplers")) {
+void ModelImporter::populateSamplers(glTF::Model& model) {
+    if (!model.document.HasMember("samplers")) {
         return;
     }
 
-    for (auto& itSampler : m_document["samplers"].GetArray()) {
-        Sampler& sampler = m_root->samplers.emplace_back();
+    for (auto& itSampler : model.document["samplers"].GetArray()) {
+        Sampler& sampler = model.root.samplers.emplace_back();
 
         // magFilter
         maybeAssign(sampler.magFilter, itSampler, "magFilter");
@@ -702,17 +697,17 @@ void ModelImporter::populateSamplers() {
     }
 }
 
-void ModelImporter::populateScene() {
-    maybeAssign(m_root->scene, m_document, "scene");
+void ModelImporter::populateScene(glTF::Model& model) {
+    maybeAssign(model.root.scene, model.document, "scene");
 }
 
-void ModelImporter::populateScenes() {
-    if (!m_document.HasMember("scenes")) {
+void ModelImporter::populateScenes(glTF::Model& model) {
+    if (!model.document.HasMember("scenes")) {
         return;
     }
 
-    for (auto& itScene : m_document["scenes"].GetArray()) {
-        Scene& nthScene = m_root->scenes.emplace_back();
+    for (auto& itScene : model.document["scenes"].GetArray()) {
+        Scene& nthScene = model.root.scenes.emplace_back();
 
         // nodes
         if (itScene.HasMember("nodes")) {
@@ -732,13 +727,13 @@ void ModelImporter::populateScenes() {
     }
 }
 
-void ModelImporter::populateSkins() {
-    if (!m_document.HasMember("skins")) {
+void ModelImporter::populateSkins(glTF::Model& model) {
+    if (!model.document.HasMember("skins")) {
         return;
     }
 
-    for (auto& itSkin : m_document["skins"].GetArray()) {
-        Skin& skin = m_root->skins.emplace_back();
+    for (auto& itSkin : model.document["skins"].GetArray()) {
+        Skin& skin = model.root.skins.emplace_back();
 
         // inverseBindMatrices
         maybeAssign(skin.inverseBindMatrices, itSkin, "inverseBindMatrices");
@@ -762,13 +757,13 @@ void ModelImporter::populateSkins() {
     }
 }
 
-void ModelImporter::populateTextures() {
-    if (!m_document.HasMember("textures")) {
+void ModelImporter::populateTextures(glTF::Model& model) {
+    if (!model.document.HasMember("textures")) {
         return;
     }
 
-    for (auto& itTexture : m_document["textures"].GetArray()) {
-        Texture& texture = m_root->textures.emplace_back();
+    for (auto& itTexture : model.document["textures"].GetArray()) {
+        Texture& texture = model.root.textures.emplace_back();
 
         // sampler
         maybeAssign(texture.sampler, itTexture, "sampler");
@@ -787,20 +782,20 @@ void ModelImporter::populateTextures() {
     }
 }
 
-void ModelImporter::populateExtensions() {
-    if (!m_document.HasMember("extensions")) {
+void ModelImporter::populateExtensions(glTF::Model& model) {
+    if (!model.document.HasMember("extensions")) {
         return;
     }
 
-    m_root->extensions = std::move(m_document["extensions"]);
+    model.root.extensions = model.document["extensions"].Move();
 }
 
-void ModelImporter::populateExtras() {
-    if (!m_document.HasMember("extras")) {
+void ModelImporter::populateExtras(glTF::Model& model) {
+    if (!model.document.HasMember("extras")) {
         return;
     }
 
-    m_root->extras = std::move(m_document["extras"]);
+    model.root.extras = model.document["extras"].Move();
 }
 
 void ModelImporter::checkVersion(std::string_view version) const {
@@ -860,7 +855,7 @@ void ModelImporter::maybeMove(json::Value& dst, json::Value& value, const char* 
         return;
     }
 
-    dst = std::move(value[key]);
+    dst = value[key].Move();
 }
 
 // TextureInfo helper

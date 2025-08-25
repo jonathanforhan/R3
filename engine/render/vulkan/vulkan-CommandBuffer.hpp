@@ -7,8 +7,8 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
+#include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
@@ -54,7 +54,11 @@ public:
     void bindVertexBuffers(uint32 firstBinding,
                            std::span<const VkBuffer> buffers,
                            std::span<const VkDeviceSize> offsets);
+    void bindVertexBuffers(uint32 firstBinding,
+                           std::span<const usize> bufferIndices,
+                           std::span<const VkDeviceSize> offsets);
     void bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType);
+    void bindIndexBuffer(usize bufferIndex, VkDeviceSize offset, VkIndexType indexType);
 
     /// Drawing commands
     void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0);
@@ -120,6 +124,7 @@ public:
                 std::span<const VkPipelineStageFlags> waitStages = {},
                 std::span<const VkSemaphore> signalSemaphores    = {},
                 VkFence fence                                    = VK_NULL_HANDLE);
+    void submitSync(VkQueue queue);
 
     /// Get the underlying command buffer handle
     VkCommandBuffer commandBuffer() const noexcept { return m_commandBuffer; }

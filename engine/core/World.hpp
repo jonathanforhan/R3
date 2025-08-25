@@ -3,27 +3,29 @@
 #include <memory>
 #include <set>
 #include <typeindex>
+#include <typeinfo>
 #include <vector>
 #include <entt/entt.hpp>
-#include "api/Assert.hpp"
 #include "api/Class.hpp"
 #include "core/Camera.hpp"
+#include "core/Log.hpp"
 #include "systems/System.hpp"
 
 namespace R3 {
 
-class World {
+class WorldSingleton {
 private:
-    R3_CTOR_DEFAULT(World);
+    R3_CTOR_DEFAULT(WorldSingleton);
 
 public:
-    static World& instance();
-
     template <typename T, typename... Args>
     void addSystem(Args&&... args) {
-        R3_ASSERT(!m_systemSet.contains(typeid(T)) && "System already registered");
-        m_systems.emplace_back(new T(std::forward<Args>(args)...));
-        m_systemSet.insert(typeid(T));
+        if (!m_systemSet.contains(typeid(T))) {
+            m_systems.emplace_back(new T(std::forward<Args>(args)...));
+            m_systemSet.insert(typeid(T));
+        } else {
+            LOG_WARNING("System: {} already added", typeid(T).name());
+        }
     }
 
     entt::registry& registry() noexcept { return m_registry; }
@@ -44,7 +46,16 @@ private:
     Camera m_camera;
 
 private:
-    friend class Engine;
+    friend class EngineSingleton;
+    friend struct World;
+};
+
+/// @brief World singleton instance.
+struct World {
+    WorldSingleton* operator->() noexcept {
+        static WorldSingleton instance;
+        return &instance;
+    }
 };
 
 } // namespace R3

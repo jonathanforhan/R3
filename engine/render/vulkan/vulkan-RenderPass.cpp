@@ -61,7 +61,7 @@ RenderPassBuilder& RenderPassBuilder::addMSAAColorAttachment(VkFormat format, Vk
     return *this;
 }
 
-RenderPassBuilder& RenderPassBuilder::addColorAttachment(VkFormat format, VkSampleCountFlagBits samples) {
+RenderPassBuilder& RenderPassBuilder::addColorAttachment(VkFormat format) {
     m_attachments.push_back({
         .flags          = 0,
         .format         = format,

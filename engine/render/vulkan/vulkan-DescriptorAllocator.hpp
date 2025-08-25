@@ -4,7 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Types.hpp"
-#include "vulkan-RenderContext.hpp"
+#include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 

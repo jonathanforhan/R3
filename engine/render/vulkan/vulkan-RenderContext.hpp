@@ -1,11 +1,14 @@
 #pragma once
 
 #include <span>
+#include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
+#include "render/RenderContext.hpp"
 #include "render/Window.hpp"
+#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
 
 #ifdef R3_DEBUG
@@ -21,7 +24,7 @@ namespace R3::vulkan {
 ///   - Surface
 ///   - Device
 ///   - PhysicalDevice
-class RenderContext {
+class RenderContext : public IRenderContext {
 public:
     R3_CTOR_DEFAULT(RenderContext);
     R3_COPY_DELETE(RenderContext);
@@ -32,7 +35,10 @@ public:
     explicit RenderContext(Window& window);
 
     /// Destroys the RenderContext
-    ~RenderContext() noexcept;
+    virtual ~RenderContext() noexcept override;
+
+    /// @brief Returns the maximum number of frames that can be processed concurrently (in flight).
+    virtual uint32 maxFramesInFlight() const noexcept override { return 3; }
 
     /// Wait on the host for the completion of outstanding queue operations for all queues in this context
     void waitIdle();
@@ -72,6 +78,11 @@ public:
     /// Compute queue family index getter
     uint32 computeQueueIndex() const noexcept { return m_computeQueueIndex; }
 
+    /// Retrieves the graphics queue command buffer at the specified index. Must be less than maxFramesInFlight().
+    CommandBuffer& graphicsCommandBuffer(uint32 index) noexcept { return m_graphicsQueueCmds[index]; }
+    /// Retrieves the compute queue command buffer at the specified index. Must be less than maxFramesInFlight().
+    CommandBuffer& computeCommandBuffer(uint32 index) noexcept { return m_computeQueueCmds[index]; }
+
 private:
     static vkb::Instance createInstance();
     static VkSurfaceKHR createSurface(Window& window, VkInstance instance);
@@ -91,6 +102,8 @@ private:
     uint32 m_graphicsQueueIndex = 0xFFFFFFFF;
     uint32 m_presentQueueIndex  = 0xFFFFFFFF;
     uint32 m_computeQueueIndex  = 0xFFFFFFFF;
+    std::vector<CommandBuffer> m_graphicsQueueCmds;
+    std::vector<CommandBuffer> m_computeQueueCmds;
 };
 
 } // namespace R3::vulkan

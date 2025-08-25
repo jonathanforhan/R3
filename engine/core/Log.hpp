@@ -51,4 +51,9 @@ void enableWindowsConsoleColors() noexcept;
 #define LOG_ERROR(_Fmt, ...)   (std::println(stderr, R3_ANSI_RED "[ERROR] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
 #define LOG_WARNING(_Fmt, ...) (std::println(stderr, R3_ANSI_YELLOW "[WARNING] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
 #define LOG_INFO(_Fmt, ...)    (std::println(stdout, R3_ANSI_GREEN "[INFO] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
-#define LOG(_Fmt, ...)         (std::println(stdout, _Fmt, ##__VA_ARGS__))
+#if 0
+#define LOG_VERBOSE(_Fmt, ...) (std::println(stdout, R3_ANSI_CYAN "[VERBOSE] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
+#else
+#define LOG_VERBOSE(_Fmt, ...) (void)0
+#endif
+#define LOG(_Fmt, ...) (std::println(stdout, _Fmt, ##__VA_ARGS__))

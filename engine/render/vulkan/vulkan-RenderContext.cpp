@@ -15,6 +15,7 @@
 #include "core/Log.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
@@ -44,6 +45,11 @@ RenderContext::RenderContext(Window& window) {
         setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);
         setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
         setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
+
+        const VkCommandPoolCreateFlags poolFlags =
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        m_graphicsQueueCmds = CommandBuffer::allocate(*this, graphicsQueueIndex(), poolFlags, maxFramesInFlight());
+        m_computeQueueCmds  = CommandBuffer::allocate(*this, computeQueueIndex(), poolFlags, maxFramesInFlight());
     } catch (const Exception& ex) {
         this->~RenderContext();
         throw ex;
@@ -52,6 +58,9 @@ RenderContext::RenderContext(Window& window) {
 
 RenderContext::~RenderContext() noexcept {
     if (m_device) {
+        m_graphicsQueueCmds.clear();
+        m_computeQueueCmds.clear();
+
         vkDeviceWaitIdle(m_device);
 
         // destroy device
@@ -249,9 +258,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessageSeveri
 
     switch (messageSeverity) {
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
-            break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
-            LOG_INFO("{}", pCallbackData->pMessage);
+            LOG_VERBOSE("{}", pCallbackData->pMessage);
             break;
         case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
             LOG_WARNING("{}", pCallbackData->pMessage);

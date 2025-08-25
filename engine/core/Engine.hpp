@@ -2,17 +2,26 @@
 
 namespace R3 {
 
-class Engine final {
+class EngineSingleton final {
 private:
-    Engine() = default;
+    EngineSingleton() = default;
 
 public:
-    static Engine& instance() noexcept;
-
     int run();
 
 private:
     double deltaTime();
+
+private:
+    friend struct Engine;
+};
+
+/// @brief Engine singleton instance.
+struct Engine {
+    EngineSingleton* operator->() noexcept {
+        static EngineSingleton instance;
+        return &instance;
+    }
 };
 
 } // namespace R3

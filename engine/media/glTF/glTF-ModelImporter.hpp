@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -12,51 +13,58 @@
 
 namespace R3::glTF {
 
+struct Model {
+    R3_CTOR_DEFAULT(Model);
+    R3_COPY_DELETE(Model);
+    R3_MOVE_DEFAULT(Model);
+
+    json::Document document;    /// document is referenced by root's JSON values
+    Root root;                  /// glTF root object
+    std::vector<std::byte> bin; /// binary buffer chunk if present
+};
+
 class ModelImporter {
 public:
-    glTF::Root import(const std::filesystem::path& path);
+    glTF::Model import(const std::filesystem::path& path);
 
 private:
-    void parseGLB(std::ifstream& ifs);
-    void parseGLTF(std::ifstream& ifs);
+    void parseGLB(glTF::Model& model, std::ifstream& ifs);
+    void parseGLTF(glTF::Model& model, std::ifstream& ifs);
 
-    void populateRoot();
+    void populateModel(glTF::Model& model);
 
     // top level populates
-    void populateExtensionsUsed();
-    void populateExtensionsRequired();
-    void populateAccessors();
-    void populateAnimations();
-    void populateAsset();
-    void populateBuffers();
-    void populateBufferViews();
-    void populateCameras();
-    void populateImages();
-    void populateMaterials();
-    void populateMeshes();
-    void populateNodes();
-    void populateSamplers();
-    void populateScene();
-    void populateScenes();
-    void populateSkins();
-    void populateTextures();
-    void populateExtensions();
-    void populateExtras();
+    void populateExtensionsUsed(glTF::Model& model);
+    void populateExtensionsRequired(glTF::Model& model);
+    void populateAccessors(glTF::Model& model);
+    void populateAnimations(glTF::Model& model);
+    void populateAsset(glTF::Model& model);
+    void populateBuffers(glTF::Model& model, std::vector<std::byte>& bin);
+    void populateBufferViews(glTF::Model& model);
+    void populateCameras(glTF::Model& model);
+    void populateImages(glTF::Model& model);
+    void populateMaterials(glTF::Model& model);
+    void populateMeshes(glTF::Model& model);
+    void populateNodes(glTF::Model& model);
+    void populateSamplers(glTF::Model& model);
+    void populateScene(glTF::Model& model);
+    void populateScenes(glTF::Model& model);
+    void populateSkins(glTF::Model& model);
+    void populateTextures(glTF::Model& model);
+    void populateExtensions(glTF::Model& model);
+    void populateExtras(glTF::Model& model);
 
     void checkVersion(std::string_view version) const;
     void checkVersion(uint32 major, uint32 minor) const;
 
     template <typename T>
-    static void maybeAssign(T& dst, const json::Value& value, const char* key);
+    void maybeAssign(T& dst, const json::Value& value, const char* key);
 
-    static void maybeMove(json::Value& dst, json::Value& value, const char* key);
+    void maybeMove(json::Value& dst, json::Value& value, const char* key);
 
-    static void populateTextureInfo(TextureInfo& textureInfo, json::Value& value);
+    void populateTextureInfo(TextureInfo& textureInfo, json::Value& value);
 
 private:
-    glTF::Root* m_root = nullptr; // used by populate functions, denotes current root being populated in import()
-    json::Document m_document;
-    std::vector<uint8> m_buffer;
     std::string m_path;
 };
 
