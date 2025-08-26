@@ -3,10 +3,12 @@
 #pragma once
 
 #include <array>
-#include <cstddef>
+#include <concepts>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <vector>
 #include "api/JSON.hpp"
 #include "api/Types.hpp"
@@ -174,36 +176,18 @@ using Default = T;
 
 namespace detail {
 
-// Parameter not required by glTF spec
 template <typename T>
-struct OptionalType {
-    using type = std::optional<T>;
-};
+concept HasEmptyState = requires(T t) { t.empty(); } || std::same_as<T, json::Value>;
 
-// Specialization for vectors - optional vectors are just empty vectors
 template <typename T>
-struct OptionalType<std::vector<T>> {
-    using type = std::vector<T>;
-};
-
-// Specialization for json - optional json values are just null
-template <>
-struct OptionalType<json::Value> {
-    using type = json::Value;
-};
-
-// Specialization for string - optional string values are just emtpy strings
-template <>
-struct OptionalType<std::string> {
-    using type = std::string;
-};
+using OptionalType = std::conditional_t<HasEmptyState<T>, T, std::optional<T>>;
 
 } // namespace detail
 
 /// @brief Parameter not required by glTF spec
 /// @tparam T Datatype
 template <typename T>
-using Optional = typename detail::OptionalType<T>::type;
+using Optional = typename detail::OptionalType<T>;
 
 /// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#binary-header
 struct Header {
@@ -473,11 +457,11 @@ struct Material {
 
 /// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#reference-mesh-primitive
 struct MeshPrimitive {
-    Required<json::Value> attributes;
+    Required<std::map<std::string, uint32>> attributes;
     Optional<uint32> indices;
     Optional<uint32> material;
     Default<uint32> mode = TRIANGLES;
-    Optional<std::vector<json::Value>> targets;
+    Optional<std::vector<std::map<std::string, uint32>>> targets;
     Optional<json::Value> extensions;
     Optional<json::Value> extras;
 };

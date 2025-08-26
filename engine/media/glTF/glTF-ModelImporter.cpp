@@ -15,6 +15,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
 #include <vector>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
@@ -464,7 +465,9 @@ void ModelImporter::populateMeshes(glTF::Model& model) {
         for (auto& itPrimitive : itMesh["primitives"].GetArray()) {
             MeshPrimitive& primitive = mesh.primitives.emplace_back();
             // attributes
-            primitive.attributes = itPrimitive["attributes"].Move();
+            for (auto& [key, value] : itPrimitive["attributes"].GetObject()) {
+                primitive.attributes.emplace(key.GetString(), value.GetUint());
+            }
             // indices
             maybeAssign(primitive.indices, itPrimitive, "indices");
             // material
@@ -474,7 +477,10 @@ void ModelImporter::populateMeshes(glTF::Model& model) {
             // targets
             if (itPrimitive.HasMember("targets")) {
                 for (auto& itTarget : itPrimitive["targets"].GetArray()) {
-                    primitive.targets.emplace_back(itTarget.GetObject());
+                    auto& target = primitive.targets.emplace_back();
+                    for (auto& [key, value] : itTarget.GetObject()) {
+                        target.emplace(key.GetString(), value.GetUint());
+                    }
                 }
             }
             // extensions
@@ -729,13 +735,10 @@ void ModelImporter::maybeMove(json::Value& dst, json::Value& value, const char* 
 void ModelImporter::populateTextureInfo(TextureInfo& textureInfo, json::Value& value) {
     // index
     textureInfo.index = value["index"].GetUint();
-
     // texCoord
     maybeAssign(textureInfo.texCoord, value, "texCoord");
-
     // extensions
     maybeMove(textureInfo.extensions, value, "extensions");
-
     // extras
     maybeMove(textureInfo.extras, value, "extras");
 }

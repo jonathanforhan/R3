@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 #include <format>
+#include <map>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -12,7 +13,6 @@
 #include <entt/resource/resource.hpp>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
-#include "api/JSON.hpp"
 #include "api/Types.hpp"
 #include "components/MeshComponent.hpp"
 #include "core/Engine.hpp"
@@ -62,22 +62,22 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh) {
 
         //--- Vertices
         std::vector<fvec3> positions;
-        R3_ASSERT(primitive.attributes.HasMember(glTF::POSITION));
-        glTF_readAccessor(model, primitive.attributes[glTF::POSITION].GetUint(), positions);
+        R3_ASSERT(primitive.attributes.contains(glTF::POSITION));
+        glTF_readAccessor(model, primitive.attributes[glTF::POSITION], positions);
 
         std::vector<fvec3> normals;
-        if (primitive.attributes.HasMember(glTF::NORMAL)) {
-            glTF_readAccessor(model, primitive.attributes[glTF::NORMAL].GetUint(), normals);
+        if (primitive.attributes.contains(glTF::NORMAL)) {
+            glTF_readAccessor(model, primitive.attributes[glTF::NORMAL], normals);
         }
 
         std::vector<fvec2> texCoords;
-        if (primitive.attributes.HasMember(glTF::TEXCOORD_0)) {
-            glTF_readAccessor(model, primitive.attributes[glTF::TEXCOORD_0].GetUint(), texCoords);
+        if (primitive.attributes.contains(glTF::TEXCOORD_0)) {
+            glTF_readAccessor(model, primitive.attributes[glTF::TEXCOORD_0], texCoords);
         }
 
         std::vector<ivec4> joints;
-        if (primitive.attributes.HasMember(glTF::JOINTS_0)) {
-            usize index = primitive.attributes[glTF::JOINTS_0].GetUint();
+        if (primitive.attributes.contains(glTF::JOINTS_0)) {
+            usize index = primitive.attributes[glTF::JOINTS_0];
             std::vector<u16vec4> jointIndices;
 
             if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint8)) {
@@ -91,8 +91,8 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh) {
         }
 
         std::vector<fvec4> weights;
-        if (primitive.attributes.HasMember(glTF::WEIGHTS_0)) {
-            usize index = primitive.attributes[glTF::WEIGHTS_0].GetUint();
+        if (primitive.attributes.contains(glTF::WEIGHTS_0)) {
+            usize index = primitive.attributes[glTF::WEIGHTS_0];
 
             if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint8)) {
                 glTF_readAccessor<fvec4, u8vec4>(model, index, weights);
