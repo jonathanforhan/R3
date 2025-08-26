@@ -4,13 +4,18 @@
 #include <filesystem>
 #include <format>
 #include <optional>
+#include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
+#include <vulkan/vulkan_core.h>
+#include <entt/resource/resource.hpp>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/JSON.hpp"
 #include "api/Types.hpp"
 #include "components/MeshComponent.hpp"
+#include "core/Engine.hpp"
 #include "core/Entity.hpp"
 #include "core/Log.hpp"
 #include "core/ResourceManager.hpp"
@@ -19,6 +24,9 @@
 #include "glTF/glTF.hpp"
 #include "render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
+#include "render/vulkan/vulkan-Buffer.hpp"
+#include "render/vulkan/vulkan-CommandBuffer.hpp"
+#include "render/vulkan/vulkan-RenderContext.hpp"
 
 namespace R3 {
 
@@ -130,10 +138,29 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh) {
             glTF_processMaterial(model, model.root.materials[*primitive.material]);
         }
 
-        usize vboIndex = ResourceManager()->createVertexBuffer(vertices);
-        usize iboIndex = ResourceManager()->createIndexBuffer(indices);
+        vulkan::Buffer vertexStagingBuffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
+        vulkan::Buffer indexStagingBuffer{std::span<const uint32>{indices}, BufferPreset::Staging};
 
-        World()->registry().emplace<MeshComponent>(m_entity, vboIndex, vertices.size(), iboIndex, indices.size());
+        Handle<vulkan::Buffer> vbo =
+            ResourceManager()->loadBuffer("vbo", nullptr, vertices.size() * sizeof(Vertex), BufferPreset::DeviceVertex);
+        Handle<vulkan::Buffer> ibo =
+            ResourceManager()->loadBuffer("ibo", nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
+
+        const VkBufferCopy vertexCopyRegion = {0, 0, vertices.size() * sizeof(Vertex)};
+        const VkBufferCopy indexCopyRegion  = {0, 0, indices.size() * sizeof(uint32)};
+
+        vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+        vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
+        cmd.begin();
+        {
+            cmd.copyBuffer(vertexStagingBuffer.buffer(), vbo->buffer(), {&vertexCopyRegion, 1});
+            cmd.copyBuffer(indexStagingBuffer.buffer(), ibo->buffer(), {&indexCopyRegion, 1});
+        }
+        cmd.end();
+        cmd.submitSync(ctx.graphicsQueue());
+
+        World()->registry().emplace<MeshComponent>(
+            m_entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
     }
 }
 

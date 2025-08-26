@@ -6,8 +6,8 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
-#include "vulkan-Handle.hpp"
 #include "vulkan-Fwd.hpp"
+#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 

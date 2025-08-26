@@ -16,6 +16,9 @@ set(R3_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_I
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
+find_package(spirv_cross_core CONFIG REQUIRED)
+find_package(spirv_cross_glsl CONFIG REQUIRED)
+find_package(spirv_cross_hlsl CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 
 find_package(glfw3 CONFIG REQUIRED)
@@ -75,6 +78,9 @@ target_link_libraries(
 		Tracy::TracyClient
 		Vulkan::Vulkan
 		vk-bootstrap::vk-bootstrap
+		spirv-cross-core
+		spirv-cross-glsl
+		spirv-cross-hlsl
 )
 
 target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/")

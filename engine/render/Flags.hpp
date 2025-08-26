@@ -101,6 +101,41 @@ enum class TextureType {
     Emissive          = 4,
 };
 
+enum class ShaderType {
+    Vertex   = 0,
+    Fragment = 1,
+    Compute  = 2,
+    // TessellationControl    = 3,
+    // TessellationEvaluation = 4,
+    // Geometry               = 5,
+    // Raygen                 = 6,
+    // AnyHit                 = 7,
+    // ClosestHit             = 8,
+    // Miss                   = 9,
+    // Intersection           = 10,
+    // Callable               = 11,
+    // Task                   = 12,
+    // Mesh                   = 13,
+    // SubpassShading         = 14,
+    // ClusterCulling         = 15,
+};
+
+enum class BufferType {
+    Staging = 0,
+    Vertex  = 1,
+    Index   = 2,
+    Uniform = 3,
+    Storage = 4,
+    // Indirect = 5,
+};
+
+enum class BufferPreset {
+    Staging,
+    DeviceVertex,
+    DeviceIndex,
+    DeviceUniform,
+};
+
 struct CommandPoolModeFlags {
     enum : uint32 {
         Transient = 0x00000001,

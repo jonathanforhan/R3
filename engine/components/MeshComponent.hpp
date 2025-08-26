@@ -1,13 +1,14 @@
 #pragma once
 
 #include "api/Types.hpp"
+#include "core/ResourceManager.hpp"
 
 namespace R3 {
 
 struct MeshComponent {
-    usize vertexBufferIndex;
+    Handle<vulkan::Buffer> vertexBufferIndex;
     usize vertexCount;
-    usize indexBufferIndex;
+    Handle<vulkan::Buffer> indexBufferIndex;
     usize indexCount;
 };
 

@@ -13,7 +13,7 @@ struct MaterialComponent {
     usize ambientOcclusionIndex  = SIZE_MAX;
     usize emissiveIndex          = SIZE_MAX;
 
-    void assign(TextureType type, usize index) {
+    void setTextureIndex(TextureType type, usize index) {
         switch (type) {
             case TextureType::Albedo:
                 albedoIndex = index;

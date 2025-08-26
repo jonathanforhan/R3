@@ -3,6 +3,7 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
@@ -10,8 +11,7 @@
 
 namespace R3::vulkan {
 
-Image::Image(RenderContext& ctx,
-             VkFormat format,
+Image::Image(VkFormat format,
              VkExtent2D extent,
              uint32 mipLevels,
              VkSampleCountFlagBits sampleCount,
@@ -19,77 +19,74 @@ Image::Image(RenderContext& ctx,
              VkImageUsageFlags usage,
              VkImageAspectFlags aspectFlags,
              VkMemoryPropertyFlags properties) {
-    m_device    = ctx.device();
-    m_extent    = extent;
-    m_mipLevels = mipLevels;
-
-    const VkImageCreateInfo imageInfo = {
-        .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        .pNext                 = nullptr,
-        .flags                 = {},
-        .imageType             = VK_IMAGE_TYPE_2D,
-        .format                = format,
-        .extent                = {m_extent.width, m_extent.height, 1},
-        .mipLevels             = m_mipLevels,
-        .arrayLayers           = 1,
-        .samples               = sampleCount,
-        .tiling                = tiling,
-        .usage                 = usage,
-        .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices   = nullptr, /* would need this if using sharing mode concurrent */
-        .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
-    };
-    VK_CHECK(vkCreateImage(m_device, &imageInfo, nullptr, &*m_image));
-
-    VkMemoryRequirements memoryRequirements;
-    vkGetImageMemoryRequirements(m_device, m_image, &memoryRequirements);
-
-    const VkMemoryAllocateInfo memoryInfo = {
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext           = nullptr,
-        .allocationSize  = memoryRequirements.size,
-        .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
-    };
+    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
 
     try {
-        VK_CHECK(vkAllocateMemory(m_device, &memoryInfo, nullptr, &*m_imageMemory));
+        const VkImageCreateInfo imageInfo = {
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = {},
+            .imageType             = VK_IMAGE_TYPE_2D,
+            .format                = format,
+            .extent                = {extent.width, extent.height, 1},
+            .mipLevels             = mipLevels,
+            .arrayLayers           = 1,
+            .samples               = sampleCount,
+            .tiling                = tiling,
+            .usage                 = usage,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr, /* would need this if using sharing mode concurrent */
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+        VK_CHECK(vkCreateImage(ctx.device(), &imageInfo, nullptr, &*m_image));
+
+        VkMemoryRequirements memoryRequirements;
+        vkGetImageMemoryRequirements(ctx.device(), m_image, &memoryRequirements);
+
+        const VkMemoryAllocateInfo memoryInfo = {
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext           = nullptr,
+            .allocationSize  = memoryRequirements.size,
+            .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
+        };
+        VK_CHECK(vkAllocateMemory(ctx.device(), &memoryInfo, nullptr, &*m_imageMemory));
+        VK_CHECK(vkBindImageMemory(ctx.device(), m_image, m_imageMemory, 0));
+
+        const VkImageViewCreateInfo imageViewInfo = {
+            .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext      = nullptr,
+            .flags      = {},
+            .image      = m_image,
+            .viewType   = VK_IMAGE_VIEW_TYPE_2D,
+            .format     = format,
+            .components = {},
+            .subresourceRange =
+                {
+                    .aspectMask     = aspectFlags,
+                    .baseMipLevel   = 0,
+                    .levelCount     = mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        };
+        VK_CHECK(vkCreateImageView(ctx.device(), &imageViewInfo, nullptr, &*m_imageView));
     } catch (const Exception& ex) {
-        vkDestroyImage(m_device, m_image, nullptr);
+        vkDestroyImage(ctx.device(), m_image, nullptr);
+        vkFreeMemory(ctx.device(), m_imageMemory, nullptr);
+        vkDestroyImageView(ctx.device(), m_imageView, nullptr);
         throw ex;
     }
-
-    VK_CHECK(vkBindImageMemory(m_device, m_image, m_imageMemory, 0));
-
-    const VkImageViewCreateInfo imageViewInfo = {
-        .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        .pNext      = nullptr,
-        .flags      = {},
-        .image      = m_image,
-        .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-        .format     = format,
-        .components = {},
-        .subresourceRange =
-            {
-                .aspectMask     = aspectFlags,
-                .baseMipLevel   = 0,
-                .levelCount     = mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
-    };
-    VK_CHECK(vkCreateImageView(m_device, &imageViewInfo, nullptr, &*m_imageView));
 }
 
 Image::~Image() noexcept {
-    if (m_device) {
-        vkDestroyImage(m_device, m_image, nullptr);
-        vkFreeMemory(m_device, m_imageMemory, nullptr);
-        vkDestroyImageView(m_device, m_imageView, nullptr);
-    }
+    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    vkDestroyImage(ctx.device(), m_image, nullptr);
+    vkFreeMemory(ctx.device(), m_imageMemory, nullptr);
+    vkDestroyImageView(ctx.device(), m_imageView, nullptr);
 }
 
-void Image::generateMipMaps(CommandBuffer& cmd) {
+void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels) {
     VkImageMemoryBarrier memoryBarrierWrite = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         .pNext               = nullptr,
@@ -130,12 +127,12 @@ void Image::generateMipMaps(CommandBuffer& cmd) {
             },
     };
 
-    int32 w = static_cast<int32>(m_extent.width);
-    int32 h = static_cast<int32>(m_extent.height);
+    int32 w = static_cast<int32>(extent.width);
+    int32 h = static_cast<int32>(extent.height);
 
     // incremental mipmap generation
     // w and h are halved each iteration
-    for (uint32 i = 0; i < m_mipLevels - 1; ++i) {
+    for (uint32 i = 0; i < mipLevels - 1; ++i) {
         memoryBarrierWrite.subresourceRange.baseMipLevel = i;
         cmd.pipelineBarrier(
             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, {&memoryBarrierWrite, 1});
@@ -199,7 +196,7 @@ void Image::generateMipMaps(CommandBuffer& cmd) {
         .subresourceRange =
             {
                 .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = m_mipLevels - 1,
+                .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
                 .layerCount     = 1,

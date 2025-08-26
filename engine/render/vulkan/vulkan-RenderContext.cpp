@@ -3,9 +3,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <cstdint>
 #include <format>
 #include <span>
 #include <system_error>
+#include <type_traits>
 #include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
@@ -13,6 +15,7 @@
 #include "api/Types.hpp"
 #include "api/Version.hpp"
 #include "core/Log.hpp"
+#include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -29,7 +32,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
 #endif
 
-RenderContext::RenderContext(Window& window) {
+RenderContext::RenderContext(Window& window)
+    : IRenderContext(std::type_identity<decltype(*this)>()) {
     std::error_code error;
 
     try {
@@ -46,10 +50,8 @@ RenderContext::RenderContext(Window& window) {
         setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
         setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
 
-        const VkCommandPoolCreateFlags poolFlags =
-            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        m_graphicsQueueCmds = CommandBuffer::allocate(*this, graphicsQueueIndex(), poolFlags, maxFramesInFlight());
-        m_computeQueueCmds  = CommandBuffer::allocate(*this, computeQueueIndex(), poolFlags, maxFramesInFlight());
+        createCommandPools();
+        createSyncObjects();
     } catch (const Exception& ex) {
         this->~RenderContext();
         throw ex;
@@ -58,10 +60,25 @@ RenderContext::RenderContext(Window& window) {
 
 RenderContext::~RenderContext() noexcept {
     if (m_device) {
+        vkDeviceWaitIdle(m_device);
+
+        for (auto& sem : m_imageAvailableSemaphores) {
+            vkDestroySemaphore(m_device, sem, nullptr);
+        }
+        m_imageAvailableSemaphores.clear();
+
+        for (auto& fence : m_inFlightFences) {
+            vkDestroyFence(m_device, fence, nullptr);
+        }
+        m_inFlightFences.clear();
+
+        for (auto& sem : m_renderFinishedSemaphores) {
+            vkDestroySemaphore(m_device, sem, nullptr);
+        }
+        m_renderFinishedSemaphores.clear();
+
         m_graphicsQueueCmds.clear();
         m_computeQueueCmds.clear();
-
-        vkDeviceWaitIdle(m_device);
 
         // destroy device
         vkDestroyDevice(m_device, nullptr);
@@ -81,6 +98,11 @@ RenderContext::~RenderContext() noexcept {
 
 void RenderContext::waitIdle() {
     VK_CHECK(vkDeviceWaitIdle(m_device));
+}
+
+void RenderContext::waitForCurrentFrame() {
+    VK_CHECK(vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX));
+    VK_CHECK(vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]));
 }
 
 uint32 RenderContext::queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const {
@@ -243,6 +265,50 @@ void RenderContext::setupQueue(const vkb::Device& device, vkb::QueueType queueTy
         throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
     } else {
         index = result.value();
+    }
+}
+
+void RenderContext::createCommandPools() {
+    const VkCommandPoolCreateFlags poolFlags =
+        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    m_graphicsQueueCmds = CommandBuffer::allocate(*this, graphicsQueueIndex(), poolFlags, maxFramesInFlight());
+    m_computeQueueCmds  = CommandBuffer::allocate(*this, computeQueueIndex(), poolFlags, maxFramesInFlight());
+}
+
+void RenderContext::createSyncObjects() {
+    const VkSemaphoreCreateInfo semaphoreInfo = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0,
+    };
+
+    const VkFenceCreateInfo fenceInfo = {
+        .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = VK_FENCE_CREATE_SIGNALED_BIT,
+    };
+
+    // create per-frame acquire semaphores
+
+    m_imageAvailableSemaphores.resize(maxFramesInFlight());
+    for (auto& sem : m_imageAvailableSemaphores) {
+        VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &sem));
+    }
+
+    m_inFlightFences.resize(maxFramesInFlight());
+    for (auto& fence : m_inFlightFences) {
+        VK_CHECK(vkCreateFence(m_device, &fenceInfo, nullptr, &fence));
+    }
+
+    // create per-image render finished semaphores
+
+    // anything more than 4 is not supported
+
+    static constexpr usize MAX_USED_SWAPCHAIN_IMAGES = 4;
+
+    m_renderFinishedSemaphores.resize(MAX_USED_SWAPCHAIN_IMAGES);
+    for (auto& sem : m_renderFinishedSemaphores) {
+        VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &sem));
     }
 }
 

@@ -37,21 +37,23 @@ public:
     /// Destroys the RenderContext
     virtual ~RenderContext() noexcept override;
 
-    /// @brief Returns the maximum number of frames that can be processed concurrently (in flight).
-    virtual uint32 maxFramesInFlight() const noexcept override { return 3; }
+    /// Returns the maximum number of frames that can be processed concurrently (in flight).
+    uint32 maxFramesInFlight() const noexcept { return 3; }
+    /// Increment the current frame index or reset when equal to maxFramesInFlight()
+    void advanceFrame() noexcept { m_currentFrame = (m_currentFrame + 1) % maxFramesInFlight(); }
 
     /// Wait on the host for the completion of outstanding queue operations for all queues in this context
     void waitIdle();
+    /// Wait for the current frame to finish and reset its fence
+    void waitForCurrentFrame();
 
     /// Get the index of memory type which satisfies ```typeFilter``` and ```properties```
     uint32 queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const;
 
     /// Get MSAA sample count supported by the physical device
     VkSampleCountFlagBits queryMaxUsableSampleCount() const noexcept;
-
     /// Get physical device depth format
     VkFormat queryDepthFormat() const noexcept;
-
     /// Get physical device supported format chosen from a list of formats
     VkFormat querySupportedFormat(std::span<const VkFormat> formats,
                                   VkImageTiling tiling,
@@ -78,10 +80,19 @@ public:
     /// Compute queue family index getter
     uint32 computeQueueIndex() const noexcept { return m_computeQueueIndex; }
 
-    /// Retrieves the graphics queue command buffer at the specified index. Must be less than maxFramesInFlight().
-    CommandBuffer& graphicsCommandBuffer(uint32 index) noexcept { return m_graphicsQueueCmds[index]; }
-    /// Retrieves the compute queue command buffer at the specified index. Must be less than maxFramesInFlight().
-    CommandBuffer& computeCommandBuffer(uint32 index) noexcept { return m_computeQueueCmds[index]; }
+    /// Retrieves the graphics queue command buffer for the current frame.
+    CommandBuffer& graphicsCommandBuffer() noexcept { return m_graphicsQueueCmds[m_currentFrame]; }
+    /// Retrieves the compute queue command buffer for the current frame.
+    CommandBuffer& computeCommandBuffer() noexcept { return m_computeQueueCmds[m_currentFrame]; }
+
+    /// Get the image available semaphore for the current frame
+    VkSemaphore& currentImageAvailableSemaphore() noexcept { return m_imageAvailableSemaphores[m_currentFrame]; }
+    /// Get the fence for the current frame
+    VkFence& currentFence() noexcept { return m_inFlightFences[m_currentFrame]; }
+    /// Get the current frame index
+    uint32 currentFrameIndex() const noexcept { return m_currentFrame; };
+    /// Get the render finished semaphore for the specified swapchain image index
+    VkSemaphore& renderFinishedSemaphore(usize imageIndex) noexcept { return m_renderFinishedSemaphores[imageIndex]; }
 
 private:
     static vkb::Instance createInstance();
@@ -89,6 +100,8 @@ private:
     static vkb::PhysicalDevice selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface);
     static vkb::Device createLogicalDevice(const vkb::PhysicalDevice& physicalDevice);
     static void setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index);
+    void createCommandPools();
+    void createSyncObjects();
 
 private:
     Handle<VkInstance> m_instance;
@@ -104,6 +117,10 @@ private:
     uint32 m_computeQueueIndex  = 0xFFFFFFFF;
     std::vector<CommandBuffer> m_graphicsQueueCmds;
     std::vector<CommandBuffer> m_computeQueueCmds;
+    std::vector<VkSemaphore> m_imageAvailableSemaphores; // one per frame in flight
+    std::vector<VkFence> m_inFlightFences;               // one per frame in flight
+    std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image
+    uint32 m_currentFrame = 0;
 };
 
 } // namespace R3::vulkan

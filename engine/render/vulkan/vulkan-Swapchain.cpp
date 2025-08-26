@@ -76,6 +76,7 @@ void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebu
                       .add_fallback_present_mode(VK_PRESENT_MODE_FIFO_KHR)   // guaranteed fallback
                       .set_desired_extent(static_cast<uint32>(framebufferWidth), static_cast<uint32>(framebufferHeight))
                       .set_image_usage_flags(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+                      .set_desired_min_image_count(vkb::SwapchainBuilder::TRIPLE_BUFFERING)
                       .set_composite_alpha_flags(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
                       .set_clipped(true)
                       .build();

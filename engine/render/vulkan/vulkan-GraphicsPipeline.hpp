@@ -4,7 +4,6 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
-#include "api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 
@@ -28,6 +27,11 @@ public:
     VkPipeline pipeline() const noexcept { return m_pipeline; }
 
     VkPipelineLayout layout() const noexcept { return m_pipelineLayout; }
+
+private:
+    static VkVertexInputBindingDescription queryBindingDescription() noexcept;
+
+    static std::vector<VkVertexInputAttributeDescription> queryAttributeDescriptions();
 
 private:
     Handle<VkDevice> m_device;

@@ -5,19 +5,19 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <entt/entity/registry.hpp>
+#include <entt/entity/view.hpp>
+#include <entt/resource/resource.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "components/MeshComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/World.hpp"
-#include "render/Flags.hpp"
-#include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorAllocator.hpp"
-#include "vulkan-FrameSync.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
@@ -40,7 +40,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Color/Depth Image
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
     m_colorImage     = Image{
-        m_ctx,
         m_swapchain.format(),
         m_swapchain.extent(),
         1,
@@ -51,7 +50,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
     m_depthImage = Image{
-        m_ctx,
         m_ctx.queryDepthFormat(),
         m_swapchain.extent(),
         1,
@@ -72,14 +70,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
     m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
-    //--- Texture
-    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(0);
-    cmd.reset();
-    cmd.begin();
-    m_texture = Texture{m_ctx, cmd, "textures/statue_head.jpg", TextureType::Albedo};
-    cmd.end();
-    cmd.submit(m_ctx.graphicsQueue());
-
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
 
@@ -93,7 +83,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     for (auto& ubo : m_ubos) {
         const VkMemoryPropertyFlags bufferMemoryFlags =
             VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-        ubo = Buffer{m_ctx, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, bufferMemoryFlags};
+        ubo = Buffer{nullptr, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, bufferMemoryFlags};
     }
 
     //--- Descriptor Pool
@@ -144,11 +134,13 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
             .range  = sizeof(UniformBufferObject),
         };
 
+#if 0
         const VkDescriptorImageInfo imageInfo = {
             .sampler     = m_texture.sampler(),
             .imageView   = m_texture.imageView(),
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
+#endif
 
         const VkWriteDescriptorSet descriptorWrites[] = {
             {
@@ -163,6 +155,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
                 .pBufferInfo      = &bufferInfo,
                 .pTexelBufferView = nullptr,
             },
+#if 0
             {
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .pNext            = nullptr,
@@ -175,6 +168,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
                 .pBufferInfo      = nullptr,
                 .pTexelBufferView = nullptr,
             },
+#endif
         };
         vkUpdateDescriptorSets(m_ctx.device(), (uint32)std::size(descriptorWrites), descriptorWrites, 0, nullptr);
     }
@@ -188,9 +182,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         };
         m_framebuffers.emplace_back(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
-
-    //--- Frame Sync
-    m_frameSync = FrameSync{m_ctx, m_ctx.maxFramesInFlight(), m_swapchain.images().size()};
 
     World()->camera().setActive(true);
 }
@@ -213,15 +204,14 @@ void Renderer::render(double dt) {
         return;
     }
 
-    m_frameSync.waitForCurrentFrame();
-    m_frameSync.resetCurrentFrame();
+    m_ctx.waitForCurrentFrame();
 
     World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
-    m_ubos[m_frameSync.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
+    m_ubos[m_ctx.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
 
     // Acquire next image
     uint32 imageIndex;
-    VkResult result = m_swapchain.acquireNextImage(m_frameSync.currentImageAvailableSemaphore(), imageIndex);
+    VkResult result = m_swapchain.acquireNextImage(m_ctx.currentImageAvailableSemaphore(), imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         return; // Will be handled by resize logic
@@ -230,7 +220,7 @@ void Renderer::render(double dt) {
     }
 
     // Record command buffer
-    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(m_frameSync.currentFrameIndex());
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer();
     cmd.reset();
     cmd.begin();
 
@@ -272,13 +262,13 @@ void Renderer::render(double dt) {
     cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
                            m_graphicsPipeline.layout(),
                            0,
-                           {&m_descriptorSets[m_frameSync.currentFrameIndex()], 1},
+                           {&m_descriptorSets[m_ctx.currentFrameIndex()], 1},
                            {});
 
     World()->registry().view<MeshComponent>().each([&](const MeshComponent& mesh) {
-        const usize vboIndices[]     = {mesh.vertexBufferIndex};
+        const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
         const VkDeviceSize offsets[] = {0};
-        const usize iboIndex         = mesh.indexBufferIndex;
+        const VkBuffer iboIndex      = mesh.indexBufferIndex->buffer();
         cmd.bindVertexBuffers(0, vboIndices, offsets);
         cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
         cmd.drawIndexed(static_cast<uint32>(mesh.indexCount), 1, 0, 0, 0);
@@ -290,13 +280,14 @@ void Renderer::render(double dt) {
     // Submit command buffer - use per-frame acquire, per-image render finished
     const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     cmd.submit(m_ctx.graphicsQueue(),
-               {&m_frameSync.currentImageAvailableSemaphore(), 1},
+               {&m_ctx.currentImageAvailableSemaphore(), 1},
                waitStages,
-               {&m_frameSync.renderFinishedSemaphore(imageIndex), 1},
-               m_frameSync.currentFence());
+               {&m_ctx.renderFinishedSemaphore(m_ctx.currentFrameIndex()), 1},
+               m_ctx.currentFence());
 
     // Present - use per-image semaphore
-    result = m_swapchain.present(m_ctx.presentQueue(), m_frameSync.renderFinishedSemaphore(imageIndex), imageIndex);
+    result =
+        m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(m_ctx.currentFrameIndex()), imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Will be handled by resize logic on next frame
@@ -304,7 +295,7 @@ void Renderer::render(double dt) {
         throw Exception{std::format("Failed to present swap chain image: {}", static_cast<int>(result))};
     }
 
-    m_frameSync.advanceFrame();
+    m_ctx.advanceFrame();
 }
 
 void Renderer::handleWindowResize() {
@@ -320,7 +311,6 @@ void Renderer::handleWindowResize() {
 
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
     m_colorImage     = Image{
-        m_ctx,
         m_swapchain.format(),
         m_swapchain.extent(),
         1,
@@ -331,7 +321,6 @@ void Renderer::handleWindowResize() {
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
     m_depthImage = Image{
-        m_ctx,
         m_ctx.queryDepthFormat(),
         m_swapchain.extent(),
         1,
@@ -352,8 +341,6 @@ void Renderer::handleWindowResize() {
         };
         m_framebuffers.emplace_back(m_ctx, m_renderPass, attachments, m_swapchain.extent());
     }
-
-    m_frameSync.recreateImageSync(m_swapchain.images().size());
 }
 
 } // namespace R3::vulkan

@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <iterator>
 #include <span>
+#include <type_traits>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -211,6 +212,63 @@ GraphicsPipeline::~GraphicsPipeline() noexcept {
         vkDestroyPipeline(m_device, m_pipeline, nullptr);
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     }
+}
+
+static VkVertexInputBindingDescription queryBindingDescription() noexcept {
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        .binding   = 0,
+        .stride    = sizeof(Vertex),
+        .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+    };
+    return vertexInputBindingDescription;
+}
+
+static std::vector<VkVertexInputAttributeDescription> queryAttributeDescriptions() noexcept {
+    const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
+        {
+            .location = 0,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, position),
+        },
+        {
+            .location = 1,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, normal),
+        },
+        {
+            .location = 2,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, tangent),
+        },
+        {
+            .location = 3,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SFLOAT,
+            .offset   = offsetof(Vertex, bitangent),
+        },
+        {
+            .location = 4,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32_SFLOAT,
+            .offset   = offsetof(Vertex, textureCoords),
+        },
+        {
+            .location = 5,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32_SINT,
+            .offset   = offsetof(Vertex, boneIDs),
+        },
+        {
+            .location = 6,
+            .binding  = 0,
+            .format   = VK_FORMAT_R32G32B32A32_SFLOAT,
+            .offset   = offsetof(Vertex, weights),
+        },
+    };
+    return vertexInputAttributeDescription;
 }
 
 } // namespace R3::vulkan

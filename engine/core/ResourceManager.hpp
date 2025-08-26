@@ -1,14 +1,28 @@
 #pragma once
 
-#include <filesystem>
-#include <span>
+// TODO make this renderer agnostic
+#if !R3_VULKAN
+#error "Vulkan is currently the only supported RenderContext"
+#else
+#include "render/vulkan/vulkan-Buffer.hpp"
+#include "render/vulkan/vulkan-Image.hpp"
+#include "render/vulkan/vulkan-Texture.hpp"
+#endif
+
+#include <memory>
+#include <utility>
+#include <entt/resource/cache.hpp>
+#include <entt/resource/resource.hpp>
 #include "api/Class.hpp"
+#include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "render/Flags.hpp"
-#include "render/RenderContext.hpp"
-#include "render/ShaderObjects.hpp"
+#include "render/vulkan/vulkan-CommandBuffer.hpp"
 
 namespace R3 {
+
+template <typename T>
+using Handle = entt::resource<T>;
 
 class ResourceManagerSingleton {
 private:
@@ -17,25 +31,31 @@ private:
     R3_MOVE_DELETE(ResourceManagerSingleton);
 
 public:
-    usize createVertexBuffer(std::span<const Vertex> vertices);
-    void* vertexBufferAt(usize index) noexcept;
+    template <typename... Args>
+    Handle<vulkan::Buffer> loadBuffer(hash::uuid id, Args&&... args) {
+        return m_bufferCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    }
 
-    usize createIndexBuffer(std::span<const uint32> indices);
-    void* indexBufferAt(usize index) noexcept;
+    template <typename... Args>
+    Handle<vulkan::Image> loadImage(hash::uuid id, Args&&... args) {
+        return m_imageCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    }
 
-    usize createTexture(const uint8* raw, usize width, usize height, TextureType type);
-    usize createTexture(const uint8* compressed, usize size, TextureType type);
-    usize createTexture(const std::filesystem::path& filepath, TextureType type);
-    void* textureAt(usize index) noexcept;
+    template <typename... Args>
+    Handle<vulkan::Texture> loadTexture(hash::uuid id, Args&&... args) {
+        return m_textureCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    }
+
+    void clear() {
+        m_bufferCache.clear();
+        m_imageCache.clear();
+        m_textureCache.clear();
+    }
 
 private:
-    // used by Engine to bind the render context
-    void bindContext(IRenderContext* ctx) noexcept { m_ctx = ctx; }
-
-    void free() noexcept;
-
-private:
-    IRenderContext* m_ctx = nullptr;
+    entt::resource_cache<vulkan::Buffer> m_bufferCache;
+    entt::resource_cache<vulkan::Image> m_imageCache;
+    entt::resource_cache<vulkan::Texture> m_textureCache;
 
 private:
     friend struct ResourceManager;

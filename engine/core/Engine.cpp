@@ -25,6 +25,12 @@ double EngineSingleton::deltaTime() {
 }
 
 int EngineSingleton::run() {
+    if (m_running) {
+        return -1;
+    } else {
+        m_running = true;
+    }
+
     //--- Window
     Window window;
 
@@ -37,8 +43,7 @@ int EngineSingleton::run() {
     //    - command buffers/pools
     //      - each collection of command buffers shares a command pool
     vulkan::RenderContext ctx{window};
-
-    ResourceManager()->bindContext(&ctx);
+    m_ctx = &ctx;
 
     const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb";
     (void)ModelLoader().glTFLoad(modelPath);
@@ -61,7 +66,8 @@ int EngineSingleton::run() {
 
     ctx.waitIdle();
 
-    ResourceManager()->free();
+    World()->registry().clear();
+    ResourceManager()->clear();
 
     return 0;
 }

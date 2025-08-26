@@ -21,7 +21,7 @@ public:
 
 private:
     /// Private constructor - use allocate() instead
-    CommandBuffer(RenderContext& ctx, VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool);
+    CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool);
 
 public:
     /// Static factory method to allocate command buffers from a pool
@@ -54,11 +54,7 @@ public:
     void bindVertexBuffers(uint32 firstBinding,
                            std::span<const VkBuffer> buffers,
                            std::span<const VkDeviceSize> offsets);
-    void bindVertexBuffers(uint32 firstBinding,
-                           std::span<const usize> bufferIndices,
-                           std::span<const VkDeviceSize> offsets);
     void bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType);
-    void bindIndexBuffer(usize bufferIndex, VkDeviceSize offset, VkIndexType indexType);
 
     /// Drawing commands
     void draw(uint32 vertexCount, uint32 instanceCount = 1, uint32 firstVertex = 0, uint32 firstInstance = 0);

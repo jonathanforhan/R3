@@ -7,7 +7,6 @@
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-DescriptorAllocator.hpp"
-#include "vulkan-FrameSync.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
@@ -49,14 +48,12 @@ private:
     RenderPass m_renderPass;
     Shader m_vertexShader;
     Shader m_fragmentShader;
-    Texture m_texture;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
     DescriptorAllocator m_descriptorAllocator;
     std::vector<VkDescriptorSet> m_descriptorSets;
     GraphicsPipeline m_graphicsPipeline;
     std::vector<Framebuffer> m_framebuffers;
-    FrameSync m_frameSync;
 };
 
 } // namespace R3::vulkan

@@ -1,83 +1,101 @@
 #include "vulkan-Buffer.hpp"
 
 #include <cstring>
-#include <format>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
+#include "render/Flags.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
-Buffer::Buffer(RenderContext& ctx, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    : m_device(ctx.device()),
-      m_size(sizeBytes) {
-    const VkBufferCreateInfo bufferInfo = {
-        .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .pNext                 = nullptr,
-        .flags                 = {},
-        .size                  = sizeBytes,
-        .usage                 = usage,
-        .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-        .queueFamilyIndexCount = 0,
-        .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
-    };
-    VK_CHECK(vkCreateBuffer(m_device, &bufferInfo, nullptr, &*m_buffer));
+Buffer::~Buffer() noexcept {
+    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    vkDestroyBuffer(ctx.device(), m_buffer, nullptr);
+    vkFreeMemory(ctx.device(), m_bufferMemory, nullptr);
+}
 
-    VkMemoryRequirements memoryRequirements;
-    vkGetBufferMemoryRequirements(m_device, m_buffer, &memoryRequirements);
+void Buffer::copy(const void* src, usize sizeBytes) {
+    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    void* dst;
+    VK_CHECK(vkMapMemory(ctx.device(), m_bufferMemory, 0, sizeBytes, 0, &dst));
+    std::memcpy(dst, src, sizeBytes);
+    vkUnmapMemory(ctx.device(), m_bufferMemory);
+}
 
-    const VkMemoryAllocateInfo memoryInfo = {
-        .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .pNext           = nullptr,
-        .allocationSize  = memoryRequirements.size,
-        .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
-    };
+void Buffer::create(const void* src, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
 
     try {
-        VK_CHECK(vkAllocateMemory(m_device, &memoryInfo, nullptr, &*m_bufferMemory));
+        const VkBufferCreateInfo bufferInfo = {
+            .sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .pNext                 = nullptr,
+            .flags                 = {},
+            .size                  = sizeBytes,
+            .usage                 = usage,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
+        };
+        VK_CHECK(vkCreateBuffer(ctx.device(), &bufferInfo, nullptr, &*m_buffer));
+
+        VkMemoryRequirements memoryRequirements;
+        vkGetBufferMemoryRequirements(ctx.device(), m_buffer, &memoryRequirements);
+
+        const VkMemoryAllocateInfo memoryInfo = {
+            .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .pNext           = nullptr,
+            .allocationSize  = memoryRequirements.size,
+            .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
+        };
+        VK_CHECK(vkAllocateMemory(ctx.device(), &memoryInfo, nullptr, &*m_bufferMemory));
+        VK_CHECK(vkBindBufferMemory(ctx.device(), m_buffer, m_bufferMemory, 0));
+
+        /* if user data */
+        if (src) {
+            void* dst;
+            VK_CHECK(vkMapMemory(ctx.device(), m_bufferMemory, 0, sizeBytes, 0, &dst));
+            std::memcpy(dst, src, sizeBytes);
+            vkUnmapMemory(ctx.device(), m_bufferMemory);
+        }
     } catch (const Exception& ex) {
-        vkDestroyBuffer(m_device, m_buffer, nullptr);
+        vkFreeMemory(ctx.device(), m_bufferMemory, nullptr);
+        vkDestroyBuffer(ctx.device(), m_buffer, nullptr);
         throw ex;
     }
-
-    VK_CHECK(vkBindBufferMemory(m_device, m_buffer, m_bufferMemory, 0));
 }
 
-Buffer::~Buffer() noexcept {
-    if (m_mappedMemory) {
-        unmap();
-    }
-
-    if (m_device) {
-        vkDestroyBuffer(m_device, m_buffer, nullptr);
-        vkFreeMemory(m_device, m_bufferMemory, nullptr);
-    }
-}
-
-void Buffer::copy(const void* src, usize size) {
-    if (size > m_size) {
-        throw Exception{std::format("data size {} exceeds buffer size {}", size, m_size)};
-    }
-
-    void* mappedData = map();
-    std::memcpy(mappedData, src, static_cast<size_t>(size));
-    unmap();
-}
-
-void* Buffer::map() {
-    if (m_mappedMemory) {
-        throw Exception{__FUNCTION__ " called on already mapped memory"};
-    }
-    VK_CHECK(vkMapMemory(m_device, m_bufferMemory, 0, m_size, 0, &m_mappedMemory));
-    return m_mappedMemory;
-}
-
-void Buffer::unmap() noexcept {
-    if (m_mappedMemory) {
-        vkUnmapMemory(m_device, m_bufferMemory);
-        m_mappedMemory = nullptr;
+void Buffer::create(const void* src, usize sizeBytes, BufferPreset preset) {
+    switch (preset) {
+        case BufferPreset::Staging:
+            create(src,
+                   sizeBytes,
+                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            break;
+        case BufferPreset::DeviceVertex:
+            create(src,
+                   sizeBytes,
+                   VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            break;
+        case BufferPreset::DeviceIndex:
+            create(src,
+                   sizeBytes,
+                   VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            break;
+        case BufferPreset::DeviceUniform:
+            create(src,
+                   sizeBytes,
+                   VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+            break;
+        default:
+            throw Exception{"Unknown BufferPreset"};
     }
 }
 

@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include "api/Assert.hpp"
 #include "api/Types.hpp"
 #include "core/ResourceManager.hpp"
 #include "vulkan-Check.hpp"
@@ -16,9 +17,8 @@
 
 namespace R3::vulkan {
 
-CommandBuffer::CommandBuffer(RenderContext& ctx, VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool)
-    : m_device(ctx.device()),
-      m_commandBuffer(commandBuffer),
+CommandBuffer::CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool)
+    : m_commandBuffer(commandBuffer),
       m_pool(std::move(pool)) {}
 
 std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
@@ -57,14 +57,14 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
     commandBuffers.reserve(count);
 
     for (uint32 i = 0; i < count; ++i) {
-        commandBuffers.emplace_back(CommandBuffer{ctx, vkCommandBuffers[i], pool});
+        commandBuffers.emplace_back(CommandBuffer{vkCommandBuffers[i], pool});
     }
 
     return commandBuffers;
 }
 
 void CommandBuffer::begin(VkCommandBufferUsageFlags flags) {
-    assert(!m_isRecording && "CommandBuffer is already recording!");
+    R3_ASSERT(!m_isRecording && "CommandBuffer is already recording!");
 
     const VkCommandBufferBeginInfo beginInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -78,7 +78,7 @@ void CommandBuffer::begin(VkCommandBufferUsageFlags flags) {
 }
 
 void CommandBuffer::end() {
-    assert(m_isRecording && "CommandBuffer is not recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer is not recording!");
 
     VK_CHECK(vkEndCommandBuffer(m_commandBuffer));
     m_isRecording = false;
@@ -90,27 +90,27 @@ void CommandBuffer::reset(VkCommandBufferResetFlags flags) {
 }
 
 void CommandBuffer::beginRenderPass(const VkRenderPassBeginInfo& beginInfo, VkSubpassContents contents) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBeginRenderPass(m_commandBuffer, &beginInfo, contents);
 }
 
 void CommandBuffer::endRenderPass() {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdEndRenderPass(m_commandBuffer);
 }
 
 void CommandBuffer::nextSubpass(VkSubpassContents contents) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdNextSubpass(m_commandBuffer, contents);
 }
 
 void CommandBuffer::bindGraphicsPipeline(VkPipeline pipeline) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
 void CommandBuffer::bindComputePipeline(VkPipeline pipeline) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
 
@@ -119,7 +119,7 @@ void CommandBuffer::bindDescriptorSets(VkPipelineBindPoint bindPoint,
                                        uint32 firstSet,
                                        std::span<const VkDescriptorSet> descriptorSets,
                                        std::span<const uint32> dynamicOffsets) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
 
     vkCmdBindDescriptorSets(m_commandBuffer,
                             bindPoint,
@@ -134,35 +134,20 @@ void CommandBuffer::bindDescriptorSets(VkPipelineBindPoint bindPoint,
 void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
                                       std::span<const VkBuffer> buffers,
                                       std::span<const VkDeviceSize> offsets) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
-    assert(buffers.size() == offsets.size() && "Buffer and offset counts must match!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(buffers.size() == offsets.size() && "Buffer and offset counts must match!");
 
     vkCmdBindVertexBuffers(
         m_commandBuffer, firstBinding, static_cast<uint32>(buffers.size()), buffers.data(), offsets.data());
 }
 
-void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
-                                      std::span<const usize> bufferIndices,
-                                      std::span<const VkDeviceSize> offsets) {
-    std::vector<VkBuffer> buffers(bufferIndices.size());
-    for (usize i = 0; i < bufferIndices.size(); ++i) {
-        buffers[i] = (VkBuffer)ResourceManager()->vertexBufferAt(bufferIndices[i]);
-    }
-    bindVertexBuffers(firstBinding, buffers, offsets);
-}
-
 void CommandBuffer::bindIndexBuffer(VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBindIndexBuffer(m_commandBuffer, buffer, offset, indexType);
 }
 
-void CommandBuffer::bindIndexBuffer(usize bufferIndex, VkDeviceSize offset, VkIndexType indexType) {
-    VkBuffer buffer = (VkBuffer)ResourceManager()->indexBufferAt(bufferIndex);
-    bindIndexBuffer(buffer, offset, indexType);
-}
-
 void CommandBuffer::draw(uint32 vertexCount, uint32 instanceCount, uint32 firstVertex, uint32 firstInstance) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
@@ -171,42 +156,42 @@ void CommandBuffer::drawIndexed(uint32 indexCount,
                                 uint32 firstIndex,
                                 int32 vertexOffset,
                                 uint32 firstInstance) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void CommandBuffer::dispatch(uint32 groupCountX, uint32 groupCountY, uint32 groupCountZ) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdDispatch(m_commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
 void CommandBuffer::setViewport(const VkViewport& viewport) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetViewport(m_commandBuffer, 0, 1, &viewport);
 }
 
 void CommandBuffer::setScissor(const VkRect2D& scissor) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetScissor(m_commandBuffer, 0, 1, &scissor);
 }
 
 void CommandBuffer::setCullMode(VkCullModeFlags cullMode) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetCullMode(m_commandBuffer, cullMode);
 }
 
 void CommandBuffer::setLineWidth(float lineWidth) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetLineWidth(m_commandBuffer, lineWidth);
 }
 
 void CommandBuffer::setFrontFace(VkFrontFace frontFace) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetFrontFace(m_commandBuffer, frontFace);
 }
 
 void CommandBuffer::setDepthTestEnable(bool enable) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdSetDepthTestEnable(m_commandBuffer, enable ? VK_TRUE : VK_FALSE);
 }
 
@@ -216,7 +201,7 @@ void CommandBuffer::transitionImageLayout(VkImage image,
                                           VkImageSubresourceRange subresourceRange,
                                           VkPipelineStageFlags srcStage,
                                           VkPipelineStageFlags dstStage) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
 
     VkImageMemoryBarrier barrier = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -289,7 +274,7 @@ void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStage,
                                     std::span<const VkMemoryBarrier> memoryBarriers,
                                     std::span<const VkBufferMemoryBarrier> bufferBarriers,
                                     std::span<const VkImageMemoryBarrier> imageBarriers) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
 
     vkCmdPipelineBarrier(m_commandBuffer,
                          srcStage,
@@ -304,7 +289,7 @@ void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStage,
 }
 
 void CommandBuffer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, std::span<const VkBufferCopy> regions) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdCopyBuffer(m_commandBuffer, srcBuffer, dstBuffer, static_cast<uint32>(regions.size()), regions.data());
 }
 
@@ -312,7 +297,7 @@ void CommandBuffer::copyBufferToImage(VkBuffer srcBuffer,
                                       VkImage dstImage,
                                       VkImageLayout imageLayout,
                                       std::span<const VkBufferImageCopy> regions) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdCopyBufferToImage(
         m_commandBuffer, srcBuffer, dstImage, imageLayout, static_cast<uint32>(regions.size()), regions.data());
 }
@@ -321,7 +306,7 @@ void CommandBuffer::copyImageToBuffer(VkImage srcImage,
                                       VkImageLayout imageLayout,
                                       VkBuffer dstBuffer,
                                       std::span<const VkBufferImageCopy> regions) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdCopyImageToBuffer(
         m_commandBuffer, srcImage, imageLayout, dstBuffer, static_cast<uint32>(regions.size()), regions.data());
 }
@@ -332,7 +317,7 @@ void CommandBuffer::blitImage(VkImage srcImage,
                               VkImageLayout dstImageLayout,
                               std::span<const VkImageBlit> regions,
                               VkFilter filter) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBlitImage(m_commandBuffer,
                    srcImage,
                    srcImageLayout,
@@ -348,7 +333,7 @@ void CommandBuffer::pushConstants(VkPipelineLayout layout,
                                   uint32 offset,
                                   uint32 size,
                                   const void* values) {
-    assert(m_isRecording && "CommandBuffer must be recording!");
+    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdPushConstants(m_commandBuffer, layout, stageFlags, offset, size, values);
 }
 
@@ -361,8 +346,8 @@ void CommandBuffer::submit(VkQueue queue,
                            std::span<const VkPipelineStageFlags> waitStages,
                            std::span<const VkSemaphore> signalSemaphores,
                            VkFence fence) {
-    assert(!m_isRecording && "CommandBuffer must be ended before submission!");
-    assert(waitSemaphores.size() == waitStages.size() && "Wait semaphores and stages must match!");
+    R3_ASSERT(!m_isRecording && "CommandBuffer must be ended before submission!");
+    R3_ASSERT(waitSemaphores.size() == waitStages.size() && "Wait semaphores and stages must match!");
 
     const VkSubmitInfo submitInfo = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -394,7 +379,7 @@ void CommandBuffer::submit(VkQueue queue,
 }
 
 void CommandBuffer::submitSync(VkQueue queue) {
-    assert(!m_isRecording && "CommandBuffer must be ended before submission!");
+    R3_ASSERT(!m_isRecording && "CommandBuffer must be ended before submission!");
 
     const VkSubmitInfo submitInfo = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,

@@ -14,8 +14,7 @@ public:
     R3_COPY_DELETE(Image);
     R3_MOVE_DEFAULT(Image);
 
-    Image(RenderContext& ctx,
-          VkFormat format,
+    Image(VkFormat format,
           VkExtent2D extent,
           uint32 mipLevels,
           VkSampleCountFlagBits sampleCount,
@@ -26,21 +25,16 @@ public:
 
     ~Image() noexcept;
 
-    void generateMipMaps(CommandBuffer& cmd);
-
     VkImage image() const noexcept { return m_image; }
 
     VkImageView imageView() const noexcept { return m_imageView; }
 
-    const VkExtent2D& extent() const noexcept { return m_extent; }
+    void generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels);
 
 private:
-    Handle<VkDevice> m_device;
     Handle<VkImage> m_image;
     Handle<VkDeviceMemory> m_imageMemory;
     Handle<VkImageView> m_imageView;
-    VkExtent2D m_extent = {};
-    uint32 m_mipLevels  = 0;
 };
 
 } // namespace R3::vulkan

@@ -12,6 +12,5 @@ class Texture;
 class Shader;
 class GraphicsPipeline;
 class Framebuffer;
-class FrameSync;
 
 } // namespace R3::vulkan

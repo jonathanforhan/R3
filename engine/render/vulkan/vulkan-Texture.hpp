@@ -11,40 +11,77 @@
 
 namespace R3::vulkan {
 
+/// @brief Texture class encapsulates a Vulkan texture image and sampler.
+/// It provides multiple constructors to create textures from raw data, compressed data, or from a file path.
+/// It initializes a temporary staging buffer that must outlive the command buffer commands used for texture upload.
+/// Also initializes an image object passed that must outlive the texture object, as the texture refernces it.
 class Texture {
 public:
     R3_CTOR_DEFAULT(Texture);
     R3_COPY_DELETE(Texture);
     R3_MOVE_DEFAULT(Texture);
 
-    Texture(RenderContext& ctx, CommandBuffer& cmd, const uint8* raw, usize width, usize height, TextureType type);
+    /// @brief Initializes a texture image and sampler from raw data using a command buffer and a staging buffer.
+    /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
+    /// @param raw Pointer to the raw texture data.
+    /// @param width Width of the texture in pixels.
+    /// @param height Height of the texture in pixels.
+    /// @param type Type of the texture (PBR)
+    /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
+    /// @param[out] outImage Image object that will be initialized with the texture data.
+    Texture(CommandBuffer& cmd,
+            const uint8* raw,
+            usize width,
+            usize height,
+            TextureType type,
+            Buffer& stagingBuffer,
+            Image& outImage);
 
-    Texture(RenderContext& ctx, CommandBuffer& cmd, const uint8* compressed, usize size, TextureType type);
+    /// @brief Initializes a texture image and sampler from compressed data using a command buffer and a staging buffer.
+    /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
+    /// @param compressed Pointer to the compressed texture data.
+    /// @param size The size, in bytes, of the compressed data.
+    /// @param type Type of the texture (PBR)
+    /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
+    /// @param[out] outImage Image object that will be initialized with the texture data.
+    Texture(CommandBuffer& cmd,
+            const uint8* compressed,
+            usize size,
+            TextureType type,
+            Buffer& stagingBuffer,
+            Image& outImage);
 
-    Texture(RenderContext& ctx, CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type);
+    /// @brief Initializes a texture image and sampler from filesystem using a command buffer and a staging buffer.
+    /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
+    /// @param filepath Path to the texture file to be loaded.
+    /// @param type Type of the texture (PBR)
+    /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
+    /// @param[out] outImage Image object that will be initialized with the texture data.
+    Texture(CommandBuffer& cmd,
+            const std::filesystem::path& filepath,
+            TextureType type,
+            Buffer& stagingBuffer,
+            Image& outImage);
 
     ~Texture() noexcept;
 
-    VkImage image() const noexcept { return m_image.image(); }
-
-    VkImageView imageView() const noexcept { return m_image.imageView(); }
-
     VkSampler sampler() const noexcept { return m_sampler; }
 
-    TextureType type() const noexcept { return m_type; }
-
 private:
-    void create(RenderContext& ctx, CommandBuffer& cmd, const uint8* raw, usize width, usize height, TextureType type);
+    void create(CommandBuffer& cmd,
+                const uint8* raw,
+                usize width,
+                usize height,
+                TextureType type,
+                Buffer& stagingBuffer,
+                Image& outImage);
 
-    bool supportsBlitting(RenderContext& ctx, VkFormat format);
+    bool supportsBlitting(VkFormat format) noexcept;
 
     VkFormat queryPreferredFormat(TextureType type) const noexcept;
 
 private:
-    Handle<VkDevice> m_device;
     Handle<VkSampler> m_sampler;
-    Image m_image;
-    TextureType m_type = TextureType::Albedo;
 };
 
 } // namespace R3::vulkan
