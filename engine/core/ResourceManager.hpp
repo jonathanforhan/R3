@@ -10,14 +10,12 @@
 #endif
 
 #include <memory>
-#include <utility>
+#include <entt/core/fwd.hpp>
 #include <entt/resource/cache.hpp>
 #include <entt/resource/resource.hpp>
 #include "api/Class.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
-#include "render/Flags.hpp"
-#include "render/vulkan/vulkan-CommandBuffer.hpp"
 
 namespace R3 {
 

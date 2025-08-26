@@ -152,50 +152,38 @@ void ModelImporter::populateAccessors(glTF::Model& model) {
 
     for (auto& itAccessor : model.document["accessors"].GetArray()) {
         Accessor& accessor = model.root.accessors.emplace_back();
-
         // bufferView
         maybeAssign(accessor.bufferView, itAccessor, "bufferView");
-
         // byteOffset
         maybeAssign(accessor.byteOffset, itAccessor, "byteOffset");
-
         // componentType
         accessor.componentType = itAccessor["componentType"].GetUint();
-
         // normalized
         maybeAssign(accessor.normalized, itAccessor, "normalized");
-
         // count
         accessor.count = itAccessor["count"].GetUint();
-
         // type
         accessor.type = itAccessor["type"].GetString();
-
         // max
         if (itAccessor.HasMember("max")) {
             for (auto& elem : itAccessor["max"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
             }
         }
-
         // min
         if (itAccessor.HasMember("min")) {
             for (auto& elem : itAccessor["min"].GetArray()) {
                 accessor.max.push_back(elem.GetFloat());
             }
         }
-
         // sparse
         if (itAccessor.HasMember("sparse")) {
             LOG_WARNING("TODO Sparse Accessors");
         }
-
         // name
         maybeAssign(accessor.name, itAccessor, "name");
-
         // extensions
         maybeMove(accessor.extensions, itAccessor, "extensions");
-
         // extras
         maybeMove(accessor.extras, itAccessor, "extras");
     }
@@ -208,64 +196,46 @@ void ModelImporter::populateAnimations(glTF::Model& model) {
 
     for (auto& itAnimation : model.document["animations"].GetArray()) {
         Animation& animation = model.root.animations.emplace_back();
-
         // channels
         for (auto& itChannel : itAnimation["channels"].GetArray()) {
             AnimationChannel& channel = animation.channels.emplace_back();
-
             // sampler
             channel.sampler = itChannel["sampler"].GetUint();
-
             // target
             {
                 auto& jsTarget = itChannel["target"];
-
                 // node
                 maybeAssign(channel.target.node, jsTarget, "node");
-
                 // path
                 channel.target.path = jsTarget["path"].GetString();
-
                 // extensions
                 maybeMove(channel.extensions, jsTarget, "extensions");
-
                 // extras
                 maybeMove(channel.extras, jsTarget, "extras");
             }
-
             // extensions
             maybeMove(channel.extensions, itChannel, "extensions");
-
             // extras
             maybeMove(channel.extras, itChannel, "extras");
         }
-
         // samplers
         for (auto& itSampler : itAnimation["samplers"].GetArray()) {
             AnimationSampler& sampler = animation.samplers.emplace_back();
-
             // input
             sampler.input = itSampler["input"].GetUint();
-
             // interpolation
             maybeAssign(sampler.interpolation, itSampler, "interpolation");
-
             // output
             sampler.output = itSampler["output"].GetUint();
-
             // extensions
             maybeMove(sampler.extensions, itSampler, "extensions");
-
             // extras
             maybeMove(sampler.extras, itSampler, "extras");
         }
-
         // name
         maybeAssign(animation.name, itAnimation, "name");
-
         // extensions
         maybeMove(animation.extensions, itAnimation, "extensions");
-
         // extras
         maybeMove(animation.extras, itAnimation, "extras");
     }
@@ -273,25 +243,18 @@ void ModelImporter::populateAnimations(glTF::Model& model) {
 
 void ModelImporter::populateAsset(glTF::Model& model) {
     auto& jsAsset = model.document["asset"];
-
     // copyright -- ignore
-
     // generator -- ignore
-
     // version
     model.root.asset.version = jsAsset["version"].GetString();
     checkVersion(model.root.asset.version);
-
     // minVersion
     maybeAssign(model.root.asset.minVersion, jsAsset, "minVersion");
-
     // extensions
     maybeMove(model.root.asset.extensions, jsAsset, "extensions");
-
     // extras
     maybeMove(model.root.asset.extras, jsAsset, "extras");
 }
-
 void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& bin) {
     if (!model.document.HasMember("buffers")) {
         return;
@@ -299,27 +262,20 @@ void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& 
 
     for (auto& itBuffer : model.document["buffers"].GetArray()) {
         Buffer& buffer = model.root.buffers.emplace_back();
-
         // uri
         maybeAssign(buffer.uri, itBuffer, "uri");
-
         // byteLength
         buffer.byteLength = itBuffer["byteLength"].GetUint();
-
         // name
         maybeAssign(buffer.name, itBuffer, "name");
-
         // extensions
         maybeMove(buffer.extensions, itBuffer, "extensions");
-
         // extras
         maybeMove(buffer.extras, itBuffer, "extras");
-
         /* load in buffer if external file */
         if (!buffer.uri.empty()) {
             usize split     = m_path.find_last_of('/') + 1;
             std::string dir = m_path.substr(0, split);
-
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::badbit);
 
@@ -341,28 +297,20 @@ void ModelImporter::populateBufferViews(glTF::Model& model) {
 
     for (auto& itBufferView : model.document["bufferViews"].GetArray()) {
         BufferView& bufferView = model.root.bufferViews.emplace_back();
-
         // buffer
         bufferView.buffer = itBufferView["buffer"].GetUint();
-
         // byteOffset
         maybeAssign(bufferView.byteOffset, itBufferView, "byteOffset");
-
         // byteLength
         bufferView.byteLength = itBufferView["byteLength"].GetUint();
-
         // byteStride
         maybeAssign(bufferView.byteStride, itBufferView, "byteStride");
-
         // target
         maybeAssign(bufferView.target, itBufferView, "target");
-
         // name
         maybeAssign(bufferView.name, itBufferView, "name");
-
         // extensions
         maybeMove(bufferView.extensions, itBufferView, "extensions");
-
         // extras
         maybeMove(bufferView.extras, itBufferView, "extras");
     }
@@ -382,22 +330,16 @@ void ModelImporter::populateImages(glTF::Model& model) {
 
     for (auto& itImage : model.document["images"].GetArray()) {
         Image& image = model.root.images.emplace_back();
-
         // uri
         maybeAssign(image.uri, itImage, "uri");
-
         // mimeType
         maybeAssign(image.mimeType, itImage, "mimeType");
-
         // bufferView
         maybeAssign(image.bufferView, itImage, "bufferView");
-
         // name
         maybeAssign(image.name, itImage, "name");
-
         // extensions
         maybeMove(image.extensions, itImage, "extensions");
-
         // extras
         maybeMove(image.extras, itImage, "extras");
     }
@@ -410,117 +352,89 @@ void ModelImporter::populateMaterials(glTF::Model& model) {
 
     for (auto& itMaterial : model.document["materials"].GetArray()) {
         Material& material = model.root.materials.emplace_back();
-
         // pbrMetallicRoughness
         if (itMaterial.HasMember("pbrMetallicRoughness")) {
             auto& jsPbr                                = itMaterial["pbrMetallicRoughness"];
             material.pbrMetallicRoughness              = PBRMetallicRoughness{};
             PBRMetallicRoughness& pbrMetallicRoughness = *material.pbrMetallicRoughness;
-
             // baseColorFactor
             if (jsPbr.HasMember("baseColorFactor")) {
                 for (uint32 i = 0; auto& baseColorFactor : jsPbr["baseColorFactor"].GetArray()) {
                     pbrMetallicRoughness.baseColorFactor.at(i++) = baseColorFactor.GetFloat();
                 }
             }
-
             // baseColorTexture
             if (jsPbr.HasMember("baseColorTexture")) {
                 pbrMetallicRoughness.baseColorTexture = TextureInfo{};
                 populateTextureInfo(*pbrMetallicRoughness.baseColorTexture, jsPbr["baseColorTexture"]);
             }
-
             // metallicFactor
             maybeAssign(pbrMetallicRoughness.metallicFactor, jsPbr, "metallicFactor");
-
             // roughnessFactor
             maybeAssign(pbrMetallicRoughness.roughnessFactor, jsPbr, "roughnessFactor");
-
             // metallicRoughnessTexture
             if (jsPbr.HasMember("metallicRoughnessTexture")) {
                 pbrMetallicRoughness.metallicRoughnessTexture = TextureInfo{};
                 populateTextureInfo(*pbrMetallicRoughness.metallicRoughnessTexture, jsPbr["metallicRoughnessTexture"]);
             }
-
             // extensions
             maybeMove(pbrMetallicRoughness.extensions, jsPbr, "extensions");
-
             // extras
             maybeMove(pbrMetallicRoughness.extras, jsPbr, "extras");
         }
-
         // normalTexture
         if (itMaterial.HasMember("normalTexture")) {
             auto& jsNormal                   = itMaterial["normalTexture"];
             material.normalTexture           = NormalTextureInfo{};
             NormalTextureInfo& normalTexture = *material.normalTexture;
-
             // index
             normalTexture.index = jsNormal["index"].GetUint();
-
             // texCoord
             maybeAssign(normalTexture.texCoord, jsNormal, "texCoord");
-
             // scale
             maybeAssign(normalTexture.scale, jsNormal, "scale");
-
             // extensions
             maybeMove(normalTexture.extensions, jsNormal, "extensions");
-
             // extras
             maybeMove(normalTexture.extras, jsNormal, "extras");
         }
-
         // occlusionTexture
         if (itMaterial.HasMember("occlusionTexture")) {
             auto& jsOcclusion                      = itMaterial["occlusionTexture"];
             material.occlusionTexture              = OcclusionTextureInfo{};
             OcclusionTextureInfo& occlusionTexture = *material.occlusionTexture;
-
             // index
             occlusionTexture.index = jsOcclusion["index"].GetUint();
-
             // texCoord
             maybeAssign(occlusionTexture.texCoord, jsOcclusion, "texCoord");
-
             // strength
             maybeAssign(occlusionTexture.strength, jsOcclusion, "strength");
-
             // extensions
             maybeMove(occlusionTexture.extensions, jsOcclusion, "extensions");
-
             // extras
             maybeMove(occlusionTexture.extras, jsOcclusion, "extras");
         }
-
         // emissiveTexture
         if (itMaterial.HasMember("emissiveTexture")) {
             auto& jsEmissive             = itMaterial["emissiveTexture"];
             material.emissiveTexture     = TextureInfo{};
             TextureInfo& emissiveTexture = *material.emissiveTexture;
-
             populateTextureInfo(emissiveTexture, jsEmissive);
         }
-
         // emissiveFactor
         if (itMaterial.HasMember("emissiveFactor")) {
             for (uint32 i = 0; auto& itEmissiveFactor : itMaterial["emissiveFactor"].GetArray()) {
                 material.emissiveFactor.at(i++) = itEmissiveFactor.GetFloat();
             }
         }
-
         // alphaMode
         maybeAssign(material.alphaMode, itMaterial, "alphaMode");
-
         // alphaCutoff
         maybeAssign(material.alphaCutoff, itMaterial, "alphaCutoff");
-
         // doubleSided
         maybeAssign(material.doubleSided, itMaterial, "doubleSided");
-
         // name
         maybeAssign(material.name, itMaterial, "name");
-
         // extensions
         if (itMaterial.HasMember("extensions")) {
             auto& jsExtensions = itMaterial["extensions"];
@@ -534,7 +448,6 @@ void ModelImporter::populateMaterials(glTF::Model& model) {
             (void)jsExtensions;
 #endif
         }
-
         // extras
         maybeMove(material.extras, itMaterial, "extras");
     }
@@ -547,50 +460,38 @@ void ModelImporter::populateMeshes(glTF::Model& model) {
 
     for (auto& itMesh : model.document["meshes"].GetArray()) {
         Mesh& mesh = model.root.meshes.emplace_back();
-
         // primitives
         for (auto& itPrimitive : itMesh["primitives"].GetArray()) {
             MeshPrimitive& primitive = mesh.primitives.emplace_back();
-
             // attributes
             primitive.attributes = itPrimitive["attributes"].Move();
-
             // indices
             maybeAssign(primitive.indices, itPrimitive, "indices");
-
             // material
             maybeAssign(primitive.material, itPrimitive, "material");
-
             // mode
             maybeAssign(primitive.mode, itPrimitive, "mode");
-
             // targets
             if (itPrimitive.HasMember("targets")) {
                 for (auto& itTarget : itPrimitive["targets"].GetArray()) {
                     primitive.targets.emplace_back(itTarget.GetObject());
                 }
             }
-
             // extensions
             maybeMove(primitive.extensions, itPrimitive, "extensions");
-
             // extras
             maybeMove(primitive.extras, itPrimitive, "extras");
         }
-
         // weights
         if (itMesh.HasMember("weights")) {
             for (auto& itWeight : itMesh["weights"].GetArray()) {
                 mesh.weights.push_back(itWeight.GetFloat());
             }
         }
-
         // name
         maybeAssign(mesh.name, itMesh, "name");
-
         // extensions
         maybeMove(mesh.extensions, itMesh, "extensions");
-
         // extras
         maybeMove(mesh.extras, itMesh, "extras");
     }
@@ -603,64 +504,52 @@ void ModelImporter::populateNodes(glTF::Model& model) {
 
     for (auto& itNode : model.document["nodes"].GetArray()) {
         Node& node = model.root.nodes.emplace_back();
-
         // camera
         maybeAssign(node.camera, itNode, "camera");
-
         // children
         if (itNode.HasMember("children")) {
             for (auto& itChild : itNode["children"].GetArray()) {
                 node.children.push_back(itChild.GetUint());
             }
         }
-
         // skin
         maybeAssign(node.skin, itNode, "skin");
-
         // matrix
         if (itNode.HasMember("matrix")) {
             for (uint32 i = 0; auto& itMatrix : itNode["matrix"].GetArray()) {
                 node.matrix.at(i++) = itMatrix.GetFloat();
             }
         }
-
         // mesh
         maybeAssign(node.mesh, itNode, "mesh");
-
         // rotation
         if (itNode.HasMember("rotation")) {
             for (uint32 i = 0; auto& itRotation : itNode["rotation"].GetArray()) {
                 node.rotation.at(i++) = itRotation.GetFloat();
             }
         }
-
         // scale
         if (itNode.HasMember("scale")) {
             for (uint32 i = 0; auto& itScale : itNode["scale"].GetArray()) {
                 node.scale.at(i++) = itScale.GetFloat();
             }
         }
-
         // translation
         if (itNode.HasMember("translation")) {
             for (uint32 i = 0; auto& itTranslation : itNode["translation"].GetArray()) {
                 node.translation.at(i++) = itTranslation.GetFloat();
             }
         }
-
         // weights
         if (itNode.HasMember("weights")) {
             for (auto& itWeight : itNode["weights"].GetArray()) {
                 node.weights.push_back(itWeight.GetFloat());
             }
         }
-
         // name
         maybeAssign(node.name, itNode, "name");
-
         // extensions
         maybeMove(node.extensions, itNode, "extensions");
-
         // extras
         maybeMove(node.extras, itNode, "extras");
     }
@@ -673,25 +562,18 @@ void ModelImporter::populateSamplers(glTF::Model& model) {
 
     for (auto& itSampler : model.document["samplers"].GetArray()) {
         Sampler& sampler = model.root.samplers.emplace_back();
-
         // magFilter
         maybeAssign(sampler.magFilter, itSampler, "magFilter");
-
         // minFilter
         maybeAssign(sampler.minFilter, itSampler, "minFilter");
-
         // wrapS
         maybeAssign(sampler.wrapS, itSampler, "wrapS");
-
         // wrapT
         maybeAssign(sampler.wrapT, itSampler, "wrapT");
-
         // name
         maybeAssign(sampler.name, itSampler, "name");
-
         // extensions
         maybeMove(sampler.extensions, itSampler, "extensions");
-
         // extras
         maybeMove(sampler.extras, itSampler, "extras");
     }
@@ -708,20 +590,16 @@ void ModelImporter::populateScenes(glTF::Model& model) {
 
     for (auto& itScene : model.document["scenes"].GetArray()) {
         Scene& nthScene = model.root.scenes.emplace_back();
-
         // nodes
         if (itScene.HasMember("nodes")) {
             for (auto& itNode : itScene["nodes"].GetArray()) {
                 nthScene.nodes.push_back(itNode.GetUint());
             }
         }
-
         // name
         maybeAssign(nthScene.name, itScene, "name");
-
         // extensions
         maybeMove(nthScene.extensions, itScene, "extensions");
-
         // extras
         maybeMove(nthScene.extras, itScene, "extras");
     }
@@ -734,24 +612,18 @@ void ModelImporter::populateSkins(glTF::Model& model) {
 
     for (auto& itSkin : model.document["skins"].GetArray()) {
         Skin& skin = model.root.skins.emplace_back();
-
         // inverseBindMatrices
         maybeAssign(skin.inverseBindMatrices, itSkin, "inverseBindMatrices");
-
         // skeleton
         maybeAssign(skin.skeleton, itSkin, "skeleton");
-
         // joints
         for (auto& itJoint : itSkin["joints"].GetArray()) {
             skin.joints.push_back(itJoint.GetUint());
         }
-
         // name
         maybeAssign(skin.name, itSkin, "name");
-
         // extensions
         maybeMove(skin.extensions, itSkin, "extensions");
-
         // extras
         maybeMove(skin.extras, itSkin, "extras");
     }
@@ -764,19 +636,14 @@ void ModelImporter::populateTextures(glTF::Model& model) {
 
     for (auto& itTexture : model.document["textures"].GetArray()) {
         Texture& texture = model.root.textures.emplace_back();
-
         // sampler
         maybeAssign(texture.sampler, itTexture, "sampler");
-
         // source
         maybeAssign(texture.source, itTexture, "source");
-
         // name
         maybeAssign(texture.name, itTexture, "name");
-
         // extensions
         maybeMove(texture.extensions, itTexture, "extensions");
-
         // extras
         maybeMove(texture.extras, itTexture, "extras");
     }
