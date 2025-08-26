@@ -23,40 +23,31 @@
 namespace R3::vulkan {
 
 Texture::Texture(CommandBuffer& cmd,
-                 const uint8* raw,
+                 const std::byte* raw,
                  usize width,
                  usize height,
                  TextureType type,
-                 Buffer& stagingBuffer,
-                 Image& outImage) {
-    create(cmd, raw, width, height, type, stagingBuffer, outImage);
+                 Buffer& stagingBuffer) {
+    create(cmd, raw, width, height, type, stagingBuffer);
 }
 
-Texture::Texture(CommandBuffer& cmd,
-                 const uint8* compressed,
-                 usize size,
-                 TextureType type,
-                 Buffer& stagingBuffer,
-                 Image& outImage) {
+Texture::Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer) {
     int width, height, channels;
-    uint8* raw = stbi_load_from_memory(compressed, static_cast<int>(size), &width, &height, &channels, 4);
-    create(cmd, raw, width, height, type, stagingBuffer, outImage);
+    std::byte* raw = (std::byte*)stbi_load_from_memory(
+        (const uint8*)compressed, static_cast<int>(size), &width, &height, &channels, 4);
+    create(cmd, raw, width, height, type, stagingBuffer);
     stbi_image_free(raw);
 }
 
-Texture::Texture(CommandBuffer& cmd,
-                 const std::filesystem::path& filepath,
-                 TextureType type,
-                 Buffer& stagingBuffer,
-                 Image& outImage) {
+Texture::Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer) {
     std::string path = filepath.string();
     if (path.back() != '\0') {
         path.push_back('\0');
     }
 
     int width, height, channels;
-    uint8* raw = stbi_load(path.c_str(), &width, &height, &channels, 4);
-    create(cmd, raw, width, height, type, stagingBuffer, outImage);
+    std::byte* raw = (std::byte*)stbi_load(path.c_str(), &width, &height, &channels, 4);
+    create(cmd, raw, width, height, type, stagingBuffer);
     stbi_image_free(raw);
 }
 
@@ -66,12 +57,11 @@ Texture::~Texture() noexcept {
 }
 
 void Texture::create(CommandBuffer& cmd,
-                     const uint8* raw,
+                     const std::byte* raw,
                      usize width,
                      usize height,
                      TextureType type,
-                     Buffer& stagingBuffer,
-                     Image& outImage) {
+                     Buffer& stagingBuffer) {
     RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
 
     try {
@@ -91,7 +81,7 @@ void Texture::create(CommandBuffer& cmd,
                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT};
 
         // image used for texture
-        outImage = Image{
+        m_image = Image{
             preferredFormat,
             extent,
             mipLevels,
@@ -102,7 +92,7 @@ void Texture::create(CommandBuffer& cmd,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         };
 
-        cmd.transitionImageLayout(outImage.image(),
+        cmd.transitionImageLayout(m_image.image(),
                                   VK_IMAGE_LAYOUT_UNDEFINED,
                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                   {
@@ -131,9 +121,9 @@ void Texture::create(CommandBuffer& cmd,
             .imageExtent = {extent.width, extent.width, 1},
         };
         cmd.copyBufferToImage(
-            stagingBuffer.buffer(), outImage.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {&bufferToImage, 1});
+            stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {&bufferToImage, 1});
 
-        outImage.generateMipMaps(cmd, extent, mipLevels);
+        m_image.generateMipMaps(cmd, extent, mipLevels);
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);

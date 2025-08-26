@@ -1,6 +1,7 @@
 #pragma once
 
 #include "api/Types.hpp"
+#include "core/Entity.hpp"
 #include "core/ResourceManager.hpp"
 
 namespace R3 {

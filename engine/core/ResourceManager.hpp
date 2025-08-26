@@ -10,6 +10,7 @@
 #endif
 
 #include <memory>
+#include <utility>
 #include <entt/core/fwd.hpp>
 #include <entt/resource/cache.hpp>
 #include <entt/resource/resource.hpp>
@@ -30,18 +31,21 @@ private:
 
 public:
     template <typename... Args>
-    Handle<vulkan::Buffer> loadBuffer(hash::uuid id, Args&&... args) {
-        return m_bufferCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    std::pair<Handle<vulkan::Buffer>, bool> loadBuffer(hash::uuid id, Args&&... args) {
+        auto&& [it, b] = m_bufferCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
+        return {it->second, b};
     }
 
     template <typename... Args>
-    Handle<vulkan::Image> loadImage(hash::uuid id, Args&&... args) {
-        return m_imageCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    std::pair<Handle<vulkan::Image>, bool> loadImage(hash::uuid id, Args&&... args) {
+        auto&& [it, b] = m_imageCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
+        return {it->second, b};
     }
 
     template <typename... Args>
-    Handle<vulkan::Texture> loadTexture(hash::uuid id, Args&&... args) {
-        return m_textureCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...).first->second;
+    std::pair<Handle<vulkan::Texture>, bool> loadTexture(hash::uuid id, Args&&... args) {
+        auto&& [it, b] = m_textureCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
+        return {it->second, b};
     }
 
     void clear() {

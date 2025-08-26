@@ -1,6 +1,5 @@
 #include "vulkan-CommandBuffer.hpp"
 
-#include <cassert>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -10,7 +9,6 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Assert.hpp"
 #include "api/Types.hpp"
-#include "core/ResourceManager.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -26,7 +24,7 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
                                                    VkCommandPoolCreateFlags flags,
                                                    uint32 count) {
     // Create shared command pool
-    std::shared_ptr<VkCommandPool> pool(new VkCommandPool, [device = ctx.device()](VkCommandPool* p) {
+    std::shared_ptr<VkCommandPool> pool(new VkCommandPool, [device = ctx.device()](VkCommandPool* p) noexcept {
         if (device && p) {
             vkDestroyCommandPool(device, *p, nullptr);
         }
@@ -54,10 +52,10 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
 
     // Wrap each VkCommandBuffer in our CommandBuffer class
     std::vector<CommandBuffer> commandBuffers;
-    commandBuffers.reserve(count);
+    commandBuffers.resize(count);
 
     for (uint32 i = 0; i < count; ++i) {
-        commandBuffers.emplace_back(CommandBuffer{vkCommandBuffers[i], pool});
+        commandBuffers[i] = std::move(CommandBuffer(vkCommandBuffers[i], pool));
     }
 
     return commandBuffers;
@@ -356,7 +354,7 @@ void CommandBuffer::submit(VkQueue queue,
         .pWaitSemaphores      = waitSemaphores.data(),
         .pWaitDstStageMask    = waitStages.data(),
         .commandBufferCount   = 1,
-        .pCommandBuffers      = &*m_commandBuffer,
+        .pCommandBuffers      = &m_commandBuffer,
         .signalSemaphoreCount = static_cast<uint32>(signalSemaphores.size()),
         .pSignalSemaphores    = signalSemaphores.data(),
     };
@@ -388,7 +386,7 @@ void CommandBuffer::submitSync(VkQueue queue) {
         .pWaitSemaphores      = nullptr,
         .pWaitDstStageMask    = nullptr,
         .commandBufferCount   = 1,
-        .pCommandBuffers      = &*m_commandBuffer,
+        .pCommandBuffers      = &m_commandBuffer,
         .signalSemaphoreCount = 0,
         .pSignalSemaphores    = nullptr,
     };

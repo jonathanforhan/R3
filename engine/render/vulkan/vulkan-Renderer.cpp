@@ -11,13 +11,14 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/World.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
-#include "vulkan-DescriptorAllocator.hpp"
+#include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
@@ -67,6 +68,8 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
                        .build(m_ctx);
 
     //--- Shaders
+    Shader m_vertexShader;
+    Shader m_fragmentShader;
     m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
     m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
@@ -86,93 +89,17 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         ubo = Buffer{nullptr, sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, bufferMemoryFlags};
     }
 
-    //--- Descriptor Pool
-    VkDescriptorPoolSize poolSizes[] = {
-        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = m_ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = m_ctx.maxFramesInFlight()},
-    };
-    m_descriptorAllocator.create(m_ctx, poolSizes, m_ctx.maxFramesInFlight());
-
-    //--- Descriptor Sets and Layouts
-    VkDescriptorSetLayoutBinding bindings[] = {
-        // { binding, type, count, stage }
-
-        // Uniform Buffer Object
-        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-        // Albedo
-        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // MetallicRoughness
-        {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // Normal
-        {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // AmbientOcclusion
-        {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // Emissive
-        {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-    };
-    m_descriptorSets = m_descriptorAllocator.allocate(bindings, m_ctx.maxFramesInFlight());
-
     //--- Graphics Pipeline
-    auto layout{m_descriptorAllocator.layout()};
+    const VkDescriptorSetLayout defaultLayout = ctx.defaultDescriptorLayout();
+
     m_graphicsPipeline = GraphicsPipeline{
         m_ctx,
         m_renderPass,
         m_vertexShader,
         m_fragmentShader,
         msaaSamples,
-        std::span{&layout, 1},
+        std::span{&defaultLayout, 1},
     };
-
-    for (uint32 i = 0; i < m_ctx.maxFramesInFlight(); i++) {
-        const VkDescriptorBufferInfo bufferInfo = {
-            .buffer = m_ubos[i].buffer(),
-            .offset = 0,
-            .range  = sizeof(UniformBufferObject),
-        };
-
-#if 0
-        const VkDescriptorImageInfo imageInfo = {
-            .sampler     = m_texture.sampler(),
-            .imageView   = m_texture.imageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-#endif
-
-        const VkWriteDescriptorSet descriptorWrites[] = {
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = m_descriptorSets[i],
-                .dstBinding       = 0,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pImageInfo       = nullptr,
-                .pBufferInfo      = &bufferInfo,
-                .pTexelBufferView = nullptr,
-            },
-#if 0
-            {
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = m_descriptorSets[i],
-                .dstBinding       = 1,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .pImageInfo       = &imageInfo,
-                .pBufferInfo      = nullptr,
-                .pTexelBufferView = nullptr,
-            },
-#endif
-        };
-        vkUpdateDescriptorSets(m_ctx.device(), (uint32)std::size(descriptorWrites), descriptorWrites, 0, nullptr);
-    }
-
     //--- Framebuffers
     for (size_t i = 0; i < m_swapchain.imageViews().size(); i++) {
         const VkImageView attachments[] = {
@@ -188,7 +115,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
 Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
-    m_descriptorAllocator.destroy();
 }
 
 void Renderer::render(double dt) {
@@ -206,8 +132,10 @@ void Renderer::render(double dt) {
 
     m_ctx.waitForCurrentFrame();
 
+    uint32 currFrame = m_ctx.currentFrameIndex();
+
     World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.proj);
-    m_ubos[m_ctx.currentFrameIndex()].copy(&m_ubo, sizeof(m_ubo));
+    m_ubos[currFrame].copy(&m_ubo, sizeof(m_ubo));
 
     // Acquire next image
     uint32 imageIndex;
@@ -244,6 +172,7 @@ void Renderer::render(double dt) {
         .pClearValues    = clearValues,
     };
     cmd.beginRenderPass(renderPassInfo);
+
     cmd.bindGraphicsPipeline(m_graphicsPipeline.pipeline());
     cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
     cmd.setViewport({
@@ -259,20 +188,62 @@ void Renderer::render(double dt) {
     cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
     cmd.setDepthTestEnable(true);
 
-    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS,
-                           m_graphicsPipeline.layout(),
-                           0,
-                           {&m_descriptorSets[m_ctx.currentFrameIndex()], 1},
-                           {});
+    World()->registry().view<MeshComponent, MaterialComponent>().each(
+        [&](const MeshComponent& mesh, MaterialComponent& mat) {
+            std::vector<VkWriteDescriptorSet> descriptorWrites;
 
-    World()->registry().view<MeshComponent>().each([&](const MeshComponent& mesh) {
-        const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
-        const VkDeviceSize offsets[] = {0};
-        const VkBuffer iboIndex      = mesh.indexBufferIndex->buffer();
-        cmd.bindVertexBuffers(0, vboIndices, offsets);
-        cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
-        cmd.drawIndexed(static_cast<uint32>(mesh.indexCount), 1, 0, 0, 0);
-    });
+            const VkDescriptorBufferInfo bufferInfo = {
+                .buffer = m_ubos[currFrame].buffer(),
+                .offset = 0,
+                .range  = sizeof(UniformBufferObject),
+            };
+
+            descriptorWrites.push_back(VkWriteDescriptorSet{
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = mat.descriptorSets[currFrame].descriptorSet(),
+                .dstBinding       = 0,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pImageInfo       = nullptr,
+                .pBufferInfo      = &bufferInfo,
+                .pTexelBufferView = nullptr,
+            });
+
+            if (mat.albedo) {
+                const VkDescriptorImageInfo imageInfo = {
+                    .sampler     = mat.albedo->sampler(),
+                    .imageView   = mat.albedo->imageView(),
+                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                };
+
+                descriptorWrites.push_back(VkWriteDescriptorSet{
+                    .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    .pNext            = nullptr,
+                    .dstSet           = mat.descriptorSets[currFrame].descriptorSet(),
+                    .dstBinding       = 1,
+                    .dstArrayElement  = 0,
+                    .descriptorCount  = 1,
+                    .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .pImageInfo       = &imageInfo,
+                    .pBufferInfo      = nullptr,
+                    .pTexelBufferView = nullptr,
+                });
+            }
+
+            mat.descriptorSets[currFrame].write(descriptorWrites);
+
+            VkDescriptorSet descriptorSets[] = {mat.descriptorSets[currFrame].descriptorSet()};
+            cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
+
+            const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
+            const VkDeviceSize offsets[] = {0};
+            const VkBuffer iboIndex      = mesh.indexBufferIndex->buffer();
+            cmd.bindVertexBuffers(0, vboIndices, offsets);
+            cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
+            cmd.drawIndexed(static_cast<uint32>(mesh.indexCount), 1, 0, 0, 0);
+        });
 
     cmd.endRenderPass();
     cmd.end();
@@ -282,12 +253,11 @@ void Renderer::render(double dt) {
     cmd.submit(m_ctx.graphicsQueue(),
                {&m_ctx.currentImageAvailableSemaphore(), 1},
                waitStages,
-               {&m_ctx.renderFinishedSemaphore(m_ctx.currentFrameIndex()), 1},
+               {&m_ctx.renderFinishedSemaphore(currFrame), 1},
                m_ctx.currentFence());
 
     // Present - use per-image semaphore
-    result =
-        m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(m_ctx.currentFrameIndex()), imageIndex);
+    result = m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(currFrame), imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Will be handled by resize logic on next frame

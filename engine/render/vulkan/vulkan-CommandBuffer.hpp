@@ -14,10 +14,7 @@ namespace R3::vulkan {
 
 class CommandBuffer {
 public:
-    R3_CTOR_DELETE(CommandBuffer);
-    R3_DTOR_DEFAULT(CommandBuffer);
-    R3_COPY_DELETE(CommandBuffer);
-    R3_MOVE_DEFAULT(CommandBuffer);
+    R3_CTOR_DEFAULT(CommandBuffer);
 
 private:
     /// Private constructor - use allocate() instead
@@ -126,8 +123,8 @@ public:
     VkCommandBuffer commandBuffer() const noexcept { return m_commandBuffer; }
 
 private:
-    Handle<VkDevice> m_device;
-    Handle<VkCommandBuffer> m_commandBuffer;
+    VkDevice m_device;
+    VkCommandBuffer m_commandBuffer;
     std::shared_ptr<VkCommandPool> m_pool;                            // Keeps the command pool alive
     std::vector<std::move_only_function<void()>> m_deferredCallbacks; // Called after submit
     bool m_isRecording = false;

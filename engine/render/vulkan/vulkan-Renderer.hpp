@@ -1,12 +1,10 @@
 #pragma once
 
 #include <vector>
-#include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
-#include "vulkan-DescriptorAllocator.hpp"
 #include "vulkan-Framebuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
@@ -14,7 +12,6 @@
 #include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
-#include "vulkan-Texture.hpp"
 
 namespace R3::vulkan {
 
@@ -50,8 +47,6 @@ private:
     Shader m_fragmentShader;
     UniformBufferObject m_ubo;
     std::vector<Buffer> m_ubos;
-    DescriptorAllocator m_descriptorAllocator;
-    std::vector<VkDescriptorSet> m_descriptorSets;
     GraphicsPipeline m_graphicsPipeline;
     std::vector<Framebuffer> m_framebuffers;
 };

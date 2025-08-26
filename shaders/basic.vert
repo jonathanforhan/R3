@@ -16,13 +16,15 @@ layout(location = 1) out vec3 v_Normal;
 layout(location = 2) out vec2 v_TexCoords;
 
 layout(set = 0, binding = 0) uniform MVP {
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-} u_MVP;
+    mat4 u_Model;
+    mat4 u_View;
+    mat4 u_Proj;
+};
 
 void main() {
-    gl_Position = u_MVP.proj * u_MVP.view * u_MVP.model * vec4(a_Position, 1.0);
-    v_Normal = a_Normal;
+    v_Position = vec3(u_Model * vec4(a_Position, 1.0));
+    v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
     v_TexCoords = a_TexCoords;
+
+    gl_Position = u_Proj * u_View * vec4(v_Position, 1.0);
 }

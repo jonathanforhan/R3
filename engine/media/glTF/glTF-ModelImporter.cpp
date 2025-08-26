@@ -261,6 +261,8 @@ void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& 
         return;
     }
 
+    /* (TODO) I think i need to support multiple buffers instead of the single bin buffer */
+
     for (auto& itBuffer : model.document["buffers"].GetArray()) {
         Buffer& buffer = model.root.buffers.emplace_back();
         // uri

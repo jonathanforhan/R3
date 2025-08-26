@@ -23,8 +23,6 @@ public:
 
     VkShaderModule shader() const noexcept { return m_shaderModule; }
 
-    VkShaderStageFlags type() const noexcept { return m_type; }
-
 private:
     void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode, VkShaderStageFlags type);
 
@@ -33,7 +31,6 @@ private:
 private:
     Handle<VkDevice> m_device;
     Handle<VkShaderModule> m_shaderModule;
-    VkShaderStageFlags m_type = {};
 };
 
 } // namespace R3::vulkan

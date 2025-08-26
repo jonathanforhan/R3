@@ -11,6 +11,7 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "vulkan-Check.hpp"
+#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
@@ -28,7 +29,6 @@ Shader::~Shader() noexcept {
 
 void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, VkShaderStageFlags type) {
     m_device = ctx.device();
-    m_type   = type;
 
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
@@ -37,7 +37,6 @@ void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spir
         .codeSize = spirvCode.size() * sizeof(uint32_t),
         .pCode    = spirvCode.data(),
     };
-
     VK_CHECK(vkCreateShaderModule(m_device, &shaderModuleCreateInfo, nullptr, &*m_shaderModule));
 }
 

@@ -1,11 +1,13 @@
 #include "ModelLoader.hpp"
 
 #include <array>
+#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <map>
 #include <optional>
 #include <span>
+#include <string>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -14,6 +16,7 @@
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
@@ -26,7 +29,9 @@
 #include "render/ShaderObjects.hpp"
 #include "render/vulkan/vulkan-Buffer.hpp"
 #include "render/vulkan/vulkan-CommandBuffer.hpp"
+#include "render/vulkan/vulkan-DescriptorSet.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
+#include "render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 
@@ -35,28 +40,44 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     m_entity = World()->registry().create();
 
-    m_directory = path.parent_path();
+    m_path = path.parent_path();
 
     for (glTF::Scene& scene : model.root.scenes) {
         for (uint32 iNode : scene.nodes) {
-            glTF_processNode(model, model.root.nodes[iNode]);
+            glTF_processNode(model, model.root.nodes[iNode], iNode);
         }
     }
+
+    vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+
+    const VkDescriptorPoolSize poolSizes[] = {
+        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+    };
+    auto descriptorSets =
+        vulkan::DescriptorSet::allocate(ctx.defaultDescriptorLayout(), poolSizes, ctx.maxFramesInFlight());
+
+    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
+    mat.descriptorSets     = std::move(descriptorSets);
 
     return m_entity;
 }
 
-void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node) {
+void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node, usize id) {
     for (uint32 iChild : node.children) {
-        glTF_processNode(model, model.root.nodes[iChild]);
+        glTF_processNode(model, model.root.nodes[iChild], iChild);
     }
 
     if (node.mesh) {
-        glTF_processMesh(model, model.root.meshes[*node.mesh]);
+        glTF_processMesh(model, model.root.meshes[*node.mesh], *node.mesh);
     }
 }
 
-void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh) {
+void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize id) {
     for (glTF::MeshPrimitive& primitive : mesh.primitives) {
         R3_ASSERT(primitive.mode == glTF::TRIANGLES && "Only TRIANGLES mode is supported");
 
@@ -135,67 +156,82 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh) {
         }
 
         if (primitive.material) {
-            glTF_processMaterial(model, model.root.materials[*primitive.material]);
+            glTF_processMaterial(model, model.root.materials[*primitive.material], *primitive.material);
         }
 
-        vulkan::Buffer vertexStagingBuffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
-        vulkan::Buffer indexStagingBuffer{std::span<const uint32>{indices}, BufferPreset::Staging};
+        std::string idVertexBuffer = std::format("{}/vertices/{}", m_path.parent_path().string(), id);
+        std::string idindexBuffer  = std::format("{}/indices/{}", m_path.parent_path().string(), id);
+        LOG_INFO("importing mesh {}, {}", idVertexBuffer, idindexBuffer);
 
-        Handle<vulkan::Buffer> vbo =
-            ResourceManager()->loadBuffer("vbo", nullptr, vertices.size() * sizeof(Vertex), BufferPreset::DeviceVertex);
-        Handle<vulkan::Buffer> ibo =
-            ResourceManager()->loadBuffer("ibo", nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
+        auto&& [vbo, vboLoaded] = ResourceManager()->loadBuffer(
+            std::string_view(idVertexBuffer), nullptr, vertices.size() * sizeof(Vertex), BufferPreset::DeviceVertex);
 
-        const VkBufferCopy vertexCopyRegion = {0, 0, vertices.size() * sizeof(Vertex)};
-        const VkBufferCopy indexCopyRegion  = {0, 0, indices.size() * sizeof(uint32)};
+        auto&& [ibo, iboLoaded] = ResourceManager()->loadBuffer(
+            std::string_view(idindexBuffer), nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
 
-        vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
-        vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
-        cmd.begin();
-        {
-            cmd.copyBuffer(vertexStagingBuffer.buffer(), vbo->buffer(), {&vertexCopyRegion, 1});
-            cmd.copyBuffer(indexStagingBuffer.buffer(), ibo->buffer(), {&indexCopyRegion, 1});
+        if (vboLoaded || iboLoaded) {
+            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
+
+            cmd.begin();
+
+            vulkan::Buffer vertexStagingBuffer, indexStagingBuffer;
+            VkBufferCopy vertexCopyRegion, indexCopyRegion;
+
+            if (vboLoaded) {
+                vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
+                vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
+                cmd.copyBuffer(vertexStagingBuffer.buffer(), vbo->buffer(), {&vertexCopyRegion, 1});
+            }
+
+            if (iboLoaded) {
+                indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
+                indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
+                cmd.copyBuffer(indexStagingBuffer.buffer(), ibo->buffer(), {&indexCopyRegion, 1});
+            }
+
+            cmd.end();
+            cmd.submitSync(ctx.graphicsQueue());
         }
-        cmd.end();
-        cmd.submitSync(ctx.graphicsQueue());
 
+        /* TODO support multiple meshes */
         World()->registry().emplace<MeshComponent>(
             m_entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
     }
 }
 
-void ModelLoader::glTF_processAnimations(glTF::Model& model) {
+void ModelLoader::glTF_processAnimations(glTF::Model& model, usize id) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processSkeleton(glTF::Model& model) {
+void ModelLoader::glTF_processSkeleton(glTF::Model& model, usize id) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processJoint(glTF::Model& model, usize modelIndex, usize parentJoint) {
+void ModelLoader::glTF_processJoint(glTF::Model& model, usize modelIndex, usize parentJoint, usize id) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processMaterial(glTF::Model& model, glTF::Material& material) {
+void ModelLoader::glTF_processMaterial(glTF::Model& model, glTF::Material& material, usize id) {
     if (material.emissiveTexture) {
-        glTF_processTexture(model, *material.emissiveTexture, TextureType::Emissive);
+        glTF_processTextureInfo(model, *material.emissiveTexture, TextureType::Emissive, id);
     }
 
     if (material.occlusionTexture) {
-        glTF_processTexture(model, *material.occlusionTexture, TextureType::AmbientOcclusion);
+        glTF_processTextureInfo(model, *material.occlusionTexture, TextureType::AmbientOcclusion, id);
     }
 
     if (material.normalTexture) {
-        glTF_processTexture(model, *material.normalTexture, TextureType::Normal);
+        glTF_processTextureInfo(model, *material.normalTexture, TextureType::Normal, id);
     }
 
     if (material.pbrMetallicRoughness->metallicRoughnessTexture) {
-        glTF_processTexture(
-            model, *material.pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness);
+        glTF_processTextureInfo(
+            model, *material.pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness, id);
     }
 
     if (material.pbrMetallicRoughness->baseColorTexture) {
-        glTF_processTexture(model, *material.pbrMetallicRoughness->baseColorTexture, TextureType::Albedo);
+        glTF_processTextureInfo(model, *material.pbrMetallicRoughness->baseColorTexture, TextureType::Albedo, id);
     } else {
         uint8 color[4] = {
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[0] * 255.0f),
@@ -203,28 +239,110 @@ void ModelLoader::glTF_processMaterial(glTF::Model& model, glTF::Material& mater
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[2] * 255.0f),
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[3] * 255.0f),
         };
-        glTF_processTexture(model, color, TextureType::Albedo);
+        glTF_processTexture(model, color, TextureType::Albedo, id);
     }
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], TextureType type) {
-    /*TODO*/
+void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture, TextureType type, usize id) {
+    if (!texture.source) {
+        return;
+    }
+
+    id += (usize)type * 1000; // unique to each type for a given material
+
+    const glTF::Image& image = model.root.images[*texture.source];
+
+    Handle<vulkan::Texture> hTexture;
+
+    if (!image.uri.empty()) {
+        std::filesystem::path imagePath = m_path.replace_filename(image.uri);
+        LOG_INFO("importing texture {}", imagePath.string());
+
+        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(imagePath.string()));
+
+        if (texLoaded) {
+            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
+            cmd.begin();
+            vulkan::Buffer stagingBuffer;
+            *tex = vulkan::Texture{cmd, imagePath, type, stagingBuffer};
+            cmd.end();
+            cmd.submitSync(ctx.graphicsQueue());
+        }
+
+        hTexture = std::move(tex);
+    } else {
+        glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
+        const std::byte* data        = &model.bin[bufferView.byteOffset];
+
+        std::string idBuffer = std::format("{}/images/{}", m_path.parent_path().string(), id);
+        LOG_INFO("importing texture {}", idBuffer);
+        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idBuffer));
+
+        if (texLoaded) {
+            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
+            cmd.begin();
+            vulkan::Buffer stagingBuffer;
+            *tex = vulkan::Texture{cmd, data, bufferView.byteLength, type, stagingBuffer};
+            cmd.end();
+            cmd.submitSync(ctx.graphicsQueue());
+        }
+
+        hTexture = std::move(tex);
+    }
+
+    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
+    mat.setTextureHandle(type, std::move(hTexture));
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::TextureInfo& textureInfo, TextureType type) {
-    /*TODO*/
+void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], TextureType type, usize id) {
+    id += (usize)type * 1000; // unique to each type for a given material
+
+    Handle<vulkan::Texture> hTexture;
+
+    std::string idColor = std::format("{}/colors/{}", m_path.parent_path().string(), id);
+    LOG_INFO("importing texture {}", idColor);
+    auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idColor));
+
+    if (texLoaded) {
+        vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+        vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
+        cmd.begin();
+        vulkan::Buffer stagingBuffer;
+        *tex = vulkan::Texture{cmd, (const std::byte*)color, 1, 1, type, stagingBuffer};
+        cmd.end();
+        cmd.submitSync(ctx.graphicsQueue());
+    }
+
+    hTexture = std::move(tex);
+
+    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
+    mat.setTextureHandle(type, std::move(hTexture));
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::NormalTextureInfo& textureInfo, TextureType type) {
-    /*TODO*/
+void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+                                          glTF::TextureInfo& textureInfo,
+                                          TextureType type,
+                                          usize id) {
+    glTF::Texture& texture = model.root.textures[textureInfo.index];
+    glTF_processTexture(model, texture, type, id);
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::OcclusionTextureInfo& textureInfo, TextureType type) {
-    /*TODO*/
+void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+                                          glTF::NormalTextureInfo& textureInfo,
+                                          TextureType type,
+                                          usize id) {
+    glTF::TextureInfo adapter{.index = textureInfo.index};
+    glTF_processTextureInfo(model, adapter, type, id);
 }
 
-void ModelLoader::glTF_preProcessTextures(glTF::Model& model) {
-    /*TODO*/
+void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+                                          glTF::OcclusionTextureInfo& textureInfo,
+                                          TextureType type,
+                                          usize id) {
+    glTF::TextureInfo adapter{.index = textureInfo.index};
+    glTF_processTextureInfo(model, adapter, type, id);
 }
 
 template <typename T, typename U>

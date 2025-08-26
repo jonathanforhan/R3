@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <format>
+#include <iterator>
 #include <span>
 #include <system_error>
 #include <type_traits>
@@ -52,6 +53,7 @@ RenderContext::RenderContext(Window& window)
 
         createCommandPools();
         createSyncObjects();
+        createDescritorSetLayouts();
     } catch (const Exception& ex) {
         this->~RenderContext();
         throw ex;
@@ -61,6 +63,8 @@ RenderContext::RenderContext(Window& window)
 RenderContext::~RenderContext() noexcept {
     if (m_device) {
         vkDeviceWaitIdle(m_device);
+
+        vkDestroyDescriptorSetLayout(m_device, m_defaultDescriptorSetLayout, nullptr);
 
         for (auto& sem : m_imageAvailableSemaphores) {
             vkDestroySemaphore(m_device, sem, nullptr);
@@ -310,6 +314,35 @@ void RenderContext::createSyncObjects() {
     for (auto& sem : m_renderFinishedSemaphores) {
         VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &sem));
     }
+}
+
+void RenderContext::createDescritorSetLayouts() {
+    //--- Descriptor Layout
+    const VkDescriptorSetLayoutBinding bindings[] = {
+        // { binding, type, count, stage }
+
+        // Uniform Buffer Object
+        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        // Albedo
+        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // MetallicRoughness
+        {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // Normal
+        {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // AmbientOcclusion
+        {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // Emissive
+        {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+    };
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo = {
+        .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .pNext        = nullptr,
+        .flags        = {},
+        .bindingCount = static_cast<uint32>(std::size(bindings)),
+        .pBindings    = bindings,
+    };
+    VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &*m_defaultDescriptorSetLayout));
 }
 
 #if R3_VALIDATION_LAYERS_ENABLED

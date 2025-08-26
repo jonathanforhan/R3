@@ -94,6 +94,9 @@ public:
     /// Get the render finished semaphore for the specified swapchain image index
     VkSemaphore& renderFinishedSemaphore(usize imageIndex) noexcept { return m_renderFinishedSemaphores[imageIndex]; }
 
+    /// Get default descriptor set layout
+    VkDescriptorSetLayout defaultDescriptorLayout() const noexcept { return m_defaultDescriptorSetLayout; }
+
 private:
     static vkb::Instance createInstance();
     static VkSurfaceKHR createSurface(Window& window, VkInstance instance);
@@ -102,6 +105,7 @@ private:
     static void setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index);
     void createCommandPools();
     void createSyncObjects();
+    void createDescritorSetLayouts();
 
 private:
     Handle<VkInstance> m_instance;
@@ -121,6 +125,7 @@ private:
     std::vector<VkFence> m_inFlightFences;               // one per frame in flight
     std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image
     uint32 m_currentFrame = 0;
+    Handle<VkDescriptorSetLayout> m_defaultDescriptorSetLayout;
 };
 
 } // namespace R3::vulkan

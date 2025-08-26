@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
@@ -28,14 +29,12 @@ public:
     /// @param height Height of the texture in pixels.
     /// @param type Type of the texture (PBR)
     /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
-    /// @param[out] outImage Image object that will be initialized with the texture data.
     Texture(CommandBuffer& cmd,
-            const uint8* raw,
+            const std::byte* raw,
             usize width,
             usize height,
             TextureType type,
-            Buffer& stagingBuffer,
-            Image& outImage);
+            Buffer& stagingBuffer);
 
     /// @brief Initializes a texture image and sampler from compressed data using a command buffer and a staging buffer.
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
@@ -43,38 +42,28 @@ public:
     /// @param size The size, in bytes, of the compressed data.
     /// @param type Type of the texture (PBR)
     /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
-    /// @param[out] outImage Image object that will be initialized with the texture data.
-    Texture(CommandBuffer& cmd,
-            const uint8* compressed,
-            usize size,
-            TextureType type,
-            Buffer& stagingBuffer,
-            Image& outImage);
+    Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer);
 
     /// @brief Initializes a texture image and sampler from filesystem using a command buffer and a staging buffer.
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
     /// @param filepath Path to the texture file to be loaded.
     /// @param type Type of the texture (PBR)
     /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
-    /// @param[out] outImage Image object that will be initialized with the texture data.
-    Texture(CommandBuffer& cmd,
-            const std::filesystem::path& filepath,
-            TextureType type,
-            Buffer& stagingBuffer,
-            Image& outImage);
+    Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer);
 
     ~Texture() noexcept;
 
     VkSampler sampler() const noexcept { return m_sampler; }
 
+    VkImageView imageView() const noexcept { return m_image.imageView(); }
+
 private:
     void create(CommandBuffer& cmd,
-                const uint8* raw,
+                const std::byte* raw,
                 usize width,
                 usize height,
                 TextureType type,
-                Buffer& stagingBuffer,
-                Image& outImage);
+                Buffer& stagingBuffer);
 
     bool supportsBlitting(VkFormat format) noexcept;
 
@@ -82,6 +71,7 @@ private:
 
 private:
     Handle<VkSampler> m_sampler;
+    Image m_image;
 };
 
 } // namespace R3::vulkan

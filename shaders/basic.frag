@@ -16,6 +16,6 @@ layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
 layout (binding = 5) uniform sampler2D u_Emissive;
 
 void main() {
-	// f_Color = texture(u_Albedo, v_TexCoords);
-	f_Color = vec4(v_Normal * 0.5 + 0.5, 1.0);
+	vec3 albedo = texture(u_Albedo, v_TexCoords).rgb;
+	f_Color = vec4(albedo, 1.0);
 }
