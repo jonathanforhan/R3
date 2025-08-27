@@ -54,9 +54,11 @@
 
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <functional>
 #include <initializer_list>
+#include <iterator>
 #include <list>
 #include <type_traits>
 #include <unordered_map>
@@ -101,14 +103,29 @@ struct Event : public EventBase {
     const Data data; /// event data
 };
 
-template <typename F>
-using EventTypeDeduced = typename std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
+/// @brief Specialization for void event data
+template <>
+struct Event<void> : public EventBase {
+    using DataType = void;
 
-template <typename F, typename... Args>
-concept EventListener = std::is_const_v<EventTypeDeduced<F>> and requires {
-    { std::is_base_of_v<EventBase, EventTypeDeduced<F>> };
+    constexpr Event(hash::uuid id) noexcept
+        : EventBase{id} {}
+};
+
+template <typename F>
+using EventTypeDeduced = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
+
+template <typename F>
+concept VoidEventListener = std::invocable<F> && noexcept(std::declval<F>()());
+
+template <typename F>
+concept DataEventListener = !VoidEventListener<F> && requires {
+    std::is_base_of_v<EventBase, EventTypeDeduced<F>>;
     { std::declval<F>()(std::declval<EventTypeDeduced<F>>()) } noexcept;
 };
+
+template <typename F>
+concept EventListener = VoidEventListener<F> || DataEventListener<F>;
 
 /// @brief Singleton event handler which you can push event to and bind listeners to
 ///
@@ -119,7 +136,7 @@ concept EventListener = std::is_const_v<EventTypeDeduced<F>> and requires {
 /// @endcode
 class EventHandlerSingleton {
 private:
-    using EventCallback = std::function<void(const EventBase&)>;
+    using EventCallback = std::function<bool(const EventBase&)>;
 
 private:
     R3_COPY_DELETE(EventHandlerSingleton);
@@ -158,7 +175,7 @@ public:
     /// @param id    Event id e.g. "key-press"
     /// @param args  Event data arguments to construct the event in place
     /// @note Must explicitly specify the Data type, this is useful for events that have no data
-    template <typename Data, typename... Args>
+    template <typename Data = void, typename... Args>
     void emplace(hash::uuid id, Args&&... args) {
         void* alignedPtr = allocateAligned<Event<Data>>();
         new (alignedPtr) Event<Data>{id, std::forward<Args>(args)...}; // construct event in place
@@ -172,8 +189,10 @@ public:
             EventBase* event = reinterpret_cast<EventBase*>(&m_eventArena[offset]);
             // make callback calls
             auto range = m_eventRegistry.equal_range(event->id);
-            for (auto& it = range.first; it != range.second; ++it) {
-                it->second(*event);
+            for (auto& it = range.first; it != range.second;) {
+                bool removeListener = it->second(*event);
+                // remove if listener returned true
+                it = removeListener ? m_eventRegistry.erase(it) : std::next(it);
             }
             // manually destructor because EventHandler owns the lifetime
             if (deleter != nullptr) {
@@ -186,16 +205,48 @@ public:
         m_eventArena.clear();
     }
 
-    /// @brief Bind an event listener to listen for events that have the same id
+    /// @brief Bind a data event listener to listen for events that have the same id
     /// @tparam F       Functor
     /// @param id       event id to listen to
     /// @param callback event callback triggered when id is emitted
     template <typename F>
-    requires EventListener<F>
+    requires DataEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
-        using EventType       = EventTypeDeduced<F>;
-        EventCallback wrapper = [callback](const EventBase& base) { callback(static_cast<const EventType&>(base)); };
-        m_eventRegistry.insert(std::make_pair(id, wrapper));
+        using ResultType = typename FunctionTraits<F>::template ResultType;
+
+        if constexpr (std::is_same_v<ResultType, bool>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+                return callback(static_cast<const EventTypeDeduced<F>&>(base));
+            };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        } else if constexpr (std::is_same_v<ResultType, void>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+                callback(static_cast<const EventTypeDeduced<F>&>(base));
+                return false;
+            };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        }
+    }
+
+    /// @brief Bind a void event listener to listen for events that have the same id
+    /// @tparam F       Functor
+    /// @param id       event id to listen to
+    /// @param callback event callback triggered when id is emitted
+    template <typename F>
+    requires VoidEventListener<F>
+    void bindEventListener(hash::uuid id, F callback) {
+        using ResultType = typename FunctionTraits<F>::template ResultType;
+
+        if constexpr (std::is_same_v<ResultType, bool>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool { return callback(); };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        } else if constexpr (std::is_same_v<ResultType, void>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+                callback();
+                return false;
+            };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        }
     }
 
     /// @brief Bind an event listener to listen for events that have the same id
@@ -248,7 +299,7 @@ struct EventHandler {
     EventHandlerSingleton* operator->() {
         static EventHandlerSingleton instance;
         return &instance;
-    }
+    } // namespace R3
 };
 
 } // namespace R3

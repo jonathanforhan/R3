@@ -15,7 +15,6 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <utility>
 #include <vector>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"

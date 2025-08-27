@@ -15,10 +15,10 @@ public:
     R3_MOVE_DEFAULT(GraphicsPipeline);
 
     GraphicsPipeline(RenderContext& ctx,
-                     RenderPass& renderPass,
                      Shader& vertexShader,
                      Shader& fragmentShader,
                      VkSampleCountFlagBits msaaSamples,
+                     std::span<const VkFormat> colorFormats,
                      std::span<const VkDescriptorSetLayout> layouts);
 
     ~GraphicsPipeline() noexcept;

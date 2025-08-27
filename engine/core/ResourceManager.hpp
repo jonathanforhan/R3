@@ -17,6 +17,7 @@
 #include "api/Class.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
+#include "core/EventHandler.hpp"
 
 namespace R3 {
 
@@ -48,6 +49,16 @@ public:
         return {it->second, b};
     }
 
+    template <typename T, typename... Args>
+    T* newFrameScopedObject(Args&&... args) {
+        T* obj = new T(std::forward<Args>(args)...);
+        EventHandler()->bindEventListener("frame-done", [obj] noexcept {
+            delete obj;
+            return true; // remove listener after called once
+        });
+        return obj;
+    }
+
     void clear() {
         m_bufferCache.clear();
         m_imageCache.clear();
@@ -61,7 +72,6 @@ private:
 
 private:
     friend struct ResourceManager;
-    friend class EngineSingleton; // <- allow Engine to bind the context
 };
 
 struct ResourceManager {

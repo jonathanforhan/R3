@@ -10,16 +10,15 @@
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
-#include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
 
 namespace R3::vulkan {
 
 GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
-                                   RenderPass& renderPass,
                                    Shader& vertexShader,
                                    Shader& fragmentShader,
                                    VkSampleCountFlagBits msaaSamples,
+                                   std::span<const VkFormat> colorFormats,
                                    std::span<const VkDescriptorSetLayout> layouts) {
     m_device = ctx.device();
 
@@ -176,9 +175,19 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 
+    const VkPipelineRenderingCreateInfo renderingInfo = {
+        .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        .pNext                   = nullptr,
+        .viewMask                = 0,
+        .colorAttachmentCount    = static_cast<uint32>(colorFormats.size()),
+        .pColorAttachmentFormats = colorFormats.data(),
+        .depthAttachmentFormat   = ctx.queryDepthFormat(),
+        .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
+    };
+
     const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        .pNext               = nullptr,
+        .pNext               = &renderingInfo,
         .flags               = 0,
         .stageCount          = 2,
         .pStages             = shaderStagesInfo,
@@ -192,7 +201,7 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .pColorBlendState    = &colorBlendStateInfo,
         .pDynamicState       = &dynamicStateInfo,
         .layout              = m_pipelineLayout,
-        .renderPass          = renderPass.renderPass(),
+        .renderPass          = VK_NULL_HANDLE,
         .subpass             = 0,
         .basePipelineHandle  = VK_NULL_HANDLE,
         .basePipelineIndex   = -1,

@@ -3,6 +3,7 @@
 #include <chrono>
 #include "EventHandler.hpp"
 #include "core/Entity.hpp"
+#include "core/EventHandler.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
 #include "media/ModelLoader.hpp"
@@ -42,6 +43,8 @@ int EngineSingleton::run() {
     //    - queues
     //    - command buffers/pools
     //      - each collection of command buffers shares a command pool
+    //    - sync objects
+    //    - descriptor set layouts
     vulkan::RenderContext ctx{window};
     m_ctx = &ctx;
 
@@ -55,13 +58,14 @@ int EngineSingleton::run() {
     while (!window.shouldClose()) {
         const double dt = deltaTime();
 
-        window.update();
-
-        EventHandler()->dispatchEvents();
-
         World()->update(dt);
 
+        window.update();
+
         renderer.render(dt);
+
+        EventHandler()->dispatchEvents();
+        EventHandler()->emplace("frame-done");
     }
 
     ctx.waitIdle();

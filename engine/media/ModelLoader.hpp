@@ -8,9 +8,7 @@
 #include "glTF/glTF-ModelImporter.hpp"
 #include "glTF/glTF.hpp"
 #include "render/Flags.hpp"
-#include "render/vulkan/vulkan-Buffer.hpp"
-#include "render/vulkan/vulkan-Image.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
+#include "render/vulkan/vulkan-CommandBuffer.hpp"
 
 namespace R3 {
 
@@ -44,9 +42,7 @@ private:
 private:
     Entity m_entity = entt::null;
     std::filesystem::path m_path;
-    // std::vector<vulkan::Buffer> m_buffers;
-    // std::vector<vulkan::Image> m_images;
-    // std::vector<vulkan::Texture> m_textures;
+    vulkan::CommandBuffer* m_cmd;
 };
 
 } // namespace R3

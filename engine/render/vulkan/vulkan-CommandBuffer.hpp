@@ -8,7 +8,6 @@
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Fwd.hpp"
-#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
@@ -33,10 +32,9 @@ public:
     void reset(VkCommandBufferResetFlags flags = 0);
 
     /// Render pass commands
-    void beginRenderPass(const VkRenderPassBeginInfo& beginInfo,
-                         VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
-    void endRenderPass();
-    void nextSubpass(VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
+    void beginRendering(const VkRenderingInfo& beginInfo);
+    void endRendering();
+    // void nextSubpass(VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
     /// Pipeline binding
     void bindGraphicsPipeline(VkPipeline pipeline);
@@ -71,12 +69,7 @@ public:
     void setDepthTestEnable(bool enable);
 
     /// Resource transitions
-    void transitionImageLayout(VkImage image,
-                               VkImageLayout oldLayout,
-                               VkImageLayout newLayout,
-                               VkImageSubresourceRange subresourceRange,
-                               VkPipelineStageFlags srcStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-                               VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+    void transitionImageLayout(const VkImageMemoryBarrier2& imageMemoryBarrier);
 
     void pipelineBarrier(VkPipelineStageFlags srcStage,
                          VkPipelineStageFlags dstStage,
@@ -109,22 +102,22 @@ public:
                        uint32 size,
                        const void* values);
 
-    void addDeferredCallback(std::move_only_function<void()>&& callback);
-
     /// Submit command buffer to queue
     void submit(VkQueue queue,
                 std::span<const VkSemaphore> waitSemaphores      = {},
                 std::span<const VkPipelineStageFlags> waitStages = {},
                 std::span<const VkSemaphore> signalSemaphores    = {},
                 VkFence fence                                    = VK_NULL_HANDLE);
-    void submitSync(VkQueue queue);
+    /// if queue is VK_NULL_HANDLE, it will use the current frame's graphics queue
+    /// make sure if you set it to VK_NULL_HANDLE that RenderContext is valid (already created)
+    void submitSync(VkQueue queue = VK_NULL_HANDLE);
 
     /// Get the underlying command buffer handle
     VkCommandBuffer commandBuffer() const noexcept { return m_commandBuffer; }
 
 private:
-    VkDevice m_device;
-    VkCommandBuffer m_commandBuffer;
+    VkDevice m_device               = VK_NULL_HANDLE;
+    VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
     std::shared_ptr<VkCommandPool> m_pool;                            // Keeps the command pool alive
     std::vector<std::move_only_function<void()>> m_deferredCallbacks; // Called after submit
     bool m_isRecording = false;

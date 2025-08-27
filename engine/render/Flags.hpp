@@ -131,9 +131,9 @@ enum class BufferType {
 
 enum class BufferPreset {
     Staging,
+    HostUniform,
     DeviceVertex,
     DeviceIndex,
-    DeviceUniform,
 };
 
 struct CommandPoolModeFlags {

@@ -39,7 +39,7 @@ public:
 
     ~Buffer() noexcept;
 
-    void copy(const void* src, usize sizeBytes);
+    void copy(const void* src, usize sizeBytes, usize offset = 0);
 
     VkBuffer buffer() const noexcept { return m_buffer; }
 
@@ -50,6 +50,7 @@ private:
 private:
     Handle<VkBuffer> m_buffer;
     Handle<VkDeviceMemory> m_bufferMemory;
+    void* m_mapped = nullptr;
 };
 
 } // namespace R3::vulkan

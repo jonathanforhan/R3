@@ -181,7 +181,6 @@ vkb::Instance RenderContext::createInstance() {
         throw Exception("glfwGetRequiredInstanceExtensions returned null");
     }
     std::vector<const char*> requiredExtensions{pRequiredExtensions, pRequiredExtensions + extensionCount};
-
 #if R3_VALIDATION_LAYERS_ENABLED
     requiredExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 #endif
@@ -205,7 +204,8 @@ vkb::Instance RenderContext::createInstance() {
                       .build();
 
     if (!result) {
-        throw Exception{std::format("failed to create VkInstance: {}", result.error().value())};
+        throw Exception{
+            std::format("failed to create VkInstance: {} {}", result.error().message(), result.error().value())};
     }
 
     return result.value();
@@ -235,6 +235,12 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                           .synchronization2 = VK_TRUE,
                           .dynamicRendering = VK_TRUE,
                       })
+                      .add_required_extensions({
+                          VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                          VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
+                          VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME,
+                          VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                      })
                       .add_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                       .require_dedicated_transfer_queue()
                       .require_separate_compute_queue()
@@ -242,7 +248,8 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                       .select();
 
     if (!result) {
-        throw Exception{std::format("failed to select VkPhysicalDevice: {}", result.error().value())};
+        throw Exception{
+            std::format("failed to select VkPhysicalDevice: {} {}", result.error().message(), result.error().value())};
     }
 
     return result.value();
@@ -252,7 +259,8 @@ vkb::Device RenderContext::createLogicalDevice(const vkb::PhysicalDevice& physic
     auto result = vkb::DeviceBuilder(physicalDevice).build();
 
     if (!result) {
-        throw Exception{std::format("failed to create VkDevice: {}", result.error().value())};
+        throw Exception{
+            std::format("failed to create VkDevice: {} {}", result.error().message(), result.error().value())};
     }
 
     return result.value();
@@ -260,13 +268,14 @@ vkb::Device RenderContext::createLogicalDevice(const vkb::PhysicalDevice& physic
 
 void RenderContext::setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index) {
     if (auto result = device.get_queue(queueType); !result) {
-        throw Exception{std::format("failed to get VkQueue: {}", result.error().value())};
+        throw Exception{std::format("failed to get VkQueue: {} {}", result.error().message(), result.error().value())};
     } else {
         queue = result.value();
     }
 
     if (auto result = device.get_queue_index(queueType); !result) {
-        throw Exception{std::format("failed to get VkQueue index: {}", result.error().value())};
+        throw Exception{
+            std::format("failed to get VkQueue index: {} {}", result.error().message(), result.error().value())};
     } else {
         index = result.value();
     }
@@ -333,6 +342,8 @@ void RenderContext::createDescritorSetLayouts() {
         {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
         // Emissive
         {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // Lighting
+        {6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
     };
 
     VkDescriptorSetLayoutCreateInfo layoutInfo = {

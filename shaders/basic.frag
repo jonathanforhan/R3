@@ -15,6 +15,19 @@ layout (binding = 3) uniform sampler2D u_Normal;
 layout (binding = 4) uniform sampler2D u_AmbientOcclusion;
 layout (binding = 5) uniform sampler2D u_Emissive;
 
+struct PointLight {
+	vec3 position;
+	vec3 color;
+	float intensity;
+};
+
+layout (binding = 6) uniform LightBuffer {
+	vec3 u_ViewPosition;
+	uint u_Flags;
+	uint u_NumLights;
+	PointLight u_Lights[MAX_LIGHTS];
+};
+
 void main() {
 	vec3 albedo = texture(u_Albedo, v_TexCoords).rgb;
 	f_Color = vec4(albedo, 1.0);

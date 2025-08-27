@@ -7,16 +7,19 @@
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <api/Exception.hpp>
 #include "api/Assert.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
+#include "core/EventHandler.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
 
 CommandBuffer::CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool)
-    : m_commandBuffer(commandBuffer),
+    : m_device(VK_NULL_HANDLE),
+      m_commandBuffer(commandBuffer),
       m_pool(std::move(pool)) {}
 
 std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
@@ -87,20 +90,22 @@ void CommandBuffer::reset(VkCommandBufferResetFlags flags) {
     m_isRecording = false;
 }
 
-void CommandBuffer::beginRenderPass(const VkRenderPassBeginInfo& beginInfo, VkSubpassContents contents) {
+void CommandBuffer::beginRendering(const VkRenderingInfo& beginInfo) {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
-    vkCmdBeginRenderPass(m_commandBuffer, &beginInfo, contents);
+    vkCmdBeginRendering(m_commandBuffer, &beginInfo);
 }
 
-void CommandBuffer::endRenderPass() {
+void CommandBuffer::endRendering() {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
-    vkCmdEndRenderPass(m_commandBuffer);
+    vkCmdEndRendering(m_commandBuffer);
 }
 
+/*
 void CommandBuffer::nextSubpass(VkSubpassContents contents) {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdNextSubpass(m_commandBuffer, contents);
 }
+*/
 
 void CommandBuffer::bindGraphicsPipeline(VkPipeline pipeline) {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
@@ -193,77 +198,20 @@ void CommandBuffer::setDepthTestEnable(bool enable) {
     vkCmdSetDepthTestEnable(m_commandBuffer, enable ? VK_TRUE : VK_FALSE);
 }
 
-void CommandBuffer::transitionImageLayout(VkImage image,
-                                          VkImageLayout oldLayout,
-                                          VkImageLayout newLayout,
-                                          VkImageSubresourceRange subresourceRange,
-                                          VkPipelineStageFlags srcStage,
-                                          VkPipelineStageFlags dstStage) {
+void CommandBuffer::transitionImageLayout(const VkImageMemoryBarrier2& imageMemoryBarrier) {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
-
-    VkImageMemoryBarrier barrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .pNext               = nullptr,
-        .srcAccessMask       = 0, // Will be determined based on layouts
-        .dstAccessMask       = 0, // Will be determined based on layouts
-        .oldLayout           = oldLayout,
-        .newLayout           = newLayout,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = image,
-        .subresourceRange    = subresourceRange,
+    const VkDependencyInfo dependencyInfo = {
+        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pNext                    = nullptr,
+        .dependencyFlags          = 0,
+        .memoryBarrierCount       = 0,
+        .pMemoryBarriers          = nullptr,
+        .bufferMemoryBarrierCount = 0,
+        .pBufferMemoryBarriers    = nullptr,
+        .imageMemoryBarrierCount  = 1,
+        .pImageMemoryBarriers     = &imageMemoryBarrier,
     };
-
-    // Determine access masks based on layouts
-    // Source
-    switch (oldLayout) {
-        case VK_IMAGE_LAYOUT_UNDEFINED:
-            barrier.srcAccessMask = 0;
-            break;
-        case VK_IMAGE_LAYOUT_PREINITIALIZED:
-            barrier.srcAccessMask = VK_ACCESS_HOST_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-            barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-            barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-            barrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            break;
-        default:
-            break;
-    }
-
-    // Destination
-    switch (newLayout) {
-        case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
-            barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
-            barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
-            barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-            break;
-        case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
-            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-            break;
-        default:
-            break;
-    }
-
-    vkCmdPipelineBarrier(m_commandBuffer, srcStage, dstStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
 }
 
 void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStage,
@@ -335,10 +283,6 @@ void CommandBuffer::pushConstants(VkPipelineLayout layout,
     vkCmdPushConstants(m_commandBuffer, layout, stageFlags, offset, size, values);
 }
 
-void CommandBuffer::addDeferredCallback(std::move_only_function<void()>&& callback) {
-    m_deferredCallbacks.emplace_back(std::move(callback));
-}
-
 void CommandBuffer::submit(VkQueue queue,
                            std::span<const VkSemaphore> waitSemaphores,
                            std::span<const VkPipelineStageFlags> waitStages,
@@ -360,24 +304,15 @@ void CommandBuffer::submit(VkQueue queue,
     };
 
     VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
-
-    if (!m_deferredCallbacks.empty()) {
-        if (fence != VK_NULL_HANDLE) {
-            vkWaitForFences(m_device, 1, &fence, VK_TRUE, UINT64_MAX);
-        } else {
-            vkQueueWaitIdle(queue);
-        }
-
-        // Execute callbacks
-        for (auto& callback : m_deferredCallbacks) {
-            callback();
-        }
-        m_deferredCallbacks.clear();
-    }
 }
 
 void CommandBuffer::submitSync(VkQueue queue) {
     R3_ASSERT(!m_isRecording && "CommandBuffer must be ended before submission!");
+
+    if (queue == VK_NULL_HANDLE) {
+        RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+        queue              = ctx.graphicsQueue();
+    }
 
     const VkSubmitInfo submitInfo = {
         .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -394,12 +329,6 @@ void CommandBuffer::submitSync(VkQueue queue) {
     VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
 
     vkQueueWaitIdle(queue);
-
-    // Execute callbacks
-    for (auto& callback : m_deferredCallbacks) {
-        callback();
-    }
-    m_deferredCallbacks.clear();
 }
 
 } // namespace R3::vulkan

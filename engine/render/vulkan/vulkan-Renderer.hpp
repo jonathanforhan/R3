@@ -2,24 +2,19 @@
 
 #include <vector>
 #include "api/Class.hpp"
+#include "api/Types.hpp"
 #include "render/RenderContext.hpp"
+#include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
-#include "vulkan-Framebuffer.hpp"
+#include "vulkan-CommandBuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
-#include "vulkan-RenderPass.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
 
 namespace R3::vulkan {
-
-struct UniformBufferObject {
-    alignas(16) fmat4 model;
-    alignas(16) fmat4 view;
-    alignas(16) fmat4 proj;
-};
 
 class Renderer {
 public:
@@ -32,6 +27,12 @@ public:
 
     void render(double dt);
 
+    // needed because using dynamic rendering
+    void transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex);
+
+    // needed because using dynamic rendering
+    void transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex);
+
     void handleWindowResize();
 
     IRenderContext* context() noexcept { return &m_ctx; }
@@ -42,13 +43,11 @@ private:
     Swapchain m_swapchain;
     Image m_colorImage;
     Image m_depthImage;
-    RenderPass m_renderPass;
     Shader m_vertexShader;
     Shader m_fragmentShader;
-    UniformBufferObject m_ubo;
+    ViewProjection m_viewProj;
     std::vector<Buffer> m_ubos;
     GraphicsPipeline m_graphicsPipeline;
-    std::vector<Framebuffer> m_framebuffers;
 };
 
 } // namespace R3::vulkan

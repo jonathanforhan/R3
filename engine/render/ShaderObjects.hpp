@@ -19,7 +19,9 @@ struct VertexUniformBufferObject {
     alignas(16) fmat4 model;
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
+#if 0
     alignas(16) fmat4 finalBoneTransforms[MAX_SHADER_BONES];
+#endif
 };
 
 struct FragmentPushConstant {

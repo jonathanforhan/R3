@@ -92,18 +92,28 @@ void Texture::create(CommandBuffer& cmd,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
         };
 
-        cmd.transitionImageLayout(m_image.image(),
-                                  VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  {
-                                      .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                                      .baseMipLevel   = 0,
-                                      .levelCount     = mipLevels,
-                                      .baseArrayLayer = 0,
-                                      .layerCount     = 1,
-                                  },
-                                  VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                  VK_PIPELINE_STAGE_TRANSFER_BIT);
+        const VkImageMemoryBarrier2 barrier = {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_image.image(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        };
+        cmd.transitionImageLayout(barrier);
 
         // copy staging buffer to image
         const VkBufferImageCopy bufferToImage = {

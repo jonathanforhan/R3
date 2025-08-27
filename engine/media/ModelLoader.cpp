@@ -18,6 +18,7 @@
 #include "api/Types.hpp"
 #include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
+#include "components/TransformComponent.hpp"
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
 #include "core/Log.hpp"
@@ -39,8 +40,12 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
     glTF::Model model = glTF::ModelImporter().import(path);
 
     m_entity = World()->registry().create();
+    m_path   = path.parent_path();
 
-    m_path = path.parent_path();
+    vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+
+    m_cmd = &ctx.graphicsCommandBuffer();
+    m_cmd->begin();
 
     for (glTF::Scene& scene : model.root.scenes) {
         for (uint32 iNode : scene.nodes) {
@@ -48,7 +53,8 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
         }
     }
 
-    vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+    m_cmd->end();
+    m_cmd->submitSync();
 
     const VkDescriptorPoolSize poolSizes[] = {
         {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = ctx.maxFramesInFlight()},
@@ -57,12 +63,15 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
         {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
         {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
         {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
+        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = ctx.maxFramesInFlight()},
     };
     auto descriptorSets =
         vulkan::DescriptorSet::allocate(ctx.defaultDescriptorLayout(), poolSizes, ctx.maxFramesInFlight());
 
     MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
     mat.descriptorSets     = std::move(descriptorSets);
+
+    World()->registry().emplace<TransformComponent>(m_entity);
 
     return m_entity;
 }
@@ -170,28 +179,23 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
             std::string_view(idindexBuffer), nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
 
         if (vboLoaded || iboLoaded) {
-            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
-            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
-
-            cmd.begin();
-
-            vulkan::Buffer vertexStagingBuffer, indexStagingBuffer;
-            VkBufferCopy vertexCopyRegion, indexCopyRegion;
-
             if (vboLoaded) {
-                vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
-                vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
-                cmd.copyBuffer(vertexStagingBuffer.buffer(), vbo->buffer(), {&vertexCopyRegion, 1});
+                vulkan::Buffer* vertexStagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+                VkBufferCopy* vertexCopyRegion      = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
+
+                *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
+                *vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
+                m_cmd->copyBuffer(vertexStagingBuffer->buffer(), vbo->buffer(), {vertexCopyRegion, 1});
             }
 
             if (iboLoaded) {
-                indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
-                indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
-                cmd.copyBuffer(indexStagingBuffer.buffer(), ibo->buffer(), {&indexCopyRegion, 1});
-            }
+                vulkan::Buffer* indexStagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+                VkBufferCopy* indexCopyRegion      = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
 
-            cmd.end();
-            cmd.submitSync(ctx.graphicsQueue());
+                *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
+                *indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
+                m_cmd->copyBuffer(indexStagingBuffer->buffer(), ibo->buffer(), {indexCopyRegion, 1});
+            }
         }
 
         /* TODO support multiple meshes */
@@ -261,13 +265,9 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(imagePath.string()));
 
         if (texLoaded) {
-            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
-            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
-            cmd.begin();
-            vulkan::Buffer stagingBuffer;
-            *tex = vulkan::Texture{cmd, imagePath, type, stagingBuffer};
-            cmd.end();
-            cmd.submitSync(ctx.graphicsQueue());
+            vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+
+            *tex = vulkan::Texture{*m_cmd, imagePath, type, *stagingBuffer};
         }
 
         hTexture = std::move(tex);
@@ -280,13 +280,9 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idBuffer));
 
         if (texLoaded) {
-            vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
-            vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
-            cmd.begin();
-            vulkan::Buffer stagingBuffer;
-            *tex = vulkan::Texture{cmd, data, bufferView.byteLength, type, stagingBuffer};
-            cmd.end();
-            cmd.submitSync(ctx.graphicsQueue());
+            vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+
+            *tex = vulkan::Texture{*m_cmd, data, bufferView.byteLength, type, *stagingBuffer};
         }
 
         hTexture = std::move(tex);
@@ -306,13 +302,9 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], Textur
     auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idColor));
 
     if (texLoaded) {
-        vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
-        vulkan::CommandBuffer& cmd = ctx.graphicsCommandBuffer();
-        cmd.begin();
-        vulkan::Buffer stagingBuffer;
-        *tex = vulkan::Texture{cmd, (const std::byte*)color, 1, 1, type, stagingBuffer};
-        cmd.end();
-        cmd.submitSync(ctx.graphicsQueue());
+        vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+
+        *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, type, *stagingBuffer};
     }
 
     hTexture = std::move(tex);

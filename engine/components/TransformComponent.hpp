@@ -5,7 +5,7 @@
 namespace R3 {
 
 struct TransformComponent {
-    fmat4 transform;
+    alignas(16) fmat4 transform = fmat4(1.0f);
 };
 
 } // namespace R3

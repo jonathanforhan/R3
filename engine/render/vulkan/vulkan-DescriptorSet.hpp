@@ -31,7 +31,7 @@ public:
     VkDescriptorSet descriptorSet() const noexcept { return m_descriptorSet; }
 
 private:
-    VkDescriptorSet m_descriptorSet;
+    VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
     std::shared_ptr<VkDescriptorPool> m_pool;
 };
 
