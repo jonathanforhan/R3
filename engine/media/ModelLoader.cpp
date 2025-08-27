@@ -15,9 +15,11 @@
 #include <entt/resource/resource.hpp>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
+#include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
+#include "components/TextureLifetimeComponent.hpp"
 #include "components/TransformComponent.hpp"
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
@@ -30,7 +32,6 @@
 #include "render/ShaderObjects.hpp"
 #include "render/vulkan/vulkan-Buffer.hpp"
 #include "render/vulkan/vulkan-CommandBuffer.hpp"
-#include "render/vulkan/vulkan-DescriptorSet.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Texture.hpp"
 
@@ -55,21 +56,6 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     m_cmd->end();
     m_cmd->submitSync();
-
-    const VkDescriptorPoolSize poolSizes[] = {
-        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = ctx.maxFramesInFlight()},
-        {.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = ctx.maxFramesInFlight()},
-    };
-    auto descriptorSets =
-        vulkan::DescriptorSet::allocate(ctx.defaultDescriptorLayout(), poolSizes, ctx.maxFramesInFlight());
-
-    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
-    mat.descriptorSets     = std::move(descriptorSets);
 
     World()->registry().emplace<TransformComponent>(m_entity);
 
@@ -198,7 +184,7 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
             }
         }
 
-        /* TODO support multiple meshes */
+        /* TODO support multiple meshes per model entity */
         World()->registry().emplace<MeshComponent>(
             m_entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
     }
@@ -257,12 +243,15 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
     const glTF::Image& image = model.root.images[*texture.source];
 
     Handle<vulkan::Texture> hTexture;
+    std::string name;
 
     if (!image.uri.empty()) {
         std::filesystem::path imagePath = m_path.replace_filename(image.uri);
-        LOG_INFO("importing texture {}", imagePath.string());
 
-        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(imagePath.string()));
+        name = imagePath.string();
+        LOG_INFO("importing texture {}", name);
+
+        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
 
         if (texLoaded) {
             vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
@@ -275,9 +264,9 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
         const std::byte* data        = &model.bin[bufferView.byteOffset];
 
-        std::string idBuffer = std::format("{}/images/{}", m_path.parent_path().string(), id);
-        LOG_INFO("importing texture {}", idBuffer);
-        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idBuffer));
+        name = std::format("{}/images/{}", m_path.parent_path().string(), id);
+        LOG_INFO("importing texture {}", name);
+        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
 
         if (texLoaded) {
             vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
@@ -289,17 +278,19 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
     }
 
     MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
-    mat.setTextureHandle(type, std::move(hTexture));
+    uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *hTexture);
+    mat.setTextureSlot(type, slot);
+
+    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(m_entity);
+    textureLifetime.textures.emplace_back(std::move(hTexture)); // ensure texture lives as long as entity
 }
 
 void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], TextureType type, usize id) {
     id += (usize)type * 1000; // unique to each type for a given material
 
-    Handle<vulkan::Texture> hTexture;
-
-    std::string idColor = std::format("{}/colors/{}", m_path.parent_path().string(), id);
-    LOG_INFO("importing texture {}", idColor);
-    auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(idColor));
+    std::string name = std::format("{}/colors/{}", m_path.parent_path().string(), id);
+    LOG_INFO("importing texture {}", name);
+    auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
 
     if (texLoaded) {
         vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
@@ -307,10 +298,12 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], Textur
         *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, type, *stagingBuffer};
     }
 
-    hTexture = std::move(tex);
-
     MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
-    mat.setTextureHandle(type, std::move(hTexture));
+    uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *tex);
+    mat.setTextureSlot(type, slot);
+
+    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(m_entity);
+    textureLifetime.textures.emplace_back(std::move(tex)); // ensure texture lives as long as entity
 }
 
 void ModelLoader::glTF_processTextureInfo(glTF::Model& model,

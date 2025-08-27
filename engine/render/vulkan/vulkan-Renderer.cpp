@@ -62,10 +62,8 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
 
     //--- Shaders
-    Shader m_vertexShader;
-    Shader m_fragmentShader;
-    m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv"};
+    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv"};
 
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
@@ -81,7 +79,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     }
 
     //--- Graphics Pipeline
-    const VkDescriptorSetLayout defaultLayout = ctx.defaultDescriptorLayout();
+    const VkDescriptorSetLayout layout = ctx.descriptorLayout();
 
     const VkFormat colorFormat = m_swapchain.format();
 
@@ -91,7 +89,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         m_fragmentShader,
         msaaSamples,
         std::span{&colorFormat, 1},
-        std::span{&defaultLayout, 1},
+        std::span{&layout, 1},
     };
 
     World()->camera().setActive(true);
@@ -204,11 +202,10 @@ void Renderer::render(double dt) {
                 .offset = 0,
                 .range  = sizeof(VertexUniformBufferObject),
             };
-
             descriptorWrites.push_back(VkWriteDescriptorSet{
                 .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .pNext            = nullptr,
-                .dstSet           = mat.descriptorSets[currFrame].descriptorSet(),
+                .dstSet           = m_ctx.descriptorSet(currFrame).descriptorSet(),
                 .dstBinding       = 0,
                 .dstArrayElement  = 0,
                 .descriptorCount  = 1,
@@ -217,32 +214,23 @@ void Renderer::render(double dt) {
                 .pBufferInfo      = &bufferInfo,
                 .pTexelBufferView = nullptr,
             });
+            m_ctx.descriptorSet(currFrame).write(descriptorWrites);
 
-            if (mat.albedo) {
-                const VkDescriptorImageInfo imageInfo = {
-                    .sampler     = mat.albedo->sampler(),
-                    .imageView   = mat.albedo->imageView(),
-                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                };
-
-                descriptorWrites.push_back(VkWriteDescriptorSet{
-                    .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .pNext            = nullptr,
-                    .dstSet           = mat.descriptorSets[currFrame].descriptorSet(),
-                    .dstBinding       = 1,
-                    .dstArrayElement  = 0,
-                    .descriptorCount  = 1,
-                    .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .pImageInfo       = &imageInfo,
-                    .pBufferInfo      = nullptr,
-                    .pTexelBufferView = nullptr,
-                });
-            }
-
-            mat.descriptorSets[currFrame].write(descriptorWrites);
-
-            VkDescriptorSet descriptorSets[] = {mat.descriptorSets[currFrame].descriptorSet()};
+            VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
             cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
+
+            const FragmentPushConstants fragPushConstants = {
+                .iAlbedo            = mat.iAlbedo,
+                .iMetallicRoughness = mat.iMetallicRoughness,
+                .iNormal            = mat.iNormal,
+                .iAmbientOcclusion  = mat.iAmbientOcclusion,
+                .iEmissive          = mat.iEmissive,
+            };
+            cmd.pushConstants(m_graphicsPipeline.layout(),
+                              VK_SHADER_STAGE_FRAGMENT_BIT,
+                              0,
+                              sizeof(FragmentPushConstants),
+                              &fragPushConstants);
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
             const VkDeviceSize offsets[] = {0};

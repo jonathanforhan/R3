@@ -17,14 +17,14 @@ public:
     R3_COPY_DELETE(Shader);
     R3_MOVE_DEFAULT(Shader);
 
-    Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlags type);
+    Shader(RenderContext& ctx, const std::filesystem::path& filename);
 
     ~Shader() noexcept;
 
     VkShaderModule shader() const noexcept { return m_shaderModule; }
 
 private:
-    void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode, VkShaderStageFlags type);
+    void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode);
 
     std::vector<uint32> readFile(const std::filesystem::path& filename) const;
 

@@ -16,6 +16,7 @@
 #include "core/Log.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
+#include "render/WindowEvents.hpp"
 
 namespace R3 {
 
@@ -29,11 +30,11 @@ Window::Window() {
     float contentScaleX, contentScaleY;
     glfwGetMonitorContentScale(primary, &contentScaleX, &contentScaleY);
 
-    static constexpr float scale = 1.5f;
+    static constexpr float scale = 1.0f;
 
     const GLFWvidmode* vidmode = glfwGetVideoMode(primary);
-    const int width            = static_cast<int>(vidmode->width / (contentScaleX * scale));
-    const int height           = static_cast<int>(vidmode->height / (contentScaleY * scale));
+    const int width            = static_cast<int>((vidmode->width / contentScaleX) * scale);
+    const int height           = static_cast<int>((vidmode->height / contentScaleY) * scale);
     static const char* title   = "R3";
 
     if (!(m_window = glfwCreateWindow(width, height, title, nullptr, nullptr))) {
@@ -53,22 +54,20 @@ Window::Window() {
     auto resizeCallback = [](GLFWwindow* window, int width, int height) {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
         _this->setShouldResize(true);
-        (void)width;
-        (void)height;
-        // EventHandler::instance().pushEvent("window-resize"_event, ivec2{width, height});
+        EventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
     };
     glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
     //--- Keyboard Input Callback
     auto keyCallback = [](GLFWwindow*, int key, int, int action, int mods) {
-        const KeyboardEventData data = {
+        const KeyboardEvent data = {
             .key       = Key(key),
             .modifiers = InputModifiers(mods),
         };
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler()->emplace<KeyboardEventData>("key-press", Key(key), InputModifiers(mods));
+                EventHandler()->emplace<KeyboardEvent>("key-press", Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
                 EventHandler()->push("key-repeat", data);
@@ -84,7 +83,7 @@ Window::Window() {
 
     //--- Mouse Button Callback
     auto mouseCallback = [](GLFWwindow*, int button, int action, int mods) {
-        const MouseButtonEventData data = {
+        const MouseButtonEvent data = {
             .button    = MouseButton(button),
             .modifiers = InputModifiers(mods),
         };
@@ -104,7 +103,7 @@ Window::Window() {
 
     //--- Mouse Scroll Callback
     auto scrollCallback = [](GLFWwindow*, double xoffset, double yoffset) {
-        const MouseScrollEventData data = {
+        const MouseScrollEvent data = {
             .offset = dvec2{xoffset, yoffset},
         };
 
@@ -119,7 +118,7 @@ Window::Window() {
         double posX = static_cast<double>(x) / static_cast<double>(w);
         double posY = static_cast<double>(y) / static_cast<double>(h);
 
-        const MouseCursorEventData data = {
+        const MouseCursorEvent data = {
             .cursorPosition = dvec2{posX, posY},
         };
 

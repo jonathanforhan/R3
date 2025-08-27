@@ -164,14 +164,19 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
+    const VkPushConstantRange pushConstantRange = {
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .offset     = 0,
+        .size       = sizeof(FragmentPushConstants),
+    };
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext                  = nullptr,
         .flags                  = 0,
         .setLayoutCount         = static_cast<uint32>(layouts.size()),
         .pSetLayouts            = layouts.data(),
-        .pushConstantRangeCount = 0,
-        .pPushConstantRanges    = nullptr,
+        .pushConstantRangeCount = 1,
+        .pPushConstantRanges    = &pushConstantRange,
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 

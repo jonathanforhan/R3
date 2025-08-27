@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "core/ResourceManager.hpp"
 #include "render/Flags.hpp"
@@ -11,32 +12,60 @@
 namespace R3 {
 
 struct MaterialComponent {
+    R3_CTOR_DEFAULT(MaterialComponent);
+    R3_COPY_DELETE(MaterialComponent);
+
+    MaterialComponent(MaterialComponent&& other) noexcept {
+        // this->* defaults to UINT32_MAX (don't put this in member intializer)
+        iAlbedo            = std::exchange(other.iAlbedo, iAlbedo);
+        iNormal            = std::exchange(other.iNormal, iNormal);
+        iMetallicRoughness = std::exchange(other.iMetallicRoughness, iMetallicRoughness);
+        iAmbientOcclusion  = std::exchange(other.iAmbientOcclusion, iAmbientOcclusion);
+        iEmissive          = std::exchange(other.iEmissive, iEmissive);
+    }
+
+    MaterialComponent& operator=(MaterialComponent&& other) noexcept {
+        if (this != &other) {
+            iAlbedo            = std::exchange(other.iAlbedo, iAlbedo);
+            iNormal            = std::exchange(other.iNormal, iNormal);
+            iMetallicRoughness = std::exchange(other.iMetallicRoughness, iMetallicRoughness);
+            iAmbientOcclusion  = std::exchange(other.iAmbientOcclusion, iAmbientOcclusion);
+            iEmissive          = std::exchange(other.iEmissive, iEmissive);
+        }
+        return *this;
+    }
+
+    ~MaterialComponent() noexcept {
+        ResourceManager()->unbindTexture(iAlbedo);
+        ResourceManager()->unbindTexture(iNormal);
+        ResourceManager()->unbindTexture(iMetallicRoughness);
+        ResourceManager()->unbindTexture(iAmbientOcclusion);
+        ResourceManager()->unbindTexture(iEmissive);
+    }
+
     // Textures
-    Handle<vulkan::Texture> albedo;
-    Handle<vulkan::Texture> normal;
-    Handle<vulkan::Texture> metallicRoughness;
-    Handle<vulkan::Texture> ambientOcclusion;
-    Handle<vulkan::Texture> emissive;
+    uint32 iAlbedo            = UINT32_MAX;
+    uint32 iNormal            = UINT32_MAX;
+    uint32 iMetallicRoughness = UINT32_MAX;
+    uint32 iAmbientOcclusion  = UINT32_MAX;
+    uint32 iEmissive          = UINT32_MAX;
 
-    // Descriptor Sets
-    std::vector<vulkan::DescriptorSet> descriptorSets;
-
-    void setTextureHandle(TextureType type, Handle<vulkan::Texture> texture) {
+    void setTextureSlot(TextureType type, uint32 slot) {
         switch (type) {
             case TextureType::Albedo:
-                albedo = std::move(texture);
+                iAlbedo = slot;
                 break;
             case TextureType::Normal:
-                normal = std::move(texture);
+                iNormal = slot;
                 break;
             case TextureType::MetallicRoughness:
-                metallicRoughness = std::move(texture);
+                iMetallicRoughness = slot;
                 break;
             case TextureType::AmbientOcclusion:
-                ambientOcclusion = std::move(texture);
+                iAmbientOcclusion = slot;
                 break;
             case TextureType::Emissive:
-                emissive = std::move(texture);
+                iEmissive = slot;
                 break;
         }
     }

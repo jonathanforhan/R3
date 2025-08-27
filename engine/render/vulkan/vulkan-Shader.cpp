@@ -16,9 +16,9 @@
 
 namespace R3::vulkan {
 
-Shader::Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlags type) {
+Shader::Shader(RenderContext& ctx, const std::filesystem::path& filename) {
     auto spirvCode = readFile(filename);
-    createFromSource(ctx, spirvCode, type);
+    createFromSource(ctx, spirvCode);
 }
 
 Shader::~Shader() noexcept {
@@ -27,7 +27,7 @@ Shader::~Shader() noexcept {
     }
 }
 
-void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode, VkShaderStageFlags type) {
+void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode) {
     m_device = ctx.device();
 
     VkShaderModuleCreateInfo shaderModuleCreateInfo = {

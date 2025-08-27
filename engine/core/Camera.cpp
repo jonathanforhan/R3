@@ -14,7 +14,7 @@ namespace R3 {
 
 Camera::Camera(CameraType type)
     : m_cameraType(type) {
-    auto keyCallback = [this](const Event<KeyboardEventData>& e) noexcept {
+    auto keyCallback = [this](const Event<KeyboardEvent>& e) noexcept {
         bool pressed = e.id == "key-press";
 
         switch (e.data.key) {
@@ -42,7 +42,7 @@ Camera::Camera(CameraType type)
     };
     EventHandler()->bindEventListener({"key-press", "key-release"}, keyCallback);
 
-    auto mouseCallback = [this](const Event<MouseButtonEventData>& e) noexcept {
+    auto mouseCallback = [this](const Event<MouseButtonEvent>& e) noexcept {
         bool pressed = e.id == "mouse-press";
 
         if (e.data.button == MouseButton::Left) {
@@ -51,7 +51,7 @@ Camera::Camera(CameraType type)
     };
     EventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
 
-    auto cursorPositionCallback = [this](const Event<MouseCursorEventData>& e) noexcept {
+    auto cursorPositionCallback = [this](const Event<MouseCursorEvent>& e) noexcept {
         m_cursorPosition = e.data.cursorPosition;
     };
     EventHandler()->bindEventListener("cursor-move", cursorPositionCallback);

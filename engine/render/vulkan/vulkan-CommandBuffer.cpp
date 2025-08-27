@@ -1,17 +1,13 @@
 #include "vulkan-CommandBuffer.hpp"
 
-#include <cstdint>
-#include <functional>
 #include <memory>
 #include <new>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan_core.h>
-#include <api/Exception.hpp>
 #include "api/Assert.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "core/EventHandler.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 

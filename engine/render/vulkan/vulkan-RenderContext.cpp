@@ -12,6 +12,7 @@
 #include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan_core.h>
+#include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "api/Version.hpp"
@@ -20,6 +21,7 @@
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
+#include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
@@ -54,6 +56,7 @@ RenderContext::RenderContext(Window& window)
         createCommandPools();
         createSyncObjects();
         createDescritorSetLayouts();
+        createDescriptorSets();
     } catch (const Exception& ex) {
         this->~RenderContext();
         throw ex;
@@ -64,7 +67,8 @@ RenderContext::~RenderContext() noexcept {
     if (m_device) {
         vkDeviceWaitIdle(m_device);
 
-        vkDestroyDescriptorSetLayout(m_device, m_defaultDescriptorSetLayout, nullptr);
+        m_descriptorSets.clear();
+        vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
 
         for (auto& sem : m_imageAvailableSemaphores) {
             vkDestroySemaphore(m_device, sem, nullptr);
@@ -228,8 +232,13 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                           .samplerAnisotropy  = VK_TRUE,
                       })
                       .set_required_features_12({
-                          .descriptorIndexing  = VK_TRUE,
-                          .bufferDeviceAddress = VK_TRUE,
+                          .descriptorIndexing                            = VK_TRUE,
+                          .shaderSampledImageArrayNonUniformIndexing     = VK_TRUE,
+                          .descriptorBindingUniformBufferUpdateAfterBind = VK_TRUE,
+                          .descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE,
+                          .descriptorBindingPartiallyBound               = VK_TRUE,
+                          .runtimeDescriptorArray                        = VK_TRUE,
+                          .bufferDeviceAddress                           = VK_TRUE,
                       })
                       .set_required_features_13({
                           .synchronization2 = VK_TRUE,
@@ -237,9 +246,8 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                       })
                       .add_required_extensions({
                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                          VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME,
-                          VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME,
                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+                          VK_EXT_SHADER_OBJECT_EXTENSION_NAME,
                       })
                       .add_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                       .require_dedicated_transfer_queue()
@@ -328,32 +336,70 @@ void RenderContext::createSyncObjects() {
 void RenderContext::createDescritorSetLayouts() {
     //--- Descriptor Layout
     const VkDescriptorSetLayoutBinding bindings[] = {
-        // { binding, type, count, stage }
-
-        // Uniform Buffer Object
-        {0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-        // Albedo
-        {1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // MetallicRoughness
-        {2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // Normal
-        {3, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // AmbientOcclusion
-        {4, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // Emissive
-        {5, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        // Lighting
-        {6, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        // [0]: MVP UBO
+        {
+            .binding         = 0,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT,
+        },
+        // [1]: Joint Transform UBO
+        {
+            .binding         = 1,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = maxJointTransformBindings(),
+            .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT,
+        },
+        // [2]: Texture Samplers
+        {
+            .binding         = 2,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .descriptorCount = maxTextureSamplerBindings(),
+            .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+        // [3]: Light UBO
+        {
+            .binding         = 3,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = maxLightBindings(),
+            .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
     };
 
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {
+    const VkDescriptorBindingFlags bindingFlags[] = {
+        0,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+    };
+
+    const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
+        .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+        .pNext         = nullptr,
+        .bindingCount  = static_cast<uint32>(std::size(bindingFlags)),
+        .pBindingFlags = bindingFlags,
+    };
+
+    const VkDescriptorSetLayoutCreateInfo layoutInfo = {
         .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .pNext        = nullptr,
-        .flags        = {},
+        .pNext        = &bindingFlagsInfo,
+        .flags        = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT,
         .bindingCount = static_cast<uint32>(std::size(bindings)),
         .pBindings    = bindings,
     };
-    VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &*m_defaultDescriptorSetLayout));
+    VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &*m_descriptorSetLayout));
+}
+
+void RenderContext::createDescriptorSets() {
+    R3_ASSERT(m_descriptorSetLayout && "Descriptor set layout not created");
+
+    const VkDescriptorPoolSize poolSizes[] = {
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight() * maxTextureSamplerBindings()},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight() * maxJointTransformBindings()},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight() * maxLightBindings()},
+    };
+    m_descriptorSets = DescriptorSet::allocate(*this, m_descriptorSetLayout, poolSizes, maxFramesInFlight());
 }
 
 #if R3_VALIDATION_LAYERS_ENABLED

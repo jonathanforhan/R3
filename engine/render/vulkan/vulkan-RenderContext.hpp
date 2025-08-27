@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <span>
 #include <vector>
 #include <VkBootstrap.h>
@@ -9,6 +10,7 @@
 #include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 #include "vulkan-CommandBuffer.hpp"
+#include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Handle.hpp"
 
 #ifdef R3_DEBUG
@@ -38,7 +40,13 @@ public:
     virtual ~RenderContext() noexcept override;
 
     /// Returns the maximum number of frames that can be processed concurrently (in flight).
-    uint32 maxFramesInFlight() const noexcept { return 3; }
+    constexpr uint32 maxFramesInFlight() const noexcept { return 3; }
+    /// Returns the maximum number of shader joint transform bindings.
+    constexpr uint32 maxJointTransformBindings() const noexcept { return 1024; }
+    /// Returns the maximum number of shader texture sampler bindings.
+    constexpr uint32 maxTextureSamplerBindings() const noexcept { return 1024; }
+    /// Returns the maximum number of shader light bindings.
+    constexpr uint32 maxLightBindings() const noexcept { return 1024; }
     /// Increment the current frame index or reset when equal to maxFramesInFlight()
     void advanceFrame() noexcept { m_currentFrame = (m_currentFrame + 1) % maxFramesInFlight(); }
 
@@ -94,8 +102,11 @@ public:
     /// Get the render finished semaphore for the specified swapchain image index
     VkSemaphore& renderFinishedSemaphore(usize imageIndex) noexcept { return m_renderFinishedSemaphores[imageIndex]; }
 
-    /// Get default descriptor set layout
-    VkDescriptorSetLayout defaultDescriptorLayout() const noexcept { return m_defaultDescriptorSetLayout; }
+    /// Get global descriptor set layout
+    VkDescriptorSetLayout descriptorLayout() const noexcept { return m_descriptorSetLayout; }
+    /// Get global descriptor sets
+    DescriptorSet& descriptorSet(usize index) noexcept { return m_descriptorSets[index]; }
+    const DescriptorSet& descriptorSet(usize index) const noexcept { return m_descriptorSets[index]; }
 
 private:
     static vkb::Instance createInstance();
@@ -106,6 +117,7 @@ private:
     void createCommandPools();
     void createSyncObjects();
     void createDescritorSetLayouts();
+    void createDescriptorSets();
 
 private:
     Handle<VkInstance> m_instance;
@@ -116,16 +128,17 @@ private:
     Handle<VkQueue> m_graphicsQueue;
     Handle<VkQueue> m_presentQueue;
     Handle<VkQueue> m_computeQueue;
-    uint32 m_graphicsQueueIndex = 0xFFFFFFFF;
-    uint32 m_presentQueueIndex  = 0xFFFFFFFF;
-    uint32 m_computeQueueIndex  = 0xFFFFFFFF;
+    uint32 m_graphicsQueueIndex = UINT32_MAX;
+    uint32 m_presentQueueIndex  = UINT32_MAX;
+    uint32 m_computeQueueIndex  = UINT32_MAX;
     std::vector<CommandBuffer> m_graphicsQueueCmds;
     std::vector<CommandBuffer> m_computeQueueCmds;
     std::vector<VkSemaphore> m_imageAvailableSemaphores; // one per frame in flight
     std::vector<VkFence> m_inFlightFences;               // one per frame in flight
     std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image
     uint32 m_currentFrame = 0;
-    Handle<VkDescriptorSetLayout> m_defaultDescriptorSetLayout;
+    Handle<VkDescriptorSetLayout> m_descriptorSetLayout;
+    std::vector<DescriptorSet> m_descriptorSets;
 };
 
 } // namespace R3::vulkan

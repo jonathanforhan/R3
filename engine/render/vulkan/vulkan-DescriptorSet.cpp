@@ -3,7 +3,6 @@
 #include <memory>
 #include <new>
 #include <span>
-#include <tuple>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -14,27 +13,26 @@
 
 namespace R3::vulkan {
 
-DescriptorSet::DescriptorSet(VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool)
-    : m_descriptorSet(descriptorSet),
+DescriptorSet::DescriptorSet(RenderContext& ctx, VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool)
+    : m_device(ctx.device()),
+      m_descriptorSet(descriptorSet),
       m_pool(std::move(pool)) {}
 
-std::vector<DescriptorSet> R3::vulkan::DescriptorSet::allocate(VkDescriptorSetLayout layout,
+std::vector<DescriptorSet> R3::vulkan::DescriptorSet::allocate(RenderContext& ctx,
+                                                               VkDescriptorSetLayout layout,
                                                                std::span<const VkDescriptorPoolSize> poolSizes,
                                                                uint32 count) {
-    std::shared_ptr<VkDescriptorPool> pool(new VkDescriptorPool, [](auto* p) noexcept {
-        if (p) {
-            RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
-            vkDestroyDescriptorPool(ctx.device(), *p, nullptr);
+    std::shared_ptr<VkDescriptorPool> pool(new VkDescriptorPool, [device = ctx.device()](auto* p) noexcept {
+        if (device && p) {
+            vkDestroyDescriptorPool(device, *p, nullptr);
         }
     });
-
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
 
     // Create shared descriptor pool
     const VkDescriptorPoolCreateInfo poolInfo = {
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pNext         = nullptr,
-        .flags         = {},
+        .flags         = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT,
         .maxSets       = count,
         .poolSizeCount = static_cast<uint32>(poolSizes.size()),
         .pPoolSizes    = poolSizes.data(),
@@ -59,15 +57,14 @@ std::vector<DescriptorSet> R3::vulkan::DescriptorSet::allocate(VkDescriptorSetLa
     descriptorSets.resize(count);
 
     for (uint32 i = 0; i < count; ++i) {
-        descriptorSets[i] = std::move(DescriptorSet(vkDescriptorSets[i], pool));
+        descriptorSets[i] = std::move(DescriptorSet(ctx, vkDescriptorSets[i], pool));
     }
 
     return descriptorSets;
 }
 
 void DescriptorSet::write(std::span<const VkWriteDescriptorSet> writes) noexcept {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
-    vkUpdateDescriptorSets(ctx.device(), static_cast<uint32>(writes.size()), writes.data(), 0, nullptr);
+    vkUpdateDescriptorSets(m_device, static_cast<uint32>(writes.size()), writes.data(), 0, nullptr);
 }
 
 } // namespace R3::vulkan

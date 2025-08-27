@@ -11,7 +11,7 @@ namespace R3 {
  *   "key-repeat"
  *   "key-release"
  */
-struct KeyboardEventData {
+struct KeyboardEvent {
     Key key;                  /**< Key code activated */
     InputModifiers modifiers; /**< 8 bit Mask of modifiers applied */
 };
@@ -21,7 +21,7 @@ struct KeyboardEventData {
  *   - "mouse-press"
  *   - "mouse-release"
  */
-struct MouseButtonEventData {
+struct MouseButtonEvent {
     MouseButton button;       /**< Mouse button activated */
     InputModifiers modifiers; /**< 8 bit Mask of modifiers applied */
 };
@@ -30,7 +30,7 @@ struct MouseButtonEventData {
  * events:
  *   - "mouse-scroll"
  */
-struct MouseScrollEventData {
+struct MouseScrollEvent {
     dvec2 offset; /**< Mouse scroll offset x and y */
 };
 
@@ -38,7 +38,7 @@ struct MouseScrollEventData {
  * events:
  *   - "cursor-move"
  */
-struct MouseCursorEventData {
+struct MouseCursorEvent {
     dvec2 cursorPosition; /**< Mouse cursor position in x and y normalized */
 };
 

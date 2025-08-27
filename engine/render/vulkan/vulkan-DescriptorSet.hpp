@@ -2,13 +2,11 @@
 
 #include <memory>
 #include <span>
-#include <tuple>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Fwd.hpp"
-#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
@@ -18,11 +16,12 @@ public:
 
 private:
     /// Private constructor - use allocate() instead
-    DescriptorSet(VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool);
+    DescriptorSet(RenderContext& ctx, VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool);
 
 public:
     /// Static factory method to allocate DescriptorSets from a pool
-    [[nodiscard]] static std::vector<DescriptorSet> allocate(VkDescriptorSetLayout layout,
+    [[nodiscard]] static std::vector<DescriptorSet> allocate(RenderContext& ctx,
+                                                             VkDescriptorSetLayout layout,
                                                              std::span<const VkDescriptorPoolSize> poolSizes,
                                                              uint32 count);
 
@@ -31,6 +30,7 @@ public:
     VkDescriptorSet descriptorSet() const noexcept { return m_descriptorSet; }
 
 private:
+    VkDevice m_device               = VK_NULL_HANDLE;
     VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
     std::shared_ptr<VkDescriptorPool> m_pool;
 };

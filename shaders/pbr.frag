@@ -1,0 +1,162 @@
+#version 460
+#extension GL_EXT_nonuniform_qualifier : require
+
+#define M_PI 3.14159265359
+
+layout (location = 0) in vec3 v_Position;
+layout (location = 1) in vec3 v_Normal;
+layout (location = 2) in vec2 v_TexCoords;
+
+layout (location = 0) out vec4 f_Color;
+
+layout (binding = 2) uniform sampler2D u_Samplers[];
+
+struct PointLight {
+    vec3 position;
+    vec3 color;
+    float intensity;
+};
+
+layout (binding = 3) uniform LightBuffer {
+    vec3 u_ViewPosition;
+    uint u_NumLights;
+    PointLight u_Lights[];
+};
+
+/* contains indices for textures in the u_Samplers array */
+layout (push_constant) uniform Material {
+    uint c_iAlbedo;
+    uint c_iMetallicRoughness; /* metalness B channel, roughness G channel */
+    uint c_iNormal;
+    uint c_iAmbientOcclusion;
+    uint c_iEmissive;
+};
+
+vec3 calcTangentNormal(sampler2D normal, vec2 texCoords) {
+    vec3 tangentNormal = texture(normal, texCoords).xyz * 2.0 - 1.0;
+
+    vec3 Q1 = dFdx(v_Position);
+    vec3 Q2 = dFdy(v_Position);
+    vec2 st1 = dFdx(v_TexCoords);
+    vec2 st2 = dFdy(v_TexCoords);
+
+    vec3 N = normalize(v_Normal);
+    vec3 T = normalize(Q1 * st2.t - Q2 * st1.t);
+    vec3 B = -normalize(cross(N, T));
+    mat3 TBN = mat3(T, B, N);
+
+    return normalize(TBN * tangentNormal);
+}
+
+float distributionGGX(vec3 N, vec3 H, float roughness) {
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(N, H), 0.0);
+    float NdotH2 = NdotH * NdotH;
+
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = M_PI * denom * denom;
+
+    return nom / denom;
+}
+
+float geometrySchlickGGX(float NdotV, float roughness) {
+    float r = (roughness + 1.0);
+    float k = (r * r) / 8.0;
+
+    float nom   = NdotV;
+    float denom = NdotV * (1.0 - k) + k;
+
+    return nom / denom;
+}
+
+float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx2 = geometrySchlickGGX(NdotV, roughness);
+    float ggx1 = geometrySchlickGGX(NdotL, roughness);
+
+    return ggx1 * ggx2;
+}
+
+vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+    return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+void main() {
+    /*
+    vec3 albedo = texture(u_Samplers[nonuniformEXT(material.iAlbedo)], v_TexCoords).rgb;
+    f_Color = vec4(albedo, 1.0);
+    */
+
+    // Render
+    vec3 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords).rgb;
+    vec4 mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords);
+    float metallic = mr.b;
+    float roughness = mr.g;
+
+    vec3 ambientOcclusion = vec3(1.0);
+    if (c_iAmbientOcclusion != 0xffffffff) {
+        ambientOcclusion *= texture(u_Samplers[c_iAmbientOcclusion], v_TexCoords).rgb;
+    }
+
+    vec3 N = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
+    vec3 V = normalize(u_ViewPosition - v_Position);
+
+    // calc reflectance at normal incidence; if dieletric use F0 of 0.04 else use albedo color as F0
+    vec3 F0 = vec3(0.04);
+    F0 = mix(F0, albedo, metallic);
+
+    // reflectance equation
+    vec3 Lo = vec3(0.0);
+
+    /*
+    for (int i = 0; i < u_NumLights; i++) {
+        // per light radiance
+        vec3 L = normalize(u_Lights[i].position - v_Position);
+        vec3 H = normalize(V + L);
+        float dist = length(u_Lights[i].position - v_Position);
+        float attenuation = 1.0 / (dist * dist);
+        vec3 radiance = u_Lights[i].color * u_Lights[i].intensity * attenuation;
+
+        // cook-terrance BRDF
+        float NDF = distributionGGX(N, H, roughness);
+        float G = geometrySmith(N, V, L, roughness);
+        vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+        vec3 numerator = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        vec3 specular = numerator / denominator;
+
+        // kS is equal to Fresnel
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;
+
+        // scale light by NdotL
+        float NdotL = max(dot(N, L), 0.0);
+
+        // add to outgoing radiance Lo
+        Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
+    }
+    */
+
+    // vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
+    vec3 ambient = vec3(0.33) * albedo; // * ambientOcclusion;
+
+    vec3 color = ambient + Lo;
+
+    // emission
+    if (c_iEmissive != 0xffffffff) {
+        color += texture(u_Samplers[c_iEmissive], v_TexCoords).rgb;
+    }
+
+    // HDR tonemapping
+    // color = color / (color + vec3(1.0));
+
+    // gamma correction
+    // color = pow(color, vec3(1.0 / 2.2));
+
+    f_Color = vec4(color, 1.0);
+}
