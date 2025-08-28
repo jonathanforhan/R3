@@ -1,5 +1,3 @@
-/// @file System.hpp
-
 #pragma once
 
 #include <type_traits>
@@ -9,7 +7,8 @@ namespace R3 {
 /// @brief ISystem is the interface class for Derived systems,
 /// Their virtual update method will be called each frame.
 /// The virtual overhead doesn't matter as there will be few systems compared to Entities.
-struct ISystem {
+class ISystem {
+public:
     /// @brief Base class virtual destructor
     virtual ~ISystem() noexcept {}
 

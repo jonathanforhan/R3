@@ -22,6 +22,7 @@ layout (binding = 3) readonly buffer LightBuffer {
 };
 
 layout (push_constant) uniform FragmentPushConstants {
+layout(offset = 64)
     vec3 c_ViewPosition;
     uint c_NumLights;
     /* indices for textures in the u_Samplers array */
@@ -135,7 +136,7 @@ void main() {
         Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
+    vec3 ambient = vec3(0.1) * albedo;// * ambientOcclusion;
 
     vec3 color = ambient + Lo;
 

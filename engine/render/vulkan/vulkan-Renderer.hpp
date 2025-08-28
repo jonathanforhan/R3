@@ -38,6 +38,15 @@ public:
     IRenderContext* context() noexcept { return &m_ctx; }
 
 private:
+    void beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex);
+
+    void bindPipelineHelper(CommandBuffer& cmd);
+
+    void writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights);
+
+    uint32 updateLights(uint32 frameIndex);
+
+private:
     Window& m_window;     // must out-live renderer
     RenderContext& m_ctx; // must out-live renderer
     Swapchain m_swapchain;

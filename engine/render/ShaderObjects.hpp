@@ -13,9 +13,12 @@ struct ViewProjection {
 };
 
 struct VertexUniformBufferObject {
-    alignas(16) fmat4 model;
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
+};
+
+struct VertexPushConstants {
+    alignas(16) fmat4 model;
 };
 
 struct FragmentPushConstants {

@@ -67,7 +67,7 @@ void Camera::update(double dt) {
     float deltaT = static_cast<float>(dt);
 
     static constexpr float mouseSensitivity    = 360.0f;
-    static constexpr float movementSensitivity = 8.0f;
+    static constexpr float movementSensitivity = 2.0f;
 
     const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
     const float deltaY        = -(m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f);

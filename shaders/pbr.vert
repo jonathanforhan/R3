@@ -15,7 +15,6 @@ layout(location = 1) out vec3 v_Normal;
 layout(location = 2) out vec2 v_TexCoords;
 
 layout(binding = 0) uniform ModelViewProjection {
-    mat4 u_Model;
     mat4 u_View;
     mat4 u_Proj;
 };
@@ -24,9 +23,13 @@ layout(binding = 1) readonly buffer JointTransforms {
     mat4 u_JointTransforms[];
 };
 
+layout (push_constant) uniform VertexPushConstants {
+    mat4 c_Model;
+};
+
 void main() {
-    v_Position = vec3(u_Model * vec4(a_Position, 1.0));
-    v_Normal = mat3(transpose(inverse(u_Model))) * a_Normal;
+    v_Position = vec3(c_Model * vec4(a_Position, 1.0));
+    v_Normal = mat3(transpose(inverse(c_Model))) * a_Normal;
     v_TexCoords = a_TexCoords;
 
     gl_Position = u_Proj * u_View * vec4(v_Position, 1.0);

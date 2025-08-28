@@ -165,19 +165,26 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
-    const VkPushConstantRange pushConstantRange = {
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .offset     = 0,
-        .size       = sizeof(FragmentPushConstants),
+    const VkPushConstantRange pushConstantRanges[] = {
+        {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset     = 0,
+            .size       = sizeof(VertexPushConstants),
+        },
+        {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset     = sizeof(VertexPushConstants),
+            .size       = sizeof(FragmentPushConstants),
+        },
     };
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .pNext                  = nullptr,
-        .flags                  = 0,
+        .flags                  = {},
         .setLayoutCount         = static_cast<uint32>(layouts.size()),
         .pSetLayouts            = layouts.data(),
-        .pushConstantRangeCount = 1,
-        .pPushConstantRanges    = &pushConstantRange,
+        .pushConstantRangeCount = static_cast<uint32>(std::size(pushConstantRanges)),
+        .pPushConstantRanges    = pushConstantRanges,
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 

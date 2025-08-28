@@ -118,145 +118,44 @@ void Renderer::draw(double dt) {
         return;
     }
 
+    // Get current frame index
     m_ctx.waitForCurrentFrame();
-
     uint32 currFrame = m_ctx.currentFrameIndex();
-
-    World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
-    m_ubos[currFrame].copy(&m_viewProj, sizeof(m_viewProj), sizeof(fmat4));
 
     // Acquire next image
     uint32 imageIndex;
     VkResult result = m_swapchain.acquireNextImage(m_ctx.currentImageAvailableSemaphore(), imageIndex);
-
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         return; // Will be handled by resize logic
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
 
-    // Record command buffer
+    // update view projection matrices in ubo
+    World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
+    m_ubos[currFrame].copy(&m_viewProj, sizeof(m_viewProj));
+
+    uint32 numLights = updateLights(currFrame);
+    writeDescriptorSetsHelper(currFrame, numLights);
+
     CommandBuffer& cmd = m_ctx.graphicsCommandBuffer();
     cmd.reset();
     cmd.begin();
 
     transitionAttachmentsForRender(cmd, imageIndex);
-
-    const VkRenderingAttachmentInfo colorAttachment = {
-        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .pNext              = nullptr,
-        .imageView          = m_colorImage.imageView(),
-        .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
-        .resolveImageView   = m_swapchain.imageViews()[imageIndex],
-        .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue         = {{0.0f, 0.0f, 0.0f, 1.0f}},
-    };
-    const VkRenderingAttachmentInfo depthAttachment = {
-        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .pNext              = nullptr,
-        .imageView          = m_depthImage.imageView(),
-        .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        .resolveMode        = VK_RESOLVE_MODE_NONE,
-        .resolveImageView   = VK_NULL_HANDLE,
-        .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .clearValue         = {1.0f, 0},
-    };
-    const VkRenderingInfo renderingInfo = {
-        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .pNext                = nullptr,
-        .flags                = 0,
-        .renderArea           = {.offset = {0, 0}, .extent = m_swapchain.extent()},
-        .layerCount           = 1,
-        .viewMask             = 0,
-        .colorAttachmentCount = 1,
-        .pColorAttachments    = &colorAttachment,
-        .pDepthAttachment     = &depthAttachment,
-        .pStencilAttachment   = nullptr,
-    };
-    cmd.beginRendering(renderingInfo);
-
-    cmd.bindGraphicsPipeline(m_graphicsPipeline.pipeline());
-    cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
-    cmd.setViewport({
-        .x        = 0.0f,
-        .y        = static_cast<float>(m_swapchain.extent().height), // start from bottom
-        .width    = static_cast<float>(m_swapchain.extent().width),
-        .height   = -static_cast<float>(m_swapchain.extent().height), // flip Y
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    });
-    cmd.setCullMode(VK_CULL_MODE_BACK_BIT);
-    cmd.setLineWidth(1.0f);
-    cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-    cmd.setDepthTestEnable(true);
-
-    uint32 numLights = 0;
-    World()->registry().view<LightComponent>().each([&](const LightComponent& light) {
-        if (numLights >= 256) {
-            return; // Max lights reached
-        }
-        PointLightShaderObject lightShaderObject = {
-            .position  = light.position,
-            .color     = light.color,
-            .intensity = light.intensity,
-        };
-        m_lights[currFrame].copy(&lightShaderObject, sizeof(lightShaderObject), sizeof(lightShaderObject) * numLights);
-        numLights++;
-    });
+    beginRenderingHelper(cmd, imageIndex);
+    bindPipelineHelper(cmd);
 
     World()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
-        [&](const MeshComponent& mesh, MaterialComponent& mat, TransformComponent& trans) {
-            std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-            trans.transform = glm::rotate(fmat4(1.0f), glm::radians(90.0f), fvec3(1.0f, 0.0f, 0.0f));
-            trans.transform = glm::rotate(trans.transform, glm::radians(180.0f), fvec3(0.0f, 0.0f, 1.0f));
-            m_ubos[currFrame].copy(&trans.transform, sizeof(trans.transform));
-
-            // MVP
-            const VkDescriptorBufferInfo uboBufferInfo = {
-                .buffer = m_ubos[currFrame].buffer(),
-                .offset = 0,
-                .range  = sizeof(VertexUniformBufferObject),
+        [&](const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
+            const VertexPushConstants vertPushConstants = {
+                .model = trans.transform(),
             };
-            descriptorWrites.push_back(VkWriteDescriptorSet{
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = m_ctx.descriptorSet(currFrame).descriptorSet(),
-                .dstBinding       = 0,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pImageInfo       = nullptr,
-                .pBufferInfo      = &uboBufferInfo,
-                .pTexelBufferView = nullptr,
-            });
-            // Storage buffer - Lights
-            const VkDescriptorBufferInfo ssboBufferInfo = {
-                .buffer = m_lights[currFrame].buffer(),
-                .offset = 0,
-                .range  = sizeof(PointLightShaderObject) * numLights,
-            };
-            descriptorWrites.push_back(VkWriteDescriptorSet{
-                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .pNext            = nullptr,
-                .dstSet           = m_ctx.descriptorSet(currFrame).descriptorSet(),
-                .dstBinding       = 3,
-                .dstArrayElement  = 0,
-                .descriptorCount  = 1,
-                .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pImageInfo       = nullptr,
-                .pBufferInfo      = &ssboBufferInfo,
-                .pTexelBufferView = nullptr,
-            });
-            m_ctx.descriptorSet(currFrame).write(descriptorWrites);
-
-            VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
-            cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
+            cmd.pushConstants(m_graphicsPipeline.layout(),
+                              VK_SHADER_STAGE_VERTEX_BIT,
+                              0,
+                              sizeof(VertexPushConstants),
+                              &vertPushConstants);
 
             const FragmentPushConstants fragPushConstants = {
                 .viewPosition       = World()->camera().position(),
@@ -269,9 +168,12 @@ void Renderer::draw(double dt) {
             };
             cmd.pushConstants(m_graphicsPipeline.layout(),
                               VK_SHADER_STAGE_FRAGMENT_BIT,
-                              0,
+                              sizeof(VertexPushConstants),
                               sizeof(FragmentPushConstants),
                               &fragPushConstants);
+
+            VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
+            cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
             const VkDeviceSize offsets[] = {0};
@@ -443,6 +345,121 @@ void Renderer::handleWindowResize() {
         VK_IMAGE_ASPECT_DEPTH_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
+}
+
+void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
+    const VkRenderingAttachmentInfo colorAttachment = {
+        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .pNext              = nullptr,
+        .imageView          = m_colorImage.imageView(),
+        .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
+        .resolveImageView   = m_swapchain.imageViews()[imageIndex],
+        .resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue         = {{0.0f, 0.0f, 0.0f, 1.0f}},
+    };
+    const VkRenderingAttachmentInfo depthAttachment = {
+        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .pNext              = nullptr,
+        .imageView          = m_depthImage.imageView(),
+        .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+        .resolveMode        = VK_RESOLVE_MODE_NONE,
+        .resolveImageView   = VK_NULL_HANDLE,
+        .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp            = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .clearValue         = {1.0f, 0},
+    };
+    const VkRenderingInfo renderingInfo = {
+        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .pNext                = nullptr,
+        .flags                = 0,
+        .renderArea           = {.offset = {0, 0}, .extent = m_swapchain.extent()},
+        .layerCount           = 1,
+        .viewMask             = 0,
+        .colorAttachmentCount = 1,
+        .pColorAttachments    = &colorAttachment,
+        .pDepthAttachment     = &depthAttachment,
+        .pStencilAttachment   = nullptr,
+    };
+    cmd.beginRendering(renderingInfo);
+}
+
+void Renderer::bindPipelineHelper(CommandBuffer& cmd) {
+    cmd.bindGraphicsPipeline(m_graphicsPipeline.pipeline());
+    cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
+    cmd.setViewport({
+        .x        = 0.0f,
+        .y        = static_cast<float>(m_swapchain.extent().height),
+        .width    = static_cast<float>(m_swapchain.extent().width),
+        .height   = -static_cast<float>(m_swapchain.extent().height),
+        .minDepth = 0.0f,
+        .maxDepth = 1.0f,
+    });
+    cmd.setCullMode(VK_CULL_MODE_BACK_BIT);
+    cmd.setLineWidth(1.0f);
+    cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
+    cmd.setDepthTestEnable(true);
+}
+
+void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
+    std::vector<VkWriteDescriptorSet> descriptorWrites;
+    // MVP buffer
+    const VkDescriptorBufferInfo uboBufferInfo = {
+        .buffer = m_ubos[frameIndex].buffer(),
+        .offset = 0,
+        .range  = sizeof(VertexUniformBufferObject),
+    };
+    descriptorWrites.push_back(VkWriteDescriptorSet{
+        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext            = nullptr,
+        .dstSet           = m_ctx.descriptorSet(frameIndex).descriptorSet(),
+        .dstBinding       = 0,
+        .dstArrayElement  = 0,
+        .descriptorCount  = 1,
+        .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .pImageInfo       = nullptr,
+        .pBufferInfo      = &uboBufferInfo,
+        .pTexelBufferView = nullptr,
+    });
+    // Storage buffer - Lights
+    const VkDescriptorBufferInfo ssboBufferInfo = {
+        .buffer = m_lights[frameIndex].buffer(),
+        .offset = 0,
+        .range  = sizeof(PointLightShaderObject) * numLights,
+    };
+    descriptorWrites.push_back(VkWriteDescriptorSet{
+        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        .pNext            = nullptr,
+        .dstSet           = m_ctx.descriptorSet(frameIndex).descriptorSet(),
+        .dstBinding       = 3,
+        .dstArrayElement  = 0,
+        .descriptorCount  = 1,
+        .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+        .pImageInfo       = nullptr,
+        .pBufferInfo      = &ssboBufferInfo,
+        .pTexelBufferView = nullptr,
+    });
+    m_ctx.descriptorSet(frameIndex).write(descriptorWrites);
+}
+
+uint32 Renderer::updateLights(uint32 frameIndex) {
+    uint32 numLights = 0;
+    World()->registry().view<LightComponent>().each([&](const LightComponent& light) {
+        if (numLights >= 256) {
+            return; // Max lights reached
+        }
+        PointLightShaderObject lightShaderObject = {
+            .position  = light.position,
+            .color     = light.color,
+            .intensity = light.intensity,
+        };
+        m_lights[frameIndex].copy(&lightShaderObject, sizeof(lightShaderObject), sizeof(lightShaderObject) * numLights);
+        numLights++;
+    });
+    return numLights;
 }
 
 } // namespace R3::vulkan

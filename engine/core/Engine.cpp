@@ -3,6 +3,7 @@
 #include <chrono>
 #include "EventHandler.hpp"
 #include "components/LightComponent.hpp"
+#include "components/TransformComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
@@ -11,13 +12,17 @@
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"
+#include "systems/TransformSystem.hpp"
 
 namespace R3 {
 
 static void TEST_FUNCTION() {
-    // const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb";
-    const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
-    (void)ModelLoader().glTFLoad(modelPath);
+    World()->addSystem<TransformSystem>();
+
+    // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
+    Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+
+    Entity chess = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
 
     Entity light = World()->registry().create();
     World()->registry().emplace<LightComponent>(light,
@@ -26,6 +31,10 @@ static void TEST_FUNCTION() {
                                                     .color     = fvec3(1.0f),
                                                     .intensity = 100.0f,
                                                 });
+
+    auto& t       = World()->registry().get<TransformComponent>(helmet);
+    t.transform() = glm::translate(t.transform(), fvec3(0.5f, 0.0f, 0.0f));
+    t.transform() = glm::scale(t.transform(), fvec3(0.2f));
 }
 
 double EngineSingleton::deltaTime() {

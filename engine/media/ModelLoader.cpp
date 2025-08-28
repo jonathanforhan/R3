@@ -16,6 +16,7 @@
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "components/HierarchyComponent.hpp"
 #include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
 #include "components/TextureLifetimeComponent.hpp"
@@ -43,6 +44,7 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
     glTF::Model model = glTF::ModelImporter().import(path);
 
     m_entity = World()->registry().create();
+    World()->registry().emplace<TransformComponent>(m_entity); // give root node a default transform
 
     vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
 
@@ -58,19 +60,48 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
     m_cmd->end();
     m_cmd->submitSync();
 
-    World()->registry().emplace<TransformComponent>(m_entity);
-
     return m_entity;
 }
 
 void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node, usize id) {
-    for (uint32 iChild : node.children) {
-        glTF_processNode(model, model.root.nodes[iChild], iChild);
+    Entity parent = m_entity;
+
+    Entity child{World()->registry().create()};
+    HierarchyComponent& hier = World()->registry().get_or_emplace<HierarchyComponent>(parent);
+    hier.children.push_back(child); // add child to parent
+
+    m_entity = child; // set current entity to child for processing
+
+    fmat4 local;
+    for (usize i = 0; i < 16; i++) {
+        local[i / 4][i % 4] = node.matrix[i];
     }
+
+    fquat rotation    = glm::normalize(fquat{node.rotation[3], node.rotation[0], node.rotation[1], node.rotation[2]});
+    fvec3 scale       = fvec3{node.scale[0], node.scale[1], node.scale[2]};
+    fvec3 translation = fvec3{node.translation[0], node.translation[1], node.translation[2]};
+
+    fmat4 T = glm::translate(fmat4(1.0f), translation);
+    fmat4 R = glm::mat4_cast(rotation);
+    fmat4 S = glm::scale(fmat4(1.0f), scale);
+    local *= T * R * S;
+
+    World()->registry().emplace<TransformComponent>(child).transform() = local;
 
     if (node.mesh) {
         glTF_processMesh(model, model.root.meshes[*node.mesh], *node.mesh);
     }
+
+    if (!node.children.empty()) {
+        // set parent of this node
+        World()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
+
+        for (uint32 iChild : node.children) {
+            glTF_processNode(model, model.root.nodes[iChild], iChild);
+        }
+    }
+
+    m_entity = parent; // restore current entity to parent
 }
 
 void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize id) {
@@ -185,7 +216,6 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
             }
         }
 
-        /* TODO support multiple meshes per model entity */
         World()->registry().emplace<MeshComponent>(
             m_entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
     }
@@ -247,7 +277,8 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
     std::string name;
 
     if (!image.uri.empty()) {
-        std::filesystem::path imagePath = m_path.replace_filename(image.uri);
+        std::filesystem::path imagePath = m_path;
+        imagePath.replace_filename(image.uri);
 
         name = imagePath.string();
         LOG_INFO("importing texture {}", name);
