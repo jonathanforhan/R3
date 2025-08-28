@@ -7,6 +7,7 @@
 #include <system_error>
 #include <vector>
 #include <VkBootstrap.h>
+#include <volk.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -92,6 +93,8 @@ void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebu
     m_format      = swapchain.image_format;
     m_presentMode = swapchain.present_mode;
     m_extent      = swapchain.extent;
+
+    ctx.setSwapchainFormat(m_format);
 }
 
 } // namespace R3::vulkan

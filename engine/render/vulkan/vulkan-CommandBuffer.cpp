@@ -96,13 +96,6 @@ void CommandBuffer::endRendering() {
     vkCmdEndRendering(m_commandBuffer);
 }
 
-/*
-void CommandBuffer::nextSubpass(VkSubpassContents contents) {
-    R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
-    vkCmdNextSubpass(m_commandBuffer, contents);
-}
-*/
-
 void CommandBuffer::bindGraphicsPipeline(VkPipeline pipeline) {
     R3_ASSERT(m_isRecording && "CommandBuffer must be recording!");
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
@@ -128,6 +121,10 @@ void CommandBuffer::bindDescriptorSets(VkPipelineBindPoint bindPoint,
                             descriptorSets.data(),
                             static_cast<uint32>(dynamicOffsets.size()),
                             dynamicOffsets.data());
+}
+
+void CommandBuffer::bindShaders(std::span<const VkShaderEXT> shaders, std::span<const VkShaderStageFlagBits> stages) {
+    vkCmdBindShadersEXT(m_commandBuffer, static_cast<uint32>(stages.size()), stages.data(), shaders.data());
 }
 
 void CommandBuffer::bindVertexBuffers(uint32 firstBinding,

@@ -4,7 +4,7 @@
 #include <memory>
 #include <span>
 #include <vector>
-#include <vulkan/vulkan_core.h>
+#include <volk.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Fwd.hpp"
@@ -34,7 +34,6 @@ public:
     /// Render pass commands
     void beginRendering(const VkRenderingInfo& beginInfo);
     void endRendering();
-    // void nextSubpass(VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE);
 
     /// Pipeline binding
     void bindGraphicsPipeline(VkPipeline pipeline);
@@ -44,6 +43,9 @@ public:
                             uint32 firstSet,
                             std::span<const VkDescriptorSet> descriptorSets,
                             std::span<const uint32> dynamicOffsets = {});
+
+    /// Shader binding
+    void bindShaders(std::span<const VkShaderEXT> shaders, std::span<const VkShaderStageFlagBits> stages);
 
     /// Vertex/Index buffers
     void bindVertexBuffers(uint32 firstBinding,

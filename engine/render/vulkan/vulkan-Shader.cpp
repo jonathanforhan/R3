@@ -8,6 +8,7 @@
 #include <istream>
 #include <span>
 #include <vector>
+#include <volk.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "vulkan-Check.hpp"
@@ -30,7 +31,7 @@ Shader::~Shader() noexcept {
 void Shader::createFromSource(RenderContext& ctx, std::span<const uint32_t> spirvCode) {
     m_device = ctx.device();
 
-    VkShaderModuleCreateInfo shaderModuleCreateInfo = {
+    const VkShaderModuleCreateInfo shaderModuleCreateInfo = {
         .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
         .pNext    = nullptr,
         .flags    = {},

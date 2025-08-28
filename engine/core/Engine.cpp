@@ -3,9 +3,9 @@
 #include <chrono>
 #include "EventHandler.hpp"
 #include "core/Entity.hpp"
-#include "core/EventHandler.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
+#include "editor/Editor.hpp"
 #include "media/ModelLoader.hpp"
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
@@ -52,23 +52,33 @@ int EngineSingleton::run() {
     (void)ModelLoader().glTFLoad(modelPath);
 
     vulkan::Renderer renderer{window, ctx};
+    {
+#if R3_EDITOR
+        Editor editor(window, ctx);
+#endif
 
-    window.show();
+        window.show();
 
-    while (!window.shouldClose()) {
-        const double dt = deltaTime();
+        while (!window.shouldClose()) {
+            const double dt = deltaTime();
 
-        World()->update(dt);
+            World()->update(dt);
+            window.update();
 
-        window.update();
+            EventHandler()->dispatchEvents();
 
-        renderer.render(dt);
+            if (!window.isMinimized()) {
+#if R3_EDITOR
+                editor.recordInterfaceFrame(dt);
+#endif
+                renderer.draw(dt);
+            }
 
-        EventHandler()->dispatchEvents();
-        EventHandler()->emplace("frame-done");
+            EventHandler()->emplace("frame-done");
+        }
+
+        ctx.waitIdle();
     }
-
-    ctx.waitIdle();
 
     World()->registry().clear();
     ResourceManager()->clear();

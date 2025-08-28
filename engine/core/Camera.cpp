@@ -52,7 +52,7 @@ Camera::Camera(CameraType type)
     EventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
 
     auto cursorPositionCallback = [this](const Event<MouseCursorEvent>& e) noexcept {
-        m_cursorPosition = e.data.cursorPosition;
+        m_cursorPosition = dvec2{e.data.xpos, e.data.ypos};
     };
     EventHandler()->bindEventListener("cursor-move", cursorPositionCallback);
 

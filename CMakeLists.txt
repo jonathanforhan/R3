@@ -19,6 +19,7 @@ find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
 find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(spirv_cross_glsl CONFIG REQUIRED)
 find_package(spirv_cross_hlsl CONFIG REQUIRED)
+find_package(volk CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 
 find_package(glfw3 CONFIG REQUIRED)
@@ -32,7 +33,7 @@ include(FetchContent)
 FetchContent_Declare(
     imgui
     GIT_REPOSITORY      https://github.com/ocornut/imgui.git
-    GIT_TAG             v1.92.1-docking
+    GIT_TAG             v1.92.2b-docking
     GIT_SHALLOW         TRUE
     UPDATE_DISCONNECTED TRUE
 )
@@ -55,7 +56,12 @@ target_include_directories(
     ${imgui_SOURCE_DIR}/backends
 )
 
-target_link_libraries(imgui PRIVATE glfw Vulkan::Vulkan)
+target_link_libraries(imgui PRIVATE glfw volk::volk)
+
+target_compile_definitions(
+    imgui PRIVATE
+	IMGUI_IMPL_VULKAN_USE_VOLK=1
+)
 
 ################################################################################
 # ENGINE
@@ -76,7 +82,7 @@ target_link_libraries(
 		glfw
 		imgui
 		Tracy::TracyClient
-		Vulkan::Vulkan
+		volk::volk
 		vk-bootstrap::vk-bootstrap
 		spirv-cross-core
 		spirv-cross-glsl
@@ -88,8 +94,12 @@ target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/
 target_compile_definitions(
     R3_ENGINE PUBLIC
         $<$<CONFIG:Debug>:R3_DEBUG>
+        $<$<CONFIG:RelWithDebInfo>:R3_DEBUG>
         $<$<CONFIG:Release>:R3_RELEASE>
 		$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
+		$<$<BOOL:${R3_VULKAN}>:VK_NO_PROTOTYPES>
+		$<$<AND:$<BOOL:${R3_VULKAN}>,$<BOOL:${WIN32}>>:VK_USE_PLATFORM_WIN32_KHR>
+		$<$<AND:$<BOOL:${R3_VULKAN}>,$<NOT:$<CONFIG:Release>>>:R3_EDITOR>
 		$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>
 		$<$<BOOL:${R3_DIRECTX12}>:R3_DIRECTX12>
 		GLM_FORCE_RADIANS=1
@@ -142,12 +152,6 @@ execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
 		${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
-)
-
-execute_process(
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/textures
-		${R3_RUNTIME_OUTPUT_DIRECTORY}/textures
 )
 
 find_package(Python3 COMPONENTS Interpreter)

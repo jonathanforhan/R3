@@ -31,7 +31,8 @@ struct MouseButtonEvent {
  *   - "mouse-scroll"
  */
 struct MouseScrollEvent {
-    dvec2 offset; /**< Mouse scroll offset x and y */
+    double xoffset; /**< Mouse scroll offset x */
+    double yoffset; /**< Mouse scroll offset y */
 };
 
 /**
@@ -39,7 +40,8 @@ struct MouseScrollEvent {
  *   - "cursor-move"
  */
 struct MouseCursorEvent {
-    dvec2 cursorPosition; /**< Mouse cursor position in x and y normalized */
+    double xpos; /**< Mouse cursor position in x normalized */
+    double ypos; /**< Mouse cursor position in y normalized */
 };
 
 } // namespace R3

@@ -85,11 +85,6 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 }
 
 void main() {
-    /*
-    vec3 albedo = texture(u_Samplers[nonuniformEXT(material.iAlbedo)], v_TexCoords).rgb;
-    f_Color = vec4(albedo, 1.0);
-    */
-
     // Render
     vec3 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords).rgb;
     vec4 mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords);

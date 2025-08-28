@@ -25,14 +25,23 @@ layout (binding = 3) uniform LightBuffer {
 
 /* contains indices for textures in the u_Samplers array */
 layout (push_constant) uniform Material {
-    uint iAlbedo;
-    uint iMetallicRoughness; /* metalness B channel, roughness G channel */
-    uint iNormal;
-    uint iAmbientOcclusion;
-    uint iEmissive;
-} material;
+    uint c_iAlbedo;
+    uint c_iMetallicRoughness; /* metalness B channel, roughness G channel */
+    uint c_iNormal;
+    uint c_iAmbientOcclusion;
+    uint c_iEmissive;
+};
 
 void main() {
-    vec3 albedo = texture(u_Samplers[nonuniformEXT(material.iAlbedo)], v_TexCoords).rgb;
-    f_Color = vec4(albedo, 1.0);
+    // Render
+    vec3 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords).rgb;
+
+    vec3 color = albedo;
+
+    // emission
+    if (c_iEmissive != 0xffffffff) {
+        color += texture(u_Samplers[c_iEmissive], v_TexCoords).rgb;
+    }
+
+    f_Color = vec4(color, 1.0);
 }

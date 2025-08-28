@@ -1,8 +1,10 @@
 #pragma once
 
+#include <array>
 #include <string_view>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
+#include "input/InputCodes.hpp"
 
 extern "C" struct GLFWwindow;
 
@@ -68,8 +70,10 @@ public:
     void kill();
 
 private:
-    GLFWwindow* m_window = nullptr;
-    bool m_shouldResize  = false;
+    GLFWwindow* m_window                   = nullptr;
+    bool m_shouldResize                    = false;
+    static constexpr usize MAX_KEYS        = (uint16)Key::Menu - (uint16)Key::Space;
+    std::array<bool, MAX_KEYS> m_keyStates = {};
 };
 
 } // namespace R3

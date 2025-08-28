@@ -25,7 +25,7 @@ public:
 
     ~Renderer() noexcept;
 
-    void render(double dt);
+    void draw(double dt);
 
     // needed because using dynamic rendering
     void transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex);

@@ -3,6 +3,8 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <volk.h>
+
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -37,24 +39,43 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
 RenderContext::RenderContext(Window& window)
     : IRenderContext(std::type_identity<decltype(*this)>()) {
+    VK_CHECK(volkInitialize());
+
     std::error_code error;
 
     try {
-        const vkb::Instance instance             = createInstance();
-        m_instance                               = instance.instance;
-        m_debug                                  = instance.debug_messenger;
-        m_surface                                = createSurface(window, m_instance);
+        //--- Instance
+        const vkb::Instance instance = createInstance();
+        m_instance                   = instance.instance;
+        volkLoadInstance(m_instance);
+
+        //--- Debug Messenger
+        m_debug = instance.debug_messenger;
+
+        //--- Surface
+        m_surface = createSurface(window, m_instance);
+
+        //--- Physical Device
         const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
         m_physicalDevice                         = physicalDevice.physical_device;
-        const vkb::Device device                 = createLogicalDevice(physicalDevice);
-        m_device                                 = device.device;
 
+        //--- Logical Device
+        const vkb::Device device = createLogicalDevice(physicalDevice);
+        m_device                 = device.device;
+        volkLoadDevice(m_device);
+
+        //--- Queues
         setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);
         setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
         setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
 
+        //--- Command Buffers
         createCommandPools();
+
+        //--- Synchronization Objects
         createSyncObjects();
+
+        //--- Descriptor Sets/Layouts
         createDescritorSetLayouts();
         createDescriptorSets();
     } catch (const Exception& ex) {
@@ -204,7 +225,9 @@ vkb::Instance RenderContext::createInstance() {
                       .add_debug_messenger_type(VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT)
                       .add_debug_messenger_type(VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)
                       .add_debug_messenger_type(VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)
+#if R3_VALIDATION_LAYERS_ENABLED
                       .set_debug_callback(validationDebugCallback)
+#endif
                       .build();
 
     if (!result) {
@@ -244,10 +267,10 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                           .synchronization2 = VK_TRUE,
                           .dynamicRendering = VK_TRUE,
                       })
+                      .set_required_features_14({})
                       .add_required_extensions({
                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
-                          VK_EXT_SHADER_OBJECT_EXTENSION_NAME,
                       })
                       .add_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                       .require_dedicated_transfer_queue()

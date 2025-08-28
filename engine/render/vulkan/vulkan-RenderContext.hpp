@@ -4,7 +4,7 @@
 #include <span>
 #include <vector>
 #include <VkBootstrap.h>
-#include <vulkan/vulkan_core.h>
+#include <volk.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "render/RenderContext.hpp"
@@ -66,7 +66,11 @@ public:
     VkFormat querySupportedFormat(std::span<const VkFormat> formats,
                                   VkImageTiling tiling,
                                   VkFormatFeatureFlags features) const noexcept;
+    VkFormat swapchainFormat() const noexcept { return m_swapchainFormat; }
+    void setSwapchainFormat(VkFormat format) noexcept { m_swapchainFormat = format; }
 
+    /// VkInstance getter
+    VkInstance instance() const noexcept { return m_instance; }
     /// VkSurfaceKHR getter
     VkSurfaceKHR surface() const noexcept { return m_surface; }
     /// VkPhysicalDevice getter
@@ -139,6 +143,7 @@ private:
     uint32 m_currentFrame = 0;
     Handle<VkDescriptorSetLayout> m_descriptorSetLayout;
     std::vector<DescriptorSet> m_descriptorSets;
+    VkFormat m_swapchainFormat = {};
 };
 
 } // namespace R3::vulkan

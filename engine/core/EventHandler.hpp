@@ -121,7 +121,7 @@ concept VoidEventListener = std::invocable<F> && noexcept(std::declval<F>()());
 template <typename F>
 concept DataEventListener = !VoidEventListener<F> && requires {
     std::is_base_of_v<EventBase, EventTypeDeduced<F>>;
-    { std::declval<F>()(std::declval<EventTypeDeduced<F>>()) } noexcept;
+    { std::declval<F>()(std::declval<EventTypeDeduced<F>>()) };
 };
 
 template <typename F>
@@ -212,6 +212,9 @@ public:
     template <typename F>
     requires DataEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
+        static_assert(noexcept(std::declval<F>()(std::declval<EventTypeDeduced<F>>())),
+                      __FUNCTION__ ": Event listener must be noexcept");
+
         using ResultType = typename FunctionTraits<F>::template ResultType;
 
         if constexpr (std::is_same_v<ResultType, bool>) {
@@ -235,6 +238,8 @@ public:
     template <typename F>
     requires VoidEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
+        static_assert(noexcept(std::declval<F>()()), __FUNCTION__ ": Event listener must be noexcept");
+
         using ResultType = typename FunctionTraits<F>::template ResultType;
 
         if constexpr (std::is_same_v<ResultType, bool>) {

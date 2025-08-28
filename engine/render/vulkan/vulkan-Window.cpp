@@ -10,6 +10,7 @@
 #include <GLFW/glfw3native.h>
 
 #include <string_view>
+#include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/EventHandler.hpp"
@@ -18,7 +19,23 @@
 #include "input/InputEvents.hpp"
 #include "render/WindowEvents.hpp"
 
+#if R3_EDITOR
+#include <imgui.h>
+#endif
+#include <array>
+
 namespace R3 {
+
+#if R3_EDITOR
+#define WAS_UI_CAPTURED()       (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)
+#define WAS_UI_MOUSE_CAPTURED() (ImGui::GetIO().WantCaptureMouse)
+#else
+#define WAS_UI_CAPTURED()       false
+#define WAS_UI_MOUSE_CAPTURED() false
+#endif
+
+#define KEY_TO_INDEX(_Key) ((usize)(_Key - (int)Key::Space))
+#define VALID_KEY(_Key)    (_Key >= (int)Key::Space && _Key <= (int)Key::Menu)
 
 Window::Window() {
     glfwInit();
@@ -50,30 +67,26 @@ Window::Window() {
     auto errorCallback = [](int code, const char* msg) { LOG_ERROR("glfw error code: {}, {}", code, msg); };
     glfwSetErrorCallback(errorCallback);
 
-    //--- Resize Callback
-    auto resizeCallback = [](GLFWwindow* window, int width, int height) {
-        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
-        _this->setShouldResize(true);
-        EventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
-    };
-    glfwSetFramebufferSizeCallback(m_window, resizeCallback);
-
     //--- Keyboard Input Callback
-    auto keyCallback = [](GLFWwindow*, int key, int, int action, int mods) {
-        const KeyboardEvent data = {
-            .key       = Key(key),
-            .modifiers = InputModifiers(mods),
-        };
+    auto keyCallback = [](GLFWwindow* window, int key, int, int action, int mods) {
+        R3_ASSERT(VALID_KEY(key));
+
+        if (WAS_UI_CAPTURED()) {
+            return;
+        }
+
+        auto* _this{reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window))};
+        _this->m_keyStates[KEY_TO_INDEX(key)] = (action != GLFW_RELEASE);
 
         switch (action) {
             case GLFW_PRESS:
                 EventHandler()->emplace<KeyboardEvent>("key-press", Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
-                EventHandler()->push("key-repeat", data);
+                EventHandler()->emplace<KeyboardEvent>("key-repeat", Key(key), InputModifiers(mods));
                 break;
             case GLFW_RELEASE:
-                EventHandler()->push("key-release", data);
+                EventHandler()->emplace<KeyboardEvent>("key-release", Key(key), InputModifiers(mods));
                 break;
             default:
                 return;
@@ -82,18 +95,24 @@ Window::Window() {
     glfwSetKeyCallback(m_window, keyCallback);
 
     //--- Mouse Button Callback
-    auto mouseCallback = [](GLFWwindow*, int button, int action, int mods) {
-        const MouseButtonEvent data = {
-            .button    = MouseButton(button),
-            .modifiers = InputModifiers(mods),
-        };
+    auto mouseCallback = [](GLFWwindow* window, int button, int action, int mods) {
+        if (WAS_UI_MOUSE_CAPTURED()) {
+            auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+            for (Key key = Key::Space; bool state : _this->m_keyStates) {
+                if (state) {
+                    EventHandler()->emplace<KeyboardEvent>("key-release", key, InputModifiers(mods));
+                }
+                key = Key((uint16)key + 1);
+            }
+            return;
+        }
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler()->push("mouse-press", data);
+                EventHandler()->emplace<MouseButtonEvent>("mouse-press", MouseButton(button), InputModifiers(mods));
                 break;
             case GLFW_RELEASE:
-                EventHandler()->push("mouse-release", data);
+                EventHandler()->emplace<MouseButtonEvent>("mouse-release", MouseButton(button), InputModifiers(mods));
                 break;
             default:
                 return;
@@ -101,13 +120,15 @@ Window::Window() {
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
+    glfwFocusWindow(m_window);
+
     //--- Mouse Scroll Callback
     auto scrollCallback = [](GLFWwindow*, double xoffset, double yoffset) {
-        const MouseScrollEvent data = {
-            .offset = dvec2{xoffset, yoffset},
-        };
+        if (WAS_UI_MOUSE_CAPTURED()) {
+            return;
+        }
 
-        EventHandler()->push("mouse-scroll", data);
+        EventHandler()->emplace<MouseScrollEvent>("mouse-scroll", xoffset, yoffset);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
@@ -115,16 +136,37 @@ Window::Window() {
     auto cursorCallback = [](GLFWwindow* window, double x, double y) {
         int w, h;
         glfwGetFramebufferSize(window, &w, &h);
-        double posX = static_cast<double>(x) / static_cast<double>(w);
-        double posY = static_cast<double>(y) / static_cast<double>(h);
-
-        const MouseCursorEvent data = {
-            .cursorPosition = dvec2{posX, posY},
-        };
-
-        EventHandler()->push("cursor-move", data);
+        double xpos = static_cast<double>(x) / static_cast<double>(w);
+        double ypos = static_cast<double>(y) / static_cast<double>(h);
+        EventHandler()->emplace<MouseCursorEvent>("cursor-move", xpos, ypos);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
+
+    //--- Window Resize Callback
+    auto resizeCallback = [](GLFWwindow* window, int width, int height) {
+        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+        _this->setShouldResize(true);
+        EventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
+    };
+    glfwSetFramebufferSizeCallback(m_window, resizeCallback);
+
+    //--- Window Focus Callback
+    auto focusCallback = [](GLFWwindow*, int focused) {
+        if (focused) {
+            EventHandler()->emplace<WindowFocusEvent>("window-focus", (bool)focused);
+        }
+    };
+    glfwSetWindowFocusCallback(m_window, focusCallback);
+
+    //--- Window Content Scale Callback
+    auto contentScaleCallback = [](GLFWwindow*, float xscale, float yscale) {
+        EventHandler()->emplace<WindowContentScaleEvent>("window-content-scale", xscale, yscale);
+    };
+    glfwSetWindowContentScaleCallback(m_window, contentScaleCallback);
+
+    //--- Window Close Callback
+    auto windowCloseCallback = [](GLFWwindow*) { EventHandler()->emplace<WindowCloseEvent>("window-close"); };
+    glfwSetWindowCloseCallback(m_window, windowCloseCallback);
 }
 
 Window::~Window() noexcept {

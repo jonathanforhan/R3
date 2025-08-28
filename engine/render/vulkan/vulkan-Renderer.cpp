@@ -26,7 +26,11 @@
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
-#include "vulkan-Texture.hpp"
+
+#if R3_EDITOR
+#include <backends/imgui_impl_vulkan.h>
+#include <imgui.h>
+#endif
 
 namespace R3::vulkan {
 
@@ -62,8 +66,8 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
 
     //--- Shaders
-    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv"};
-    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv"};
+    m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv"};
+    m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv"};
 
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
@@ -99,16 +103,11 @@ Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
 }
 
-void Renderer::render(double dt) {
+void Renderer::draw(double dt) {
     // Handle m_window resize
     if (m_window.shouldResize()) {
         handleWindowResize();
         m_window.setShouldResize(false);
-        return;
-    }
-
-    // Skip rendering if minimized
-    if (m_window.isMinimized()) {
         return;
     }
 
@@ -240,7 +239,12 @@ void Renderer::render(double dt) {
             cmd.drawIndexed(static_cast<uint32>(mesh.indexCount), 1, 0, 0, 0);
         });
 
+#if R3_EDITOR
+    cmd.setDepthTestEnable(false); // Disable depth for UI
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd.commandBuffer());
     cmd.endRendering();
+#endif
+
     transitionAttachmentsForPresent(cmd, imageIndex);
     cmd.end();
 
