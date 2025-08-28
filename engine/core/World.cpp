@@ -1,6 +1,7 @@
 #include "World.hpp"
 
 #include <memory>
+#include "Camera.hpp"
 #include "systems/System.hpp"
 
 namespace R3 {

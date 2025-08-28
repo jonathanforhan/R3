@@ -17,14 +17,14 @@ struct PointLight {
     float intensity;
 };
 
-layout (binding = 3) uniform LightBuffer {
-    vec3 u_ViewPosition;
-    uint u_NumLights;
+layout (binding = 3) readonly buffer LightBuffer {
     PointLight u_Lights[];
 };
 
-/* contains indices for textures in the u_Samplers array */
-layout (push_constant) uniform Material {
+layout (push_constant) uniform FragmentPushConstants {
+    vec3 c_ViewPosition;
+    uint c_NumLights;
+    /* indices for textures in the u_Samplers array */
     uint c_iAlbedo;
     uint c_iMetallicRoughness; /* metalness B channel, roughness G channel */
     uint c_iNormal;
@@ -97,7 +97,7 @@ void main() {
     }
 
     vec3 N = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
-    vec3 V = normalize(u_ViewPosition - v_Position);
+    vec3 V = normalize(c_ViewPosition - v_Position);
 
     // calc reflectance at normal incidence; if dieletric use F0 of 0.04 else use albedo color as F0
     vec3 F0 = vec3(0.04);
@@ -106,8 +106,7 @@ void main() {
     // reflectance equation
     vec3 Lo = vec3(0.0);
 
-    /*
-    for (int i = 0; i < u_NumLights; i++) {
+    for (int i = 0; i < c_NumLights; i++) {
         // per light radiance
         vec3 L = normalize(u_Lights[i].position - v_Position);
         vec3 H = normalize(V + L);
@@ -135,10 +134,8 @@ void main() {
         // add to outgoing radiance Lo
         Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
     }
-    */
 
-    // vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
-    vec3 ambient = vec3(0.33) * albedo; // * ambientOcclusion;
+    vec3 ambient = vec3(0.01) * albedo * ambientOcclusion;
 
     vec3 color = ambient + Lo;
 
@@ -146,12 +143,6 @@ void main() {
     if (c_iEmissive != 0xffffffff) {
         color += texture(u_Samplers[c_iEmissive], v_TexCoords).rgb;
     }
-
-    // HDR tonemapping
-    // color = color / (color + vec3(1.0));
-
-    // gamma correction
-    // color = pow(color, vec3(1.0 / 2.2));
 
     f_Color = vec4(color, 1.0);
 }

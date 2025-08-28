@@ -14,13 +14,13 @@ layout(location = 0) out vec3 v_Position;
 layout(location = 1) out vec3 v_Normal;
 layout(location = 2) out vec2 v_TexCoords;
 
-layout(set = 0, binding = 0) uniform ModelViewProjection {
+layout(binding = 0) uniform ModelViewProjection {
     mat4 u_Model;
     mat4 u_View;
     mat4 u_Proj;
 };
 
-layout(set = 0, binding = 1) uniform JointTransforms {
+layout(binding = 1) readonly buffer JointTransforms {
     mat4 u_JointTransforms[];
 };
 

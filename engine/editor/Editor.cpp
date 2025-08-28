@@ -115,10 +115,11 @@ Editor::~Editor() {
 
 void Editor::recordInterfaceFrame(double dt) {
     beginFrame();
-    initializeDocking();
-    displayHierarchy();
-    displayProperties();
-    displaySceneManager();
+    // ImGui::ShowDemoWindow();
+    // initializeDocking();
+    // displayHierarchy();
+    // displayProperties();
+    // displaySceneManager();
     displayDeltaTime(dt);
     endFrame();
 }
@@ -131,8 +132,6 @@ void Editor::beginFrame() {
     auto& io          = ImGui::GetIO();
     float scaleFactor = io.DisplayFramebufferScale.x;
     ImGui::GetStyle().ScaleAllSizes(scaleFactor);
-
-    ImGui::ShowDemoWindow();
 }
 
 void Editor::endFrame() {

@@ -4,6 +4,7 @@
 #include <map>
 #include <utility>
 #include <vector>
+#include <volk.h>
 #include <vulkan/vulkan_core.h>
 #include <entt/resource/cache.hpp>
 #include "api/Assert.hpp"

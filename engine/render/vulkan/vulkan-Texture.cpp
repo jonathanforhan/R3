@@ -5,9 +5,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <filesystem>
 #include <string>
+#include <volk.h>
 #include <vulkan/vulkan_core.h>
+#include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
@@ -28,10 +31,12 @@ Texture::Texture(CommandBuffer& cmd,
                  usize height,
                  TextureType type,
                  Buffer& stagingBuffer) {
+    R3_ASSERT(raw && "Texture raw data is null");
     create(cmd, raw, width, height, type, stagingBuffer);
 }
 
 Texture::Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer) {
+    R3_ASSERT(compressed && "Texture raw data is null");
     int width, height, channels;
     std::byte* raw = (std::byte*)stbi_load_from_memory(
         (const uint8*)compressed, static_cast<int>(size), &width, &height, &channels, 4);
@@ -40,13 +45,9 @@ Texture::Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, Te
 }
 
 Texture::Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer) {
-    std::string path = filepath.string();
-    if (path.back() != '\0') {
-        path.push_back('\0');
-    }
-
+    R3_ASSERT(std::filesystem::exists(filepath) && "Ensure valid filepath");
     int width, height, channels;
-    std::byte* raw = (std::byte*)stbi_load(path.c_str(), &width, &height, &channels, 4);
+    std::byte* raw = (std::byte*)stbi_load(filepath.string().c_str(), &width, &height, &channels, 4);
     create(cmd, raw, width, height, type, stagingBuffer);
     stbi_image_free(raw);
 }

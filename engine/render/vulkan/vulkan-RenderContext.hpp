@@ -41,12 +41,8 @@ public:
 
     /// Returns the maximum number of frames that can be processed concurrently (in flight).
     constexpr uint32 maxFramesInFlight() const noexcept { return 3; }
-    /// Returns the maximum number of shader joint transform bindings.
-    constexpr uint32 maxJointTransformBindings() const noexcept { return 1024; }
     /// Returns the maximum number of shader texture sampler bindings.
     constexpr uint32 maxTextureSamplerBindings() const noexcept { return 1024; }
-    /// Returns the maximum number of shader light bindings.
-    constexpr uint32 maxLightBindings() const noexcept { return 1024; }
     /// Increment the current frame index or reset when equal to maxFramesInFlight()
     void advanceFrame() noexcept { m_currentFrame = (m_currentFrame + 1) % maxFramesInFlight(); }
 

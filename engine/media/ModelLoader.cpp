@@ -15,7 +15,6 @@
 #include <entt/resource/resource.hpp>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
-#include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
@@ -38,10 +37,12 @@
 namespace R3 {
 
 Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
+    LOG_INFO("Loading model: {}", path.string());
+    m_path = path;
+
     glTF::Model model = glTF::ModelImporter().import(path);
 
     m_entity = World()->registry().create();
-    m_path   = path.parent_path();
 
     vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
 
@@ -262,7 +263,7 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         hTexture = std::move(tex);
     } else {
         glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
-        const std::byte* data        = &model.bin[bufferView.byteOffset];
+        const std::byte* data        = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
 
         name = std::format("{}/images/{}", m_path.parent_path().string(), id);
         LOG_INFO("importing texture {}", name);
@@ -348,7 +349,8 @@ void ModelLoader::glTF_readAccessor(glTF::Model& model, usize iAccessor, std::ve
     out.reserve(accessor.count);
     for (usize i = 0; i < accessor.count; i++) {
         // read as U but cast to T
-        out.emplace_back(static_cast<T>(*(const U*)(&model.bin[offset + (i * sizeof(U))])));
+        out.emplace_back(
+            static_cast<T>(*reinterpret_cast<const U*>(&model.bin[bufferView.buffer][offset + (i * sizeof(U))])));
     }
 }
 

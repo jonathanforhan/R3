@@ -18,13 +18,13 @@ struct PointLight {
 };
 
 layout (binding = 3) uniform LightBuffer {
-    vec3 u_ViewPosition;
-    uint u_NumLights;
     PointLight u_Lights[];
 };
 
-/* contains indices for textures in the u_Samplers array */
-layout (push_constant) uniform Material {
+layout (push_constant) uniform FragmentPushConstants {
+    vec3 c_ViewPosition;
+    uint c_NumLights;
+    /* indices for textures in the u_Samplers array */
     uint c_iAlbedo;
     uint c_iMetallicRoughness; /* metalness B channel, roughness G channel */
     uint c_iNormal;

@@ -10,6 +10,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "components/LightComponent.hpp"
 #include "components/MaterialComponent.hpp"
 #include "components/MeshComponent.hpp"
 #include "components/TransformComponent.hpp"
@@ -66,21 +67,8 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
 
     //--- Shaders
-    m_vertexShader   = Shader{m_ctx, "_spirv/basic.vert.spv"};
-    m_fragmentShader = Shader{m_ctx, "_spirv/basic.frag.spv"};
-
-    //--- Uniform Buffers
-    float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
-
-    m_viewProj = {
-        .view       = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
-        .projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f),
-    };
-
-    m_ubos.resize(m_ctx.maxFramesInFlight());
-    for (auto& ubo : m_ubos) {
-        ubo = Buffer{nullptr, sizeof(VertexUniformBufferObject), BufferPreset::HostUniform};
-    }
+    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv"};
+    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv"};
 
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
@@ -95,6 +83,25 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         std::span{&colorFormat, 1},
         std::span{&layout, 1},
     };
+
+    //--- Uniform Buffers
+    float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
+
+    m_viewProj = {
+        .view       = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
+        .projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 10.0f),
+    };
+
+    m_ubos.resize(m_ctx.maxFramesInFlight());
+    for (auto& ubo : m_ubos) {
+        ubo = Buffer{nullptr, sizeof(VertexUniformBufferObject), BufferPreset::HostUniform};
+    }
+
+    //--- Storage Buffers
+    m_lights.resize(m_ctx.maxFramesInFlight());
+    for (auto& light : m_lights) {
+        light = Buffer{nullptr, sizeof(PointLightShaderObject) * 256, BufferPreset::HostStorage};
+    }
 
     World()->camera().setActive(true);
 }
@@ -188,6 +195,20 @@ void Renderer::draw(double dt) {
     cmd.setFrontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
     cmd.setDepthTestEnable(true);
 
+    uint32 numLights = 0;
+    World()->registry().view<LightComponent>().each([&](const LightComponent& light) {
+        if (numLights >= 256) {
+            return; // Max lights reached
+        }
+        PointLightShaderObject lightShaderObject = {
+            .position  = light.position,
+            .color     = light.color,
+            .intensity = light.intensity,
+        };
+        m_lights[currFrame].copy(&lightShaderObject, sizeof(lightShaderObject), sizeof(lightShaderObject) * numLights);
+        numLights++;
+    });
+
     World()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, MaterialComponent& mat, TransformComponent& trans) {
             std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -196,7 +217,8 @@ void Renderer::draw(double dt) {
             trans.transform = glm::rotate(trans.transform, glm::radians(180.0f), fvec3(0.0f, 0.0f, 1.0f));
             m_ubos[currFrame].copy(&trans.transform, sizeof(trans.transform));
 
-            const VkDescriptorBufferInfo bufferInfo = {
+            // MVP
+            const VkDescriptorBufferInfo uboBufferInfo = {
                 .buffer = m_ubos[currFrame].buffer(),
                 .offset = 0,
                 .range  = sizeof(VertexUniformBufferObject),
@@ -210,7 +232,25 @@ void Renderer::draw(double dt) {
                 .descriptorCount  = 1,
                 .descriptorType   = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pImageInfo       = nullptr,
-                .pBufferInfo      = &bufferInfo,
+                .pBufferInfo      = &uboBufferInfo,
+                .pTexelBufferView = nullptr,
+            });
+            // Storage buffer - Lights
+            const VkDescriptorBufferInfo ssboBufferInfo = {
+                .buffer = m_lights[currFrame].buffer(),
+                .offset = 0,
+                .range  = sizeof(PointLightShaderObject) * numLights,
+            };
+            descriptorWrites.push_back(VkWriteDescriptorSet{
+                .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .pNext            = nullptr,
+                .dstSet           = m_ctx.descriptorSet(currFrame).descriptorSet(),
+                .dstBinding       = 3,
+                .dstArrayElement  = 0,
+                .descriptorCount  = 1,
+                .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .pImageInfo       = nullptr,
+                .pBufferInfo      = &ssboBufferInfo,
                 .pTexelBufferView = nullptr,
             });
             m_ctx.descriptorSet(currFrame).write(descriptorWrites);
@@ -219,6 +259,8 @@ void Renderer::draw(double dt) {
             cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
 
             const FragmentPushConstants fragPushConstants = {
+                .viewPosition       = World()->camera().position(),
+                .numLights          = numLights,
                 .iAlbedo            = mat.iAlbedo,
                 .iMetallicRoughness = mat.iMetallicRoughness,
                 .iNormal            = mat.iNormal,

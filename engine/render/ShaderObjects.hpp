@@ -7,9 +7,6 @@
 
 namespace R3 {
 
-static constexpr usize MAX_SHADER_LIGHTS = 128; /// Maximum scene lights allowed in shader
-static constexpr usize MAX_SHADER_BONES  = 128; /// Maximum bones allowed for a mesh by the shader
-
 struct ViewProjection {
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
@@ -19,12 +16,11 @@ struct VertexUniformBufferObject {
     alignas(16) fmat4 model;
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
-#if 0
-    alignas(16) fmat4 finalBoneTransforms[MAX_SHADER_BONES];
-#endif
 };
 
 struct FragmentPushConstants {
+    alignas(16) fvec3 viewPosition;
+    alignas(4) uint32 numLights;
     alignas(4) uint32 iAlbedo;
     alignas(4) uint32 iMetallicRoughness;
     alignas(4) uint32 iNormal;
@@ -36,18 +32,6 @@ struct PointLightShaderObject {
     alignas(16) fvec3 position;
     alignas(16) fvec3 color;
     alignas(4) float intensity;
-};
-
-struct FragmentUniformBufferObject {
-    alignas(16) fvec3 cameraPosition;
-    alignas(4) uint32 pbrFlags;
-    alignas(4) uint32 lightCount;
-    PointLightShaderObject pointLights[MAX_SHADER_LIGHTS];
-};
-
-struct VertexBindingSpecification {
-    uint32 binding;
-    uint32 stride;
 };
 
 /// Vertex used by shaders

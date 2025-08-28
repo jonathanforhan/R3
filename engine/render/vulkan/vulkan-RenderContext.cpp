@@ -366,11 +366,11 @@ void RenderContext::createDescritorSetLayouts() {
             .descriptorCount = 1,
             .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT,
         },
-        // [1]: Joint Transform UBO
+        // [1]: Joint Transform SSBO
         {
             .binding         = 1,
-            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = maxJointTransformBindings(),
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
             .stageFlags      = VK_SHADER_STAGE_VERTEX_BIT,
         },
         // [2]: Texture Samplers
@@ -383,17 +383,17 @@ void RenderContext::createDescritorSetLayouts() {
         // [3]: Light UBO
         {
             .binding         = 3,
-            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            .descriptorCount = maxLightBindings(),
+            .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
             .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
         },
     };
 
     const VkDescriptorBindingFlags bindingFlags[] = {
         0,
+        0,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
+        0,
     };
 
     const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
@@ -418,9 +418,9 @@ void RenderContext::createDescriptorSets() {
 
     const VkDescriptorPoolSize poolSizes[] = {
         {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight() * maxTextureSamplerBindings()},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight() * maxJointTransformBindings()},
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight() * maxLightBindings()},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
     };
     m_descriptorSets = DescriptorSet::allocate(*this, m_descriptorSetLayout, poolSizes, maxFramesInFlight());
 }

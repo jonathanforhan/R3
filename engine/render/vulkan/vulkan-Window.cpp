@@ -41,27 +41,36 @@ Window::Window() {
     glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+    glfwWindowHint(GLFW_REFRESH_RATE, GLFW_DONT_CARE);
+    // glfwWindowHint(GLFW_SCALE_TO_MONITOR, GLFW_TRUE);
 
     GLFWmonitor* primary = glfwGetPrimaryMonitor();
+
+    int monitorX, monitorY;
+    glfwGetMonitorPos(primary, &monitorX, &monitorY);
 
     float contentScaleX, contentScaleY;
     glfwGetMonitorContentScale(primary, &contentScaleX, &contentScaleY);
 
-    static constexpr float scale = 1.0f;
-
     const GLFWvidmode* vidmode = glfwGetVideoMode(primary);
-    const int width            = static_cast<int>((vidmode->width / contentScaleX) * scale);
-    const int height           = static_cast<int>((vidmode->height / contentScaleY) * scale);
+    const int width            = static_cast<int>(vidmode->width / contentScaleX);
+    const int height           = static_cast<int>(vidmode->height / contentScaleY);
     static const char* title   = "R3";
 
     if (!(m_window = glfwCreateWindow(width, height, title, nullptr, nullptr))) {
         glfwTerminate();
         throw Exception("GLFW window creation failure");
     }
+
     glfwMakeContextCurrent(m_window);
     glfwSwapInterval(1);
     glfwSetWindowUserPointer(m_window, this);
     glfwSetInputMode(m_window, GLFW_STICKY_KEYS, GLFW_TRUE);
+
+    // center glfw window on create
+    const int centerX = monitorX + (vidmode->width - width) / 2;
+    const int centerY = monitorY + (vidmode->height - height) / 2;
+    glfwSetWindowPos(m_window, centerX, centerY);
 
     //--- Error Callback
     auto errorCallback = [](int code, const char* msg) { LOG_ERROR("glfw error code: {}, {}", code, msg); };
@@ -167,6 +176,12 @@ Window::Window() {
     //--- Window Close Callback
     auto windowCloseCallback = [](GLFWwindow*) { EventHandler()->emplace<WindowCloseEvent>("window-close"); };
     glfwSetWindowCloseCallback(m_window, windowCloseCallback);
+
+    /* Add callback to show window once the first frame is rendered, this prevents white screen */
+    EventHandler()->bindEventListener("frame-done", [this]() noexcept {
+        show();
+        return true; // remove after first call
+    });
 }
 
 Window::~Window() noexcept {

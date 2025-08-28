@@ -18,9 +18,9 @@ struct Model {
     R3_COPY_DELETE(Model);
     R3_MOVE_DEFAULT(Model);
 
-    json::Document document;    /// document is referenced by root's JSON values
-    Root root;                  /// glTF root object
-    std::vector<std::byte> bin; /// binary buffer chunk if present
+    json::Document document;                 /// document is referenced by root's JSON values
+    Root root;                               /// glTF root object
+    std::vector<std::vector<std::byte>> bin; /// binary buffer chunks if present
 };
 
 class ModelImporter {
@@ -39,7 +39,7 @@ private:
     void populateAccessors(glTF::Model& model);
     void populateAnimations(glTF::Model& model);
     void populateAsset(glTF::Model& model);
-    void populateBuffers(glTF::Model& model, std::vector<std::byte>& bin);
+    void populateBuffers(glTF::Model& model, std::vector<std::vector<std::byte>>& bin);
     void populateBufferViews(glTF::Model& model);
     void populateCameras(glTF::Model& model);
     void populateImages(glTF::Model& model);
@@ -65,7 +65,7 @@ private:
     void populateTextureInfo(TextureInfo& textureInfo, json::Value& value);
 
 private:
-    std::string m_path;
+    std::filesystem::path m_path;
 };
 
 } // namespace R3::glTF

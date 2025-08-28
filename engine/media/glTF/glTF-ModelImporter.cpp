@@ -3,7 +3,6 @@
 #include <array>
 #include <cstddef>
 #include <cstdlib>
-#include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -27,7 +26,7 @@
 namespace R3::glTF {
 
 glTF::Model ModelImporter::import(const std::filesystem::path& path) {
-    m_path = path.string();
+    m_path = path;
 
     glTF::Model model;
 
@@ -63,13 +62,15 @@ glTF::Model ModelImporter::import(const std::filesystem::path& path) {
 
 void ModelImporter::parseGLB(glTF::Model& model, std::ifstream& ifs) {
     Header header;
-    ifs.read((char*)(&header), sizeof(header));
+    ifs.read(reinterpret_cast<char*>(&header), sizeof(header));
 
     R3_ASSERT(header.magic == HEADER_MAGIC && "GLB files must have magic number");
 
     if (header.version > R3_GLB_VERSION) {
-        LOG_WARNING(
-            "glb version for {} is {} while R3 supports up to glb version {}", m_path, header.version, R3_GLB_VERSION);
+        LOG_WARNING("glb version for {} is {} while R3 supports up to glb version {}",
+                    m_path.string(),
+                    header.version,
+                    R3_GLB_VERSION);
     }
 
     ChunkHeader chunkHeader;
@@ -81,13 +82,14 @@ void ModelImporter::parseGLB(glTF::Model& model, std::ifstream& ifs) {
     };
 
     auto readBin = [&] {
-        model.bin.resize(chunkHeader.length);
-        ifs.read((char*)model.bin.data(), chunkHeader.length);
+        auto& buf = model.bin.emplace_back();
+        buf.resize(chunkHeader.length);
+        ifs.read(reinterpret_cast<char*>(buf.data()), chunkHeader.length);
     };
 
     /* glb files have 2 chunks */
     for (int i = 0; i < 2; i++) {
-        ifs.read((char*)(&chunkHeader), sizeof(chunkHeader));
+        ifs.read(reinterpret_cast<char*>(&chunkHeader), sizeof(chunkHeader));
         if (chunkHeader.type == CHUNK_TYPE_JSON) {
             readJson();
         } else if (chunkHeader.type == CHUNK_TYPE_BIN) {
@@ -255,12 +257,10 @@ void ModelImporter::populateAsset(glTF::Model& model) {
     // extras
     maybeMove(model.root.asset.extras, jsAsset, "extras");
 }
-void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& bin) {
+void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::vector<std::byte>>& bin) {
     if (!model.document.HasMember("buffers")) {
         return;
     }
-
-    /* (TODO) I think i need to support multiple buffers instead of the single bin buffer */
 
     for (auto& itBuffer : model.document["buffers"].GetArray()) {
         Buffer& buffer = model.root.buffers.emplace_back();
@@ -276,18 +276,15 @@ void ModelImporter::populateBuffers(glTF::Model& model, std::vector<std::byte>& 
         maybeMove(buffer.extras, itBuffer, "extras");
         /* load in buffer if external file */
         if (!buffer.uri.empty()) {
-            usize split     = m_path.find_last_of('/') + 1;
-            std::string dir = m_path.substr(0, split);
             std::ifstream ifs;
             ifs.exceptions(std::ifstream::badbit);
 
-            try {
-                ifs.open(dir + buffer.uri, std::ios::binary);
-                bin.resize(buffer.byteLength);
-                ifs.read((char*)bin.data(), buffer.byteLength);
-            } catch (std::exception& e) {
-                LOG_ERROR("glTF buffer read error {}", e.what());
-            }
+            std::filesystem::path bufferPath = m_path;
+            bufferPath.replace_filename(buffer.uri);
+            ifs.open(bufferPath, std::ios::binary);
+
+            auto& buf = bin.emplace_back(buffer.byteLength);
+            ifs.read(reinterpret_cast<char*>(buf.data()), buf.size());
         }
     }
 }
@@ -691,7 +688,7 @@ void ModelImporter::checkVersion(uint32 major, uint32 minor) const {
     std::string assetVersion      = std::format("{}.{}", major, minor);
     std::string engineGltfVersion = std::format("{}.{}", R3_GLTF_VERSION_MAJOR, R3_GLTF_VERSION_MAJOR);
     LOG_WARNING("glTF version of asset {} is {} while R3 support up to glTF version {}",
-                m_path,
+                m_path.string(),
                 assetVersion,
                 engineGltfVersion);
 }

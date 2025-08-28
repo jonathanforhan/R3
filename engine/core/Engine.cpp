@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include "EventHandler.hpp"
+#include "components/LightComponent.hpp"
 #include "core/Entity.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
@@ -12,6 +13,20 @@
 #include "render/vulkan/vulkan-Renderer.hpp"
 
 namespace R3 {
+
+static void TEST_FUNCTION() {
+    // const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb";
+    const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf";
+    (void)ModelLoader().glTFLoad(modelPath);
+
+    Entity light = World()->registry().create();
+    World()->registry().emplace<LightComponent>(light,
+                                                LightComponent{
+                                                    .position  = fvec3(2.0f, 4.0f, 0.0f),
+                                                    .color     = fvec3(1.0f),
+                                                    .intensity = 100.0f,
+                                                });
+}
 
 double EngineSingleton::deltaTime() {
     using namespace std::chrono;
@@ -32,33 +47,18 @@ int EngineSingleton::run() {
         m_running = true;
     }
 
-    //--- Window
     Window window;
 
-    //--- Render Context
-    //    - instance
-    //    - surface
-    //    - physical device
-    //    - logical device
-    //    - queues
-    //    - command buffers/pools
-    //      - each collection of command buffers shares a command pool
-    //    - sync objects
-    //    - descriptor set layouts
     vulkan::RenderContext ctx{window};
     m_ctx = &ctx;
 
-    const char* modelPath = "assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb";
-    (void)ModelLoader().glTFLoad(modelPath);
+    TEST_FUNCTION();
 
     vulkan::Renderer renderer{window, ctx};
     {
 #if R3_EDITOR
         Editor editor(window, ctx);
 #endif
-
-        window.show();
-
         while (!window.shouldClose()) {
             const double dt = deltaTime();
 

@@ -132,6 +132,7 @@ enum class BufferType {
 enum class BufferPreset {
     Staging,
     HostUniform,
+    HostStorage,
     DeviceVertex,
     DeviceIndex,
 };

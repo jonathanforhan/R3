@@ -43,11 +43,12 @@ private:
     Swapchain m_swapchain;
     Image m_colorImage;
     Image m_depthImage;
+    ViewProjection m_viewProj;
     Shader m_vertexShader;
     Shader m_fragmentShader;
-    ViewProjection m_viewProj;
-    std::vector<Buffer> m_ubos;
     GraphicsPipeline m_graphicsPipeline;
+    std::vector<Buffer> m_ubos;
+    std::vector<Buffer> m_lights;
 };
 
 } // namespace R3::vulkan
