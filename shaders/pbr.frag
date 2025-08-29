@@ -86,8 +86,11 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 }
 
 void main() {
+    float gamma = 2.2;
+
     // Render
     vec3 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords).rgb;
+    // albedo = pow(albedo, vec3(gamma)); // to linear space
     vec4 mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords);
     float metallic = mr.b;
     float roughness = mr.g;
@@ -136,7 +139,7 @@ void main() {
         Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.1) * albedo;// * ambientOcclusion;
+    vec3 ambient = vec3(0.25) * albedo * ambientOcclusion;
 
     vec3 color = ambient + Lo;
 
@@ -144,6 +147,12 @@ void main() {
     if (c_iEmissive != 0xffffffff) {
         color += texture(u_Samplers[c_iEmissive], v_TexCoords).rgb;
     }
+
+    // HDR tonemapping
+    // color = color / (color + vec3(1.0));
+
+    // gamma correct
+    // color = pow(color, vec3(1.0 / gamma)); // to sRGB
 
     f_Color = vec4(color, 1.0);
 }

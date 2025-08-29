@@ -43,8 +43,8 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     glTF::Model model = glTF::ModelImporter().import(path);
 
-    m_entity = World()->registry().create();
-    World()->registry().emplace<TransformComponent>(m_entity); // give root node a default transform
+    Entity root = World()->registry().create();
+    World()->registry().emplace<TransformComponent>(root); // give root node a default transform
 
     vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
 
@@ -53,24 +53,21 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     for (glTF::Scene& scene : model.root.scenes) {
         for (uint32 iNode : scene.nodes) {
-            glTF_processNode(model, model.root.nodes[iNode], iNode);
+            glTF_processNode(root, model, model.root.nodes[iNode]);
         }
     }
 
     m_cmd->end();
     m_cmd->submitSync();
 
-    return m_entity;
+    return root;
 }
 
-void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node, usize id) {
-    Entity parent = m_entity;
+void ModelLoader::glTF_processNode(Entity entity, glTF::Model& model, glTF::Node& node) {
+    Entity parent = entity;
 
     Entity child{World()->registry().create()};
-    HierarchyComponent& hier = World()->registry().get_or_emplace<HierarchyComponent>(parent);
-    hier.children.push_back(child); // add child to parent
-
-    m_entity = child; // set current entity to child for processing
+    World()->registry().get_or_emplace<HierarchyComponent>(parent).children.push_back(child); // add child to parent
 
     fmat4 local;
     for (usize i = 0; i < 16; i++) {
@@ -89,7 +86,11 @@ void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node, usize i
     World()->registry().emplace<TransformComponent>(child).transform() = local;
 
     if (node.mesh) {
-        glTF_processMesh(model, model.root.meshes[*node.mesh], *node.mesh);
+        if (model.root.meshes[*node.mesh].primitives.size() > 1) {
+            // this node is a parent for multiple mesh primitives, give it a hierarchy component
+            World()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
+        }
+        glTF_processMesh(child, model, model.root.meshes[*node.mesh]);
     }
 
     if (!node.children.empty()) {
@@ -97,14 +98,14 @@ void ModelLoader::glTF_processNode(glTF::Model& model, glTF::Node& node, usize i
         World()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
 
         for (uint32 iChild : node.children) {
-            glTF_processNode(model, model.root.nodes[iChild], iChild);
+            glTF_processNode(child, model, model.root.nodes[iChild]);
         }
     }
-
-    m_entity = parent; // restore current entity to parent
 }
 
-void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize id) {
+void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh& mesh) {
+    bool isParent = mesh.primitives.size() > 1;
+
     for (glTF::MeshPrimitive& primitive : mesh.primitives) {
         R3_ASSERT(primitive.mode == glTF::TRIANGLES && "Only TRIANGLES mode is supported");
 
@@ -126,8 +127,6 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
         std::vector<ivec4> joints;
         if (primitive.attributes.contains(glTF::JOINTS_0)) {
             usize index = primitive.attributes[glTF::JOINTS_0];
-            std::vector<u16vec4> jointIndices;
-
             if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint8)) {
                 glTF_readAccessor<ivec4, u8vec4>(model, index, joints);
             } else if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint16)) {
@@ -182,12 +181,9 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
             LOG_VERBOSE("processed mesh does not contain indices");
         }
 
-        if (primitive.material) {
-            glTF_processMaterial(model, model.root.materials[*primitive.material], *primitive.material);
-        }
-
-        std::string idVertexBuffer = std::format("{}/vertices/{}", m_path.parent_path().string(), id);
-        std::string idindexBuffer  = std::format("{}/indices/{}", m_path.parent_path().string(), id);
+        std::string parentPath     = m_path.parent_path().string();
+        std::string idVertexBuffer = std::format("{}/vertices/{}", parentPath, primitive.attributes[glTF::POSITION]);
+        std::string idindexBuffer  = std::format("{}/indices/{}", parentPath, primitive.indices.value_or(0));
         LOG_INFO("importing mesh {}, {}", idVertexBuffer, idindexBuffer);
 
         auto&& [vbo, vboLoaded] = ResourceManager()->loadBuffer(
@@ -216,43 +212,59 @@ void ModelLoader::glTF_processMesh(glTF::Model& model, glTF::Mesh& mesh, usize i
             }
         }
 
-        World()->registry().emplace<MeshComponent>(
-            m_entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
+        if (!isParent) {
+            World()->registry().emplace<MeshComponent>(
+                entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
+
+            if (primitive.material) {
+                glTF_processMaterial(entity, model, model.root.materials[*primitive.material]);
+            }
+        } else {
+            Entity child = World()->registry().create();
+            World()->registry().emplace<TransformComponent>(child);
+            World()->registry().get<HierarchyComponent>(entity).children.push_back(child);
+            World()->registry().emplace<MeshComponent>(
+                child, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
+
+            if (primitive.material) {
+                glTF_processMaterial(child, model, model.root.materials[*primitive.material]);
+            }
+        }
     }
 }
 
-void ModelLoader::glTF_processAnimations(glTF::Model& model, usize id) {
+void ModelLoader::glTF_processAnimations(Entity entity, glTF::Model& model) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processSkeleton(glTF::Model& model, usize id) {
+void ModelLoader::glTF_processSkeleton(Entity entity, glTF::Model& model) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processJoint(glTF::Model& model, usize modelIndex, usize parentJoint, usize id) {
+void ModelLoader::glTF_processJoint(Entity entity, glTF::Model& model, usize modelIndex, usize parentJoint) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processMaterial(glTF::Model& model, glTF::Material& material, usize id) {
+void ModelLoader::glTF_processMaterial(Entity entity, glTF::Model& model, glTF::Material& material) {
     if (material.emissiveTexture) {
-        glTF_processTextureInfo(model, *material.emissiveTexture, TextureType::Emissive, id);
+        glTF_processTextureInfo(entity, model, *material.emissiveTexture, TextureType::Emissive);
     }
 
     if (material.occlusionTexture) {
-        glTF_processTextureInfo(model, *material.occlusionTexture, TextureType::AmbientOcclusion, id);
+        glTF_processTextureInfo(entity, model, *material.occlusionTexture, TextureType::AmbientOcclusion);
     }
 
     if (material.normalTexture) {
-        glTF_processTextureInfo(model, *material.normalTexture, TextureType::Normal, id);
+        glTF_processTextureInfo(entity, model, *material.normalTexture, TextureType::Normal);
     }
 
     if (material.pbrMetallicRoughness->metallicRoughnessTexture) {
         glTF_processTextureInfo(
-            model, *material.pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness, id);
+            entity, model, *material.pbrMetallicRoughness->metallicRoughnessTexture, TextureType::MetallicRoughness);
     }
 
     if (material.pbrMetallicRoughness->baseColorTexture) {
-        glTF_processTextureInfo(model, *material.pbrMetallicRoughness->baseColorTexture, TextureType::Albedo, id);
+        glTF_processTextureInfo(entity, model, *material.pbrMetallicRoughness->baseColorTexture, TextureType::Albedo);
     } else {
         uint8 color[4] = {
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[0] * 255.0f),
@@ -260,16 +272,14 @@ void ModelLoader::glTF_processMaterial(glTF::Model& model, glTF::Material& mater
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[2] * 255.0f),
             static_cast<uint8>(material.pbrMetallicRoughness->baseColorFactor[3] * 255.0f),
         };
-        glTF_processTexture(model, color, TextureType::Albedo, id);
+        glTF_processTexture(entity, model, color, TextureType::Albedo);
     }
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture, TextureType type, usize id) {
+void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::Texture& texture, TextureType type) {
     if (!texture.source) {
         return;
     }
-
-    id += (usize)type * 1000; // unique to each type for a given material
 
     const glTF::Image& image = model.root.images[*texture.source];
 
@@ -296,7 +306,7 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
         const std::byte* data        = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
 
-        name = std::format("{}/images/{}", m_path.parent_path().string(), id);
+        name = std::format("{}/embedded/{}/{}", m_path.parent_path().string(), *texture.source, *image.bufferView);
         LOG_INFO("importing texture {}", name);
         auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
 
@@ -309,18 +319,23 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, glTF::Texture& texture
         hTexture = std::move(tex);
     }
 
-    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
+    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(entity);
     uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *hTexture);
     mat.setTextureSlot(type, slot);
 
-    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(m_entity);
+    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
     textureLifetime.textures.emplace_back(std::move(hTexture)); // ensure texture lives as long as entity
 }
 
-void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], TextureType type, usize id) {
-    id += (usize)type * 1000; // unique to each type for a given material
+void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, uint8 color[4], TextureType type) {
+    std::string name = std::format("{}/solid_colors/{}_{}_{}_{}_{}",
+                                   m_path.parent_path().string(),
+                                   static_cast<int>((uint16)type),
+                                   static_cast<int>(color[0]),
+                                   static_cast<int>(color[1]),
+                                   static_cast<int>(color[2]),
+                                   static_cast<int>(color[3]));
 
-    std::string name = std::format("{}/colors/{}", m_path.parent_path().string(), id);
     LOG_INFO("importing texture {}", name);
     auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
 
@@ -330,42 +345,40 @@ void ModelLoader::glTF_processTexture(glTF::Model& model, uint8 color[4], Textur
         *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, type, *stagingBuffer};
     }
 
-    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(m_entity);
+    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(entity);
     uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *tex);
     mat.setTextureSlot(type, slot);
 
-    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(m_entity);
+    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
     textureLifetime.textures.emplace_back(std::move(tex)); // ensure texture lives as long as entity
 }
 
-void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+void ModelLoader::glTF_processTextureInfo(Entity entity,
+                                          glTF::Model& model,
                                           glTF::TextureInfo& textureInfo,
-                                          TextureType type,
-                                          usize id) {
+                                          TextureType type) {
     glTF::Texture& texture = model.root.textures[textureInfo.index];
-    glTF_processTexture(model, texture, type, id);
+    glTF_processTexture(entity, model, texture, type);
 }
 
-void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+void ModelLoader::glTF_processTextureInfo(Entity entity,
+                                          glTF::Model& model,
                                           glTF::NormalTextureInfo& textureInfo,
-                                          TextureType type,
-                                          usize id) {
+                                          TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo.index};
-    glTF_processTextureInfo(model, adapter, type, id);
+    glTF_processTextureInfo(entity, model, adapter, type);
 }
 
-void ModelLoader::glTF_processTextureInfo(glTF::Model& model,
+void ModelLoader::glTF_processTextureInfo(Entity entity,
+                                          glTF::Model& model,
                                           glTF::OcclusionTextureInfo& textureInfo,
-                                          TextureType type,
-                                          usize id) {
+                                          TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo.index};
-    glTF_processTextureInfo(model, adapter, type, id);
+    glTF_processTextureInfo(entity, model, adapter, type);
 }
 
 template <typename T, typename U>
 void ModelLoader::glTF_readAccessor(glTF::Model& model, usize iAccessor, std::vector<T>& out) {
-    R3_ASSERT(out.empty() && "out data must be empty");
-
     const glTF::Accessor& accessor = model.root.accessors[iAccessor];
     R3_ASSERT(glTF_sizeof(accessor.componentType) * glTF_componentElements(accessor.type) == sizeof(U));
 
@@ -376,12 +389,13 @@ void ModelLoader::glTF_readAccessor(glTF::Model& model, usize iAccessor, std::ve
     const glTF::BufferView& bufferView = model.root.bufferViews[*accessor.bufferView];
 
     const uint32 offset = accessor.byteOffset + bufferView.byteOffset;
+    const uint32 stride = bufferView.byteStride ? *bufferView.byteStride : sizeof(U);
 
-    out.reserve(accessor.count);
+    out.reserve(out.size() + accessor.count);
     for (usize i = 0; i < accessor.count; i++) {
         // read as U but cast to T
         out.emplace_back(
-            static_cast<T>(*reinterpret_cast<const U*>(&model.bin[bufferView.buffer][offset + (i * sizeof(U))])));
+            static_cast<T>(*reinterpret_cast<const U*>(&model.bin[bufferView.buffer][offset + (i * stride)])));
     }
 }
 

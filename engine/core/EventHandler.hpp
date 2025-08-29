@@ -243,10 +243,10 @@ public:
         using ResultType = typename FunctionTraits<F>::template ResultType;
 
         if constexpr (std::is_same_v<ResultType, bool>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool { return callback(); };
+            EventCallback wrapper = [callback](const EventBase&) -> bool { return callback(); };
             m_eventRegistry.insert(std::make_pair(id, wrapper));
         } else if constexpr (std::is_same_v<ResultType, void>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+            EventCallback wrapper = [callback](const EventBase&) -> bool {
                 callback();
                 return false;
             };

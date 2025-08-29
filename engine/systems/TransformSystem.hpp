@@ -22,7 +22,7 @@ public:
         // update all transforms in hierarchy if parent transform changed
         // this has the limitation that if you change a child node you must inform the root that it's m_dirty
         World()->registry().view<HierarchyComponent, TransformComponent>().each(
-            [this](Entity entity, HierarchyComponent& hier, TransformComponent& t) {
+            [this](HierarchyComponent& hier, TransformComponent& t) {
                 // if it's a root node (no parent) and has changed, update
                 if (hier.parent == entt::null && t.m_dirty) {
                     for (Entity child : hier.children) {

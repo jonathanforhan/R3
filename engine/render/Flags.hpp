@@ -99,6 +99,7 @@ enum class TextureType {
     Normal            = 2,
     AmbientOcclusion  = 3,
     Emissive          = 4,
+    CubeMap           = 5,
 };
 
 enum class ShaderType {

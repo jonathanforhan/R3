@@ -14,14 +14,7 @@ public:
     R3_COPY_DELETE(Image);
     R3_MOVE_DEFAULT(Image);
 
-    Image(VkFormat format,
-          VkExtent2D extent,
-          uint32 mipLevels,
-          VkSampleCountFlagBits sampleCount,
-          VkImageTiling tiling,
-          VkImageUsageFlags usage,
-          VkImageAspectFlags aspectFlags,
-          VkMemoryPropertyFlags properties);
+    Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties);
 
     ~Image() noexcept;
 
@@ -29,7 +22,8 @@ public:
 
     VkImageView imageView() const noexcept { return m_imageView; }
 
-    void generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels);
+    // layer count is useful for cube maps (6 faces)
+    void generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels, uint32 layerCount = 1);
 
 private:
     Handle<VkImage> m_image;

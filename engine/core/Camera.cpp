@@ -64,7 +64,7 @@ void Camera::update(double dt) {
         return;
     }
 
-    float deltaT = static_cast<float>(dt);
+    float deltaT = static_cast<float>(dt / 1000.0); // convert ms to s
 
     static constexpr float mouseSensitivity    = 360.0f;
     static constexpr float movementSensitivity = 2.0f;

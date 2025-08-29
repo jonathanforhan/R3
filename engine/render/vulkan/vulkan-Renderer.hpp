@@ -13,6 +13,7 @@
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
+#include "vulkan-Texture.hpp"
 
 namespace R3::vulkan {
 
@@ -25,7 +26,7 @@ public:
 
     ~Renderer() noexcept;
 
-    void draw(double dt);
+    void draw();
 
     // needed because using dynamic rendering
     void transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex);
@@ -40,7 +41,7 @@ public:
 private:
     void beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex);
 
-    void bindPipelineHelper(CommandBuffer& cmd);
+    void bindPipelineHelper(CommandBuffer& cmd, const GraphicsPipeline& pipeline);
 
     void writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights);
 
@@ -55,7 +56,13 @@ private:
     ViewProjection m_viewProj;
     Shader m_vertexShader;
     Shader m_fragmentShader;
+    Shader m_cubemapVertexShader;
+    Shader m_cubemapFragmentShader;
     GraphicsPipeline m_graphicsPipeline;
+    GraphicsPipeline m_cubemapPipeline;
+    Texture m_cubemapTexture;
+    uint32 m_cubemapTextureBinding = 0;
+    Buffer m_skyboxVertexBuffer;
     std::vector<Buffer> m_ubos;
     std::vector<Buffer> m_lights;
 };

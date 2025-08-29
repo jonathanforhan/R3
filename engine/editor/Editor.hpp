@@ -2,6 +2,7 @@
 
 #include <vulkan/vulkan_core.h>
 #include "api/Class.hpp"
+#include "core/Entity.hpp"
 #include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 
@@ -33,6 +34,9 @@ public:
     void displayProperties();
 
     void displaySceneManager();
+
+private:
+    void hierarchyHelper(Entity entity);
 
 private:
     IRenderContext& m_ctx;

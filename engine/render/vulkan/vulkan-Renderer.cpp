@@ -32,8 +32,19 @@
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
 #endif
+#include <array>
 
 namespace R3::vulkan {
+
+static const float s_SkyboxVertices[] = {
+    -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
+    1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,
+    1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
+    1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,
+};
 
 Renderer::Renderer(Window& window, RenderContext& ctx)
     : m_window(window),
@@ -46,29 +57,41 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Color/Depth Image
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
     m_colorImage     = Image{
-        m_swapchain.format(),
-        m_swapchain.extent(),
-        1,
-        msaaSamples,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+        VkImageCreateInfo{
+                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .imageType   = VK_IMAGE_TYPE_2D,
+                .format      = m_swapchain.format(),
+                .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
+                .mipLevels   = 1,
+                .arrayLayers = 1,
+                .samples     = msaaSamples,
+                .tiling      = VK_IMAGE_TILING_OPTIMAL,
+                .usage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        },
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
     m_depthImage = Image{
-        m_ctx.queryDepthFormat(),
-        m_swapchain.extent(),
-        1,
-        msaaSamples,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VkImageCreateInfo{
+            .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType   = VK_IMAGE_TYPE_2D,
+            .format      = m_ctx.queryDepthFormat(),
+            .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
+            .mipLevels   = 1,
+            .arrayLayers = 1,
+            .samples     = msaaSamples,
+            .tiling      = VK_IMAGE_TILING_OPTIMAL,
+            .usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        },
         VK_IMAGE_ASPECT_DEPTH_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
 
     //--- Shaders
-    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv"};
-    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv"};
+    m_vertexShader          = Shader{m_ctx, "_spirv/pbr.vert.spv"};
+    m_fragmentShader        = Shader{m_ctx, "_spirv/pbr.frag.spv"};
+    m_cubemapVertexShader   = Shader{m_ctx, "_spirv/cubemap.vert.spv"};
+    m_cubemapFragmentShader = Shader{m_ctx, "_spirv/cubemap.frag.spv"};
 
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
@@ -82,7 +105,57 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         msaaSamples,
         std::span{&colorFormat, 1},
         std::span{&layout, 1},
+        Vertex::getBindingDescription(),
+        Vertex::getAttributeDescriptions(),
     };
+
+#if 1
+    m_cubemapPipeline = GraphicsPipeline{
+        m_ctx,
+        m_cubemapVertexShader,
+        m_cubemapFragmentShader,
+        msaaSamples,
+        std::span{&colorFormat, 1},
+        std::span{&layout, 1},
+        CubemapVertex::getBindingDescription(),
+        CubemapVertex::getAttributeDescriptions(),
+    };
+
+    //--- Cubemap
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer();
+    cmd.reset();
+    cmd.begin();
+    std::array<std::filesystem::path, 6> facePaths = {
+        "assets/textures/skybox/right.jpg",
+        "assets/textures/skybox/left.jpg",
+        "assets/textures/skybox/top.jpg",
+        "assets/textures/skybox/bottom.jpg",
+        "assets/textures/skybox/front.jpg",
+        "assets/textures/skybox/back.jpg",
+    };
+    {
+        Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<Buffer>();
+        m_cubemapTexture      = Texture{m_ctx.graphicsCommandBuffer(), facePaths, TextureType::CubeMap, *stagingBuffer};
+        m_cubemapTextureBinding = ResourceManager()->bindTexture("skybox", m_cubemapTexture);
+    }
+
+    //--- Skybox Vertex Buffer
+    Buffer* stagingBuffer =
+        ResourceManager()->newFrameScopedObject<Buffer>(nullptr, sizeof(s_SkyboxVertices), BufferPreset::Staging);
+    stagingBuffer->copy(s_SkyboxVertices, sizeof(s_SkyboxVertices));
+    m_skyboxVertexBuffer = Buffer{
+        nullptr,
+        sizeof(s_SkyboxVertices),
+        BufferPreset::DeviceVertex,
+    };
+
+    VkBufferCopy* vertexCopyRegion = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
+    *vertexCopyRegion              = {0, 0, sizeof(s_SkyboxVertices)};
+    ctx.graphicsCommandBuffer().copyBuffer(
+        stagingBuffer->buffer(), m_skyboxVertexBuffer.buffer(), {vertexCopyRegion, 1});
+    cmd.end();
+    cmd.submitSync();
+#endif
 
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
@@ -110,7 +183,7 @@ Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
 }
 
-void Renderer::draw(double dt) {
+void Renderer::draw() {
     // Handle m_window resize
     if (m_window.shouldResize()) {
         handleWindowResize();
@@ -144,7 +217,27 @@ void Renderer::draw(double dt) {
 
     transitionAttachmentsForRender(cmd, imageIndex);
     beginRenderingHelper(cmd, imageIndex);
-    bindPipelineHelper(cmd);
+
+#if 1
+    // cubemap
+    bindPipelineHelper(cmd, m_cubemapPipeline);
+    cmd.setDepthTestEnable(false); // Disable depth for skybox
+    const FragmentPushConstants fragPushConstants = {.iAlbedo = m_cubemapTextureBinding};
+    cmd.pushConstants(m_graphicsPipeline.layout(),
+                      VK_SHADER_STAGE_FRAGMENT_BIT,
+                      sizeof(VertexPushConstants),
+                      sizeof(FragmentPushConstants),
+                      &fragPushConstants);
+    VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
+    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
+    const VkBuffer vboIndices[]  = {m_skyboxVertexBuffer.buffer()};
+    const VkDeviceSize offsets[] = {0};
+    cmd.bindVertexBuffers(0, vboIndices, offsets);
+    cmd.draw(36, 1, 0, 0);
+#endif
+
+    // rest of scene
+    bindPipelineHelper(cmd, m_graphicsPipeline);
 
     World()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
@@ -326,22 +419,32 @@ void Renderer::handleWindowResize() {
     // recreate attachments
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
     m_colorImage     = Image{
-        m_swapchain.format(),
-        m_swapchain.extent(),
-        1,
-        msaaSamples,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT,
+        VkImageCreateInfo{
+                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .imageType   = VK_IMAGE_TYPE_2D,
+                .format      = m_swapchain.format(),
+                .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
+                .mipLevels   = 1,
+                .arrayLayers = 1,
+                .samples     = msaaSamples,
+                .tiling      = VK_IMAGE_TILING_OPTIMAL,
+                .usage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        },
         VK_IMAGE_ASPECT_COLOR_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
     m_depthImage = Image{
-        m_ctx.queryDepthFormat(),
-        m_swapchain.extent(),
-        1,
-        msaaSamples,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VkImageCreateInfo{
+            .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType   = VK_IMAGE_TYPE_2D,
+            .format      = m_ctx.queryDepthFormat(),
+            .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
+            .mipLevels   = 1,
+            .arrayLayers = 1,
+            .samples     = msaaSamples,
+            .tiling      = VK_IMAGE_TILING_OPTIMAL,
+            .usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        },
         VK_IMAGE_ASPECT_DEPTH_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
@@ -387,8 +490,8 @@ void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     cmd.beginRendering(renderingInfo);
 }
 
-void Renderer::bindPipelineHelper(CommandBuffer& cmd) {
-    cmd.bindGraphicsPipeline(m_graphicsPipeline.pipeline());
+void Renderer::bindPipelineHelper(CommandBuffer& cmd, const GraphicsPipeline& pipeline) {
+    cmd.bindGraphicsPipeline(pipeline.pipeline());
     cmd.setScissor({.offset = {0, 0}, .extent = m_swapchain.extent()});
     cmd.setViewport({
         .x        = 0.0f,

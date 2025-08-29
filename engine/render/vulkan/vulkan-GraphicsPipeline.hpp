@@ -19,7 +19,9 @@ public:
                      Shader& fragmentShader,
                      VkSampleCountFlagBits msaaSamples,
                      std::span<const VkFormat> colorFormats,
-                     std::span<const VkDescriptorSetLayout> layouts);
+                     std::span<const VkDescriptorSetLayout> layouts,
+                     VkVertexInputBindingDescription vertexBindingDescription,
+                     std::span<const VkVertexInputAttributeDescription> vertexAttributeDescriptions);
 
     ~GraphicsPipeline() noexcept;
 

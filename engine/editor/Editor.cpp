@@ -1,6 +1,7 @@
 #include "Editor.hpp"
 
 #include <filesystem>
+#include <format>
 #include <iterator>
 #include <string>
 #include <backends/imgui_impl_glfw.h>
@@ -10,7 +11,10 @@
 #include <volk.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Types.hpp"
+#include "components/HierarchyComponent.hpp"
+#include "core/Entity.hpp"
 #include "core/EventHandler.hpp"
+#include "core/World.hpp"
 #include "render/RenderContext.hpp"
 #include "render/Window.hpp"
 #include "render/WindowEvents.hpp"
@@ -116,8 +120,8 @@ Editor::~Editor() {
 void Editor::recordInterfaceFrame(double dt) {
     beginFrame();
     // ImGui::ShowDemoWindow();
-    // initializeDocking();
-    // displayHierarchy();
+    initializeDocking();
+    displayHierarchy();
     // displayProperties();
     // displaySceneManager();
     displayDeltaTime(dt);
@@ -147,17 +151,11 @@ void Editor::setContentScale(float scale) {
 void Editor::displayDeltaTime(double dt) {
     ImGui::Begin("Delta Time", nullptr, GUI_BOARDERLESS);
     ImGui::SetWindowPos(ImVec2(10, 10));
-    ImGui::Text("%.02f ms", dt * 1000.0f);
+    ImGui::Text("%.02f ms\n%i FPS", dt, (int)(1000.0f / dt));
     ImGui::End();
 }
 
 void Editor::initializeDocking() {
-    /*
-    static constexpr ImGuiDockNodeFlags dockspaceFlags =
-        ImGuiDockNodeFlags_PassthruCentralNode | (int)ImGuiDockNodeFlags_NoWindowMenuButton;
-    ImGui::DockSpaceOverViewport(dockspaceFlags);
-    */
-
     static constexpr ImGuiDockNodeFlags dockspaceFlags =
         ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoWindowMenuButton;
 
@@ -177,25 +175,15 @@ void Editor::initializeDocking() {
 }
 
 void Editor::displayHierarchy() {
-#if 0
     // Hierarchy Panel
     if (ImGui::Begin("Hierarchy")) {
-        // Tree Nodes for Scenes
-        if (ImGui::TreeNodeEx(CurrentScene->name)) {
-            // The Scene's Entities
-            Entity::forEach([this](EntityView& entity) {
-                if (auto* editorComponent = entity.tryGet<EditorComponent>()) {
-                    CHECK(editorComponent->name != nullptr);
-                    if (ImGui::Button(editorComponent->name)) {
-                        m_currentEntity = entity.id();
-                    }
-                }
-            });
-            ImGui::TreePop();
-        }
+        World()->registry().view<HierarchyComponent>().each([this](Entity entity, const HierarchyComponent& hier) {
+            if (hier.parent == entt::null) {
+                hierarchyHelper(entity);
+            }
+        });
     }
     ImGui::End();
-#endif
 }
 
 void Editor::displayProperties() {
@@ -316,6 +304,17 @@ void Editor::displaySceneManager() {
         ImGui::EndTable();
     }
     ImGui::End();
+}
+
+void Editor::hierarchyHelper(Entity entity) {
+    if (ImGui::TreeNodeEx(std::format("{}", (uint32)entity).c_str())) {
+        if (const HierarchyComponent* h = World()->registry().try_get<HierarchyComponent>(entity)) {
+            for (Entity child : h->children) {
+                hierarchyHelper(child);
+            }
+        }
+        ImGui::TreePop();
+    }
 }
 
 } // namespace R3

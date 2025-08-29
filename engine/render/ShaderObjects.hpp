@@ -105,4 +105,29 @@ struct Vertex {
     }
 };
 
+struct CubemapVertex {
+    fvec3 position;
+
+    static VkVertexInputBindingDescription getBindingDescription() noexcept {
+        const VkVertexInputBindingDescription vertexInputBindingDescription = {
+            .binding   = 0,
+            .stride    = sizeof(CubemapVertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
+        };
+        return vertexInputBindingDescription;
+    }
+
+    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() noexcept {
+        const std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescription = {
+            {
+                .location = 0,
+                .binding  = 0,
+                .format   = VK_FORMAT_R32G32B32_SFLOAT,
+                .offset   = offsetof(CubemapVertex, position),
+            },
+        };
+        return vertexInputAttributeDescription;
+    }
+};
+
 } // namespace R3

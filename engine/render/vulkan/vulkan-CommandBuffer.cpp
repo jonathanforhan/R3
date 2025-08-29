@@ -1,13 +1,16 @@
 #include "vulkan-CommandBuffer.hpp"
 
+#include <exception>
 #include <memory>
 #include <new>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 #include "api/Assert.hpp"
+#include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
+#include "core/Log.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 

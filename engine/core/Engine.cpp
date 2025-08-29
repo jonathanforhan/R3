@@ -1,6 +1,7 @@
 #include "Engine.hpp"
 
 #include <chrono>
+#include <ratio>
 #include "EventHandler.hpp"
 #include "components/LightComponent.hpp"
 #include "components/TransformComponent.hpp"
@@ -20,21 +21,29 @@ static void TEST_FUNCTION() {
     World()->addSystem<TransformSystem>();
 
     // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
-    Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-
+    // Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
     Entity chess = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    // Entity car = ModelLoader().glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
+    // Entity city = ModelLoader().glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
+    Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+    // Entity lamp = ModelLoader().glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
     Entity light = World()->registry().create();
     World()->registry().emplace<LightComponent>(light,
                                                 LightComponent{
-                                                    .position  = fvec3(2.0f, 4.0f, 0.0f),
+                                                    .position  = fvec3(0.0f, 2.0f, 0.0f),
                                                     .color     = fvec3(1.0f),
-                                                    .intensity = 100.0f,
+                                                    .intensity = 5.0f,
                                                 });
 
+    auto& t = World()->registry().get<TransformComponent>(chess).transform();
+    t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+
+    /*
     auto& t       = World()->registry().get<TransformComponent>(helmet);
-    t.transform() = glm::translate(t.transform(), fvec3(0.5f, 0.0f, 0.0f));
+    t.transform() = glm::translate(t.transform(), fvec3(0.8f, 0.0f, 0.0f));
     t.transform() = glm::scale(t.transform(), fvec3(0.2f));
+    */
 }
 
 double EngineSingleton::deltaTime() {
@@ -43,7 +52,8 @@ double EngineSingleton::deltaTime() {
     static auto s_prev = system_clock::now();
 
     const auto curr = system_clock::now();
-    const double dt = duration<double>(curr - s_prev).count();
+    const double dt = duration<double, std::milli>(curr - s_prev).count();
+    // ^^ milliseconds
 
     s_prev = curr;
     return dt;
@@ -72,7 +82,6 @@ int EngineSingleton::run() {
             const double dt = deltaTime();
 
             World()->update(dt);
-            window.update();
 
             EventHandler()->dispatchEvents();
 
@@ -80,8 +89,10 @@ int EngineSingleton::run() {
 #if R3_EDITOR
                 editor.recordInterfaceFrame(dt);
 #endif
-                renderer.draw(dt);
+                renderer.draw();
             }
+
+            window.update();
 
             EventHandler()->emplace("frame-done");
         }

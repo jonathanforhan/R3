@@ -20,7 +20,9 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
                                    Shader& fragmentShader,
                                    VkSampleCountFlagBits msaaSamples,
                                    std::span<const VkFormat> colorFormats,
-                                   std::span<const VkDescriptorSetLayout> layouts) {
+                                   std::span<const VkDescriptorSetLayout> layouts,
+                                   VkVertexInputBindingDescription vertexBindingDescription,
+                                   std::span<const VkVertexInputAttributeDescription> vertexAttributeDescriptions) {
     m_device = ctx.device();
 
     const VkPipelineShaderStageCreateInfo vertShaderStageInfo = {
@@ -45,17 +47,14 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineShaderStageCreateInfo shaderStagesInfo[] = {vertShaderStageInfo, fragShaderStageInfo};
 
-    const auto bindingDescription    = Vertex::getBindingDescription();
-    const auto attributeDescriptions = Vertex::getAttributeDescriptions();
-
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         .pNext                           = nullptr,
         .flags                           = 0,
         .vertexBindingDescriptionCount   = 1,
-        .pVertexBindingDescriptions      = &bindingDescription,
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size()),
-        .pVertexAttributeDescriptions    = attributeDescriptions.data(),
+        .pVertexBindingDescriptions      = &vertexBindingDescription,
+        .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size()),
+        .pVertexAttributeDescriptions    = vertexAttributeDescriptions.data(),
     };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {

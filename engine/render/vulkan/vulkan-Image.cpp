@@ -1,5 +1,6 @@
 #include "vulkan-Image.hpp"
 
+#include <algorithm>
 #include <volk.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -11,34 +12,10 @@
 
 namespace R3::vulkan {
 
-Image::Image(VkFormat format,
-             VkExtent2D extent,
-             uint32 mipLevels,
-             VkSampleCountFlagBits sampleCount,
-             VkImageTiling tiling,
-             VkImageUsageFlags usage,
-             VkImageAspectFlags aspectFlags,
-             VkMemoryPropertyFlags properties) {
+Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties) {
     RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
 
     try {
-        const VkImageCreateInfo imageInfo = {
-            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .pNext                 = nullptr,
-            .flags                 = {},
-            .imageType             = VK_IMAGE_TYPE_2D,
-            .format                = format,
-            .extent                = {extent.width, extent.height, 1},
-            .mipLevels             = mipLevels,
-            .arrayLayers           = 1,
-            .samples               = sampleCount,
-            .tiling                = tiling,
-            .usage                 = usage,
-            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = 0,
-            .pQueueFamilyIndices   = nullptr, /* would need this if using sharing mode concurrent */
-            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
-        };
         VK_CHECK(vkCreateImage(ctx.device(), &imageInfo, nullptr, &*m_image));
 
         VkMemoryRequirements memoryRequirements;
@@ -58,16 +35,17 @@ Image::Image(VkFormat format,
             .pNext      = nullptr,
             .flags      = {},
             .image      = m_image,
-            .viewType   = VK_IMAGE_VIEW_TYPE_2D,
-            .format     = format,
+            .viewType   = (imageInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? VK_IMAGE_VIEW_TYPE_CUBE
+                                                                                  : VK_IMAGE_VIEW_TYPE_2D,
+            .format     = imageInfo.format,
             .components = {},
             .subresourceRange =
                 {
                     .aspectMask     = aspectFlags,
                     .baseMipLevel   = 0,
-                    .levelCount     = mipLevels,
+                    .levelCount     = imageInfo.mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = 1,
+                    .layerCount     = (uint32)((imageInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? 6 : 1),
                 },
         };
         VK_CHECK(vkCreateImageView(ctx.device(), &imageViewInfo, nullptr, &*m_imageView));
@@ -86,11 +64,13 @@ Image::~Image() noexcept {
     vkDestroyImageView(ctx.device(), m_imageView, nullptr);
 }
 
-void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels) {
-    VkImageMemoryBarrier memoryBarrierWrite = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels, uint32 layerCount) {
+    VkImageMemoryBarrier2 memoryBarrierWrite = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext               = nullptr,
+        .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
         .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
         .dstAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
         .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -107,10 +87,12 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
             },
     };
 
-    VkImageMemoryBarrier memoryBarrierShader = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+    VkImageMemoryBarrier2 memoryBarrierShader = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .pNext               = nullptr,
+        .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
         .srcAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
+        .dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
         .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
         .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -127,60 +109,58 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
             },
     };
 
-    int32 w = static_cast<int32>(extent.width);
-    int32 h = static_cast<int32>(extent.height);
-
     // incremental mipmap generation
     // w and h are halved each iteration
-    for (uint32 i = 0; i < mipLevels - 1; ++i) {
-        memoryBarrierWrite.subresourceRange.baseMipLevel = i;
-        cmd.pipelineBarrier(
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, {}, {}, {&memoryBarrierWrite, 1});
+    for (uint32 layer = 0; layer < layerCount; ++layer) {
+        int32 w = static_cast<int32>(extent.width);
+        int32 h = static_cast<int32>(extent.height);
 
-        const VkImageBlit blitRegion = {
-            .srcSubresource =
-                {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .mipLevel       = i,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1,
-                },
-            .srcOffsets =
-                {
-                    {0, 0, 0},
-                    {w, h, 1},
-                },
-            .dstSubresource =
-                {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .mipLevel       = i + 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1,
-                },
-            .dstOffsets =
-                {
-                    {0, 0, 0},
-                    {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1},
-                },
-        };
+        for (uint32 mipLevel = 0; mipLevel < mipLevels - 1; ++mipLevel) {
+            memoryBarrierWrite.subresourceRange.baseMipLevel   = mipLevel;
+            memoryBarrierWrite.subresourceRange.baseArrayLayer = layer;
+            cmd.transitionImageLayout(memoryBarrierWrite);
 
-        cmd.blitImage(m_image,
-                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                      m_image,
-                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                      {&blitRegion, 1});
+            const VkImageBlit blitRegion = {
+                .srcSubresource =
+                    {
+                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel       = mipLevel,
+                        .baseArrayLayer = layer,
+                        .layerCount     = 1,
+                    },
+                .srcOffsets =
+                    {
+                        {0, 0, 0},
+                        {w, h, 1},
+                    },
+                .dstSubresource =
+                    {
+                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel       = mipLevel + 1,
+                        .baseArrayLayer = layer,
+                        .layerCount     = 1,
+                    },
+                .dstOffsets =
+                    {
+                        {0, 0, 0},
+                        {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1},
+                    },
+            };
 
-        memoryBarrierShader.subresourceRange.baseMipLevel = i;
+            cmd.blitImage(m_image,
+                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                          m_image,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                          {&blitRegion, 1});
 
-        cmd.pipelineBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT,
-                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-                            0,
-                            {},
-                            {},
-                            {&memoryBarrierShader, 1});
+            memoryBarrierShader.subresourceRange.baseMipLevel   = mipLevel;
+            memoryBarrierShader.subresourceRange.baseArrayLayer = layer;
 
-        w = w > 1 ? w / 2 : 1;
-        h = h > 1 ? h / 2 : 1;
+            cmd.transitionImageLayout(memoryBarrierShader);
+
+            w = w > 1 ? w / 2 : 1;
+            h = h > 1 ? h / 2 : 1;
+        }
     }
 
     const VkImageMemoryBarrier memoryBarrierFinal = {
@@ -199,7 +179,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 1,
+                .layerCount     = layerCount,
             },
     };
     cmd.pipelineBarrier(
