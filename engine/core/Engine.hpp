@@ -55,20 +55,20 @@ struct GEngine {
     }
 };
 
-struct GWindow {
-    class Window* operator->() noexcept { return &(GEngine()->Window()); }
-};
-
-struct GRenderContext {
-    class IRenderContext* operator->() noexcept { return &(GEngine()->RenderContext()); }
-};
-
 struct GEventHandler {
     class EventHandler* operator->() noexcept { return &(GEngine()->EventHandler()); }
 };
 
 struct GResourceManager {
     class ResourceManager* operator->() noexcept { return &(GEngine()->ResourceManager()); }
+};
+
+struct GWindow {
+    class Window* operator->() noexcept { return &(GEngine()->Window()); }
+};
+
+struct GRenderContext {
+    class IRenderContext* operator->() noexcept { return &(GEngine()->RenderContext()); }
 };
 
 struct GWorld {

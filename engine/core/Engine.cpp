@@ -21,11 +21,11 @@ static void TEST_FUNCTION() {
     GWorld()->addSystem<TransformSystem>();
 
     // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
-    // Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    Entity chess = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    // Entity chess = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
     // Entity car = ModelLoader().glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
     // Entity city = ModelLoader().glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
-    Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+    // Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
     // Entity lamp = ModelLoader().glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
     Entity light = GWorld()->registry().create();
@@ -36,14 +36,8 @@ static void TEST_FUNCTION() {
                                                      .intensity = 5.0f,
                                                  });
 
-    auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-    t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
-
-    /*
-    auto& t       = GWorld()->registry().get<TransformComponent>(helmet);
-    t.transform() = glm::translate(t.transform(), fvec3(0.8f, 0.0f, 0.0f));
-    t.transform() = glm::scale(t.transform(), fvec3(0.2f));
-    */
+    // auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
+    // t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
 }
 
 double Engine::deltaTime() {
@@ -66,22 +60,26 @@ int Engine::run() {
         m_running = true;
     }
 
-    class Window window;
-    vulkan::RenderContext ctx{window};
     class EventHandler eventHandler;
-    class ResourceManager resourceManager;
-    class World world;
+    m_eventHandler = &eventHandler;
 
-    m_window          = &window;
-    m_ctx             = &ctx;
-    m_eventHandler    = &eventHandler;
+    class ResourceManager resourceManager;
     m_resourceManager = &resourceManager;
-    m_world           = &world;
+
+    class Window window;
+    m_window = &window;
+
+    vulkan::RenderContext ctx{window};
+    m_ctx = &ctx;
+
+    class World world;
+    m_world = &world;
 
     TEST_FUNCTION();
 
-    vulkan::Renderer renderer{window, ctx};
     {
+        vulkan::Renderer renderer{window, ctx};
+
 #if R3_EDITOR
         Editor editor(window, ctx);
 #endif
@@ -110,10 +108,10 @@ int Engine::run() {
     GWorld()->registry().clear();
     GResourceManager()->clear();
 
-    m_window          = nullptr;
-    m_ctx             = nullptr;
     m_eventHandler    = nullptr;
     m_resourceManager = nullptr;
+    m_window          = nullptr;
+    m_ctx             = nullptr;
     m_world           = nullptr;
 
     return 0;
