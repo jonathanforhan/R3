@@ -22,7 +22,7 @@ static void TEST_FUNCTION() {
 
     // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
     Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    // Entity chess = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    // Entity chess  = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
     // Entity car = ModelLoader().glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
     // Entity city = ModelLoader().glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
     // Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
@@ -85,20 +85,17 @@ int Engine::run() {
 #endif
         while (!window.shouldClose()) {
             const double dt = deltaTime();
-
             GWorld()->update(dt);
 
-            GEventHandler()->dispatchEvents();
-
+            bool uiFocused = false;
             if (!window.isMinimized()) {
 #if R3_EDITOR
-                editor.recordInterfaceFrame(dt);
+                uiFocused = editor.recordInterfaceFrame(dt);
 #endif
                 renderer.draw();
             }
-
-            window.update();
-
+            window.update(uiFocused);
+            GEventHandler()->dispatchEvents();
             GEventHandler()->emplace("frame-done");
         }
 

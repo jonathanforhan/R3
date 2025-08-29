@@ -58,10 +58,6 @@ private:
         int q = 0;
     };
     ActiveKeys m_activeKeys;
-
-    bool m_mouseDown = false;
-
-    fvec2 m_cursorPosition{0.0f, 0.0f};
     fvec2 m_prevCursorPosition{0.0f, 0.0f};
 };
 

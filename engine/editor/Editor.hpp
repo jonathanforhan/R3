@@ -17,7 +17,7 @@ public:
 
     ~Editor() noexcept;
 
-    void recordInterfaceFrame(double dt);
+    bool recordInterfaceFrame(double dt);
 
     void beginFrame();
 

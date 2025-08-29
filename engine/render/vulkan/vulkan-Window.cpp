@@ -20,24 +20,10 @@
 #include "input/InputEvents.hpp"
 #include "render/WindowEvents.hpp"
 
-#if R3_EDITOR
-#include <imgui.h>
-#endif
-#include <array>
-
 namespace R3 {
 
-#if R3_EDITOR
-#define WAS_UI_CAPTURED() \
-    (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse))
-#define WAS_UI_MOUSE_CAPTURED() (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse)
-#else
-#define WAS_UI_CAPTURED()       false
-#define WAS_UI_MOUSE_CAPTURED() false
-#endif
-
-#define KEY_TO_INDEX(_Key) ((usize)(_Key - (int)Key::Space))
-#define VALID_KEY(_Key)    (_Key >= (int)Key::Space && _Key <= (int)Key::Menu)
+#define KEY_TO_INDEX(_Key) ((usize)(((int)_Key) - (int)Key::Space))
+#define VALID_KEY(_Key)    (_Key >= (int)Key::Space && (_Key) <= (int)Key::Menu)
 
 Window::Window() {
     glfwInit();
@@ -82,11 +68,10 @@ Window::Window() {
     auto keyCallback = [](GLFWwindow* window, int key, int, int action, int mods) {
         R3_ASSERT(VALID_KEY(key));
 
-        if (WAS_UI_CAPTURED()) {
+        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+        if (_this->m_uiFocused) {
             return;
         }
-
-        auto* _this{reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window))};
         _this->m_keyStates[KEY_TO_INDEX(key)] = (action != GLFW_RELEASE);
 
         switch (action) {
@@ -107,7 +92,9 @@ Window::Window() {
 
     //--- Mouse Button Callback
     auto mouseCallback = [](GLFWwindow* window, int button, int action, int mods) {
-        if (WAS_UI_MOUSE_CAPTURED()) {
+        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+        if (_this->m_uiFocused) {
+            // release all previously pressed keys
             auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
             for (Key key = Key::Space; bool state : _this->m_keyStates) {
                 if (state) {
@@ -134,22 +121,18 @@ Window::Window() {
     glfwFocusWindow(m_window);
 
     //--- Mouse Scroll Callback
-    auto scrollCallback = [](GLFWwindow*, double xoffset, double yoffset) {
-        if (WAS_UI_MOUSE_CAPTURED()) {
+    auto scrollCallback = [](GLFWwindow* window, double xoffset, double yoffset) {
+        auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+        if (_this->m_uiFocused) {
             return;
         }
-
         GEventHandler()->emplace<MouseScrollEvent>("mouse-scroll", xoffset, yoffset);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
     //--- Cursor Input Callback
     auto cursorCallback = [](GLFWwindow* window, double x, double y) {
-        int w, h;
-        glfwGetFramebufferSize(window, &w, &h);
-        double xpos = static_cast<double>(x) / static_cast<double>(w);
-        double ypos = static_cast<double>(y) / static_cast<double>(h);
-        GEventHandler()->emplace<MouseCursorEvent>("cursor-move", xpos, ypos);
+        GEventHandler()->emplace<MouseCursorEvent>("cursor-move", x, y);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
 
@@ -293,8 +276,29 @@ void Window::setShouldResize(bool b) {
     m_shouldResize = b;
 }
 
-void Window::update() {
-    glfwPollEvents();
+bool Window::focused() const {
+    int focused = glfwGetWindowAttrib(m_window, GLFW_FOCUSED);
+    return static_cast<bool>(focused);
+}
+
+bool Window::uiFocused() const {
+    return m_uiFocused;
+}
+
+bool Window::keyPressed(Key key) const {
+    int pressed = glfwGetKey(m_window, (int)key); // update key state
+    return pressed == GLFW_PRESS;
+}
+
+bool Window::mouseButtonPressed(MouseButton button) const {
+    int pressed = glfwGetMouseButton(m_window, (int)button);
+    return pressed == GLFW_PRESS;
+}
+
+dvec2 Window::cursorPosition() const {
+    dvec2 pos;
+    glfwGetCursorPos(m_window, &pos.x, &pos.y);
+    return pos;
 }
 
 void* Window::native() {
@@ -315,6 +319,11 @@ const GLFWwindow* Window::glfw() const {
 
 void Window::kill() {
     glfwSetWindowShouldClose(m_window, GLFW_TRUE);
+}
+
+void Window::update(bool uiFocused) {
+    m_uiFocused = uiFocused;
+    glfwPollEvents();
 }
 
 } // namespace R3

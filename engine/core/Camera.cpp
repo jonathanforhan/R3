@@ -4,59 +4,15 @@
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "core/EventHandler.hpp"
 #include "input/InputCodes.hpp"
-#include "input/InputEvents.hpp"
+#include "render/Window.hpp"
 
 namespace R3 {
 
 Camera::Camera(CameraType type)
     : m_cameraType(type) {
-    auto keyCallback = [this](const Event<KeyboardEvent>& e) noexcept {
-        bool pressed = e.id == "key-press";
-
-        switch (e.data.key) {
-            case Key::W:
-                m_activeKeys.w = pressed ? (m_activeKeys.s + 1) : 0;
-                break;
-            case Key::A:
-                m_activeKeys.a = pressed ? (m_activeKeys.d + 1) : 0;
-                break;
-            case Key::S:
-                m_activeKeys.s = pressed ? (m_activeKeys.w + 1) : 0;
-                break;
-            case Key::D:
-                m_activeKeys.d = pressed ? (m_activeKeys.a + 1) : 0;
-                break;
-            case Key::E:
-                m_activeKeys.e = pressed ? (m_activeKeys.q + 1) : 0;
-                break;
-            case Key::Q:
-                m_activeKeys.q = pressed ? (m_activeKeys.e + 1) : 0;
-                break;
-            default:
-                break;
-        }
-    };
-    GEventHandler()->bindEventListener({"key-press", "key-release"}, keyCallback);
-
-    auto mouseCallback = [this](const Event<MouseButtonEvent>& e) noexcept {
-        bool pressed = e.id == "mouse-press";
-
-        if (e.data.button == MouseButton::Left) {
-            m_mouseDown = pressed;
-        }
-    };
-    GEventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
-
-    auto cursorPositionCallback = [this](const Event<MouseCursorEvent>& e) noexcept {
-        m_cursorPosition = dvec2{e.data.xpos, e.data.ypos};
-    };
-    GEventHandler()->bindEventListener("cursor-move", cursorPositionCallback);
-
     translateBackward(2.0f);
 }
 
@@ -65,17 +21,30 @@ void Camera::update(double dt) {
         return;
     }
 
-    float deltaT = static_cast<float>(dt / 1000.0); // convert ms to s
+    const float deltaT = static_cast<float>(dt / 1000.0); // convert ms to s
 
-    static constexpr float mouseSensitivity    = 360.0f;
-    static constexpr float movementSensitivity = 2.0f;
+    static constexpr float mouseSensitivity    = 0.25f;
+    static constexpr float movementSensitivity = 2.5f;
 
-    const float deltaX        = m_mouseDown ? m_cursorPosition.x - m_prevCursorPosition.x : 0.0f;
-    const float deltaY        = -(m_mouseDown ? m_cursorPosition.y - m_prevCursorPosition.y : 0.0f);
+    const bool mouseDown  = GWindow()->mouseButtonPressed(MouseButton::Left);
+    const fvec2 cursorPos = GWindow()->cursorPosition();
+
+    const float deltaX        = mouseDown ? (cursorPos.x - m_prevCursorPosition.x) : 0.0f;
+    const float deltaY        = -(mouseDown ? (cursorPos.y - m_prevCursorPosition.y) : 0.0f);
     const fvec2 deltaPosition = fvec2(deltaX, deltaY);
-    m_prevCursorPosition      = m_cursorPosition;
+    m_prevCursorPosition      = cursorPos;
 
     const float deltaMovement = deltaT * movementSensitivity;
+
+    m_activeKeys.w = GWindow()->keyPressed(Key::W) ? (m_activeKeys.s + 1) : 0;
+    m_activeKeys.a = GWindow()->keyPressed(Key::A) ? (m_activeKeys.d + 1) : 0;
+    m_activeKeys.s = GWindow()->keyPressed(Key::S) ? (m_activeKeys.w + 1) : 0;
+    m_activeKeys.d = GWindow()->keyPressed(Key::D) ? (m_activeKeys.a + 1) : 0;
+
+    if (GWindow()->uiFocused()) {
+        m_activeKeys = {};
+        return;
+    }
 
     if (m_activeKeys.w && (m_activeKeys.w > m_activeKeys.s)) {
         translateForward(deltaMovement);
@@ -95,7 +64,7 @@ void Camera::update(double dt) {
         translateDown(deltaMovement);
     }
 
-    if (m_mouseDown) {
+    if (mouseDown) {
         fvec2 dpos = deltaPosition * mouseSensitivity;
         lookAround(dpos.x, dpos.y);
     }

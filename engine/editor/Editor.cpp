@@ -120,8 +120,16 @@ Editor::~Editor() {
     }
 }
 
-void Editor::recordInterfaceFrame(double dt) {
+bool Editor::recordInterfaceFrame(double dt) {
     beginFrame();
+
+    bool uiFocused = false;
+    if (ImGui::GetCurrentContext()) {
+        if (ImGui::GetIO().WantCaptureKeyboard) {
+            uiFocused = true;
+        }
+    }
+
     // ImGui::ShowDemoWindow();
     initializeDocking();
 
@@ -132,6 +140,8 @@ void Editor::recordInterfaceFrame(double dt) {
     // displaySceneManager();
     displayDeltaTime(dt);
     endFrame();
+
+    return uiFocused;
 }
 
 void Editor::beginFrame() {

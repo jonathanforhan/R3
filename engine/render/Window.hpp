@@ -11,7 +11,7 @@ extern "C" struct GLFWwindow;
 namespace R3 {
 
 class Window {
-public:
+private:
     R3_COPY_DELETE(Window);
     R3_MOVE_DELETE(Window);
 
@@ -19,6 +19,7 @@ public:
 
     ~Window() noexcept;
 
+public:
     void setTitle(std::string_view title);
 
     void show();
@@ -59,7 +60,15 @@ public:
 
     void setShouldResize(bool b);
 
-    void update();
+    bool focused() const;
+
+    bool uiFocused() const;
+
+    bool keyPressed(Key key) const;
+
+    bool mouseButtonPressed(MouseButton button) const;
+
+    dvec2 cursorPosition() const;
 
     void* native();
 
@@ -70,10 +79,17 @@ public:
     void kill();
 
 private:
+    void update(bool uiFocused = false);
+
+private:
     GLFWwindow* m_window                   = nullptr;
     bool m_shouldResize                    = false;
+    bool m_uiFocused                       = false;
     static constexpr usize MAX_KEYS        = (uint16)Key::Menu - (uint16)Key::Space;
     std::array<bool, MAX_KEYS> m_keyStates = {};
+
+private:
+    friend class Engine;
 };
 
 } // namespace R3
