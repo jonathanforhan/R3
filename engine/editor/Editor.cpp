@@ -4,14 +4,15 @@
 #include <format>
 #include <iterator>
 #include <string>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
-#include <volk.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
+#include <glm/gtc/type_ptr.hpp>
 #include "api/Types.hpp"
 #include "components/HierarchyComponent.hpp"
+#include "core/Engine.hpp"
 #include "core/Entity.hpp"
 #include "core/EventHandler.hpp"
 #include "core/World.hpp"
@@ -19,6 +20,8 @@
 #include "render/Window.hpp"
 #include "render/WindowEvents.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
+
+#include <ImGuizmo.h>
 
 namespace R3 {
 
@@ -100,7 +103,7 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
     io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto/Roboto-Medium.ttf", 16.5f * 1.5f);
     io.Fonts->Build();
 
-    EventHandler()->bindEventListener("window-content-scale", [this](const Event<WindowResizeEvent>& e) noexcept {
+    GEventHandler()->bindEventListener("window-content-scale", [this](const Event<WindowResizeEvent>& e) noexcept {
         setContentScale((e.data.width + e.data.height) / 2.0f);
     });
 }
@@ -121,6 +124,9 @@ void Editor::recordInterfaceFrame(double dt) {
     beginFrame();
     // ImGui::ShowDemoWindow();
     initializeDocking();
+
+    testImGuizmo();
+
     displayHierarchy();
     // displayProperties();
     // displaySceneManager();
@@ -132,6 +138,7 @@ void Editor::beginFrame() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 
     auto& io          = ImGui::GetIO();
     float scaleFactor = io.DisplayFramebufferScale.x;
@@ -177,7 +184,7 @@ void Editor::initializeDocking() {
 void Editor::displayHierarchy() {
     // Hierarchy Panel
     if (ImGui::Begin("Hierarchy")) {
-        World()->registry().view<HierarchyComponent>().each([this](Entity entity, const HierarchyComponent& hier) {
+        GWorld()->registry().view<HierarchyComponent>().each([this](Entity entity, const HierarchyComponent& hier) {
             if (hier.parent == entt::null) {
                 hierarchyHelper(entity);
             }
@@ -308,13 +315,93 @@ void Editor::displaySceneManager() {
 
 void Editor::hierarchyHelper(Entity entity) {
     if (ImGui::TreeNodeEx(std::format("{}", (uint32)entity).c_str())) {
-        if (const HierarchyComponent* h = World()->registry().try_get<HierarchyComponent>(entity)) {
+        if (const HierarchyComponent* h = GWorld()->registry().try_get<HierarchyComponent>(entity)) {
             for (Entity child : h->children) {
                 hierarchyHelper(child);
             }
         }
         ImGui::TreePop();
     }
+}
+
+void Editor::testImGuizmo() {
+    static glm::mat4 testMatrix                      = glm::mat4(1.0f); // Identity matrix
+    static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
+    static ImGuizmo::MODE currentGizmoMode           = ImGuizmo::WORLD;
+
+    // Create a test window
+    if (ImGui::Begin("ImGuizmo Test")) {
+        // Gizmo operation buttons
+        if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
+            currentGizmoOperation = ImGuizmo::TRANSLATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
+            currentGizmoOperation = ImGuizmo::ROTATE;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
+            currentGizmoOperation = ImGuizmo::SCALE;
+
+        // Mode toggle
+        if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
+            currentGizmoMode = ImGuizmo::LOCAL;
+        ImGui::SameLine();
+        if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
+            currentGizmoMode = ImGuizmo::WORLD;
+
+        ImGui::Separator();
+
+        // Display current matrix values
+        ImGui::Text("Matrix values:");
+        for (int i = 0; i < 4; i++) {
+            ImGui::Text("Row %d: %.2f, %.2f, %.2f, %.2f",
+                        i,
+                        testMatrix[i][0],
+                        testMatrix[i][1],
+                        testMatrix[i][2],
+                        testMatrix[i][3]);
+        }
+
+        // Reset button
+        if (ImGui::Button("Reset Matrix")) {
+            testMatrix = glm::mat4(1.0f);
+        }
+
+        ImGui::Separator();
+
+        // Set up ImGuizmo for this frame
+        ImGuiIO& io = ImGui::GetIO();
+        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+        // Create simple view and projection matrices for testing
+        glm::mat4 view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), // Camera position
+                                     glm::vec3(0.0f, 0.0f, 0.0f), // Look at origin
+                                     glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
+        );
+
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),                 // FOV
+                                                io.DisplaySize.x / io.DisplaySize.y, // Aspect ratio
+                                                0.1f,                                // Near plane
+                                                100.0f                               // Far plane
+        );
+
+        // Draw the gizmo
+        ImGuizmo::Manipulate(glm::value_ptr(view),
+                             glm::value_ptr(projection),
+                             currentGizmoOperation,
+                             currentGizmoMode,
+                             glm::value_ptr(testMatrix));
+
+        // Show if gizmo is being used
+        if (ImGuizmo::IsUsing()) {
+            ImGui::Text("Gizmo is being manipulated!");
+        }
+
+        // Show if gizmo is hovered
+        if (ImGuizmo::IsOver()) {
+            ImGui::Text("Mouse is over gizmo");
+        }
+    }
+    ImGui::End();
 }
 
 } // namespace R3

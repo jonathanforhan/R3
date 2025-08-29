@@ -4,7 +4,7 @@
 #include <memory>
 #include <span>
 #include <vector>
-#include <volk.h>
+#include <vulkan/vulkan.h>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
 #include "vulkan-Fwd.hpp"
@@ -43,9 +43,6 @@ public:
                             uint32 firstSet,
                             std::span<const VkDescriptorSet> descriptorSets,
                             std::span<const uint32> dynamicOffsets = {});
-
-    /// Shader binding
-    void bindShaders(std::span<const VkShaderEXT> shaders, std::span<const VkShaderStageFlagBits> stages);
 
     /// Vertex/Index buffers
     void bindVertexBuffers(uint32 firstBinding,

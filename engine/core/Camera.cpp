@@ -6,6 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
 #include "core/EventHandler.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
@@ -40,7 +41,7 @@ Camera::Camera(CameraType type)
                 break;
         }
     };
-    EventHandler()->bindEventListener({"key-press", "key-release"}, keyCallback);
+    GEventHandler()->bindEventListener({"key-press", "key-release"}, keyCallback);
 
     auto mouseCallback = [this](const Event<MouseButtonEvent>& e) noexcept {
         bool pressed = e.id == "mouse-press";
@@ -49,12 +50,12 @@ Camera::Camera(CameraType type)
             m_mouseDown = pressed;
         }
     };
-    EventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
+    GEventHandler()->bindEventListener({"mouse-press", "mouse-release"}, mouseCallback);
 
     auto cursorPositionCallback = [this](const Event<MouseCursorEvent>& e) noexcept {
         m_cursorPosition = dvec2{e.data.xpos, e.data.ypos};
     };
-    EventHandler()->bindEventListener("cursor-move", cursorPositionCallback);
+    GEventHandler()->bindEventListener("cursor-move", cursorPositionCallback);
 
     translateBackward(2.0f);
 }

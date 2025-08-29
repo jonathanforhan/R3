@@ -13,9 +13,9 @@
 
 namespace R3 {
 
-class WorldSingleton {
+class World {
 private:
-    R3_CTOR_DEFAULT(WorldSingleton);
+    R3_CTOR_DEFAULT(World);
 
 public:
     template <typename T, typename... Args>
@@ -46,16 +46,7 @@ private:
     Camera m_camera;
 
 private:
-    friend class EngineSingleton;
-    friend struct World;
-};
-
-/// @brief World singleton instance.
-struct World {
-    WorldSingleton* operator->() noexcept {
-        static WorldSingleton instance;
-        return &instance;
-    }
+    friend class Engine;
 };
 
 } // namespace R3

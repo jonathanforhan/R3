@@ -3,8 +3,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include <volk.h>
-
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -13,7 +11,6 @@
 #include <type_traits>
 #include <vector>
 #include <VkBootstrap.h>
-#include <vulkan/vulkan_core.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -39,15 +36,12 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL validationDebugCallback(VkDebugUtilsMessag
 
 RenderContext::RenderContext(Window& window)
     : IRenderContext(std::type_identity<decltype(*this)>()) {
-    VK_CHECK(volkInitialize());
-
     std::error_code error;
 
     try {
         //--- Instance
         const vkb::Instance instance = createInstance();
         m_instance                   = instance.instance;
-        volkLoadInstance(m_instance);
 
         //--- Debug Messenger
         m_debug = instance.debug_messenger;
@@ -62,7 +56,6 @@ RenderContext::RenderContext(Window& window)
         //--- Logical Device
         const vkb::Device device = createLogicalDevice(physicalDevice);
         m_device                 = device.device;
-        volkLoadDevice(m_device);
 
         //--- Queues
         setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);

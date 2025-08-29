@@ -5,7 +5,7 @@
 #include <new>
 #include <utility>
 #include <vector>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -124,10 +124,6 @@ void CommandBuffer::bindDescriptorSets(VkPipelineBindPoint bindPoint,
                             descriptorSets.data(),
                             static_cast<uint32>(dynamicOffsets.size()),
                             dynamicOffsets.data());
-}
-
-void CommandBuffer::bindShaders(std::span<const VkShaderEXT> shaders, std::span<const VkShaderStageFlagBits> stages) {
-    vkCmdBindShadersEXT(m_commandBuffer, static_cast<uint32>(stages.size()), stages.data(), shaders.data());
 }
 
 void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
@@ -306,7 +302,7 @@ void CommandBuffer::submitSync(VkQueue queue) {
     R3_ASSERT(!m_isRecording && "CommandBuffer must be ended before submission!");
 
     if (queue == VK_NULL_HANDLE) {
-        RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+        RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
         queue              = ctx.graphicsQueue();
     }
 

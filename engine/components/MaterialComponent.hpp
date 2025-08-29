@@ -3,6 +3,7 @@
 #include <cstdint>
 #include "api/Class.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
 #include "core/ResourceManager.hpp"
 #include "render/Flags.hpp"
 #include "render/vulkan/vulkan-DescriptorSet.hpp"
@@ -36,11 +37,11 @@ struct MaterialComponent {
     }
 
     ~MaterialComponent() noexcept {
-        ResourceManager()->unbindTexture(iAlbedo);
-        ResourceManager()->unbindTexture(iNormal);
-        ResourceManager()->unbindTexture(iMetallicRoughness);
-        ResourceManager()->unbindTexture(iAmbientOcclusion);
-        ResourceManager()->unbindTexture(iEmissive);
+        GResourceManager()->unbindTexture(iAlbedo);
+        GResourceManager()->unbindTexture(iNormal);
+        GResourceManager()->unbindTexture(iMetallicRoughness);
+        GResourceManager()->unbindTexture(iAmbientOcclusion);
+        GResourceManager()->unbindTexture(iEmissive);
     }
 
     // Textures

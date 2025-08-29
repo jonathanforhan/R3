@@ -1,7 +1,6 @@
 #pragma once
 
 #include <format>
-#include <volk.h>
 #include "api/Exception.hpp"
 
 #define VK_CHECK(_Exp)                                    \

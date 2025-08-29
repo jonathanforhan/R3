@@ -21,7 +21,7 @@ public:
         (void)dt;
         // update all transforms in hierarchy if parent transform changed
         // this has the limitation that if you change a child node you must inform the root that it's m_dirty
-        World()->registry().view<HierarchyComponent, TransformComponent>().each(
+        GWorld()->registry().view<HierarchyComponent, TransformComponent>().each(
             [this](HierarchyComponent& hier, TransformComponent& t) {
                 // if it's a root node (no parent) and has changed, update
                 if (hier.parent == entt::null && t.m_dirty) {
@@ -35,11 +35,11 @@ public:
 
 private:
     void updateTransformHierarchy(Entity ent, const fmat4& parentTransform) {
-        TransformComponent& t = World()->registry().get<TransformComponent>(ent);
+        TransformComponent& t = GWorld()->registry().get<TransformComponent>(ent);
         t.transform()         = parentTransform * t.transform();
         t.m_dirty             = false;
 
-        if (const HierarchyComponent* h = World()->registry().try_get<HierarchyComponent>(ent)) {
+        if (const HierarchyComponent* h = GWorld()->registry().try_get<HierarchyComponent>(ent)) {
             for (Entity child : h->children) {
                 updateTransformHierarchy(child, t.transform());
             }

@@ -3,7 +3,7 @@
 #include <format>
 #include <span>
 #include <vector>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include <entt/entity/registry.hpp>
 #include <entt/entity/view.hpp>
 #include <entt/resource/resource.hpp>
@@ -15,6 +15,7 @@
 #include "components/MeshComponent.hpp"
 #include "components/TransformComponent.hpp"
 #include "core/Camera.hpp"
+#include "core/Engine.hpp"
 #include "core/World.hpp"
 #include "render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
@@ -29,8 +30,8 @@
 #include "vulkan-Swapchain.hpp"
 
 #if R3_EDITOR
-#include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
+#include <imgui_impl_vulkan.h>
 #endif
 #include <array>
 
@@ -134,14 +135,14 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         "assets/textures/skybox/back.jpg",
     };
     {
-        Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<Buffer>();
+        Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
         m_cubemapTexture      = Texture{m_ctx.graphicsCommandBuffer(), facePaths, TextureType::CubeMap, *stagingBuffer};
-        m_cubemapTextureBinding = ResourceManager()->bindTexture("skybox", m_cubemapTexture);
+        m_cubemapTextureBinding = GResourceManager()->bindTexture("skybox", m_cubemapTexture);
     }
 
     //--- Skybox Vertex Buffer
     Buffer* stagingBuffer =
-        ResourceManager()->newFrameScopedObject<Buffer>(nullptr, sizeof(s_SkyboxVertices), BufferPreset::Staging);
+        GResourceManager()->newFrameScopedObject<Buffer>(nullptr, sizeof(s_SkyboxVertices), BufferPreset::Staging);
     stagingBuffer->copy(s_SkyboxVertices, sizeof(s_SkyboxVertices));
     m_skyboxVertexBuffer = Buffer{
         nullptr,
@@ -149,7 +150,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         BufferPreset::DeviceVertex,
     };
 
-    VkBufferCopy* vertexCopyRegion = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
+    VkBufferCopy* vertexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
     *vertexCopyRegion              = {0, 0, sizeof(s_SkyboxVertices)};
     ctx.graphicsCommandBuffer().copyBuffer(
         stagingBuffer->buffer(), m_skyboxVertexBuffer.buffer(), {vertexCopyRegion, 1});
@@ -176,7 +177,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         light = Buffer{nullptr, sizeof(PointLightShaderObject) * 256, BufferPreset::HostStorage};
     }
 
-    World()->camera().setActive(true);
+    GWorld()->camera().setActive(true);
 }
 
 Renderer::~Renderer() noexcept {
@@ -205,7 +206,7 @@ void Renderer::draw() {
     }
 
     // update view projection matrices in ubo
-    World()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
+    GWorld()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
     m_ubos[currFrame].copy(&m_viewProj, sizeof(m_viewProj));
 
     uint32 numLights = updateLights(currFrame);
@@ -239,7 +240,7 @@ void Renderer::draw() {
     // rest of scene
     bindPipelineHelper(cmd, m_graphicsPipeline);
 
-    World()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
+    GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
             const VertexPushConstants vertPushConstants = {
                 .model = trans.transform(),
@@ -251,7 +252,7 @@ void Renderer::draw() {
                               &vertPushConstants);
 
             const FragmentPushConstants fragPushConstants = {
-                .viewPosition       = World()->camera().position(),
+                .viewPosition       = GWorld()->camera().position(),
                 .numLights          = numLights,
                 .iAlbedo            = mat.iAlbedo,
                 .iMetallicRoughness = mat.iMetallicRoughness,
@@ -550,7 +551,7 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
 
 uint32 Renderer::updateLights(uint32 frameIndex) {
     uint32 numLights = 0;
-    World()->registry().view<LightComponent>().each([&](const LightComponent& light) {
+    GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) {
         if (numLights >= 256) {
             return; // Max lights reached
         }

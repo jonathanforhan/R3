@@ -1,7 +1,7 @@
 #include "vulkan-Buffer.hpp"
 
 #include <cstring>
-#include <volk.h>
+#include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -14,7 +14,7 @@
 namespace R3::vulkan {
 
 Buffer::~Buffer() noexcept {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
     vkDestroyBuffer(ctx.device(), m_buffer, nullptr);
     if (m_bufferMemory && m_mapped) {
         vkUnmapMemory(ctx.device(), m_bufferMemory);
@@ -23,7 +23,7 @@ Buffer::~Buffer() noexcept {
 }
 
 void Buffer::copy(const void* src, usize sizeBytes, usize offset) {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
     if (!m_mapped) {
         VK_CHECK(vkMapMemory(ctx.device(), m_bufferMemory, 0, sizeBytes, 0, &m_mapped));
     }
@@ -31,7 +31,7 @@ void Buffer::copy(const void* src, usize sizeBytes, usize offset) {
 }
 
 void Buffer::create(const void* src, usize sizeBytes, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
         const VkBufferCreateInfo bufferInfo = {

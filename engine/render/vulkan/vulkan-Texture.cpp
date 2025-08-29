@@ -9,8 +9,7 @@
 #include <filesystem>
 #include <string>
 #include <vector>
-#include <volk.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -83,7 +82,7 @@ Texture::Texture(CommandBuffer& cmd,
 }
 
 Texture::~Texture() noexcept {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
     vkDestroySampler(ctx.device(), m_sampler, nullptr);
 }
 
@@ -93,7 +92,7 @@ void Texture::create(CommandBuffer& cmd,
                      usize height,
                      TextureType type,
                      Buffer& stagingBuffer) {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
         const VkFormat preferredFormat = queryPreferredFormat(type);
@@ -205,7 +204,7 @@ void Texture::createCubeMap(CommandBuffer& cmd,
                             usize height,
                             TextureType type,
                             Buffer& stagingBuffer) {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     const VkFormat format   = queryPreferredFormat(type);
     const VkExtent2D extent = {static_cast<uint32>(width), static_cast<uint32>(height)};
@@ -318,7 +317,7 @@ void Texture::createCubeMap(CommandBuffer& cmd,
 }
 
 bool Texture::supportsBlitting(VkFormat format) noexcept {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
     VkFormat fmt       = ctx.querySupportedFormat(
         {&format, 1},
         VK_IMAGE_TILING_OPTIMAL,

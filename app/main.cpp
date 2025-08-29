@@ -14,7 +14,7 @@ int main(int argc, char* argv[]) {
     int ret = -1;
 
     try {
-        ret = Engine()->run();
+        ret = GEngine()->run();
     } catch (const Exception& ex) {
         LOG_ERROR("R3 Engine error: {}", ex.what());
         return -1;

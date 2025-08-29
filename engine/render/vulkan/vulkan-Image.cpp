@@ -1,7 +1,7 @@
 #include "vulkan-Image.hpp"
 
 #include <algorithm>
-#include <volk.h>
+#include <vulkan/vulkan.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
@@ -13,7 +13,7 @@
 namespace R3::vulkan {
 
 Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties) {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
         VK_CHECK(vkCreateImage(ctx.device(), &imageInfo, nullptr, &*m_image));
@@ -58,7 +58,7 @@ Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemo
 }
 
 Image::~Image() noexcept {
-    RenderContext& ctx = static_cast<RenderContext&>(Engine()->context());
+    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
     vkDestroyImage(ctx.device(), m_image, nullptr);
     vkFreeMemory(ctx.device(), m_imageMemory, nullptr);
     vkDestroyImageView(ctx.device(), m_imageView, nullptr);

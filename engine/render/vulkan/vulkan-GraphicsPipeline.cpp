@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <iterator>
 #include <span>
-#include <volk.h>
+#include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"

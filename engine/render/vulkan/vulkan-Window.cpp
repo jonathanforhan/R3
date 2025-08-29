@@ -13,6 +13,7 @@
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "core/Engine.hpp"
 #include "core/EventHandler.hpp"
 #include "core/Log.hpp"
 #include "input/InputCodes.hpp"
@@ -27,8 +28,9 @@
 namespace R3 {
 
 #if R3_EDITOR
-#define WAS_UI_CAPTURED()       (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)
-#define WAS_UI_MOUSE_CAPTURED() (ImGui::GetIO().WantCaptureMouse)
+#define WAS_UI_CAPTURED() \
+    (ImGui::GetCurrentContext() && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse))
+#define WAS_UI_MOUSE_CAPTURED() (ImGui::GetCurrentContext() && ImGui::GetIO().WantCaptureMouse)
 #else
 #define WAS_UI_CAPTURED()       false
 #define WAS_UI_MOUSE_CAPTURED() false
@@ -89,13 +91,13 @@ Window::Window() {
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler()->emplace<KeyboardEvent>("key-press", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>("key-press", Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
-                EventHandler()->emplace<KeyboardEvent>("key-repeat", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>("key-repeat", Key(key), InputModifiers(mods));
                 break;
             case GLFW_RELEASE:
-                EventHandler()->emplace<KeyboardEvent>("key-release", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>("key-release", Key(key), InputModifiers(mods));
                 break;
             default:
                 return;
@@ -109,7 +111,7 @@ Window::Window() {
             auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
             for (Key key = Key::Space; bool state : _this->m_keyStates) {
                 if (state) {
-                    EventHandler()->emplace<KeyboardEvent>("key-release", key, InputModifiers(mods));
+                    GEventHandler()->emplace<KeyboardEvent>("key-release", key, InputModifiers(mods));
                 }
                 key = Key((uint16)key + 1);
             }
@@ -118,10 +120,10 @@ Window::Window() {
 
         switch (action) {
             case GLFW_PRESS:
-                EventHandler()->emplace<MouseButtonEvent>("mouse-press", MouseButton(button), InputModifiers(mods));
+                GEventHandler()->emplace<MouseButtonEvent>("mouse-press", MouseButton(button), InputModifiers(mods));
                 break;
             case GLFW_RELEASE:
-                EventHandler()->emplace<MouseButtonEvent>("mouse-release", MouseButton(button), InputModifiers(mods));
+                GEventHandler()->emplace<MouseButtonEvent>("mouse-release", MouseButton(button), InputModifiers(mods));
                 break;
             default:
                 return;
@@ -137,7 +139,7 @@ Window::Window() {
             return;
         }
 
-        EventHandler()->emplace<MouseScrollEvent>("mouse-scroll", xoffset, yoffset);
+        GEventHandler()->emplace<MouseScrollEvent>("mouse-scroll", xoffset, yoffset);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
@@ -147,7 +149,7 @@ Window::Window() {
         glfwGetFramebufferSize(window, &w, &h);
         double xpos = static_cast<double>(x) / static_cast<double>(w);
         double ypos = static_cast<double>(y) / static_cast<double>(h);
-        EventHandler()->emplace<MouseCursorEvent>("cursor-move", xpos, ypos);
+        GEventHandler()->emplace<MouseCursorEvent>("cursor-move", xpos, ypos);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
 
@@ -155,30 +157,30 @@ Window::Window() {
     auto resizeCallback = [](GLFWwindow* window, int width, int height) {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
         _this->setShouldResize(true);
-        EventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
+        GEventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
     };
     glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
     //--- Window Focus Callback
     auto focusCallback = [](GLFWwindow*, int focused) {
         if (focused) {
-            EventHandler()->emplace<WindowFocusEvent>("window-focus", (bool)focused);
+            GEventHandler()->emplace<WindowFocusEvent>("window-focus", (bool)focused);
         }
     };
     glfwSetWindowFocusCallback(m_window, focusCallback);
 
     //--- Window Content Scale Callback
     auto contentScaleCallback = [](GLFWwindow*, float xscale, float yscale) {
-        EventHandler()->emplace<WindowContentScaleEvent>("window-content-scale", xscale, yscale);
+        GEventHandler()->emplace<WindowContentScaleEvent>("window-content-scale", xscale, yscale);
     };
     glfwSetWindowContentScaleCallback(m_window, contentScaleCallback);
 
     //--- Window Close Callback
-    auto windowCloseCallback = [](GLFWwindow*) { EventHandler()->emplace<WindowCloseEvent>("window-close"); };
+    auto windowCloseCallback = [](GLFWwindow*) { GEventHandler()->emplace<WindowCloseEvent>("window-close"); };
     glfwSetWindowCloseCallback(m_window, windowCloseCallback);
 
     /* Add callback to show window once the first frame is rendered, this prevents white screen */
-    EventHandler()->bindEventListener("frame-done", [this]() noexcept {
+    GEventHandler()->bindEventListener("frame-done", [this]() noexcept {
         show();
         return true; // remove after first call
     });

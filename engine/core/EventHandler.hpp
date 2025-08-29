@@ -1,7 +1,7 @@
 /// @file EventHandler.hpp
 /// @brief Event handling system
 ///
-/// The EventHandler provides a centralized event dispatch system that uses compile-time type checking
+/// The EventHandler provides a event dispatch system that uses compile-time type checking
 /// to ensure event listeners are properly typed and exception-safe. Events are stored in a memory arena
 /// for optimal performance and minimal heap fragmentation.
 ///
@@ -127,27 +127,27 @@ concept DataEventListener = !VoidEventListener<F> && requires {
 template <typename F>
 concept EventListener = VoidEventListener<F> || DataEventListener<F>;
 
-/// @brief Singleton event handler which you can push event to and bind listeners to
+/// @brief event handler which you can push event to and bind listeners to
 ///
 /// @code
 /// EventHandler().bindEventListener("key-press", [](const Event<KeyboardEventData>& e){
 ///     LOG_INFO("key pressed: {}", (int)e.data.key);
 /// });
 /// @endcode
-class EventHandlerSingleton {
+class EventHandler {
 private:
     using EventCallback = std::function<bool(const EventBase&)>;
 
 private:
-    R3_COPY_DELETE(EventHandlerSingleton);
-    R3_MOVE_DELETE(EventHandlerSingleton);
+    R3_COPY_DELETE(EventHandler);
+    R3_MOVE_DELETE(EventHandler);
 
-    EventHandlerSingleton() {
+    EventHandler() {
         m_eventQueue.reserve(10240); // 10kB
         m_eventArena.reserve(65536); // 64kB
     }
 
-    ~EventHandlerSingleton() noexcept { dispatchEvents(); };
+    ~EventHandler() noexcept { dispatchEvents(); };
 
 public:
     /// @brief Push an event onto the event queue
@@ -296,15 +296,7 @@ private:
     std::unordered_multimap<uint64, EventCallback> m_eventRegistry; // mapping id to callback
 
 private:
-    friend struct EventHandler;
-};
-
-/// @brief Single EventHandler instance
-struct EventHandler {
-    EventHandlerSingleton* operator->() {
-        static EventHandlerSingleton instance;
-        return &instance;
-    } // namespace R3
+    friend class Engine;
 };
 
 } // namespace R3

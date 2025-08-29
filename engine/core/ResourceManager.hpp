@@ -16,21 +16,22 @@
 #include <entt/core/fwd.hpp>
 #include <entt/resource/cache.hpp>
 #include <entt/resource/resource.hpp>
+#include "Engine.hpp"
+#include "EventHandler.hpp"
 #include "api/Class.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
-#include "core/EventHandler.hpp"
 
 namespace R3 {
 
 template <typename T>
 using Handle = entt::resource<T>;
 
-class ResourceManagerSingleton {
+class ResourceManager {
 private:
-    R3_CTOR_DEFAULT(ResourceManagerSingleton);
-    R3_COPY_DELETE(ResourceManagerSingleton);
-    R3_MOVE_DELETE(ResourceManagerSingleton);
+    R3_CTOR_DEFAULT(ResourceManager);
+    R3_COPY_DELETE(ResourceManager);
+    R3_MOVE_DELETE(ResourceManager);
 
 public:
     template <typename... Args>
@@ -58,7 +59,7 @@ public:
     template <typename T, typename... Args>
     T* newFrameScopedObject(Args&&... args) {
         T* obj = new T(std::forward<Args>(args)...);
-        EventHandler()->bindEventListener("frame-done", [obj] noexcept {
+        GEngine()->EventHandler().bindEventListener("frame-done", [obj] noexcept {
             delete obj;
             return true; // remove listener after called once
         });
@@ -77,14 +78,7 @@ private:
     std::vector<uint32> m_textureFreeBindSlots;
 
 private:
-    friend struct ResourceManager;
-};
-
-struct ResourceManager {
-    ResourceManagerSingleton* operator->() noexcept {
-        static ResourceManagerSingleton instance;
-        return &instance;
-    }
+    friend class Engine;
 };
 
 } // namespace R3

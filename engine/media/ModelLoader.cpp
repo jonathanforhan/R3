@@ -11,7 +11,7 @@
 #include <string_view>
 #include <utility>
 #include <vector>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include <entt/resource/resource.hpp>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
@@ -43,10 +43,10 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     glTF::Model model = glTF::ModelImporter().import(path);
 
-    Entity root = World()->registry().create();
-    World()->registry().emplace<TransformComponent>(root); // give root node a default transform
+    Entity root = GWorld()->registry().create();
+    GWorld()->registry().emplace<TransformComponent>(root); // give root node a default transform
 
-    vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+    vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
 
     m_cmd = &ctx.graphicsCommandBuffer();
     m_cmd->begin();
@@ -66,8 +66,8 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 void ModelLoader::glTF_processNode(Entity entity, glTF::Model& model, glTF::Node& node) {
     Entity parent = entity;
 
-    Entity child{World()->registry().create()};
-    World()->registry().get_or_emplace<HierarchyComponent>(parent).children.push_back(child); // add child to parent
+    Entity child{GWorld()->registry().create()};
+    GWorld()->registry().get_or_emplace<HierarchyComponent>(parent).children.push_back(child); // add child to parent
 
     fmat4 local;
     for (usize i = 0; i < 16; i++) {
@@ -83,19 +83,19 @@ void ModelLoader::glTF_processNode(Entity entity, glTF::Model& model, glTF::Node
     fmat4 S = glm::scale(fmat4(1.0f), scale);
     local *= T * R * S;
 
-    World()->registry().emplace<TransformComponent>(child).transform() = local;
+    GWorld()->registry().emplace<TransformComponent>(child).transform() = local;
 
     if (node.mesh) {
         if (model.root.meshes[*node.mesh].primitives.size() > 1) {
             // this node is a parent for multiple mesh primitives, give it a hierarchy component
-            World()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
+            GWorld()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
         }
         glTF_processMesh(child, model, model.root.meshes[*node.mesh]);
     }
 
     if (!node.children.empty()) {
         // set parent of this node
-        World()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
+        GWorld()->registry().get_or_emplace<HierarchyComponent>(child).parent = parent;
 
         for (uint32 iChild : node.children) {
             glTF_processNode(child, model, model.root.nodes[iChild]);
@@ -186,16 +186,16 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
         std::string idindexBuffer  = std::format("{}/indices/{}", parentPath, primitive.indices.value_or(0));
         LOG_INFO("importing mesh {}, {}", idVertexBuffer, idindexBuffer);
 
-        auto&& [vbo, vboLoaded] = ResourceManager()->loadBuffer(
+        auto&& [vbo, vboLoaded] = GResourceManager()->loadBuffer(
             std::string_view(idVertexBuffer), nullptr, vertices.size() * sizeof(Vertex), BufferPreset::DeviceVertex);
 
-        auto&& [ibo, iboLoaded] = ResourceManager()->loadBuffer(
+        auto&& [ibo, iboLoaded] = GResourceManager()->loadBuffer(
             std::string_view(idindexBuffer), nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
 
         if (vboLoaded || iboLoaded) {
             if (vboLoaded) {
-                vulkan::Buffer* vertexStagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-                VkBufferCopy* vertexCopyRegion      = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
+                vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+                VkBufferCopy* vertexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
 
                 *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
                 *vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
@@ -203,8 +203,8 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
             }
 
             if (iboLoaded) {
-                vulkan::Buffer* indexStagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-                VkBufferCopy* indexCopyRegion      = ResourceManager()->newFrameScopedObject<VkBufferCopy>();
+                vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+                VkBufferCopy* indexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
 
                 *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
                 *indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
@@ -213,17 +213,17 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
         }
 
         if (!isParent) {
-            World()->registry().emplace<MeshComponent>(
+            GWorld()->registry().emplace<MeshComponent>(
                 entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
 
             if (primitive.material) {
                 glTF_processMaterial(entity, model, model.root.materials[*primitive.material]);
             }
         } else {
-            Entity child = World()->registry().create();
-            World()->registry().emplace<TransformComponent>(child);
-            World()->registry().get<HierarchyComponent>(entity).children.push_back(child);
-            World()->registry().emplace<MeshComponent>(
+            Entity child = GWorld()->registry().create();
+            GWorld()->registry().emplace<TransformComponent>(child);
+            GWorld()->registry().get<HierarchyComponent>(entity).children.push_back(child);
+            GWorld()->registry().emplace<MeshComponent>(
                 child, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
 
             if (primitive.material) {
@@ -293,10 +293,10 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::T
         name = imagePath.string();
         LOG_INFO("importing texture {}", name);
 
-        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
+        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
 
         if (texLoaded) {
-            vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
             *tex = vulkan::Texture{*m_cmd, imagePath, type, *stagingBuffer};
         }
@@ -308,10 +308,10 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::T
 
         name = std::format("{}/embedded/{}/{}", m_path.parent_path().string(), *texture.source, *image.bufferView);
         LOG_INFO("importing texture {}", name);
-        auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
+        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
 
         if (texLoaded) {
-            vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
             *tex = vulkan::Texture{*m_cmd, data, bufferView.byteLength, type, *stagingBuffer};
         }
@@ -319,11 +319,11 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::T
         hTexture = std::move(tex);
     }
 
-    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(entity);
-    uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *hTexture);
+    MaterialComponent& mat = GWorld()->registry().get_or_emplace<MaterialComponent>(entity);
+    uint32 slot            = GResourceManager()->bindTexture(std::string_view(name), *hTexture);
     mat.setTextureSlot(type, slot);
 
-    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
+    TextureLifetimeComponent& textureLifetime = GWorld()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
     textureLifetime.textures.emplace_back(std::move(hTexture)); // ensure texture lives as long as entity
 }
 
@@ -337,19 +337,19 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, uint8 c
                                    static_cast<int>(color[3]));
 
     LOG_INFO("importing texture {}", name);
-    auto&& [tex, texLoaded] = ResourceManager()->loadTexture(std::string_view(name));
+    auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
 
     if (texLoaded) {
-        vulkan::Buffer* stagingBuffer = ResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+        vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
         *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, type, *stagingBuffer};
     }
 
-    MaterialComponent& mat = World()->registry().get_or_emplace<MaterialComponent>(entity);
-    uint32 slot            = ResourceManager()->bindTexture(std::string_view(name), *tex);
+    MaterialComponent& mat = GWorld()->registry().get_or_emplace<MaterialComponent>(entity);
+    uint32 slot            = GResourceManager()->bindTexture(std::string_view(name), *tex);
     mat.setTextureSlot(type, slot);
 
-    TextureLifetimeComponent& textureLifetime = World()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
+    TextureLifetimeComponent& textureLifetime = GWorld()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
     textureLifetime.textures.emplace_back(std::move(tex)); // ensure texture lives as long as entity
 }
 

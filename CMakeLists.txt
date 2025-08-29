@@ -19,49 +19,14 @@ find_program(glslc_executable REQUIRED NAMES glslc HINTS Vulkan::glslc)
 find_package(spirv_cross_core CONFIG REQUIRED)
 find_package(spirv_cross_glsl CONFIG REQUIRED)
 find_package(spirv_cross_hlsl CONFIG REQUIRED)
-find_package(volk CONFIG REQUIRED)
 find_package(vk-bootstrap CONFIG REQUIRED)
 
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
+find_package(imguizmo CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
 find_package(Tracy CONFIG REQUIRED)
-
-include(FetchContent)
-
-# ImGui docking branch via FetchContent (not available in vcpkg)
-FetchContent_Declare(
-    imgui
-    GIT_REPOSITORY      https://github.com/ocornut/imgui.git
-    GIT_TAG             v1.92.2b-docking
-    GIT_SHALLOW         TRUE
-    UPDATE_DISCONNECTED TRUE
-)
-FetchContent_MakeAvailable(imgui)
-
-add_library(
-    imgui STATIC
-    ${imgui_SOURCE_DIR}/imgui.cpp
-    ${imgui_SOURCE_DIR}/imgui_demo.cpp
-    ${imgui_SOURCE_DIR}/imgui_draw.cpp
-    ${imgui_SOURCE_DIR}/imgui_tables.cpp
-    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
-    ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
-)
-
-target_include_directories(
-    imgui PUBLIC 
-    ${imgui_SOURCE_DIR}
-    ${imgui_SOURCE_DIR}/backends
-)
-
-target_link_libraries(imgui PRIVATE glfw volk::volk)
-
-target_compile_definitions(
-    imgui PRIVATE
-	IMGUI_IMPL_VULKAN_USE_VOLK=1
-)
 
 ################################################################################
 # ENGINE
@@ -80,9 +45,10 @@ target_link_libraries(
 		EnTT::EnTT
 	PRIVATE
 		glfw
-		imgui
+		imgui::imgui
+		imguizmo::imguizmo
 		Tracy::TracyClient
-		volk::volk
+		Vulkan::Vulkan
 		vk-bootstrap::vk-bootstrap
 		spirv-cross-core
 		spirv-cross-glsl
@@ -97,8 +63,6 @@ target_compile_definitions(
         $<$<CONFIG:RelWithDebInfo>:R3_DEBUG>
         $<$<CONFIG:Release>:R3_RELEASE>
 		$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
-		$<$<BOOL:${R3_VULKAN}>:VK_NO_PROTOTYPES>
-		$<$<AND:$<BOOL:${R3_VULKAN}>,$<BOOL:${WIN32}>>:VK_USE_PLATFORM_WIN32_KHR>
 		#$<$<AND:$<BOOL:${R3_VULKAN}>,$<NOT:$<CONFIG:Release>>>:R3_EDITOR>
 		R3_EDITOR=1
 		$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>

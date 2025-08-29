@@ -18,7 +18,7 @@
 namespace R3 {
 
 static void TEST_FUNCTION() {
-    World()->addSystem<TransformSystem>();
+    GWorld()->addSystem<TransformSystem>();
 
     // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
     // Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
@@ -28,25 +28,25 @@ static void TEST_FUNCTION() {
     Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
     // Entity lamp = ModelLoader().glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
-    Entity light = World()->registry().create();
-    World()->registry().emplace<LightComponent>(light,
-                                                LightComponent{
-                                                    .position  = fvec3(0.0f, 2.0f, 0.0f),
-                                                    .color     = fvec3(1.0f),
-                                                    .intensity = 5.0f,
-                                                });
+    Entity light = GWorld()->registry().create();
+    GWorld()->registry().emplace<LightComponent>(light,
+                                                 LightComponent{
+                                                     .position  = fvec3(0.0f, 2.0f, 0.0f),
+                                                     .color     = fvec3(1.0f),
+                                                     .intensity = 5.0f,
+                                                 });
 
-    auto& t = World()->registry().get<TransformComponent>(chess).transform();
+    auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
     t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
 
     /*
-    auto& t       = World()->registry().get<TransformComponent>(helmet);
+    auto& t       = GWorld()->registry().get<TransformComponent>(helmet);
     t.transform() = glm::translate(t.transform(), fvec3(0.8f, 0.0f, 0.0f));
     t.transform() = glm::scale(t.transform(), fvec3(0.2f));
     */
 }
 
-double EngineSingleton::deltaTime() {
+double Engine::deltaTime() {
     using namespace std::chrono;
 
     static auto s_prev = system_clock::now();
@@ -59,17 +59,24 @@ double EngineSingleton::deltaTime() {
     return dt;
 }
 
-int EngineSingleton::run() {
+int Engine::run() {
     if (m_running) {
         return -1;
     } else {
         m_running = true;
     }
 
-    Window window;
-
+    class Window window;
     vulkan::RenderContext ctx{window};
-    m_ctx = &ctx;
+    class EventHandler eventHandler;
+    class ResourceManager resourceManager;
+    class World world;
+
+    m_window          = &window;
+    m_ctx             = &ctx;
+    m_eventHandler    = &eventHandler;
+    m_resourceManager = &resourceManager;
+    m_world           = &world;
 
     TEST_FUNCTION();
 
@@ -81,9 +88,9 @@ int EngineSingleton::run() {
         while (!window.shouldClose()) {
             const double dt = deltaTime();
 
-            World()->update(dt);
+            GWorld()->update(dt);
 
-            EventHandler()->dispatchEvents();
+            GEventHandler()->dispatchEvents();
 
             if (!window.isMinimized()) {
 #if R3_EDITOR
@@ -94,14 +101,20 @@ int EngineSingleton::run() {
 
             window.update();
 
-            EventHandler()->emplace("frame-done");
+            GEventHandler()->emplace("frame-done");
         }
 
         ctx.waitIdle();
     }
 
-    World()->registry().clear();
-    ResourceManager()->clear();
+    GWorld()->registry().clear();
+    GResourceManager()->clear();
+
+    m_window          = nullptr;
+    m_ctx             = nullptr;
+    m_eventHandler    = nullptr;
+    m_resourceManager = nullptr;
+    m_world           = nullptr;
 
     return 0;
 }

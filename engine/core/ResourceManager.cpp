@@ -4,8 +4,7 @@
 #include <map>
 #include <utility>
 #include <vector>
-#include <volk.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include <entt/resource/cache.hpp>
 #include "api/Assert.hpp"
 #include "api/Hash.hpp"
@@ -17,14 +16,14 @@
 
 namespace R3 {
 
-uint32 ResourceManagerSingleton::bindTexture(hash::uuid id, const vulkan::Texture& texture) {
+uint32 ResourceManager::bindTexture(hash::uuid id, const vulkan::Texture& texture) {
     if (m_textureBindMap.contains(id)) {
         uint32 index = m_textureBindMap[id];
         m_textureBindSlots[index].first++;
         return index;
     }
 
-    vulkan::RenderContext& ctx = static_cast<vulkan::RenderContext&>(Engine()->context());
+    vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
 
     uint32 slot;
     if (m_textureFreeBindSlots.empty()) {
@@ -64,7 +63,7 @@ uint32 ResourceManagerSingleton::bindTexture(hash::uuid id, const vulkan::Textur
     return slot;
 }
 
-void ResourceManagerSingleton::unbindTexture(uint32 slot) {
+void ResourceManager::unbindTexture(uint32 slot) {
     if (slot == UINT32_MAX) {
         return;
     }
@@ -77,7 +76,7 @@ void ResourceManagerSingleton::unbindTexture(uint32 slot) {
     }
 }
 
-void ResourceManagerSingleton::clear() {
+void ResourceManager::clear() {
     m_bufferCache.clear();
     m_imageCache.clear();
     m_textureCache.clear();

@@ -6,7 +6,7 @@
 
 namespace R3 {
 
-void WorldSingleton::update(double dt) {
+void World::update(double dt) {
     for (auto& system : m_systems) {
         system->update(dt);
     }
