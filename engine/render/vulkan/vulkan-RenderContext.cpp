@@ -69,7 +69,6 @@ RenderContext::RenderContext(Window& window)
         createSyncObjects();
 
         //--- Descriptor Sets/Layouts
-        createDescritorSetLayouts();
         createDescriptorSets();
     } catch (const Exception& ex) {
         this->~RenderContext();
@@ -349,7 +348,7 @@ void RenderContext::createSyncObjects() {
     }
 }
 
-void RenderContext::createDescritorSetLayouts() {
+void RenderContext::createDescriptorSets() {
     //--- Descriptor Layout
     const VkDescriptorSetLayoutBinding bindings[] = {
         // [0]: MVP UBO
@@ -387,6 +386,14 @@ void RenderContext::createDescritorSetLayouts() {
         0,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
         0,
+
+    };
+
+    const VkDescriptorPoolSize poolSizes[] = {
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight() * maxTextureSamplerBindings()},
+        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
     };
 
     const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {
@@ -404,17 +411,9 @@ void RenderContext::createDescritorSetLayouts() {
         .pBindings    = bindings,
     };
     VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &*m_descriptorSetLayout));
-}
 
-void RenderContext::createDescriptorSets() {
     R3_ASSERT(m_descriptorSetLayout && "Descriptor set layout not created");
 
-    const VkDescriptorPoolSize poolSizes[] = {
-        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight()},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
-        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight() * maxTextureSamplerBindings()},
-        {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
-    };
     m_descriptorSets = DescriptorSet::allocate(*this, m_descriptorSetLayout, poolSizes, maxFramesInFlight());
 }
 

@@ -1,8 +1,10 @@
 {
   "C:/Users/jon/source/repos/R3/shaders/basic.frag": "6c73c9dd6a34236e848bcfa192a2587277f73f265b1d8db11db36c1558e4aece",
   "C:/Users/jon/source/repos/R3/shaders/basic.vert": "309996f6ca49992881522c93f9b772799bfb55281052d05543e956f52940091b",
-  "C:/Users/jon/source/repos/R3/shaders/cubemap.frag": "d0cb06b07e4e48f770c50ec917c63ffc7006e1fb4c4484c0452470bee524be9a",
-  "C:/Users/jon/source/repos/R3/shaders/cubemap.vert": "4afc68588d4563eb01cc637f610819abe8d428f491354f7970d723c367ebb13a",
+  "C:/Users/jon/source/repos/R3/shaders/cubemap.frag": "bf8ad2945bb86e61522e73f7c00a6644d9aa3f6653b682a09117dcbe626e1ba0",
+  "C:/Users/jon/source/repos/R3/shaders/cubemap.mesh": "9a57ecb0080c948b78ec2b144b5990260dd7794d1587c8f3d93286a1f1c04802",
+  "C:/Users/jon/source/repos/R3/shaders/cubemap.vert": "f6bea0833244059e23cf238b7f78ac4a7a52742b9005bde98b3187d3bc8cc163",
   "C:/Users/jon/source/repos/R3/shaders/pbr.frag": "dfc32505ef4cc329ee7e2d8df1d6ceff15acffef5c999cd064784ef7a7ccc964",
+  "C:/Users/jon/source/repos/R3/shaders/pbr.mesh": "61b01b142b5710e5e5bd336d648744315ad9906f7ddf759e8e345e60ad99e5ac",
   "C:/Users/jon/source/repos/R3/shaders/pbr.vert": "5e954518103f8331236908be835fb3e0ad8cb8ee31f96b110166121c8d3090e0"
 }

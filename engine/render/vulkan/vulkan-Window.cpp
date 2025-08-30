@@ -95,7 +95,6 @@ Window::Window() {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
         if (_this->m_uiFocused) {
             // release all previously pressed keys
-            auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
             for (Key key = Key::Space; bool state : _this->m_keyStates) {
                 if (state) {
                     GEventHandler()->emplace<KeyboardEvent>("key-release", key, InputModifiers(mods));
@@ -131,7 +130,7 @@ Window::Window() {
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
     //--- Cursor Input Callback
-    auto cursorCallback = [](GLFWwindow* window, double x, double y) {
+    auto cursorCallback = [](GLFWwindow*, double x, double y) {
         GEventHandler()->emplace<MouseCursorEvent>("cursor-move", x, y);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);

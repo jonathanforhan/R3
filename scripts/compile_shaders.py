@@ -79,7 +79,7 @@ def main(glslc: str, spirv_cross: str, in_dir: str, out_dir: str, force: bool):
             out_reflection = os.path.join(out_dir, "_reflection", shader_filename).replace("\\", "/")
 
             # compile glsl to spirv
-            os.system(f"{glslc} {in_shader} -o {out_spirv}.spv")
+            os.system(f"{glslc} --target-spv=spv1.6 {in_shader} -o {out_spirv}.spv")
             # compile spirv to hlsl
             #os.system(f"{spirv_cross} --output {out_hlsl}.hlsl {out_spirv}.spv --hlsl")
             # compile spirv to json reflection file

@@ -23,8 +23,12 @@ void Camera::update(double dt) {
 
     const float deltaT = static_cast<float>(dt / 1000.0); // convert ms to s
 
-    static constexpr float mouseSensitivity    = 0.25f;
-    static constexpr float movementSensitivity = 2.5f;
+    float mouseSensitivity    = 0.25f;
+    float movementSensitivity = 2.5f;
+
+    if (GWindow()->keyPressed(Key::LeftShift)) {
+        movementSensitivity *= 2.0f;
+    }
 
     const bool mouseDown  = GWindow()->mouseButtonPressed(MouseButton::Left);
     const fvec2 cursorPos = GWindow()->cursorPosition();
@@ -40,6 +44,8 @@ void Camera::update(double dt) {
     m_activeKeys.a = GWindow()->keyPressed(Key::A) ? (m_activeKeys.d + 1) : 0;
     m_activeKeys.s = GWindow()->keyPressed(Key::S) ? (m_activeKeys.w + 1) : 0;
     m_activeKeys.d = GWindow()->keyPressed(Key::D) ? (m_activeKeys.a + 1) : 0;
+    m_activeKeys.e = GWindow()->keyPressed(Key::E) ? (m_activeKeys.q + 1) : 0;
+    m_activeKeys.q = GWindow()->keyPressed(Key::Q) ? (m_activeKeys.e + 1) : 0;
 
     if (GWindow()->uiFocused()) {
         m_activeKeys = {};

@@ -17,11 +17,13 @@ public:
     R3_COPY_DELETE(Shader);
     R3_MOVE_DEFAULT(Shader);
 
-    Shader(RenderContext& ctx, const std::filesystem::path& filename);
+    Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlagBits stage);
 
     ~Shader() noexcept;
 
     VkShaderModule shader() const noexcept { return m_shaderModule; }
+
+    VkShaderStageFlagBits stage() const noexcept { return m_stage; }
 
 private:
     void createFromSource(RenderContext& ctx, std::span<const uint32> spirvCode);
@@ -31,6 +33,7 @@ private:
 private:
     Handle<VkDevice> m_device;
     Handle<VkShaderModule> m_shaderModule;
+    VkShaderStageFlagBits m_stage = {};
 };
 
 } // namespace R3::vulkan

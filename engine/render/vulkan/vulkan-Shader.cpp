@@ -17,9 +17,10 @@
 
 namespace R3::vulkan {
 
-Shader::Shader(RenderContext& ctx, const std::filesystem::path& filename) {
+Shader::Shader(RenderContext& ctx, const std::filesystem::path& filename, VkShaderStageFlagBits stage) {
     auto spirvCode = readFile(filename);
     createFromSource(ctx, spirvCode);
+    m_stage = stage;
 }
 
 Shader::~Shader() noexcept {

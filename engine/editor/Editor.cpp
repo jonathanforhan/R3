@@ -173,8 +173,9 @@ void Editor::displayDeltaTime(double dt) {
 }
 
 void Editor::initializeDocking() {
-    static constexpr ImGuiDockNodeFlags dockspaceFlags =
-        ImGuiDockNodeFlags_PassthruCentralNode | ImGuiDockNodeFlags_NoWindowMenuButton;
+    ImGuiDockNodeFlags dockspaceFlags = 0;
+    dockspaceFlags |= ImGuiDockNodeFlags_PassthruCentralNode;
+    dockspaceFlags |= ImGuiDockNodeFlags_NoWindowMenuButton;
 
     ImGuiViewport* viewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(viewport->WorkPos);

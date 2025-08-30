@@ -10,6 +10,7 @@
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
+#include "render/ShaderObjects.hpp"
 #include "render/vulkan/vulkan-DescriptorSet.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Texture.hpp"

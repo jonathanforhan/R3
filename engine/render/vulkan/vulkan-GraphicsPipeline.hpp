@@ -1,6 +1,8 @@
 #pragma once
 
+#include <functional>
 #include <span>
+#include <vector>
 #include <vulkan/vulkan.h>
 #include "api/Class.hpp"
 #include "vulkan-Fwd.hpp"
@@ -15,13 +17,13 @@ public:
     R3_MOVE_DEFAULT(GraphicsPipeline);
 
     GraphicsPipeline(RenderContext& ctx,
-                     Shader& vertexShader,
-                     Shader& fragmentShader,
+                     std::vector<std::reference_wrapper<Shader>> shaders,
                      VkSampleCountFlagBits msaaSamples,
-                     std::span<const VkFormat> colorFormats,
-                     std::span<const VkDescriptorSetLayout> layouts,
-                     VkVertexInputBindingDescription vertexBindingDescription,
-                     std::span<const VkVertexInputAttributeDescription> vertexAttributeDescriptions);
+                     std::vector<VkFormat> colorFormats,
+                     std::vector<VkDescriptorSetLayout> layouts,
+                     std::vector<VkPushConstantRange> pushConstantRanges,
+                     std::vector<VkVertexInputBindingDescription> vertexBindingDescription      = {},
+                     std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions = {});
 
     ~GraphicsPipeline() noexcept;
 

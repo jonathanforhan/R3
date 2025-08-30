@@ -1,5 +1,12 @@
 #include "vulkan-Renderer.hpp"
 
+#if R3_EDITOR
+#include <imgui.h>
+#include <imgui_impl_vulkan.h>
+#endif
+
+#include <array>
+#include <filesystem>
 #include <format>
 #include <span>
 #include <vector>
@@ -29,23 +36,7 @@
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
 
-#if R3_EDITOR
-#include <imgui.h>
-#include <imgui_impl_vulkan.h>
-#endif
-#include <array>
-
 namespace R3::vulkan {
-
-static const float s_SkyboxVertices[] = {
-    -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
-    1.0f,  -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,
-    1.0f,  -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  1.0f,  1.0f,  1.0f,  1.0f,
-    1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, 1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,
-    1.0f,  1.0f,  1.0f,  1.0f,  -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,
-    1.0f,  -1.0f, -1.0f, 1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f,
-};
 
 Renderer::Renderer(Window& window, RenderContext& ctx)
     : m_window(window),
@@ -89,10 +80,10 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
 
     //--- Shaders
-    m_vertexShader          = Shader{m_ctx, "_spirv/pbr.vert.spv"};
-    m_fragmentShader        = Shader{m_ctx, "_spirv/pbr.frag.spv"};
-    m_cubemapVertexShader   = Shader{m_ctx, "_spirv/cubemap.vert.spv"};
-    m_cubemapFragmentShader = Shader{m_ctx, "_spirv/cubemap.frag.spv"};
+    m_vertexShader          = Shader{m_ctx, "_spirv/pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_fragmentShader        = Shader{m_ctx, "_spirv/pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_cubemapVertexShader   = Shader{m_ctx, "_spirv/cubemap.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_cubemapFragmentShader = Shader{m_ctx, "_spirv/cubemap.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
@@ -101,25 +92,33 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     m_graphicsPipeline = GraphicsPipeline{
         m_ctx,
-        m_vertexShader,
-        m_fragmentShader,
+        {m_vertexShader, m_fragmentShader},
         msaaSamples,
-        std::span{&colorFormat, 1},
-        std::span{&layout, 1},
-        Vertex::getBindingDescription(),
-        Vertex::getAttributeDescriptions(),
+        {colorFormat},
+        {layout},
+        {
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset     = 0,
+                .size       = sizeof(VertexPushConstants),
+            },
+            {
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = sizeof(VertexPushConstants),
+                .size       = sizeof(FragmentPushConstants),
+            },
+        },
+        {Vertex::getBindingDescription()},
+        {Vertex::getAttributeDescriptions()},
     };
 
-#if 1
     m_cubemapPipeline = GraphicsPipeline{
         m_ctx,
-        m_cubemapVertexShader,
-        m_cubemapFragmentShader,
+        {m_cubemapVertexShader, m_cubemapFragmentShader},
         msaaSamples,
-        std::span{&colorFormat, 1},
-        std::span{&layout, 1},
-        CubemapVertex::getBindingDescription(),
-        CubemapVertex::getAttributeDescriptions(),
+        {colorFormat},
+        {layout},
+        {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(FragmentPushConstantsCubemap)}},
     };
 
     //--- Cubemap
@@ -139,24 +138,8 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         m_cubemapTexture      = Texture{m_ctx.graphicsCommandBuffer(), facePaths, TextureType::CubeMap, *stagingBuffer};
         m_cubemapTextureBinding = GResourceManager()->bindTexture("skybox", m_cubemapTexture);
     }
-
-    //--- Skybox Vertex Buffer
-    Buffer* stagingBuffer =
-        GResourceManager()->newFrameScopedObject<Buffer>(nullptr, sizeof(s_SkyboxVertices), BufferPreset::Staging);
-    stagingBuffer->copy(s_SkyboxVertices, sizeof(s_SkyboxVertices));
-    m_skyboxVertexBuffer = Buffer{
-        nullptr,
-        sizeof(s_SkyboxVertices),
-        BufferPreset::DeviceVertex,
-    };
-
-    VkBufferCopy* vertexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
-    *vertexCopyRegion              = {0, 0, sizeof(s_SkyboxVertices)};
-    ctx.graphicsCommandBuffer().copyBuffer(
-        stagingBuffer->buffer(), m_skyboxVertexBuffer.buffer(), {vertexCopyRegion, 1});
     cmd.end();
     cmd.submitSync();
-#endif
 
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
@@ -219,23 +202,18 @@ void Renderer::draw() {
     transitionAttachmentsForRender(cmd, imageIndex);
     beginRenderingHelper(cmd, imageIndex);
 
-#if 1
     // cubemap
     bindPipelineHelper(cmd, m_cubemapPipeline);
     cmd.setDepthTestEnable(false); // Disable depth for skybox
-    const FragmentPushConstants fragPushConstants = {.iAlbedo = m_cubemapTextureBinding};
-    cmd.pushConstants(m_graphicsPipeline.layout(),
+    const FragmentPushConstantsCubemap fragPushConstants = {.iCubemap = m_cubemapTextureBinding};
+    cmd.pushConstants(m_cubemapPipeline.layout(),
                       VK_SHADER_STAGE_FRAGMENT_BIT,
-                      sizeof(VertexPushConstants),
-                      sizeof(FragmentPushConstants),
+                      0,
+                      sizeof(FragmentPushConstantsCubemap),
                       &fragPushConstants);
     VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
-    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
-    const VkBuffer vboIndices[]  = {m_skyboxVertexBuffer.buffer()};
-    const VkDeviceSize offsets[] = {0};
-    cmd.bindVertexBuffers(0, vboIndices, offsets);
+    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubemapPipeline.layout(), 0, descriptorSets, {});
     cmd.draw(36, 1, 0, 0);
-#endif
 
     // rest of scene
     bindPipelineHelper(cmd, m_graphicsPipeline);

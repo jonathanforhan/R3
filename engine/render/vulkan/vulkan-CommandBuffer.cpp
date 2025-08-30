@@ -7,14 +7,14 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
-#include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "core/Log.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
+
+extern PFN_vkCmdDrawMeshTasksEXT vkCmdDrawMeshTasksEXT;
 
 CommandBuffer::CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool)
     : m_device(VK_NULL_HANDLE),

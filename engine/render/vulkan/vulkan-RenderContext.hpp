@@ -116,7 +116,6 @@ private:
     static void setupQueue(const vkb::Device& device, vkb::QueueType queueType, VkQueue& queue, uint32& index);
     void createCommandPools();
     void createSyncObjects();
-    void createDescritorSetLayouts();
     void createDescriptorSets();
 
 private:

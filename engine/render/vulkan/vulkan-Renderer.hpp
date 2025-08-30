@@ -62,7 +62,6 @@ private:
     GraphicsPipeline m_cubemapPipeline;
     Texture m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
-    Buffer m_skyboxVertexBuffer;
     std::vector<Buffer> m_ubos;
     std::vector<Buffer> m_lights;
 };
