@@ -9,7 +9,6 @@
 #include <cstddef>
 #include <filesystem>
 #include <string>
-#include <vector>
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
@@ -149,7 +148,6 @@ void Texture::create(CommandBuffer& cmd,
 
         const VkImageMemoryBarrier2 barrier = {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .pNext               = nullptr,
             .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .srcAccessMask       = VK_ACCESS_NONE,
             .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -168,10 +166,16 @@ void Texture::create(CommandBuffer& cmd,
                     .layerCount     = 1,
                 },
         };
-        cmd.transitionImageLayout(barrier);
+
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &barrier,
+        });
 
         // copy staging buffer to image
-        const VkBufferImageCopy bufferToImage = {
+        const VkBufferImageCopy2 bufferToImage = {
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
             .bufferOffset      = 0,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
@@ -185,8 +189,15 @@ void Texture::create(CommandBuffer& cmd,
             .imageOffset = {0, 0, 0},
             .imageExtent = {extent.width, extent.height, 1},
         };
-        cmd.copyBufferToImage(
-            stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, {&bufferToImage, 1});
+
+        cmd.copyBufferToImage({
+            .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
+            .srcBuffer      = stagingBuffer.buffer(),
+            .dstImage       = m_image.image(),
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &bufferToImage,
+        });
 
         m_image.generateMipMaps(cmd, extent, mipLevels);
 
@@ -210,7 +221,7 @@ void Texture::create(CommandBuffer& cmd,
             .compareEnable           = VK_FALSE,
             .compareOp               = VK_COMPARE_OP_ALWAYS,
             .minLod                  = 0.0f,
-            .maxLod                  = static_cast<float>(mipLevels),
+            .maxLod                  = VK_LOD_CLAMP_NONE,
             .borderColor             = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
             .unnormalizedCoordinates = VK_FALSE,
         };
@@ -283,12 +294,18 @@ void Texture::createCubeMap(CommandBuffer& cmd,
                     .layerCount     = 6 // All 6 faces
                 },
         };
-        cmd.transitionImageLayout(barrier);
+
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &barrier,
+        });
 
         // Copy each face from staging buffer to image
-        std::array<VkBufferImageCopy, 6> copyRegions;
+        std::array<VkBufferImageCopy2, 6> copyRegions;
         for (usize face = 0; face < 6; ++face) {
-            VkBufferImageCopy copyRegion = {
+            copyRegions[face] = {
+                .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
                 .bufferOffset      = face * faceSize,
                 .bufferRowLength   = 0,
                 .bufferImageHeight = 0,
@@ -302,11 +319,16 @@ void Texture::createCubeMap(CommandBuffer& cmd,
                 .imageOffset = {0, 0, 0},
                 .imageExtent = {extent.width, extent.height, 1},
             };
-            copyRegions[face] = copyRegion;
         }
 
-        cmd.copyBufferToImage(
-            stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegions);
+        cmd.copyBufferToImage({
+            .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
+            .srcBuffer      = stagingBuffer.buffer(),
+            .dstImage       = m_image.image(),
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = static_cast<uint32>(copyRegions.size()),
+            .pRegions       = copyRegions.data(),
+        });
 
         // Generate mipmaps for cube map (if supported)
         if (supportsBlitting(format)) {

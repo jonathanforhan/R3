@@ -3,6 +3,7 @@
 #include <array>
 #include <filesystem>
 #include <format>
+#include <iterator>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -24,6 +25,7 @@
 #include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Buffer.hpp"
+#include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
@@ -118,7 +120,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
 
     //--- Cubemap
-    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer();
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(0);
     cmd.reset();
     cmd.begin();
     std::array<std::filesystem::path, 6> facePaths = {
@@ -131,11 +133,11 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     };
     {
         Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-        m_cubemapTexture      = Texture{m_ctx.graphicsCommandBuffer(), facePaths, TextureType::CubeMap, *stagingBuffer};
+        m_cubemapTexture = Texture{m_ctx.graphicsCommandBuffer(0), facePaths, TextureType::CubeMap, *stagingBuffer};
         m_cubemapTextureBinding = GResourceManager()->bindTexture("skybox", m_cubemapTexture);
     }
     cmd.end();
-    cmd.submitSync();
+    m_ctx.submitSync(m_ctx.graphicsQueue(), cmd.commandBuffer());
 
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
@@ -171,20 +173,21 @@ void Renderer::draw() {
         return;
     }
 
-    vkQueueWaitIdle(m_ctx.graphicsQueue()); // TEMP
-
     // Get current frame index
-    // m_ctx.waitForCurrentFrame();
     uint32 currFrame = m_ctx.currentFrameIndex();
+    m_ctx.waitForFrame(currFrame);
 
     // Acquire next image
     uint32 imageIndex;
-    VkResult result = m_swapchain.acquireNextImage(m_ctx.currentImageAvailableSemaphore(), imageIndex);
+    VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(currFrame), imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         return; // Will be handled by resize logic
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
+
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(currFrame);
+    cmd.reset();
 
     // update view projection matrices in ubo
     GWorld()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
@@ -193,9 +196,10 @@ void Renderer::draw() {
     uint32 numLights = updateLights(currFrame);
     writeDescriptorSetsHelper(currFrame, numLights);
 
-    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer();
-    cmd.reset();
     cmd.begin();
+
+    // write ubo and storage buffer data BEFORE doing this memory barrier
+    addDescriptorMemoryBarrier(cmd);
 
     transitionAttachmentsForRender(cmd, imageIndex);
     beginRenderingHelper(cmd, imageIndex);
@@ -203,30 +207,54 @@ void Renderer::draw() {
     // cubemap
     bindPipelineHelper(cmd, m_cubemapPipeline);
     cmd.setDepthTestEnable(false); // Disable depth for skybox
+
+    // Push Constants
     const FragmentPushConstantsCubemap fragPushConstants = {.iCubemap = m_cubemapTextureBinding};
-    cmd.pushConstants(m_cubemapPipeline.layout(),
-                      VK_SHADER_STAGE_FRAGMENT_BIT,
-                      0,
-                      sizeof(FragmentPushConstantsCubemap),
-                      &fragPushConstants);
+    cmd.pushConstants({
+        .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
+        .layout     = m_cubemapPipeline.layout(),
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .offset     = 0,
+        .size       = sizeof(FragmentPushConstantsCubemap),
+        .pValues    = &fragPushConstants,
+    });
+
+    // Descriptor Sets
     VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
-    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_cubemapPipeline.layout(), 0, descriptorSets, {});
+    cmd.bindDescriptorSets({
+        .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
+        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        .layout             = m_cubemapPipeline.layout(),
+        .firstSet           = 0,
+        .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
+        .pDescriptorSets    = descriptorSets,
+    });
     cmd.draw(36, 1, 0, 0);
 
     // rest of scene
     bindPipelineHelper(cmd, m_graphicsPipeline);
-    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
+    cmd.bindDescriptorSets({
+        .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
+        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        .layout             = m_graphicsPipeline.layout(),
+        .firstSet           = 0,
+        .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
+        .pDescriptorSets    = descriptorSets,
+    });
 
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
             const VertexPushConstants vertPushConstants = {
                 .model = trans.transform(),
             };
-            cmd.pushConstants(m_graphicsPipeline.layout(),
-                              VK_SHADER_STAGE_VERTEX_BIT,
-                              0,
-                              sizeof(VertexPushConstants),
-                              &vertPushConstants);
+            cmd.pushConstants({
+                .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
+                .layout     = m_graphicsPipeline.layout(),
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset     = 0,
+                .size       = sizeof(VertexPushConstants),
+                .pValues    = &vertPushConstants,
+            });
 
             const FragmentPushConstants fragPushConstants = {
                 .viewPosition       = GWorld()->camera().position(),
@@ -237,11 +265,14 @@ void Renderer::draw() {
                 .iAmbientOcclusion  = mat.iAmbientOcclusion,
                 .iEmissive          = mat.iEmissive,
             };
-            cmd.pushConstants(m_graphicsPipeline.layout(),
-                              VK_SHADER_STAGE_FRAGMENT_BIT,
-                              sizeof(VertexPushConstants),
-                              sizeof(FragmentPushConstants),
-                              &fragPushConstants);
+            cmd.pushConstants({
+                .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
+                .layout     = m_graphicsPipeline.layout(),
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = sizeof(VertexPushConstants),
+                .size       = sizeof(FragmentPushConstants),
+                .pValues    = &fragPushConstants,
+            });
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
             const VkDeviceSize offsets[] = {0};
@@ -262,128 +293,149 @@ void Renderer::draw() {
     cmd.end();
 
     // Submit command buffer - use per-frame acquire, per-image render finished
-    const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    cmd.submit(m_ctx.graphicsQueue(),
-               {&m_ctx.currentImageAvailableSemaphore(), 1},
-               waitStages,
-               {&m_ctx.renderFinishedSemaphore(imageIndex), 1},
-#if 0
-               m_ctx.currentFence());
-#else
-               VK_NULL_HANDLE);
-#endif
+    submitHelper(cmd, currFrame);
 
     // Present - use per-image semaphore
-    result = m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(imageIndex), imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        // Will be handled by resize logic on next frame
-    } else if (result != VK_SUCCESS) {
-        throw Exception{std::format("Failed to present swap chain image: {}", static_cast<int>(result))};
-    }
+    presentFrameHelper(currFrame, imageIndex);
 
     m_ctx.advanceFrame();
 }
 
 void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex) {
-    // Transition MSAA color image to color attachment optimal
-    const VkImageMemoryBarrier2 colorTransition = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
-        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .srcAccessMask       = VK_ACCESS_NONE,
-        .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_colorImage.image(), // MSAA image
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
+    // Memory barrier to ensure that the image is not being read from while we are waiting on the fence
+    const VkMemoryBarrier2 memoryBarrier = {
+        .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext         = nullptr,
+        .srcStageMask  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        .srcAccessMask = VK_ACCESS_NONE,
+        .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
     };
 
-    // Transition swapchain image to color attachment optimal
-    const VkImageMemoryBarrier2 swapchainTransition = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
-        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .srcAccessMask       = VK_ACCESS_NONE,
-        .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_swapchain.images()[imageIndex],
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
+    VkImageMemoryBarrier2 imageBarriers[3] = {
+        // Transition MSAA color image to color attachment optimal
+        {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_colorImage.image(), // MSAA image
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        },
+        // Transition swapchain image to color attachment optimal
+        {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_swapchain.images()[imageIndex],
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        },
+        // Transition depth image to depth stencil attachment optimal
+        {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_depthImage.image(), // Your depth image
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        },
     };
 
-    // Transition depth image to depth stencil attachment optimal
-    const VkImageMemoryBarrier2 depthTransition = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
-        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .srcAccessMask       = VK_ACCESS_NONE,
-        .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-        .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_depthImage.image(), // Your depth image
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
+    const VkDependencyInfo dependencyInfo = {
+        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .pNext                    = nullptr,
+        .dependencyFlags          = 0,
+        .memoryBarrierCount       = 1,
+        .pMemoryBarriers          = &memoryBarrier,
+        .bufferMemoryBarrierCount = 0,
+        .pBufferMemoryBarriers    = nullptr,
+        .imageMemoryBarrierCount  = 3,
+        .pImageMemoryBarriers     = imageBarriers,
     };
-
-    // Apply all transitions
-    cmd.transitionImageLayout(colorTransition);
-    cmd.transitionImageLayout(swapchainTransition);
-    cmd.transitionImageLayout(depthTransition);
+    cmd.pipelineBarrier(dependencyInfo);
 }
 
 void Renderer::transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex) {
-    const VkImageMemoryBarrier2 presentBarrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
-        .srcStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        .srcAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        .dstStageMask        = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        .dstAccessMask       = VK_ACCESS_MEMORY_READ_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_swapchain.images()[imageIndex],
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 1,
-            },
+    const VkImageMemoryBarrier2 barriers[] = {
+        // Transition swapchain image for presentation
+        {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            .dstAccessMask       = VK_ACCESS_NONE, // Changed from MEMORY_READ_BIT
+            .oldLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .newLayout           = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_swapchain.images()[imageIndex],
+            .subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        },
+        // MSAA color image should be transitioned to a safe state too
+        {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .dstAccessMask       = VK_ACCESS_NONE,
+            .oldLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_colorImage.image(),
+            .subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
+        },
     };
-    cmd.transitionImageLayout(presentBarrier);
+
+    const VkDependencyInfo dependencyInfo = {
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = static_cast<uint32>(std::size(barriers)),
+        .pImageMemoryBarriers    = barriers,
+    };
+
+    cmd.pipelineBarrier(dependencyInfo);
 }
 
 void Renderer::handleWindowResize() {
@@ -428,6 +480,26 @@ void Renderer::handleWindowResize() {
         VK_IMAGE_ASPECT_DEPTH_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
     };
+}
+
+void Renderer::addDescriptorMemoryBarrier(CommandBuffer& cmd) {
+    // Memory barrier to ensure host writes to UBO/SSBO are visible to GPU
+    const VkMemoryBarrier2 descriptorBarrier = {
+        .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .pNext         = nullptr,
+        .srcStageMask  = VK_PIPELINE_STAGE_HOST_BIT,
+        .srcAccessMask = VK_ACCESS_HOST_WRITE_BIT,
+        .dstStageMask  = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
+    };
+
+    const VkDependencyInfo dependencyInfo = {
+        .sType              = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers    = &descriptorBarrier,
+    };
+
+    cmd.pipelineBarrier(dependencyInfo);
 }
 
 void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
@@ -530,6 +602,68 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
     }
 
     m_ctx.descriptorSet(frameIndex).write(descriptorWrites);
+}
+
+void Renderer::submitHelper(CommandBuffer& cmd, uint32 frameIndex) {
+    const VkSemaphoreSubmitInfo waitSemaphoreSubmitInfo = {
+        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext     = nullptr,
+        .semaphore = m_ctx.imageAvailableSemaphore(frameIndex),
+        .value     = 0,
+        .stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+    };
+
+    const VkSemaphoreSubmitInfo signalSemaphoreSubmitInfo = {
+        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
+        .pNext     = nullptr,
+        .semaphore = m_ctx.renderFinishedSemaphore(frameIndex),
+        .value     = 0,
+        .stageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+    };
+
+    const VkCommandBufferSubmitInfo cmdInfo = {
+        .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
+        .pNext         = nullptr,
+        .commandBuffer = cmd.commandBuffer(),
+        .deviceMask    = 0,
+    };
+
+    const VkSubmitInfo2 submitInfo = {
+        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
+        .pNext                    = nullptr,
+        .flags                    = {},
+        .waitSemaphoreInfoCount   = 1,
+        .pWaitSemaphoreInfos      = &waitSemaphoreSubmitInfo,
+        .commandBufferInfoCount   = 1,
+        .pCommandBufferInfos      = &cmdInfo,
+        .signalSemaphoreInfoCount = 1,
+        .pSignalSemaphoreInfos    = &signalSemaphoreSubmitInfo,
+    };
+
+    VK_CHECK(vkQueueSubmit2(m_ctx.graphicsQueue(), 1, &submitInfo, m_ctx.inFlightFence(frameIndex)));
+}
+
+void Renderer::presentFrameHelper(uint32 frameIndex, uint32 imageIndex) {
+    const VkSemaphore signalSemaphores[] = {m_ctx.renderFinishedSemaphore(frameIndex)};
+    const VkSwapchainKHR swapchains[]    = {m_swapchain.swapchain()};
+
+    const VkPresentInfoKHR presentInfo{
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores    = signalSemaphores,
+        .swapchainCount     = 1,
+        .pSwapchains        = swapchains,
+        .pImageIndices      = &imageIndex,
+        .pResults           = nullptr,
+    };
+
+    VkResult result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        // Handle swapchain recreation
+    } else if (result != VK_SUCCESS) {
+        throw Exception{std::format("vkQueuePresentKHR returned: {}", static_cast<int>(result))};
+    }
 }
 
 uint32 Renderer::updateLights(uint32 frameIndex) {

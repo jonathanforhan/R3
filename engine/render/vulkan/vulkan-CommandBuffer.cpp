@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <new>
+#include <span>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -32,7 +33,6 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
 
     const VkCommandPoolCreateInfo poolInfo = {
         .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .pNext            = nullptr,
         .flags            = flags,
         .queueFamilyIndex = queueFamilyIndex,
     };
@@ -41,7 +41,6 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
     // Allocate command buffers from the pool
     const VkCommandBufferAllocateInfo allocInfo = {
         .sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        .pNext              = nullptr,
         .commandPool        = *pool,
         .level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = count,
@@ -63,21 +62,16 @@ std::vector<CommandBuffer> CommandBuffer::allocate(RenderContext& ctx,
 
 void CommandBuffer::begin(VkCommandBufferUsageFlags flags) {
     R3_ASSERT(!m_isRecording, "CommandBuffer is already recording!");
-
     const VkCommandBufferBeginInfo beginInfo = {
-        .sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .pNext            = nullptr,
-        .flags            = flags,
-        .pInheritanceInfo = nullptr,
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = flags,
     };
-
     VK_CHECK(vkBeginCommandBuffer(m_commandBuffer, &beginInfo));
     m_isRecording = true;
 }
 
 void CommandBuffer::end() {
     R3_ASSERT(m_isRecording, "CommandBuffer is not recording!");
-
     VK_CHECK(vkEndCommandBuffer(m_commandBuffer));
     m_isRecording = false;
 }
@@ -107,21 +101,21 @@ void CommandBuffer::bindComputePipeline(VkPipeline pipeline) {
     vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
 
-void CommandBuffer::bindDescriptorSets(VkPipelineBindPoint bindPoint,
-                                       VkPipelineLayout layout,
-                                       uint32 firstSet,
-                                       std::span<const VkDescriptorSet> descriptorSets,
-                                       std::span<const uint32> dynamicOffsets) {
+void CommandBuffer::bindDescriptorSets(const VkBindDescriptorSetsInfo& bindDescriptorSetsInfo) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-
+    // vkCmdBindDescriptorSets2(m_commandBuffer, &bindDescriptorSetsInfo); // FIXME not supported
+    const VkPipelineBindPoint pipelineBindPoint = bindDescriptorSetsInfo.stageFlags & VK_SHADER_STAGE_COMPUTE_BIT
+                                                      ? VK_PIPELINE_BIND_POINT_COMPUTE
+                                                      : VK_PIPELINE_BIND_POINT_GRAPHICS;
+    // ^^ not perfect but works for now
     vkCmdBindDescriptorSets(m_commandBuffer,
-                            bindPoint,
-                            layout,
-                            firstSet,
-                            static_cast<uint32>(descriptorSets.size()),
-                            descriptorSets.data(),
-                            static_cast<uint32>(dynamicOffsets.size()),
-                            dynamicOffsets.data());
+                            pipelineBindPoint,
+                            bindDescriptorSetsInfo.layout,
+                            bindDescriptorSetsInfo.firstSet,
+                            bindDescriptorSetsInfo.descriptorSetCount,
+                            bindDescriptorSetsInfo.pDescriptorSets,
+                            bindDescriptorSetsInfo.dynamicOffsetCount,
+                            bindDescriptorSetsInfo.pDynamicOffsets);
 }
 
 void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
@@ -129,7 +123,6 @@ void CommandBuffer::bindVertexBuffers(uint32 firstBinding,
                                       std::span<const VkDeviceSize> offsets) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
     R3_ASSERT(buffers.size() == offsets.size(), "Buffer and offset counts must match!");
-
     vkCmdBindVertexBuffers(
         m_commandBuffer, firstBinding, static_cast<uint32>(buffers.size()), buffers.data(), offsets.data());
 }
@@ -188,142 +181,44 @@ void CommandBuffer::setDepthTestEnable(bool enable) {
     vkCmdSetDepthTestEnable(m_commandBuffer, enable ? VK_TRUE : VK_FALSE);
 }
 
-void CommandBuffer::transitionImageLayout(const VkImageMemoryBarrier2& imageMemoryBarrier) {
+void CommandBuffer::pushConstants(const VkPushConstantsInfo& pushConstantsInfo) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    const VkDependencyInfo dependencyInfo = {
-        .sType                    = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .pNext                    = nullptr,
-        .dependencyFlags          = 0,
-        .memoryBarrierCount       = 0,
-        .pMemoryBarriers          = nullptr,
-        .bufferMemoryBarrierCount = 0,
-        .pBufferMemoryBarriers    = nullptr,
-        .imageMemoryBarrierCount  = 1,
-        .pImageMemoryBarriers     = &imageMemoryBarrier,
-    };
+    vkCmdPushConstants2(m_commandBuffer, &pushConstantsInfo);
+}
+
+void CommandBuffer::copyBuffer(const VkCopyBufferInfo2& copyInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdCopyBuffer2(m_commandBuffer, &copyInfo);
+}
+
+void CommandBuffer::copyImage(const VkCopyImageInfo2& copyInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdCopyImage2(m_commandBuffer, &copyInfo);
+}
+
+void CommandBuffer::copyBufferToImage(const VkCopyBufferToImageInfo2& copyInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdCopyBufferToImage2(m_commandBuffer, &copyInfo);
+}
+
+void CommandBuffer::copyImageToBuffer(const VkCopyImageToBufferInfo2& copyInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdCopyImageToBuffer2(m_commandBuffer, &copyInfo);
+}
+
+void CommandBuffer::blitImage(const VkBlitImageInfo2& blitInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdBlitImage2(m_commandBuffer, &blitInfo);
+}
+
+void CommandBuffer::resolveImage(const VkResolveImageInfo2& resolveInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    vkCmdResolveImage2(m_commandBuffer, &resolveInfo);
+}
+
+void CommandBuffer::pipelineBarrier(VkDependencyInfo dependencyInfo) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
     vkCmdPipelineBarrier2(m_commandBuffer, &dependencyInfo);
-}
-
-void CommandBuffer::pipelineBarrier(VkPipelineStageFlags srcStage,
-                                    VkPipelineStageFlags dstStage,
-                                    VkDependencyFlags dependencyFlags,
-                                    std::span<const VkMemoryBarrier> memoryBarriers,
-                                    std::span<const VkBufferMemoryBarrier> bufferBarriers,
-                                    std::span<const VkImageMemoryBarrier> imageBarriers) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-
-    vkCmdPipelineBarrier(m_commandBuffer,
-                         srcStage,
-                         dstStage,
-                         dependencyFlags,
-                         static_cast<uint32>(memoryBarriers.size()),
-                         memoryBarriers.data(),
-                         static_cast<uint32>(bufferBarriers.size()),
-                         bufferBarriers.data(),
-                         static_cast<uint32>(imageBarriers.size()),
-                         imageBarriers.data());
-}
-
-void CommandBuffer::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, std::span<const VkBufferCopy> regions) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    vkCmdCopyBuffer(m_commandBuffer, srcBuffer, dstBuffer, static_cast<uint32>(regions.size()), regions.data());
-}
-
-void CommandBuffer::copyBufferToImage(VkBuffer srcBuffer,
-                                      VkImage dstImage,
-                                      VkImageLayout imageLayout,
-                                      std::span<const VkBufferImageCopy> regions) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    vkCmdCopyBufferToImage(
-        m_commandBuffer, srcBuffer, dstImage, imageLayout, static_cast<uint32>(regions.size()), regions.data());
-}
-
-void CommandBuffer::copyImageToBuffer(VkImage srcImage,
-                                      VkImageLayout imageLayout,
-                                      VkBuffer dstBuffer,
-                                      std::span<const VkBufferImageCopy> regions) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    vkCmdCopyImageToBuffer(
-        m_commandBuffer, srcImage, imageLayout, dstBuffer, static_cast<uint32>(regions.size()), regions.data());
-}
-
-void CommandBuffer::blitImage(VkImage srcImage,
-                              VkImageLayout srcImageLayout,
-                              VkImage dstImage,
-                              VkImageLayout dstImageLayout,
-                              std::span<const VkImageBlit> regions,
-                              VkFilter filter) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    vkCmdBlitImage(m_commandBuffer,
-                   srcImage,
-                   srcImageLayout,
-                   dstImage,
-                   dstImageLayout,
-                   static_cast<uint32>(regions.size()),
-                   regions.data(),
-                   filter);
-}
-
-void CommandBuffer::pushConstants(VkPipelineLayout layout,
-                                  VkShaderStageFlags stageFlags,
-                                  uint32 offset,
-                                  uint32 size,
-                                  const void* values) {
-    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    vkCmdPushConstants(m_commandBuffer, layout, stageFlags, offset, size, values);
-}
-
-void CommandBuffer::submit(VkQueue queue,
-                           std::span<const VkSemaphore> waitSemaphores,
-                           std::span<const VkPipelineStageFlags> waitStages,
-                           std::span<const VkSemaphore> signalSemaphores,
-                           VkFence fence) {
-    R3_ASSERT(!m_isRecording, "CommandBuffer must be ended before submission!");
-    R3_ASSERT(waitSemaphores.size() == waitStages.size(), "Wait semaphores and stages must match!");
-
-    const VkSubmitInfo submitInfo = {
-        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext                = nullptr,
-        .waitSemaphoreCount   = static_cast<uint32>(waitSemaphores.size()),
-        .pWaitSemaphores      = waitSemaphores.data(),
-        .pWaitDstStageMask    = waitStages.data(),
-        .commandBufferCount   = 1,
-        .pCommandBuffers      = &m_commandBuffer,
-        .signalSemaphoreCount = static_cast<uint32>(signalSemaphores.size()),
-        .pSignalSemaphores    = signalSemaphores.data(),
-    };
-
-    // VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
-    if (VkResult result = vkQueueSubmit(queue, 1, &submitInfo, fence); result != VK_SUCCESS) {
-        LOG_ERROR("Failed to submit command buffer: {}", static_cast<int>(result));
-    }
-}
-
-void CommandBuffer::submitSync(VkQueue queue) {
-    R3_ASSERT(!m_isRecording, "CommandBuffer must be ended before submission!");
-
-    if (queue == VK_NULL_HANDLE) {
-        RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
-        queue              = ctx.graphicsQueue();
-    }
-
-    const VkSubmitInfo submitInfo = {
-        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        .pNext                = nullptr,
-        .waitSemaphoreCount   = 0,
-        .pWaitSemaphores      = nullptr,
-        .pWaitDstStageMask    = nullptr,
-        .commandBufferCount   = 1,
-        .pCommandBuffers      = &m_commandBuffer,
-        .signalSemaphoreCount = 0,
-        .pSignalSemaphores    = nullptr,
-    };
-
-    if (VkResult result = vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS) {
-        LOG_ERROR("Failed to submit command buffer: {}", static_cast<int>(result));
-    } else {
-        vkQueueWaitIdle(queue);
-    }
 }
 
 } // namespace R3::vulkan

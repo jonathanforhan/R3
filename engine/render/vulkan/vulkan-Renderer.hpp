@@ -40,11 +40,17 @@ public:
     IRenderContext* context() noexcept { return &m_ctx; }
 
 private:
+    void addDescriptorMemoryBarrier(CommandBuffer& cmd);
+
     void beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex);
 
     void bindPipelineHelper(CommandBuffer& cmd, const GraphicsPipeline& pipeline);
 
     void writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights);
+
+    void submitHelper(CommandBuffer& cmd, uint32 frameIndex);
+
+    void presentFrameHelper(uint32 frameIndex, uint32 imageIndex);
 
     uint32 updateLights(uint32 frameIndex);
 

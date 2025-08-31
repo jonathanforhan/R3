@@ -48,7 +48,7 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
 
     vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
 
-    m_cmd = &ctx.graphicsCommandBuffer();
+    m_cmd = &ctx.graphicsCommandBuffer(0);
     m_cmd->begin();
 
     for (glTF::Scene& scene : model.root.scenes) {
@@ -58,7 +58,7 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
     }
 
     m_cmd->end();
-    m_cmd->submitSync();
+    ctx.submitSync(ctx.graphicsQueue(), m_cmd->commandBuffer());
 
     return root;
 }
@@ -107,7 +107,7 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
     bool isParent = mesh.primitives.size() > 1;
 
     for (glTF::MeshPrimitive& primitive : mesh.primitives) {
-        R3_ASSERT(primitive.mode == glTF::TRIANGLES , "Only TRIANGLES mode is supported");
+        R3_ASSERT(primitive.mode == glTF::TRIANGLES, "Only TRIANGLES mode is supported");
 
         //--- Vertices
         std::vector<fvec3> positions;
@@ -194,20 +194,42 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
 
         if (vboLoaded) {
             vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-            VkBufferCopy* vertexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
+            VkBufferCopy2* vertexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
 
             *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
-            *vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
-            m_cmd->copyBuffer(vertexStagingBuffer->buffer(), vbo->buffer(), {vertexCopyRegion, 1});
+            *vertexCopyRegion    = {
+                   .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                   .srcOffset = 0,
+                   .dstOffset = 0,
+                   .size      = vertices.size() * sizeof(Vertex),
+            };
+            m_cmd->copyBuffer({
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .srcBuffer   = vertexStagingBuffer->buffer(),
+                .dstBuffer   = vbo->buffer(),
+                .regionCount = 1,
+                .pRegions    = vertexCopyRegion,
+            });
         }
 
         if (iboLoaded) {
             vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-            VkBufferCopy* indexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
+            VkBufferCopy2* indexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
 
             *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
-            *indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
-            m_cmd->copyBuffer(indexStagingBuffer->buffer(), ibo->buffer(), {indexCopyRegion, 1});
+            *indexCopyRegion    = {
+                   .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+                   .srcOffset = 0,
+                   .dstOffset = 0,
+                   .size      = indices.size() * sizeof(uint32),
+            };
+            m_cmd->copyBuffer({
+                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+                .srcBuffer   = indexStagingBuffer->buffer(),
+                .dstBuffer   = ibo->buffer(),
+                .regionCount = 1,
+                .pRegions    = indexCopyRegion,
+            });
         }
 
         if (!isParent) {

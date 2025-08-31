@@ -1,10 +1,10 @@
 #pragma once
 
-#include "engine/api/Api.hpp"
 #include <cstdint>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
@@ -33,6 +33,8 @@ public:
     VkPresentModeKHR presentMode() const noexcept { return m_presentMode; }
 
     VkExtent2D extent() const noexcept { return m_extent; }
+
+    VkSwapchainKHR swapchain() const noexcept { return *m_swapchain; }
 
     std::span<const VkImage> images() const noexcept { return m_images; }
 

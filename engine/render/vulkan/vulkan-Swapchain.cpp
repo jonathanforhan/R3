@@ -8,6 +8,7 @@
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "core/Log.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -90,6 +91,8 @@ void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebu
     m_format      = swapchain.image_format;
     m_presentMode = swapchain.present_mode;
     m_extent      = swapchain.extent;
+
+    LOG_VERBOSE("Swapchain created: {}x{}, {} images", m_extent.width, m_extent.height, m_images.size());
 
     ctx.setSwapchainFormat(m_format);
 }

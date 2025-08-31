@@ -6,6 +6,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <entt/resource/cache.hpp>
+#include "Log.hpp"
 #include "api/Assert.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"

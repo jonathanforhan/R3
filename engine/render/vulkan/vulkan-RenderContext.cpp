@@ -3,6 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include <array>
 #include <cstdint>
 #include <format>
 #include <iterator>
@@ -86,17 +87,17 @@ RenderContext::~RenderContext() noexcept {
         for (auto& sem : m_imageAvailableSemaphores) {
             vkDestroySemaphore(m_device, sem, nullptr);
         }
-        m_imageAvailableSemaphores.clear();
+        m_imageAvailableSemaphores.fill(VK_NULL_HANDLE);
 
         for (auto& fence : m_inFlightFences) {
             vkDestroyFence(m_device, fence, nullptr);
         }
-        m_inFlightFences.clear();
+        m_inFlightFences.fill(VK_NULL_HANDLE);
 
         for (auto& sem : m_renderFinishedSemaphores) {
             vkDestroySemaphore(m_device, sem, nullptr);
         }
-        m_renderFinishedSemaphores.clear();
+        m_renderFinishedSemaphores.fill(VK_NULL_HANDLE);
 
         m_graphicsQueueCmds.clear();
         m_computeQueueCmds.clear();
@@ -121,9 +122,38 @@ void RenderContext::waitIdle() {
     VK_CHECK(vkDeviceWaitIdle(m_device));
 }
 
-void RenderContext::waitForCurrentFrame() {
-    VK_CHECK(vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX));
-    VK_CHECK(vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]));
+void RenderContext::waitForFrame(uint32 frameIndex) {
+    VK_CHECK(vkWaitForFences(m_device, 1, &m_inFlightFences[frameIndex], VK_TRUE, UINT64_MAX));
+    VK_CHECK(vkResetFences(m_device, 1, &m_inFlightFences[frameIndex]));
+}
+
+void RenderContext::submit(VkQueue queue,
+                           VkCommandBuffer cmd,
+                           VkPipelineStageFlags waitStage,
+                           VkSemaphore waitSemaphore,
+                           VkSemaphore signalSemaphore,
+                           VkFence fence) {
+    const VkSubmitInfo submitInfo = {
+        .sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount   = 1,
+        .pWaitSemaphores      = &waitSemaphore,
+        .pWaitDstStageMask    = &waitStage,
+        .commandBufferCount   = 1,
+        .pCommandBuffers      = &cmd,
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores    = &signalSemaphore,
+    };
+    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, fence));
+}
+
+void RenderContext::submitSync(VkQueue queue, VkCommandBuffer cmd) {
+    const VkSubmitInfo submitInfo{
+        .sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .commandBufferCount = 1,
+        .pCommandBuffers    = &cmd,
+    };
+    VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+    VK_CHECK(vkQueueWaitIdle(queue));
 }
 
 uint32 RenderContext::queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const {
@@ -143,16 +173,18 @@ VkSampleCountFlagBits RenderContext::queryMaxUsableSampleCount() const noexcept 
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(m_physicalDevice, &physicalDeviceProperties);
 
-    const VkSampleCountFlags counts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
-                                      physicalDeviceProperties.limits.framebufferDepthSampleCounts;
+    const VkSampleCountFlags supportedSampleCounts = physicalDeviceProperties.limits.framebufferColorSampleCounts &
+                                                     physicalDeviceProperties.limits.framebufferDepthSampleCounts;
 
-    return (counts & VK_SAMPLE_COUNT_64_BIT)   ? VK_SAMPLE_COUNT_64_BIT
-           : (counts & VK_SAMPLE_COUNT_32_BIT) ? VK_SAMPLE_COUNT_32_BIT
-           : (counts & VK_SAMPLE_COUNT_16_BIT) ? VK_SAMPLE_COUNT_16_BIT
-           : (counts & VK_SAMPLE_COUNT_8_BIT)  ? VK_SAMPLE_COUNT_8_BIT
-           : (counts & VK_SAMPLE_COUNT_4_BIT)  ? VK_SAMPLE_COUNT_4_BIT
-           : (counts & VK_SAMPLE_COUNT_2_BIT)  ? VK_SAMPLE_COUNT_2_BIT
-                                               : VK_SAMPLE_COUNT_1_BIT;
+    static constexpr uint32 MAX_SAMPLES = 64; // Maximum sample count to check for
+
+    for (uint32 sampleCount = MAX_SAMPLES; sampleCount != 0; sampleCount >>= 1) {
+        if (supportedSampleCounts & sampleCount) {
+            return static_cast<VkSampleCountFlagBits>(sampleCount);
+        }
+    }
+
+    R3_ASSERT(false, "Failed to find max usable sample count");
 }
 
 VkFormat RenderContext::queryDepthFormat() const noexcept {
@@ -209,6 +241,9 @@ vkb::Instance RenderContext::createInstance() {
                       .set_engine_version(R3_ENGINE_VERSION_MAJOR, R3_ENGINE_VERSION_MINOR, R3_ENGINE_VERSION_PATCH)
                       .require_api_version(R3_VULKAN_VERSION_MAJOR, R3_VULKAN_VERSION_MINOR, R3_VULKAN_VERSION_PATCH)
                       .request_validation_layers(R3_VALIDATION_LAYERS_ENABLED)
+                      .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT)
+                      .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT)
+                      .add_validation_feature_enable(VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT)
                       .enable_extensions(requiredExtensions)
                       .add_debug_messenger_severity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT)
                       .add_debug_messenger_severity(VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
@@ -238,7 +273,7 @@ VkSurfaceKHR RenderContext::createSurface(Window& window, VkInstance instance) {
 
 vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& instance, VkSurfaceKHR surface) {
     auto result = vkb::PhysicalDeviceSelector(instance, surface)
-                      .set_minimum_version(1, 3)
+                      .set_minimum_version(R3_VULKAN_VERSION_MAJOR, R3_VULKAN_VERSION_MINOR)
                       .set_required_features({
                           .geometryShader     = VK_TRUE,
                           .tessellationShader = VK_TRUE,
@@ -253,18 +288,17 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                           .descriptorBindingSampledImageUpdateAfterBind  = VK_TRUE,
                           .descriptorBindingPartiallyBound               = VK_TRUE,
                           .runtimeDescriptorArray                        = VK_TRUE,
-                          .bufferDeviceAddress                           = VK_TRUE,
                       })
                       .set_required_features_13({
                           .synchronization2 = VK_TRUE,
                           .dynamicRendering = VK_TRUE,
                       })
-                      .set_required_features_14({})
                       .add_required_extensions({
+                          VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                          "VK_KHR_maintenance5",
                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                       })
-                      .add_required_extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
                       .require_dedicated_transfer_queue()
                       .require_separate_compute_queue()
                       .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
@@ -305,8 +339,7 @@ void RenderContext::setupQueue(const vkb::Device& device, vkb::QueueType queueTy
 }
 
 void RenderContext::createCommandPools() {
-    const VkCommandPoolCreateFlags poolFlags =
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+    const VkCommandPoolCreateFlags poolFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     m_graphicsQueueCmds = CommandBuffer::allocate(*this, graphicsQueueIndex(), poolFlags, maxFramesInFlight());
     m_computeQueueCmds  = CommandBuffer::allocate(*this, computeQueueIndex(), poolFlags, maxFramesInFlight());
 }
@@ -314,35 +347,21 @@ void RenderContext::createCommandPools() {
 void RenderContext::createSyncObjects() {
     const VkSemaphoreCreateInfo semaphoreInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        .pNext = nullptr,
-        .flags = 0,
     };
 
     const VkFenceCreateInfo fenceInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-        .pNext = nullptr,
         .flags = VK_FENCE_CREATE_SIGNALED_BIT,
     };
 
-    // create per-frame acquire semaphores
-
-    m_imageAvailableSemaphores.resize(maxFramesInFlight());
     for (auto& sem : m_imageAvailableSemaphores) {
         VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &sem));
     }
 
-    m_inFlightFences.resize(maxFramesInFlight());
     for (auto& fence : m_inFlightFences) {
         VK_CHECK(vkCreateFence(m_device, &fenceInfo, nullptr, &fence));
     }
 
-    // create per-image render finished semaphores
-
-    // anything more than 4 is not supported
-
-    static constexpr usize MAX_USED_SWAPCHAIN_IMAGES = 4;
-
-    m_renderFinishedSemaphores.resize(MAX_USED_SWAPCHAIN_IMAGES);
     for (auto& sem : m_renderFinishedSemaphores) {
         VK_CHECK(vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &sem));
     }

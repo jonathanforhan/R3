@@ -5,6 +5,7 @@
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
+#include "core/Log.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
@@ -67,7 +68,6 @@ Image::~Image() noexcept {
 void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels, uint32 layerCount) {
     VkImageMemoryBarrier2 memoryBarrierWrite = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
         .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
         .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
         .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -89,7 +89,6 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
 
     VkImageMemoryBarrier2 memoryBarrierShader = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
         .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
         .srcAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
         .dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
@@ -109,6 +108,27 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
             },
     };
 
+    const VkImageMemoryBarrier2 memoryBarrierFinal = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = m_image,
+        .subresourceRange =
+            {
+                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .baseMipLevel   = mipLevels - 1,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = layerCount,
+            },
+    };
+
     // incremental mipmap generation
     // w and h are halved each iteration
     for (uint32 layer = 0; layer < layerCount; ++layer) {
@@ -118,9 +138,14 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         for (uint32 mipLevel = 0; mipLevel < mipLevels - 1; ++mipLevel) {
             memoryBarrierWrite.subresourceRange.baseMipLevel   = mipLevel;
             memoryBarrierWrite.subresourceRange.baseArrayLayer = layer;
-            cmd.transitionImageLayout(memoryBarrierWrite);
+            cmd.pipelineBarrier({
+                .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .imageMemoryBarrierCount = 1,
+                .pImageMemoryBarriers    = &memoryBarrierWrite,
+            });
 
-            const VkImageBlit blitRegion = {
+            const VkImageBlit2 blitRegion = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
                 .srcSubresource =
                     {
                         .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -147,43 +172,37 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
                     },
             };
 
-            cmd.blitImage(m_image,
-                          VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                          m_image,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          {&blitRegion, 1});
+            cmd.blitImage({
+                .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+                .pNext          = nullptr,
+                .srcImage       = m_image,
+                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                .dstImage       = m_image,
+                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .regionCount    = 1,
+                .pRegions       = &blitRegion,
+                .filter         = VK_FILTER_LINEAR,
+            });
 
             memoryBarrierShader.subresourceRange.baseMipLevel   = mipLevel;
             memoryBarrierShader.subresourceRange.baseArrayLayer = layer;
 
-            cmd.transitionImageLayout(memoryBarrierShader);
+            cmd.pipelineBarrier({
+                .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .imageMemoryBarrierCount = 1,
+                .pImageMemoryBarriers    = &memoryBarrierShader,
+            });
 
             w = w > 1 ? w / 2 : 1;
             h = h > 1 ? h / 2 : 1;
         }
     }
 
-    const VkImageMemoryBarrier memoryBarrierFinal = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        .pNext               = nullptr,
-        .srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image,
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = mipLevels - 1,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = layerCount,
-            },
-    };
-    cmd.pipelineBarrier(
-        VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, {}, {}, {&memoryBarrierFinal, 1});
+    cmd.pipelineBarrier({
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers    = &memoryBarrierFinal,
+    });
 }
 
 } // namespace R3::vulkan

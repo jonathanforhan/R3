@@ -41,7 +41,7 @@ public:
     virtual ~RenderContext() noexcept override;
 
     /// Returns the maximum number of frames that can be processed concurrently (in flight).
-    constexpr uint32 maxFramesInFlight() const noexcept { return 3; }
+    constexpr uint32 maxFramesInFlight() const noexcept { return MAX_FRAMES_IN_FLIGHT; }
     /// Returns the maximum number of shader texture sampler bindings.
     constexpr uint32 maxTextureSamplerBindings() const noexcept { return 1024; }
     /// Increment the current frame index or reset when equal to maxFramesInFlight()
@@ -49,8 +49,17 @@ public:
 
     /// Wait on the host for the completion of outstanding queue operations for all queues in this context
     void waitIdle();
-    /// Wait for the current frame to finish and reset its fence
-    void waitForCurrentFrame();
+    /// Wait for frame to finish and reset its fence
+    void waitForFrame(uint32 frameIndex);
+
+    /// Submit command to Queue
+    void submit(VkQueue queue,
+                VkCommandBuffer cmd,
+                VkPipelineStageFlags waitStage,
+                VkSemaphore waitSemaphore,
+                VkSemaphore signalSemaphore,
+                VkFence fence);
+    void submitSync(VkQueue queue, VkCommandBuffer cmd);
 
     /// Get the index of memory type which satisfies ```typeFilter``` and ```properties```
     uint32 queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryPropertyFlags properties) const;
@@ -90,14 +99,14 @@ public:
     uint32 computeQueueIndex() const noexcept { return m_computeQueueIndex; }
 
     /// Retrieves the graphics queue command buffer for the current frame.
-    CommandBuffer& graphicsCommandBuffer() noexcept { return m_graphicsQueueCmds[m_currentFrame]; }
+    CommandBuffer& graphicsCommandBuffer(uint32 frameIndex) noexcept { return m_graphicsQueueCmds[frameIndex]; }
     /// Retrieves the compute queue command buffer for the current frame.
-    CommandBuffer& computeCommandBuffer() noexcept { return m_computeQueueCmds[m_currentFrame]; }
+    CommandBuffer& computeCommandBuffer(uint32 frameIndex) noexcept { return m_computeQueueCmds[frameIndex]; }
 
     /// Get the image available semaphore for the current frame
-    VkSemaphore& currentImageAvailableSemaphore() noexcept { return m_imageAvailableSemaphores[m_currentFrame]; }
+    VkSemaphore& imageAvailableSemaphore(uint32 frameIndex) noexcept { return m_imageAvailableSemaphores[frameIndex]; }
     /// Get the fence for the current frame
-    VkFence& currentFence() noexcept { return m_inFlightFences[m_currentFrame]; }
+    VkFence& inFlightFence(uint32 frameIndex) noexcept { return m_inFlightFences[frameIndex]; }
     /// Get the current frame index
     uint32 currentFrameIndex() const noexcept { return m_currentFrame; };
     /// Get the render finished semaphore for the specified swapchain image index
@@ -120,6 +129,8 @@ private:
     void createDescriptorSets();
 
 private:
+    static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
+
     Handle<VkInstance> m_instance;
     Handle<VkDebugUtilsMessengerEXT> m_debug;
     Handle<VkSurfaceKHR> m_surface;
@@ -133,9 +144,9 @@ private:
     uint32 m_computeQueueIndex  = UINT32_MAX;
     std::vector<CommandBuffer> m_graphicsQueueCmds;
     std::vector<CommandBuffer> m_computeQueueCmds;
-    std::vector<VkSemaphore> m_imageAvailableSemaphores; // one per frame in flight
-    std::vector<VkFence> m_inFlightFences;               // one per frame in flight
-    std::vector<VkSemaphore> m_renderFinishedSemaphores; // one per swapchain image
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imageAvailableSemaphores; // one per frame in flight
+    std::array<VkFence, MAX_FRAMES_IN_FLIGHT> m_inFlightFences;               // one per frame in flight
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_renderFinishedSemaphores; // one per swapchain image
     uint32 m_currentFrame = 0;
     Handle<VkDescriptorSetLayout> m_descriptorSetLayout;
     std::vector<DescriptorSet> m_descriptorSets;

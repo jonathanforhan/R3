@@ -2,6 +2,7 @@
 #extension GL_EXT_nonuniform_qualifier : require
 
 #define M_PI 3.14159265359
+#define SAMPLER_MAX 1024
 
 layout (location = 0) in vec3 v_Position;
 layout (location = 1) in vec3 v_Normal;
@@ -94,11 +95,11 @@ void main() {
     vec2 mr     = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords).rg;
     vec3 N      = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
     vec3 ao = vec3(1.0);
-    if (c_iAmbientOcclusion != 0xffffffff) {
+    if (c_iAmbientOcclusion < SAMPLER_MAX) {
         ao *= vec3(texture(u_Samplers[c_iAmbientOcclusion], v_TexCoords).r);
     }
     vec4 emission = vec4(0.0);
-    if (c_iEmissive != 0xffffffff) {
+    if (c_iEmissive < SAMPLER_MAX) {
         emission = texture(u_Samplers[c_iEmissive], v_TexCoords);
     }
     vec3 V = normalize(c_ViewPosition - v_Position);
