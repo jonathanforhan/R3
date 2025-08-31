@@ -1,18 +1,19 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
 #include <cstdint>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "core/Engine.hpp"
-#include "core/ResourceManager.hpp"
-#include "render/Flags.hpp"
-#include "render/vulkan/vulkan-DescriptorSet.hpp"
-#include "render/vulkan/vulkan-GraphicsPipeline.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/core/Engine.hpp"
+#include "engine/core/ResourceManager.hpp"
+#include "engine/render/Flags.hpp"
+#include "engine/render/vulkan/vulkan-DescriptorSet.hpp"
+#include "engine/render/vulkan/vulkan-GraphicsPipeline.hpp"
+#include "engine/render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 
-struct MaterialComponent {
+struct R3_API MaterialComponent {
     R3_CTOR_DEFAULT(MaterialComponent);
     R3_COPY_DELETE(MaterialComponent);
 

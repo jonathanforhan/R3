@@ -4,18 +4,19 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 
-class DescriptorSet {
+class R3_API DescriptorSet {
 public:
     R3_CTOR_DEFAULT(DescriptorSet);
 
 private:
-    /// Private constructor - use allocate() instead
+    /// Private construct R3_APIor - use allocate() instead
     DescriptorSet(RenderContext& ctx, VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool);
 
 public:

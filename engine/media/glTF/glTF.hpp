@@ -10,8 +10,8 @@
 #include <string>
 #include <type_traits>
 #include <vector>
-#include "api/JSON.hpp"
-#include "api/Types.hpp"
+#include "engine/api/JSON.hpp"
+#include "engine/api/Types.hpp"
 
 /// glTF file format spec info
 /// https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html

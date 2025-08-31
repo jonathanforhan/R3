@@ -5,10 +5,11 @@
 #include <vector>
 #include <VkBootstrap.h>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "render/RenderContext.hpp"
-#include "render/Window.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/render/RenderContext.hpp"
+#include "engine/render/Window.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Handle.hpp"
@@ -26,7 +27,7 @@ namespace R3::vulkan {
 ///   - Surface
 ///   - Device
 ///   - PhysicalDevice
-class RenderContext : public IRenderContext {
+class R3_API RenderContext : public IRenderContext {
 public:
     R3_CTOR_DEFAULT(RenderContext);
     R3_COPY_DELETE(RenderContext);

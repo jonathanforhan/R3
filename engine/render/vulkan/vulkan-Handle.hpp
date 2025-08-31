@@ -2,7 +2,8 @@
 
 #include <type_traits>
 #include <utility>
-#include "api/Class.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
 
 namespace R3::vulkan {
 
@@ -10,15 +11,15 @@ namespace R3::vulkan {
 /// @tparam T Vulkan handle type (e.g., VkBuffer, VkImage, VkDeviceMemory)
 template <typename T>
 requires std::is_pointer_v<T>
-class Handle {
+class R3_API Handle {
 public:
     R3_COPY_DELETE(Handle);
 
-    /// Constructor with handle value, defaults to nullptr
+    /// Construct R3_APIor with handle value, defaults to nullptr
     Handle(T handle = nullptr) noexcept
         : m_handle(handle) {}
 
-    /// Move constructor - transfers ownership, leaves source as nullptr
+    /// Move construct R3_APIor - transfers ownership, leaves source as nullptr
     Handle(Handle&& other) noexcept
         : m_handle(std::exchange(other.m_handle, nullptr)) {}
 

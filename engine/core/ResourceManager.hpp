@@ -4,9 +4,9 @@
 #if !R3_VULKAN
 #error "Vulkan is currently the only supported RenderContext"
 #else
-#include "render/vulkan/vulkan-Buffer.hpp"
-#include "render/vulkan/vulkan-Image.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
+#include "engine/render/vulkan/vulkan-Buffer.hpp"
+#include "engine/render/vulkan/vulkan-Image.hpp"
+#include "engine/render/vulkan/vulkan-Texture.hpp"
 #endif
 
 #include <map>
@@ -18,16 +18,17 @@
 #include <entt/resource/resource.hpp>
 #include "Engine.hpp"
 #include "EventHandler.hpp"
-#include "api/Class.hpp"
-#include "api/Hash.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Hash.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
 template <typename T>
 using Handle = entt::resource<T>;
 
-class ResourceManager {
+class R3_API ResourceManager {
 private:
     R3_CTOR_DEFAULT(ResourceManager);
     R3_COPY_DELETE(ResourceManager);
@@ -78,7 +79,7 @@ private:
     std::vector<uint32> m_textureFreeBindSlots;
 
 private:
-    friend class Engine;
+    friend class R3_API Engine;
 };
 
 } // namespace R3

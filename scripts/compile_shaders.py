@@ -45,7 +45,8 @@ def main(glslc: str, spirv_cross: str, in_dir: str, out_dir: str, force: bool):
     shader_dir = os.path.join(in_dir, "shaders")
     shader_lock = os.path.join(shader_dir, ".shader-lock.json")
 
-    sub_dirs = ("_spirv", "_hlsl", "_reflection")
+    #sub_dirs = ["_spirv", "_hlsl", "_reflection"]
+    sub_dirs = ["_spirv"]
 
     print("checking shader cache...")
 

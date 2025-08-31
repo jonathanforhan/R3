@@ -2,15 +2,16 @@
 
 #include <array>
 #include <string_view>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "input/InputCodes.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/input/InputCodes.hpp"
 
-extern "C" struct GLFWwindow;
+extern "C" struct R3_API GLFWwindow;
 
 namespace R3 {
 
-class Window {
+class R3_API Window {
 private:
     R3_COPY_DELETE(Window);
     R3_MOVE_DELETE(Window);
@@ -89,7 +90,7 @@ private:
     std::array<bool, MAX_KEYS> m_keyStates = {};
 
 private:
-    friend class Engine;
+    friend class R3_API Engine;
 };
 
 } // namespace R3

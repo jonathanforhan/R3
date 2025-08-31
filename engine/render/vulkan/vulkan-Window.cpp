@@ -160,12 +160,6 @@ Window::Window() {
     //--- Window Close Callback
     auto windowCloseCallback = [](GLFWwindow*) { GEventHandler()->emplace<WindowCloseEvent>("window-close"); };
     glfwSetWindowCloseCallback(m_window, windowCloseCallback);
-
-    /* Add callback to show window once the first frame is rendered, this prevents white screen */
-    GEventHandler()->bindEventListener("frame-done", [this]() noexcept {
-        show();
-        return true; // remove after first call
-    });
 }
 
 Window::~Window() noexcept {

@@ -6,7 +6,8 @@
 #pragma once
 
 #include <string_view>
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3::hash {
 
@@ -44,14 +45,14 @@ constexpr uint64 djb2(std::string_view str) noexcept {
 }
 
 /// @brief Container for 64-bit uint uuid
-class uuid {
+class R3_API uuid {
 public:
-    /// @brief uuid constructor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+    /// @brief uuid construct R3_APIor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
     /// @param str string view to hash
     constexpr uuid(std::string_view str) noexcept
         : m_id{fnv1a(str)} {}
 
-    /// @brief uuid constructor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+    /// @brief uuid construct R3_APIor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
     /// @tparam N  implicit
     /// @param str static cstring to hash
     template <usize N>

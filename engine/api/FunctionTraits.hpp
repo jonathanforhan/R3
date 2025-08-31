@@ -9,20 +9,21 @@
 
 #include <tuple>
 #include <type_traits>
+#include "engine/api/Api.hpp"
 
 namespace R3 {
 
 /// @brief Extracts function traits from a callable type.
 /// @tparam T The callable type from which to extract function traits.
 template <typename T>
-struct FunctionTraits : public FunctionTraits<decltype(&T::operator())> {};
+struct R3_API FunctionTraits : public FunctionTraits<decltype(&T::operator())> {};
 
 //// @brief Specialization for non-const noexcept(false) Functions.
 /// @tparam ReturnType Function return type.
-/// @tparam ClassType  Lambda class type.
+/// @tparam ClassType  Lambda class R3_API type.
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...)> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...)> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
@@ -31,10 +32,10 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...)> {
 
 //// @brief Specialization for const noexcept(false) Functions.
 /// @tparam ReturnType Function return type.
-/// @tparam ClassType  Lambda class type.
+/// @tparam ClassType  Lambda class R3_API type.
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
@@ -43,10 +44,10 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
 
 //// @brief Specialization for non-const noexcept(true) Functions.
 /// @tparam ReturnType Function return type.
-/// @tparam ClassType  Lambda class type.
+/// @tparam ClassType  Lambda class R3_API type.
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...) noexcept> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) noexcept> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
@@ -55,10 +56,10 @@ struct FunctionTraits<ReturnType (ClassType::*)(Args...) noexcept> {
 
 //// @brief Specialization for const noexcept(true) Functions.
 /// @tparam ReturnType Function return type.
-/// @tparam ClassType  Lambda class type.
+/// @tparam ClassType  Lambda class R3_API type.
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
-struct FunctionTraits<ReturnType (ClassType::*)(Args...) const noexcept> {
+struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const noexcept> {
     using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;

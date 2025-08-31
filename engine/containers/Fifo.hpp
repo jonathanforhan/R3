@@ -1,7 +1,8 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
 #include <array>
-#include "api/Types.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
@@ -18,7 +19,7 @@ namespace R3 {
  */
 template <typename T, usize Capacity, usize HeadCount>
 requires(Capacity > 0 && HeadCount > 0);
-class Fifo {
+class R3_API Fifo {
 public:
     using ValueType = T;
 
@@ -185,7 +186,7 @@ public:
 
     /**
      * @brief Emplace an element on Fifo
-     * @param args Arguements to element constructor
+     * @param args Arguements to element construct R3_APIor
      */
     template <typename... Args>
     constexpr void emplace(Args&&... args) {

@@ -1,42 +1,63 @@
 #pragma once
 
-#include "api/Class.hpp"
+#include "engine/api/Api.hpp"
+
+#include "editor/Editor.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+
+#include "engine/render/vulkan/vulkan-Renderer.hpp"
 
 namespace R3 {
 
-class Engine final {
+class R3_API Engine final {
 private:
     R3_CTOR_DEFAULT(Engine);
+    R3_COPY_DELETE(Engine);
+    R3_MOVE_DELETE(Engine);
 
 public:
     /// Get Global Game Window
-    class Window& Window() noexcept { return *m_window; }
+    class R3_API Window& Window() noexcept { return *m_window; }
     /// Get Global Engine RenderContext
-    class IRenderContext& RenderContext() noexcept { return *m_ctx; }
+    class R3_API IRenderContext& RenderContext() noexcept { return *m_ctx; }
     /// Get Global Engine RenderContext cast as T
     template <typename T>
     T& RenderContext() noexcept {
         return *static_cast<T*>(m_ctx);
     }
     /// Get Global EventHandler
-    class EventHandler& EventHandler() noexcept { return *m_eventHandler; }
+    class R3_API EventHandler& EventHandler() noexcept { return *m_eventHandler; }
     /// Get Global ResourceManager
-    class ResourceManager& ResourceManager() noexcept { return *m_resourceManager; }
+    class R3_API ResourceManager& ResourceManager() noexcept { return *m_resourceManager; }
     /// Get Global WorldState
-    class World& World() noexcept { return *m_world; }
+    class R3_API World& World() noexcept { return *m_world; }
 
-    int run();
+    void update();
 
 private:
+    void initialize();
+
+    void shutdown() noexcept;
+
     double deltaTime();
 
+    void resetState();
+
 private:
-    class Window* m_window                   = nullptr;
-    class IRenderContext* m_ctx              = nullptr;
-    class EventHandler* m_eventHandler       = nullptr;
-    class ResourceManager* m_resourceManager = nullptr;
-    class World* m_world                     = nullptr;
-    bool m_running                           = false;
+    class R3_API Window* m_window                   = nullptr;
+    class R3_API IRenderContext* m_ctx              = nullptr;
+    class R3_API EventHandler* m_eventHandler       = nullptr;
+    class R3_API ResourceManager* m_resourceManager = nullptr;
+    class R3_API World* m_world                     = nullptr;
+    // hidden
+    class R3_API vulkan::Renderer* m_renderer = nullptr;
+
+#if R3_EDITOR
+    class R3_API IEditor* m_editor = nullptr;
+#endif
+
+    bool m_running = false;
 
 private:
     friend struct GEngine;
@@ -45,40 +66,39 @@ private:
     friend struct GEventHandler;
     friend struct GResourceManager;
     friend struct GWorld;
+    friend class Application;
+    friend void vulkan::Renderer::draw();
 };
 
 /// @brief Engine singleton instance.
-struct GEngine {
-    Engine* operator->() noexcept {
-        static Engine instance;
-        return &instance;
-    }
+struct R3_API GEngine {
+    Engine* operator->() noexcept;
 };
 
 struct GEventHandler {
-    class EventHandler* operator->() noexcept { return &(GEngine()->EventHandler()); }
+    class R3_API EventHandler* operator->() noexcept { return &(GEngine()->EventHandler()); }
 };
 
 struct GResourceManager {
-    class ResourceManager* operator->() noexcept { return &(GEngine()->ResourceManager()); }
+    class R3_API ResourceManager* operator->() noexcept { return &(GEngine()->ResourceManager()); }
 };
 
 struct GWindow {
-    class Window* operator->() noexcept { return &(GEngine()->Window()); }
+    class R3_API Window* operator->() noexcept { return &(GEngine()->Window()); }
 };
 
 struct GRenderContext {
-    class IRenderContext* operator->() noexcept { return &(GEngine()->RenderContext()); }
+    class R3_API IRenderContext* operator->() noexcept { return &(GEngine()->RenderContext()); }
 };
 
 struct GWorld {
-    class World* operator->() noexcept { return &(GEngine()->World()); }
+    class R3_API World* operator->() noexcept { return &(GEngine()->World()); }
 };
 
 } // namespace R3
 
 #include "EventHandler.hpp"
-#include "core/ResourceManager.hpp"
-#include "core/World.hpp"
-#include "render/RenderContext.hpp"
-#include "render/Window.hpp"
+#include "engine/core/ResourceManager.hpp"
+#include "engine/core/World.hpp"
+#include "engine/render/RenderContext.hpp"
+#include "engine/render/Window.hpp"

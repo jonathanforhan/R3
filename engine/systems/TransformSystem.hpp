@@ -1,19 +1,20 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
 #include <entt/resource/resource.hpp>
 #include "System.hpp"
-#include "api/Assert.hpp"
-#include "api/Exception.hpp"
-#include "api/Types.hpp"
-#include "components/HierarchyComponent.hpp"
-#include "components/TransformComponent.hpp"
-#include "core/Engine.hpp"
-#include "core/Entity.hpp"
-#include "core/World.hpp"
+#include "engine/api/Assert.hpp"
+#include "engine/api/Exception.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/components/HierarchyComponent.hpp"
+#include "engine/components/TransformComponent.hpp"
+#include "engine/core/Engine.hpp"
+#include "engine/core/Entity.hpp"
+#include "engine/core/World.hpp"
 
 namespace R3 {
 
-class TransformSystem : public ISystem {
+class R3_API TransformSystem : public ISystem {
 public:
     virtual ~TransformSystem() noexcept override {}
 

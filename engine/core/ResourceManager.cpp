@@ -37,7 +37,7 @@ uint32 ResourceManager::bindTexture(hash::uuid id, const vulkan::Texture& textur
     }
     m_textureBindMap.emplace(id, slot);
 
-    R3_ASSERT(slot < ctx.maxTextureSamplerBindings() && "Texture bind slot out of range");
+    R3_ASSERT(slot < ctx.maxTextureSamplerBindings(), "Texture bind slot out of range");
 
     const VkDescriptorImageInfo imageInfo = {
         .sampler     = texture.sampler(),
@@ -69,7 +69,7 @@ void ResourceManager::unbindTexture(uint32 slot) {
         return;
     }
 
-    R3_ASSERT(m_textureBindSlots[slot].first > 0 && "Assert valid operation");
+    R3_ASSERT(m_textureBindSlots[slot].first > 0, "Assert valid operation");
 
     if ((--m_textureBindSlots[slot].first) == 0) {
         m_textureBindMap.erase(m_textureBindSlots[slot].second);

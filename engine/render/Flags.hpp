@@ -1,17 +1,18 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-enum class QueueType {
+enum class R3_API QueueType {
     Present,
     Graphics,
     Compute,
     Transfer,
 };
 
-struct ShaderStageFlags {
+struct R3_API ShaderStageFlags {
     enum : uint32 {
         Vertex                 = 0x00000001,
         TessellationControl    = 0x00000002,
@@ -43,7 +44,7 @@ struct ShaderStageFlags {
 };
 using ShaderStage = uint32;
 
-struct MemoryPropertyFlags {
+struct R3_API MemoryPropertyFlags {
     enum : uint32 {
         DeviceLocal       = 0x00000001,
         HostVisible       = 0x00000002,
@@ -58,7 +59,7 @@ struct MemoryPropertyFlags {
 };
 using MemoryProperties = uint32;
 
-struct BufferUsageFlags {
+struct R3_API BufferUsageFlags {
     enum : uint32 {
         TransferSrc        = 0x00000001,
         TransferDst        = 0x00000002,
@@ -73,7 +74,7 @@ struct BufferUsageFlags {
 };
 using BufferUsage = uint32;
 
-struct ImageUsageFlags {
+struct R3_API ImageUsageFlags {
     enum : uint32 {
         TransferSrc            = 0x00000001,
         TransferDst            = 0x00000002,
@@ -88,12 +89,12 @@ struct ImageUsageFlags {
 };
 using ImageUsage = uint32;
 
-enum class ImageTiling {
+enum class R3_API ImageTiling {
     Optimal = 0,
     Linear  = 1,
 };
 
-enum class TextureType {
+enum class R3_API TextureType {
     Albedo            = 0,
     MetallicRoughness = 1,
     Normal            = 2,
@@ -102,7 +103,7 @@ enum class TextureType {
     CubeMap           = 5,
 };
 
-enum class ShaderType {
+enum class R3_API ShaderType {
     Vertex   = 0,
     Fragment = 1,
     Compute  = 2,
@@ -121,7 +122,7 @@ enum class ShaderType {
     // ClusterCulling         = 15,
 };
 
-enum class BufferType {
+enum class R3_API BufferType {
     Staging = 0,
     Vertex  = 1,
     Index   = 2,
@@ -130,7 +131,7 @@ enum class BufferType {
     // Indirect = 5,
 };
 
-enum class BufferPreset {
+enum class R3_API BufferPreset {
     Staging,
     HostUniform,
     HostStorage,
@@ -139,7 +140,7 @@ enum class BufferPreset {
     DeviceIndex,
 };
 
-struct CommandPoolModeFlags {
+struct R3_API CommandPoolModeFlags {
     enum : uint32 {
         Transient = 0x00000001,
         Reset     = 0x00000002,

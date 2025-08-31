@@ -1,11 +1,12 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
 // KP_* keys are KeyPad keys
-enum class Key : int16 {
+enum class R3_API Key : int16 {
     Unknown      = -1,
     Space        = 32,
     Apostrophe   = 39,
@@ -129,7 +130,7 @@ enum class Key : int16 {
     Menu         = 348,
 };
 
-enum class MouseButton : uint8 {
+enum class R3_API MouseButton : uint8 {
     Button1 = 0,
     Button2 = 1,
     Button3 = 2,
@@ -143,7 +144,7 @@ enum class MouseButton : uint8 {
     Middle  = Button3,
 };
 
-struct InputModifierFlags {
+struct R3_API InputModifierFlags {
     enum : uint8 {
         Shift    = 0x01,
         Control  = 0x02,

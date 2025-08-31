@@ -1,23 +1,24 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-struct WindowResizeEvent {
+struct R3_API WindowResizeEvent {
     int32 width;
     int32 height;
 };
 
-struct WindowContentScaleEvent {
+struct R3_API WindowContentScaleEvent {
     float xscale;
     float yscale;
 };
 
-struct WindowFocusEvent {
+struct R3_API WindowFocusEvent {
     bool focused;
 };
 
-struct WindowCloseEvent {};
+struct R3_API WindowCloseEvent{};
 
 } // namespace R3

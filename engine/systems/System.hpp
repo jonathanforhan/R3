@@ -1,15 +1,16 @@
 #pragma once
 
 #include <type_traits>
+#include "engine/api/Api.hpp"
 
 namespace R3 {
 
-/// @brief ISystem is the interface class for Derived systems,
+/// @brief ISystem is the interface class R3_API for Derived systems,
 /// Their virtual update method will be called each frame.
 /// The virtual overhead doesn't matter as there will be few systems compared to Entities.
-class ISystem {
+class R3_API ISystem {
 public:
-    /// @brief Base class virtual destructor
+    /// @brief Base class R3_API virtual destruct R3_APIor
     virtual ~ISystem() noexcept {}
 
     /// @brief Initializes the object (optional)

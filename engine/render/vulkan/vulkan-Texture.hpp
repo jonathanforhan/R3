@@ -1,23 +1,25 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
+
 #include <array>
 #include <cstddef>
 #include <filesystem>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "render/Flags.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/render/Flags.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-Image.hpp"
 
 namespace R3::vulkan {
 
-/// @brief Texture class encapsulates a Vulkan texture image and sampler.
-/// It provides multiple constructors to create textures from raw data, compressed data, or from a file path.
+/// @brief Texture class R3_API encapsulates a Vulkan texture image and sampler.
+/// It provides multiple construct R3_APIors to create textures from raw data, compressed data, or from a file path.
 /// It initializes a temporary staging buffer that must outlive the command buffer commands used for texture upload.
 /// Also initializes an image object passed that must outlive the texture object, as the texture refernces it.
-class Texture {
+class R3_API Texture {
 public:
     R3_CTOR_DEFAULT(Texture);
     R3_COPY_DELETE(Texture);
@@ -86,6 +88,8 @@ private:
     bool supportsBlitting(VkFormat format) noexcept;
 
     VkFormat queryPreferredFormat(TextureType type) const noexcept;
+
+    uint32 queryPreferredChannels(TextureType type) const noexcept;
 
 private:
     Handle<VkSampler> m_sampler;

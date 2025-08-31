@@ -1,15 +1,16 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-enum class CameraType {
+enum class R3_API CameraType {
     Perspective,
     Orthographic,
 };
 
-class Camera {
+class R3_API Camera {
 public:
     explicit Camera(CameraType type = CameraType::Perspective);
 
@@ -49,7 +50,7 @@ private:
     bool m_active = false;
 
     // 0 = not pressed, 1 = pressed, >1 = pressed while opposite key is pressed, highest gets priority
-    struct ActiveKeys {
+    struct R3_API ActiveKeys {
         int w = 0;
         int a = 0;
         int s = 0;

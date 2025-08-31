@@ -34,7 +34,11 @@ layout(offset = 64)
 };
 
 vec3 calcTangentNormal(sampler2D normal, vec2 texCoords) {
-    vec3 tangentNormal = texture(normal, texCoords).xyz * 2.0 - 1.0;
+    // normals are passed as 2 channel
+    vec2 rg = texture(normal, texCoords).rg;
+    vec2 xy = rg * 2.0 - 1.0;
+    float z = sqrt(1.0 - dot(xy, xy));
+    vec3 tangentNormal = vec3(xy, z);
 
     vec3 Q1 = dFdx(v_Position);
     vec3 Q2 = dFdy(v_Position);
@@ -86,26 +90,25 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 }
 
 void main() {
-    float gamma = 2.2;
-
-    // Render
-    vec3 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords).rgb;
-    // albedo = pow(albedo, vec3(gamma)); // to linear space
-    vec4 mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords);
-    float metallic = mr.b;
-    float roughness = mr.g;
-
-    vec3 ambientOcclusion = vec3(1.0);
+    vec4 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords);
+    vec2 mr     = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords).rg;
+    vec3 N      = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
+    vec3 ao = vec3(1.0);
     if (c_iAmbientOcclusion != 0xffffffff) {
-        ambientOcclusion *= texture(u_Samplers[c_iAmbientOcclusion], v_TexCoords).rgb;
+        ao *= vec3(texture(u_Samplers[c_iAmbientOcclusion], v_TexCoords).r);
     }
-
-    vec3 N = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
+    vec4 emission = vec4(0.0);
+    if (c_iEmissive != 0xffffffff) {
+        emission = texture(u_Samplers[c_iEmissive], v_TexCoords);
+    }
     vec3 V = normalize(c_ViewPosition - v_Position);
+
+    float roughness = mr.r;
+    float metallic = mr.g;
 
     // calc reflectance at normal incidence; if dieletric use F0 of 0.04 else use albedo color as F0
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
+    F0 = mix(F0, albedo.rgb, metallic);
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -136,17 +139,14 @@ void main() {
         float NdotL = max(dot(N, L), 0.0);
 
         // add to outgoing radiance Lo
-        Lo += (kD * albedo / M_PI + specular) * radiance * NdotL;
+        Lo += (kD * albedo.rgb / M_PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.25) * albedo * ambientOcclusion;
-
+    vec3 ambient = vec3(0.01) * albedo.rgb * ao;
     vec3 color = ambient + Lo;
 
     // emission
-    if (c_iEmissive != 0xffffffff) {
-        color += texture(u_Samplers[c_iEmissive], v_TexCoords).rgb;
-    }
+    color += emission.rgb;
 
     // HDR tonemapping
     // color = color / (color + vec3(1.0));

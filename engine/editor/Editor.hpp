@@ -1,48 +1,29 @@
+#if R3_EDITOR
+
 #pragma once
 
-#include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "core/Entity.hpp"
-#include "render/RenderContext.hpp"
-#include "render/Window.hpp"
+#include "engine/api/Api.hpp"
+
+#include "engine/render/vulkan/vulkan-CommandBuffer.hpp"
 
 namespace R3 {
 
-class Editor {
+/// @brief Interface for implemented editor
+class R3_API IEditor {
 public:
-    R3_COPY_DELETE(Editor);
-    R3_MOVE_DELETE(Editor);
+    virtual ~IEditor() noexcept {};
 
-    Editor(Window& window, IRenderContext& ctx);
+    /// @brief Records the current editor UI frame
+    /// @param dt The time elapsed since the last frame, in seconds.
+    virtual void recordFrame(double dt) = 0;
 
-    ~Editor() noexcept;
+    /// @brief Renderer specific draw call for the editor
+    virtual void draw(vulkan::CommandBuffer& cmd) = 0;
 
-    bool recordInterfaceFrame(double dt);
-
-    void beginFrame();
-
-    void endFrame();
-
-    void setContentScale(float scale);
-
-    void displayDeltaTime(double dt);
-
-    void initializeDocking();
-
-    void displayHierarchy();
-
-    void displayProperties();
-
-    void displaySceneManager();
-
-private:
-    void hierarchyHelper(Entity entity);
-
-    void testImGuizmo();
-
-private:
-    IRenderContext& m_ctx;
-    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
+    /// @brief True if the UI is currently focused (e.g. mouse over an UI element)
+    virtual bool uiFocused() const = 0;
 };
 
 } // namespace R3
+
+#endif // R3_EDITOR

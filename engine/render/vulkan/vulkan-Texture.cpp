@@ -4,6 +4,7 @@
 #include <stb_image.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <filesystem>
@@ -31,23 +32,25 @@ Texture::Texture(CommandBuffer& cmd,
                  usize height,
                  TextureType type,
                  Buffer& stagingBuffer) {
-    R3_ASSERT(raw && "Texture raw data is null");
+    R3_ASSERT(raw, "Texture raw data is null");
     create(cmd, raw, width, height, type, stagingBuffer);
 }
 
 Texture::Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer) {
-    R3_ASSERT(compressed && "Texture raw data is null");
+    R3_ASSERT(compressed, "Texture raw data is null");
+    int req = (int)queryPreferredChannels(type);
     int width, height, channels;
     std::byte* raw = (std::byte*)stbi_load_from_memory(
-        (const uint8*)compressed, static_cast<int>(size), &width, &height, &channels, 4);
+        (const uint8*)compressed, static_cast<int>(size), &width, &height, &channels, req);
     create(cmd, raw, width, height, type, stagingBuffer);
     stbi_image_free(raw);
 }
 
 Texture::Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer) {
-    R3_ASSERT(std::filesystem::exists(filepath) && "Ensure valid filepath");
+    R3_ASSERT(std::filesystem::exists(filepath), "Ensure valid filepath");
+    int req = (int)queryPreferredChannels(type);
     int width, height, channels;
-    std::byte* raw = (std::byte*)stbi_load(filepath.string().c_str(), &width, &height, &channels, 4);
+    std::byte* raw = (std::byte*)stbi_load(filepath.string().c_str(), &width, &height, &channels, req);
     create(cmd, raw, width, height, type, stagingBuffer);
     stbi_image_free(raw);
 }
@@ -61,9 +64,10 @@ Texture::Texture(CommandBuffer& cmd,
 
     // Load all 6 faces
     for (int i = 0; i < 6; ++i) {
-        R3_ASSERT(std::filesystem::exists(facePaths[i]) && "Cube map face file does not exist");
-        faceData[i] = (std::byte*)stbi_load(facePaths[i].string().c_str(), &widths[i], &heights[i], &channels[i], 4);
-        R3_ASSERT(faceData[i] && "Failed to load cube map face");
+        R3_ASSERT(std::filesystem::exists(facePaths[i]), "Cube map face file does not exist");
+        int req     = (int)queryPreferredChannels(type);
+        faceData[i] = (std::byte*)stbi_load(facePaths[i].string().c_str(), &widths[i], &heights[i], &channels[i], req);
+        R3_ASSERT(faceData[i], "Failed to load cube map face");
 
         // Ensure all faces have the same dimensions
         if (i > 0) {
@@ -92,20 +96,39 @@ void Texture::create(CommandBuffer& cmd,
                      usize height,
                      TextureType type,
                      Buffer& stagingBuffer) {
+    R3_ASSERT(type != TextureType::CubeMap, "Use createCubeMap for CubeMap textures");
+
     RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
         const VkFormat preferredFormat = queryPreferredFormat(type);
         if (!supportsBlitting(preferredFormat)) {
-            LOG_WARNING("Texture does not support blitting");
+            LOG_WARNING("Texture format does not support blitting");
         }
+        const uint32 channels = queryPreferredChannels(type);
 
         const VkExtent2D extent = {(uint32)width, (uint32)height};
         const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
-        const usize imageSize   = width * height * 4;
+        const usize imageSize   = width * height * channels;
 
         // create staging buffer for CPU writes
-        stagingBuffer = Buffer{raw, imageSize, BufferPreset::Staging};
+        if (type == TextureType::MetallicRoughness) {
+            usize bufferSize = width * height * 2; // 2 bytes per pixel (RG)
+            stagingBuffer    = Buffer{nullptr, bufferSize, BufferPreset::Staging};
+            // copy the GB channels from raw to staging buffer's RG channels
+            for (usize rg = 0, ch = 0; rg < bufferSize; rg += 2, ch += channels) {
+                stagingBuffer.copy(&raw[ch + 1], 2, rg);
+            }
+        } else if (type == TextureType::Normal) {
+            usize bufferSize = width * height * 2; // 2 bytes per pixel (RG)
+            stagingBuffer    = Buffer{nullptr, bufferSize, BufferPreset::Staging};
+            // copy the RG channels from raw to staging buffer's RG channels
+            for (usize rg = 0, ch = 0; rg < bufferSize; rg += 2, ch += channels) {
+                stagingBuffer.copy(&raw[ch], 2, rg);
+            }
+        } else {
+            stagingBuffer = Buffer{raw, imageSize, BufferPreset::Staging};
+        }
 
         // image used for texture
         m_image = Image{
@@ -204,116 +227,121 @@ void Texture::createCubeMap(CommandBuffer& cmd,
                             usize height,
                             TextureType type,
                             Buffer& stagingBuffer) {
+    R3_ASSERT(type == TextureType::CubeMap, "Texture type must be CubeMap for createCubeMap");
+
     RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
-    const VkFormat format   = queryPreferredFormat(type);
-    const VkExtent2D extent = {static_cast<uint32>(width), static_cast<uint32>(height)};
-    const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
-    const usize faceSize    = width * height * 4; // 4 bytes per pixel (RGBA)
-    const usize totalSize   = faceSize * 6;
+    try {
+        const VkFormat format   = queryPreferredFormat(type);
+        const VkExtent2D extent = {static_cast<uint32>(width), static_cast<uint32>(height)};
+        const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
+        const usize faceSize    = width * height * 4; // 4 bytes per pixel (RGBA)
 
-    // Create staging buffer for all 6 faces
-    std::vector<std::byte> allFaceData(totalSize);
-    for (usize i = 0; i < 6; ++i) {
-        std::copy(faces[i], faces[i] + faceSize, allFaceData.begin() + i * faceSize);
-    }
+        // Create staging buffer for all 6 faces
+        stagingBuffer = Buffer{nullptr, faceSize * 6, BufferPreset::Staging};
+        for (usize i = 0; i < 6; ++i) {
+            stagingBuffer.copy(faces[i], faceSize, i * faceSize);
+        }
 
-    stagingBuffer = Buffer{allFaceData.data(), totalSize, BufferPreset::Staging};
-
-    // Create cube map image (note: 6 array layers for cube faces)
-    m_image = Image{
-        VkImageCreateInfo{
-            .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-            .imageType   = VK_IMAGE_TYPE_2D,
-            .format      = format,
-            .extent      = {extent.width, extent.height, 1},
-            .mipLevels   = mipLevels,
-            .arrayLayers = 6, // 6 faces for cube map
-            .samples     = VK_SAMPLE_COUNT_1_BIT,
-            .tiling      = VK_IMAGE_TILING_OPTIMAL,
-            .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        },
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
-
-    // Transition image layout for transfer
-    const VkImageMemoryBarrier2 barrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .pNext               = nullptr,
-        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .srcAccessMask       = VK_ACCESS_NONE,
-        .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
-        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image.image(),
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = mipLevels,
-                .baseArrayLayer = 0,
-                .layerCount     = 6 // All 6 faces
+        // Create cube map image (note: 6 array layers for cube faces)
+        m_image = Image{
+            VkImageCreateInfo{
+                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+                .imageType   = VK_IMAGE_TYPE_2D,
+                .format      = format,
+                .extent      = {extent.width, extent.height, 1},
+                .mipLevels   = mipLevels,
+                .arrayLayers = 6, // 6 faces for cube map
+                .samples     = VK_SAMPLE_COUNT_1_BIT,
+                .tiling      = VK_IMAGE_TILING_OPTIMAL,
+                .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             },
-    };
-    cmd.transitionImageLayout(barrier);
+            VK_IMAGE_ASPECT_COLOR_BIT,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        };
 
-    // Copy each face from staging buffer to image
-    std::vector<VkBufferImageCopy> copyRegions;
-    for (usize face = 0; face < 6; ++face) {
-        VkBufferImageCopy copyRegion = {
-            .bufferOffset      = face * faceSize,
-            .bufferRowLength   = 0,
-            .bufferImageHeight = 0,
-            .imageSubresource =
+        // Transition image layout for transfer
+        const VkImageMemoryBarrier2 barrier = {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .pNext               = nullptr,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_image.image(),
+            .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                    .mipLevel       = 0,
-                    .baseArrayLayer = static_cast<uint32>(face),
-                    .layerCount     = 1,
+                    .baseMipLevel   = 0,
+                    .levelCount     = mipLevels,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 6 // All 6 faces
                 },
-            .imageOffset = {0, 0, 0},
-            .imageExtent = {extent.width, extent.height, 1},
         };
-        copyRegions.push_back(copyRegion);
+        cmd.transitionImageLayout(barrier);
+
+        // Copy each face from staging buffer to image
+        std::array<VkBufferImageCopy, 6> copyRegions;
+        for (usize face = 0; face < 6; ++face) {
+            VkBufferImageCopy copyRegion = {
+                .bufferOffset      = face * faceSize,
+                .bufferRowLength   = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource =
+                    {
+                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .mipLevel       = 0,
+                        .baseArrayLayer = static_cast<uint32>(face),
+                        .layerCount     = 1,
+                    },
+                .imageOffset = {0, 0, 0},
+                .imageExtent = {extent.width, extent.height, 1},
+            };
+            copyRegions[face] = copyRegion;
+        }
+
+        cmd.copyBufferToImage(
+            stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegions);
+
+        // Generate mipmaps for cube map (if supported)
+        if (supportsBlitting(format)) {
+            m_image.generateMipMaps(cmd, extent, mipLevels, 6);
+        }
+
+        // Create sampler for cube map
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);
+
+        const VkSamplerCreateInfo samplerInfo = {
+            .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .pNext                   = nullptr,
+            .flags                   = 0,
+            .magFilter               = VK_FILTER_LINEAR,
+            .minFilter               = VK_FILTER_LINEAR,
+            .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
+            .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+            .mipLodBias              = 0.0f,
+            .anisotropyEnable        = VK_TRUE,
+            .maxAnisotropy           = properties.limits.maxSamplerAnisotropy,
+            .compareEnable           = VK_FALSE,
+            .compareOp               = VK_COMPARE_OP_ALWAYS,
+            .minLod                  = 0.0f,
+            .maxLod                  = static_cast<float>(mipLevels),
+            .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
+            .unnormalizedCoordinates = VK_FALSE,
+        };
+        VK_CHECK(vkCreateSampler(ctx.device(), &samplerInfo, nullptr, &*m_sampler));
+    } catch (const Exception& ex) {
+        vkDestroySampler(ctx.device(), m_sampler, nullptr);
+        throw ex;
     }
-
-    cmd.copyBufferToImage(stagingBuffer.buffer(), m_image.image(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegions);
-
-    // Generate mipmaps for cube map (if supported)
-    if (supportsBlitting(format)) {
-        m_image.generateMipMaps(cmd, extent, mipLevels, 6);
-    }
-
-    // Create sampler for cube map
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);
-
-    const VkSamplerCreateInfo samplerInfo = {
-        .sType                   = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        .pNext                   = nullptr,
-        .flags                   = 0,
-        .magFilter               = VK_FILTER_LINEAR,
-        .minFilter               = VK_FILTER_LINEAR,
-        .mipmapMode              = VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        .addressModeU            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .addressModeV            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .addressModeW            = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-        .mipLodBias              = 0.0f,
-        .anisotropyEnable        = VK_TRUE,
-        .maxAnisotropy           = properties.limits.maxSamplerAnisotropy,
-        .compareEnable           = VK_FALSE,
-        .compareOp               = VK_COMPARE_OP_ALWAYS,
-        .minLod                  = 0.0f,
-        .maxLod                  = static_cast<float>(mipLevels),
-        .borderColor             = VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK,
-        .unnormalizedCoordinates = VK_FALSE,
-    };
-    VK_CHECK(vkCreateSampler(ctx.device(), &samplerInfo, nullptr, &*m_sampler));
 }
 
 bool Texture::supportsBlitting(VkFormat format) noexcept {
@@ -326,21 +354,59 @@ bool Texture::supportsBlitting(VkFormat format) noexcept {
 }
 
 VkFormat Texture::queryPreferredFormat(TextureType type) const noexcept {
+#if R3_TEXTURE_COMPRESSION /* TODO */
     switch (type) {
         case TextureType::Albedo:
-            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for color data
+            return VK_FORMAT_BC7_SRGB_BLOCK; // 4 channel
         case TextureType::MetallicRoughness:
-            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for material properties
+            return VK_FORMAT_BC5_UNORM_BLOCK; // 2 channel
         case TextureType::Normal:
-            return VK_FORMAT_R8G8B8A8_UNORM; // Linear for normals
+            return VK_FORMAT_BC5_UNORM_BLOCK; // 2 channel
         case TextureType::AmbientOcclusion:
-            return VK_FORMAT_R8G8B8A8_UNORM; // Single channel is enough
+            return VK_FORMAT_BC4_UNORM_BLOCK; // 1 channel
         case TextureType::Emissive:
-            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for emissive colors
+            return VK_FORMAT_BC7_UNORM_BLOCK; // 4 channel
         case TextureType::CubeMap:
-            return VK_FORMAT_R8G8B8A8_SRGB; // sRGB for environment maps
+            return VK_FORMAT_BC7_SRGB_BLOCK; // 4 channel
         default:
-            return VK_FORMAT_R8G8B8A8_UNORM; // default
+            return VK_FORMAT_BC7_UNORM_BLOCK; // 4 channel
+    }
+#else
+    switch (type) {
+        case TextureType::Albedo:
+            return VK_FORMAT_R8G8B8A8_SRGB; // 4 channel
+        case TextureType::MetallicRoughness:
+            return VK_FORMAT_R8G8_UNORM; // 2 channel
+        case TextureType::Normal:
+            return VK_FORMAT_R8G8_UNORM; // 2 channel
+        case TextureType::AmbientOcclusion:
+            return VK_FORMAT_R8_UNORM; // 1 channel
+        case TextureType::Emissive:
+            return VK_FORMAT_R8G8B8A8_UNORM; // 4 channel
+        case TextureType::CubeMap:
+            return VK_FORMAT_R8G8B8A8_SRGB; // 4 channel
+        default:
+            return VK_FORMAT_R8G8B8A8_UNORM; // 4 channel
+    }
+#endif
+}
+
+uint32 Texture::queryPreferredChannels(TextureType type) const noexcept {
+    switch (type) {
+        case TextureType::Albedo:
+            return 4; // RGBA
+        case TextureType::MetallicRoughness:
+            return 3; // RGA (GB -> RG)
+        case TextureType::Normal:
+            return 3; // RG
+        case TextureType::AmbientOcclusion:
+            return 1; // R
+        case TextureType::Emissive:
+            return 4; // RGBA
+        case TextureType::CubeMap:
+            return 4; // RGBA
+        default:
+            return 4; // default
     }
 }
 

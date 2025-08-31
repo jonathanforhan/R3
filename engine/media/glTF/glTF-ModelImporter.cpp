@@ -64,7 +64,7 @@ void ModelImporter::parseGLB(glTF::Model& model, std::ifstream& ifs) {
     Header header;
     ifs.read(reinterpret_cast<char*>(&header), sizeof(header));
 
-    R3_ASSERT(header.magic == HEADER_MAGIC && "GLB files must have magic number");
+    R3_ASSERT(header.magic == HEADER_MAGIC , "GLB files must have magic number");
 
     if (header.version > R3_GLB_VERSION) {
         LOG_WARNING("glb version for {} is {} while R3 supports up to glb version {}",

@@ -1,17 +1,18 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
 #include <cstdint>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
-class Swapchain {
+class R3_API Swapchain {
 public:
     R3_CTOR_DEFAULT(Swapchain);
     R3_COPY_DELETE(Swapchain);

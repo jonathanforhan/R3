@@ -1,11 +1,12 @@
 #pragma once
 
-#include "core/ResourceManager.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/core/ResourceManager.hpp"
+#include "engine/render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 
-struct TextureLifetimeComponent {
+struct R3_API TextureLifetimeComponent {
     std::vector<Handle<vulkan::Texture>> textures;
 };
 

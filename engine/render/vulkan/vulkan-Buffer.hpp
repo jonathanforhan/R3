@@ -2,15 +2,16 @@
 
 #include <span>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "render/Flags.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/render/Flags.hpp"
 #include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
 /// @brief RAII Buffer abstraction for Vulkan buffers
-class Buffer {
+class R3_API Buffer {
 public:
     R3_CTOR_DEFAULT(Buffer);
     R3_COPY_DELETE(Buffer);

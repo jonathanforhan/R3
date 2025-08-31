@@ -1,6 +1,7 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include "engine/api/Api.hpp"
 
 namespace R3 {
 

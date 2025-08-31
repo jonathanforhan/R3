@@ -1,10 +1,11 @@
 #pragma once
 
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-class TransformComponent {
+class R3_API TransformComponent {
 public:
     fmat4& transform() noexcept {
         m_dirty = true;
@@ -18,7 +19,7 @@ private:
     bool m_dirty      = true;
 
 private:
-    friend class TransformSystem;
+    friend class R3_API TransformSystem;
 };
 
 } // namespace R3

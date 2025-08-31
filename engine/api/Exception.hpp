@@ -2,6 +2,7 @@
 
 #include <source_location>
 #include <stdexcept>
+#include "engine/api/Api.hpp"
 
 namespace R3 {
 

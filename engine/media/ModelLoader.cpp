@@ -107,7 +107,7 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
     bool isParent = mesh.primitives.size() > 1;
 
     for (glTF::MeshPrimitive& primitive : mesh.primitives) {
-        R3_ASSERT(primitive.mode == glTF::TRIANGLES && "Only TRIANGLES mode is supported");
+        R3_ASSERT(primitive.mode == glTF::TRIANGLES , "Only TRIANGLES mode is supported");
 
         //--- Vertices
         std::vector<fvec3> positions;
@@ -192,24 +192,22 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
         auto&& [ibo, iboLoaded] = GResourceManager()->loadBuffer(
             std::string_view(idindexBuffer), nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
 
-        if (vboLoaded || iboLoaded) {
-            if (vboLoaded) {
-                vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-                VkBufferCopy* vertexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
+        if (vboLoaded) {
+            vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            VkBufferCopy* vertexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
 
-                *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
-                *vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
-                m_cmd->copyBuffer(vertexStagingBuffer->buffer(), vbo->buffer(), {vertexCopyRegion, 1});
-            }
+            *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
+            *vertexCopyRegion    = {0, 0, vertices.size() * sizeof(Vertex)};
+            m_cmd->copyBuffer(vertexStagingBuffer->buffer(), vbo->buffer(), {vertexCopyRegion, 1});
+        }
 
-            if (iboLoaded) {
-                vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-                VkBufferCopy* indexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
+        if (iboLoaded) {
+            vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            VkBufferCopy* indexCopyRegion      = GResourceManager()->newFrameScopedObject<VkBufferCopy>();
 
-                *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
-                *indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
-                m_cmd->copyBuffer(indexStagingBuffer->buffer(), ibo->buffer(), {indexCopyRegion, 1});
-            }
+            *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
+            *indexCopyRegion    = {0, 0, indices.size() * sizeof(uint32)};
+            m_cmd->copyBuffer(indexStagingBuffer->buffer(), ibo->buffer(), {indexCopyRegion, 1});
         }
 
         if (!isParent) {

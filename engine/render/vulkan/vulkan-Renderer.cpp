@@ -1,10 +1,5 @@
 #include "vulkan-Renderer.hpp"
 
-#if R3_EDITOR
-#include <imgui.h>
-#include <imgui_impl_vulkan.h>
-#endif
-
 #include <array>
 #include <filesystem>
 #include <format>
@@ -24,6 +19,7 @@
 #include "core/Camera.hpp"
 #include "core/Engine.hpp"
 #include "core/World.hpp"
+#include "engine/editor/Editor.hpp"
 #include "render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
@@ -175,8 +171,10 @@ void Renderer::draw() {
         return;
     }
 
+    vkQueueWaitIdle(m_ctx.graphicsQueue()); // TEMP
+
     // Get current frame index
-    m_ctx.waitForCurrentFrame();
+    // m_ctx.waitForCurrentFrame();
     uint32 currFrame = m_ctx.currentFrameIndex();
 
     // Acquire next image
@@ -217,6 +215,7 @@ void Renderer::draw() {
 
     // rest of scene
     bindPipelineHelper(cmd, m_graphicsPipeline);
+    cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
 
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
@@ -244,9 +243,6 @@ void Renderer::draw() {
                               sizeof(FragmentPushConstants),
                               &fragPushConstants);
 
-            VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
-            cmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipeline.layout(), 0, descriptorSets, {});
-
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->buffer()};
             const VkDeviceSize offsets[] = {0};
             const VkBuffer iboIndex      = mesh.indexBufferIndex->buffer();
@@ -257,9 +253,10 @@ void Renderer::draw() {
 
 #if R3_EDITOR
     cmd.setDepthTestEnable(false); // Disable depth for UI
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd.commandBuffer());
-    cmd.endRendering();
+    GEngine()->m_editor->draw(cmd);
 #endif
+
+    cmd.endRendering();
 
     transitionAttachmentsForPresent(cmd, imageIndex);
     cmd.end();
@@ -269,11 +266,15 @@ void Renderer::draw() {
     cmd.submit(m_ctx.graphicsQueue(),
                {&m_ctx.currentImageAvailableSemaphore(), 1},
                waitStages,
-               {&m_ctx.renderFinishedSemaphore(currFrame), 1},
+               {&m_ctx.renderFinishedSemaphore(imageIndex), 1},
+#if 0
                m_ctx.currentFence());
+#else
+               VK_NULL_HANDLE);
+#endif
 
     // Present - use per-image semaphore
-    result = m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(currFrame), imageIndex);
+    result = m_swapchain.present(m_ctx.presentQueue(), m_ctx.renderFinishedSemaphore(imageIndex), imageIndex);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         // Will be handled by resize logic on next frame
@@ -506,24 +507,28 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
         .pBufferInfo      = &uboBufferInfo,
         .pTexelBufferView = nullptr,
     });
-    // Storage buffer - Lights
-    const VkDescriptorBufferInfo ssboBufferInfo = {
-        .buffer = m_lights[frameIndex].buffer(),
-        .offset = 0,
-        .range  = sizeof(PointLightShaderObject) * numLights,
-    };
-    descriptorWrites.push_back(VkWriteDescriptorSet{
-        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext            = nullptr,
-        .dstSet           = m_ctx.descriptorSet(frameIndex).descriptorSet(),
-        .dstBinding       = 3,
-        .dstArrayElement  = 0,
-        .descriptorCount  = 1,
-        .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-        .pImageInfo       = nullptr,
-        .pBufferInfo      = &ssboBufferInfo,
-        .pTexelBufferView = nullptr,
-    });
+
+    if (numLights > 0) {
+        // Storage buffer - Lights
+        const VkDescriptorBufferInfo ssboBufferInfo = {
+            .buffer = m_lights[frameIndex].buffer(),
+            .offset = 0,
+            .range  = sizeof(PointLightShaderObject) * numLights,
+        };
+        descriptorWrites.push_back(VkWriteDescriptorSet{
+            .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .pNext            = nullptr,
+            .dstSet           = m_ctx.descriptorSet(frameIndex).descriptorSet(),
+            .dstBinding       = 3,
+            .dstArrayElement  = 0,
+            .descriptorCount  = 1,
+            .descriptorType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .pImageInfo       = nullptr,
+            .pBufferInfo      = &ssboBufferInfo,
+            .pTexelBufferView = nullptr,
+        });
+    }
+
     m_ctx.descriptorSet(frameIndex).write(descriptorWrites);
 }
 

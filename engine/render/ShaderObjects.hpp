@@ -3,25 +3,25 @@
 #include <array>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Types.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-struct ViewProjection {
+struct R3_API ViewProjection {
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
 };
 
-struct VertexUniformBufferObject {
+struct R3_API VertexUniformBufferObject {
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
 };
 
-struct VertexPushConstants {
+struct R3_API VertexPushConstants {
     alignas(16) fmat4 model;
 };
 
-struct FragmentPushConstants {
+struct R3_API FragmentPushConstants {
     alignas(16) fvec3 viewPosition;
     alignas(4) uint32 numLights;
     alignas(4) uint32 iAlbedo;
@@ -31,18 +31,18 @@ struct FragmentPushConstants {
     alignas(4) uint32 iEmissive;
 };
 
-struct FragmentPushConstantsCubemap {
+struct R3_API FragmentPushConstantsCubemap {
     alignas(4) uint32 iCubemap;
 };
 
-struct PointLightShaderObject {
+struct R3_API PointLightShaderObject {
     alignas(16) fvec3 position;
     alignas(16) fvec3 color;
     alignas(4) float intensity;
 };
 
 /// Vertex used by shaders
-struct Vertex {
+struct R3_API Vertex {
     fvec3 position;
     fvec3 normal;
     fvec3 tangent;

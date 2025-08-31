@@ -6,14 +6,15 @@
 #include <typeinfo>
 #include <vector>
 #include <entt/entt.hpp>
-#include "api/Class.hpp"
-#include "core/Camera.hpp"
-#include "core/Log.hpp"
-#include "systems/System.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/core/Camera.hpp"
+#include "engine/core/Log.hpp"
+#include "engine/systems/System.hpp"
 
 namespace R3 {
 
-class World {
+class R3_API World {
 private:
     R3_CTOR_DEFAULT(World);
 
@@ -46,7 +47,7 @@ private:
     Camera m_camera;
 
 private:
-    friend class Engine;
+    friend class R3_API Engine;
 };
 
 } // namespace R3

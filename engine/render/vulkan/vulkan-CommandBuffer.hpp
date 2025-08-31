@@ -1,22 +1,22 @@
 #pragma once
 
-#include <functional>
 #include <memory>
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 
-class CommandBuffer {
+class R3_API CommandBuffer {
 public:
     R3_CTOR_DEFAULT(CommandBuffer);
 
 private:
-    /// Private constructor - use allocate() instead
+    /// Private construct R3_APIor - use allocate() instead
     CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool);
 
 public:
@@ -117,8 +117,7 @@ public:
 private:
     VkDevice m_device               = VK_NULL_HANDLE;
     VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
-    std::shared_ptr<VkCommandPool> m_pool;                            // Keeps the command pool alive
-    std::vector<std::move_only_function<void()>> m_deferredCallbacks; // Called after submit
+    std::shared_ptr<VkCommandPool> m_pool; // Keeps the command pool alive
     bool m_isRecording = false;
 };
 

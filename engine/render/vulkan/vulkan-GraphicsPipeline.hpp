@@ -4,13 +4,14 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Class.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
-class GraphicsPipeline {
+class R3_API GraphicsPipeline {
 public:
     R3_CTOR_DEFAULT(GraphicsPipeline);
     R3_COPY_DELETE(GraphicsPipeline);

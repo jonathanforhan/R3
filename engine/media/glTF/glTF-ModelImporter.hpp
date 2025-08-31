@@ -3,12 +3,11 @@
 #include <cstddef>
 #include <filesystem>
 #include <fstream>
-#include <string>
 #include <string_view>
 #include <vector>
-#include "api/Class.hpp"
-#include "api/JSON.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/JSON.hpp"
+#include "engine/api/Types.hpp"
 #include "glTF.hpp"
 
 namespace R3::glTF {

@@ -1,7 +1,8 @@
 #pragma once
 
-#include "InputCodes.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/input/InputCodes.hpp"
 
 namespace R3 {
 
@@ -11,7 +12,7 @@ namespace R3 {
  *   "key-repeat"
  *   "key-release"
  */
-struct KeyboardEvent {
+struct R3_API KeyboardEvent {
     Key key;                  /**< Key code activated */
     InputModifiers modifiers; /**< 8 bit Mask of modifiers applied */
 };
@@ -21,7 +22,7 @@ struct KeyboardEvent {
  *   - "mouse-press"
  *   - "mouse-release"
  */
-struct MouseButtonEvent {
+struct R3_API MouseButtonEvent {
     MouseButton button;       /**< Mouse button activated */
     InputModifiers modifiers; /**< 8 bit Mask of modifiers applied */
 };
@@ -30,7 +31,7 @@ struct MouseButtonEvent {
  * events:
  *   - "mouse-scroll"
  */
-struct MouseScrollEvent {
+struct R3_API MouseScrollEvent {
     double xoffset; /**< Mouse scroll offset x */
     double yoffset; /**< Mouse scroll offset y */
 };
@@ -39,7 +40,7 @@ struct MouseScrollEvent {
  * events:
  *   - "cursor-move"
  */
-struct MouseCursorEvent {
+struct R3_API MouseCursorEvent {
     double xpos; /**< Mouse cursor position in x normalized */
     double ypos; /**< Mouse cursor position in y normalized */
 };

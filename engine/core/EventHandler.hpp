@@ -9,7 +9,7 @@
 ///
 /// 1. Define Custom Event Data
 /// @code
-/// struct PlayerMoveData {
+/// struct R3_API PlayerMoveData {
 ///     float x, y;
 ///     int playerId;
 /// };
@@ -48,11 +48,13 @@
 /// @note
 /// - Listeners must be noexcept for guaranteed exception safety
 /// - Event data should be small as it's copied into the arena
-/// - The system automatically handles object alignment and destruction
+/// - The system automatically handles object alignment and destruct R3_APIion
 ///
 /// @warning Event listeners that throw exceptions will terminate the program via std::terminate
 
 #pragma once
+
+#include "engine/api/Api.hpp"
 
 #include <concepts>
 #include <cstddef>
@@ -64,15 +66,15 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "api/Class.hpp"
-#include "api/FunctionTraits.hpp"
-#include "api/Hash.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/FunctionTraits.hpp"
+#include "engine/api/Hash.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
-/// @brief EventBase class is used as a base class for the event queue
-struct EventBase {
+/// @brief EventBase class R3_API is used as a base class R3_API for the event queue
+struct R3_API EventBase {
 protected:
     constexpr EventBase(hash::uuid id) noexcept
         : id{id} {}
@@ -84,7 +86,7 @@ public:
 /// @brief Derived Event which is templated for custom event data
 /// @tparam Data Data stored in the event, this data will take up space on the queue so is should be small
 template <typename Data>
-struct Event : public EventBase {
+struct R3_API Event : public EventBase {
     using DataType = Data;
 
     constexpr Event(hash::uuid id, const Data& data) noexcept
@@ -105,7 +107,7 @@ struct Event : public EventBase {
 
 /// @brief Specialization for void event data
 template <>
-struct Event<void> : public EventBase {
+struct R3_API Event<void> : public EventBase {
     using DataType = void;
 
     constexpr Event(hash::uuid id) noexcept
@@ -134,7 +136,7 @@ concept EventListener = VoidEventListener<F> || DataEventListener<F>;
 ///     LOG_INFO("key pressed: {}", (int)e.data.key);
 /// });
 /// @endcode
-class EventHandler {
+class R3_API EventHandler {
 private:
     using EventCallback = std::function<bool(const EventBase&)>;
 
@@ -157,7 +159,7 @@ public:
     template <typename Data>
     void push(hash::uuid id, const Data& data) {
         void* alignedPtr = allocateAligned<Event<Data>>();
-        new (alignedPtr) Event<Data>{id, data}; // construct event in place
+        new (alignedPtr) Event<Data>{id, data}; // construct R3_API event in place
     }
 
     /// @brief Push an event onto the event queue
@@ -167,21 +169,21 @@ public:
     template <typename Data>
     void push(hash::uuid id, Data&& data) {
         void* alignedPtr = allocateAligned<Event<Data>>();
-        new (alignedPtr) Event<Data>{id, std::move(data)}; // construct event in place
+        new (alignedPtr) Event<Data>{id, std::move(data)}; // construct R3_API event in place
     }
 
     /// @brief Emplace an event onto the event queue
     /// @tparam Data Event DataType
     /// @param id    Event id e.g. "key-press"
-    /// @param args  Event data arguments to construct the event in place
+    /// @param args  Event data arguments to construct R3_API the event in place
     /// @note Must explicitly specify the Data type, this is useful for events that have no data
     template <typename Data = void, typename... Args>
     void emplace(hash::uuid id, Args&&... args) {
         void* alignedPtr = allocateAligned<Event<Data>>();
-        new (alignedPtr) Event<Data>{id, std::forward<Args>(args)...}; // construct event in place
+        new (alignedPtr) Event<Data>{id, std::forward<Args>(args)...}; // construct R3_API event in place
     }
 
-    /// @brief Dispatch all event by calling every listener and then destructing the event objects
+    /// @brief Dispatch all event by calling every listener and then destruct R3_APIing the event objects
     void dispatchEvents() {
         // iterate queued event offsets
         for (auto&& [offset, deleter] : m_eventQueue) {
@@ -194,12 +196,12 @@ public:
                 // remove if listener returned true
                 it = removeListener ? m_eventRegistry.erase(it) : std::next(it);
             }
-            // manually destructor because EventHandler owns the lifetime
+            // manually destruct R3_APIor because EventHandler owns the lifetime
             if (deleter != nullptr) {
                 deleter(event);
             }
         }
-        // all events are handled and all destructors called
+        // all events are handled and all destruct R3_APIors called
         // can now safely overwrite memory
         m_eventQueue.clear();
         m_eventArena.clear();
@@ -296,7 +298,7 @@ private:
     std::unordered_multimap<uint64, EventCallback> m_eventRegistry; // mapping id to callback
 
 private:
-    friend class Engine;
+    friend class R3_API Engine;
 };
 
 } // namespace R3

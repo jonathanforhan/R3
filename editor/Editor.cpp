@@ -1,27 +1,29 @@
 #include "Editor.hpp"
 
-#include <filesystem>
-#include <format>
-#include <iterator>
-#include <string>
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
 #include <imgui_internal.h>
-#include <vulkan/vulkan.h>
-#include <glm/gtc/type_ptr.hpp>
-#include "api/Types.hpp"
-#include "components/HierarchyComponent.hpp"
-#include "core/Engine.hpp"
-#include "core/Entity.hpp"
-#include "core/EventHandler.hpp"
-#include "core/World.hpp"
-#include "render/RenderContext.hpp"
-#include "render/Window.hpp"
-#include "render/WindowEvents.hpp"
-#include "render/vulkan/vulkan-RenderContext.hpp"
 
 #include <ImGuizmo.h>
+
+#include <filesystem>
+#include <format>
+#include <iterator>
+#include <string>
+#include <vulkan/vulkan.h>
+#include <engine/api/Types.hpp>
+#include <engine/components/HierarchyComponent.hpp>
+#include <engine/core/Engine.hpp>
+#include <engine/core/Entity.hpp>
+#include <engine/core/EventHandler.hpp>
+#include <engine/core/World.hpp>
+#include <engine/render/RenderContext.hpp>
+#include <engine/render/Window.hpp>
+#include <engine/render/WindowEvents.hpp>
+#include <engine/render/vulkan/vulkan-CommandBuffer.hpp>
+#include <engine/render/vulkan/vulkan-RenderContext.hpp>
+#include <glm/gtc/type_ptr.hpp>
 
 namespace R3 {
 
@@ -120,17 +122,17 @@ Editor::~Editor() {
     }
 }
 
-bool Editor::recordInterfaceFrame(double dt) {
+void Editor::recordFrame(double dt) {
     beginFrame();
 
-    bool uiFocused = false;
+    m_uiFocused = false;
     if (ImGui::GetCurrentContext()) {
         if (ImGui::GetIO().WantCaptureKeyboard) {
-            uiFocused = true;
+            m_uiFocused = true;
         }
     }
 
-    // ImGui::ShowDemoWindow();
+    ImGui::ShowDemoWindow();
     initializeDocking();
 
     testImGuizmo();
@@ -140,8 +142,14 @@ bool Editor::recordInterfaceFrame(double dt) {
     // displaySceneManager();
     displayDeltaTime(dt);
     endFrame();
+}
 
-    return uiFocused;
+void Editor::draw(vulkan::CommandBuffer& cmd) {
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd.commandBuffer());
+}
+
+bool Editor::uiFocused() const {
+    return m_uiFocused;
 }
 
 void Editor::beginFrame() {
@@ -168,7 +176,7 @@ void Editor::setContentScale(float scale) {
 void Editor::displayDeltaTime(double dt) {
     ImGui::Begin("Delta Time", nullptr, GUI_BOARDERLESS);
     ImGui::SetWindowPos(ImVec2(10, 10));
-    ImGui::Text("%.02f ms\n%i FPS", dt, (int)(1000.0f / dt));
+    ImGui::Text("%.02f ms\n%i FPS", dt * 1000.0f, (int)(1.0f / dt));
     ImGui::End();
 }
 

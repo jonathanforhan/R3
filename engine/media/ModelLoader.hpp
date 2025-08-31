@@ -1,18 +1,19 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
 #include <filesystem>
 #include <string_view>
 #include <vector>
-#include "api/Types.hpp"
-#include "core/Entity.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/core/Entity.hpp"
 #include "glTF/glTF-ModelImporter.hpp"
 #include "glTF/glTF.hpp"
-#include "render/Flags.hpp"
-#include "render/vulkan/vulkan-CommandBuffer.hpp"
+#include "engine/render/Flags.hpp"
+#include "engine/render/vulkan/vulkan-CommandBuffer.hpp"
 
 namespace R3 {
 
-class ModelLoader {
+class R3_API ModelLoader {
 public:
     Entity glTFLoad(const std::filesystem::path& path);
 

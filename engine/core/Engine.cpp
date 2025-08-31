@@ -1,43 +1,70 @@
 #include "Engine.hpp"
 
 #include <chrono>
-#include <ratio>
+#include <new>
 #include "EventHandler.hpp"
-#include "components/LightComponent.hpp"
-#include "components/TransformComponent.hpp"
-#include "core/Entity.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
-#include "editor/Editor.hpp"
-#include "media/ModelLoader.hpp"
+#include "engine/editor/Editor.hpp"
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"
-#include "systems/TransformSystem.hpp"
 
 namespace R3 {
 
-static void TEST_FUNCTION() {
-    GWorld()->addSystem<TransformSystem>();
+void Engine::update() {
+    const double dt = deltaTime();
+    GWorld()->update(dt);
 
-    // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
-    Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    // Entity chess  = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
-    // Entity car = ModelLoader().glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
-    // Entity city = ModelLoader().glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
-    // Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
-    // Entity lamp = ModelLoader().glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
+    bool uiFocused = false;
+    if (!m_window->isMinimized()) {
+#if R3_EDITOR
+        m_editor->recordFrame(dt);
+        uiFocused = m_editor->uiFocused();
+#endif
+        m_renderer->draw();
+    }
 
-    Entity light = GWorld()->registry().create();
-    GWorld()->registry().emplace<LightComponent>(light,
-                                                 LightComponent{
-                                                     .position  = fvec3(0.0f, 2.0f, 0.0f),
-                                                     .color     = fvec3(1.0f),
-                                                     .intensity = 5.0f,
-                                                 });
+    GEventHandler()->dispatchEvents();
 
-    // auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-    // t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+    m_window->update(uiFocused);
+
+    GEventHandler()->emplace("frame-done");
+}
+
+void Engine::initialize() {
+    m_eventHandler    = new class EventHandler;
+    m_resourceManager = new class ResourceManager;
+    m_window          = new class Window;
+    m_ctx             = new vulkan::RenderContext(*m_window);
+    m_world           = new class World;
+    m_renderer        = new vulkan::Renderer(*m_window, *static_cast<vulkan::RenderContext*>(m_ctx));
+
+    /* Add callback to show window once the first frame is rendered, this prevents white screen */
+    m_eventHandler->bindEventListener("frame-done", [this]() noexcept {
+        m_window->show();
+        return true; // remove after first call
+    });
+}
+
+void Engine::shutdown() noexcept {
+    vulkan::RenderContext& ctx = *static_cast<vulkan::RenderContext*>(m_ctx);
+    ctx.waitIdle();
+
+    resetState();
+
+#if R3_EDITOR
+    if (m_editor) {
+        delete m_editor;
+    }
+#endif
+
+    delete m_renderer;
+    delete m_world;
+    delete m_ctx;
+    delete m_window;
+    delete m_eventHandler;
+    delete m_resourceManager;
 }
 
 double Engine::deltaTime() {
@@ -46,72 +73,26 @@ double Engine::deltaTime() {
     static auto s_prev = system_clock::now();
 
     const auto curr = system_clock::now();
-    const double dt = duration<double, std::milli>(curr - s_prev).count();
-    // ^^ milliseconds
+    const double dt = duration<double>(curr - s_prev).count();
+    // ^^ seconds
 
     s_prev = curr;
     return dt;
 }
 
-int Engine::run() {
-    if (m_running) {
-        return -1;
-    } else {
-        m_running = true;
+void Engine::resetState() {
+    if (m_world) {
+        m_world->registry().clear();
     }
 
-    class EventHandler eventHandler;
-    m_eventHandler = &eventHandler;
-
-    class ResourceManager resourceManager;
-    m_resourceManager = &resourceManager;
-
-    class Window window;
-    m_window = &window;
-
-    vulkan::RenderContext ctx{window};
-    m_ctx = &ctx;
-
-    class World world;
-    m_world = &world;
-
-    TEST_FUNCTION();
-
-    {
-        vulkan::Renderer renderer{window, ctx};
-
-#if R3_EDITOR
-        Editor editor(window, ctx);
-#endif
-        while (!window.shouldClose()) {
-            const double dt = deltaTime();
-            GWorld()->update(dt);
-
-            bool uiFocused = false;
-            if (!window.isMinimized()) {
-#if R3_EDITOR
-                uiFocused = editor.recordInterfaceFrame(dt);
-#endif
-                renderer.draw();
-            }
-            window.update(uiFocused);
-            GEventHandler()->dispatchEvents();
-            GEventHandler()->emplace("frame-done");
-        }
-
-        ctx.waitIdle();
+    if (m_resourceManager) {
+        m_resourceManager->clear();
     }
+}
 
-    GWorld()->registry().clear();
-    GResourceManager()->clear();
-
-    m_eventHandler    = nullptr;
-    m_resourceManager = nullptr;
-    m_window          = nullptr;
-    m_ctx             = nullptr;
-    m_world           = nullptr;
-
-    return 0;
+Engine* GEngine::operator->() noexcept {
+    static Engine instance;
+    return &instance;
 }
 
 } // namespace R3

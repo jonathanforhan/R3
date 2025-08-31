@@ -412,7 +412,7 @@ void RenderContext::createDescriptorSets() {
     };
     VK_CHECK(vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &*m_descriptorSetLayout));
 
-    R3_ASSERT(m_descriptorSetLayout && "Descriptor set layout not created");
+    R3_ASSERT(m_descriptorSetLayout, "Descriptor set layout not created");
 
     m_descriptorSets = DescriptorSet::allocate(*this, m_descriptorSetLayout, poolSizes, maxFramesInFlight());
 }

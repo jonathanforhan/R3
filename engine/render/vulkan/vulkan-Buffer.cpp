@@ -60,7 +60,7 @@ void Buffer::create(const void* src, usize sizeBytes, VkBufferUsageFlags usage, 
 
         /* if user data */
         if (src) {
-            R3_ASSERT(properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT && "must be host visible to write directly");
+            R3_ASSERT(properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT , "must be host visible to write directly");
             copy(src, sizeBytes);
         }
     } catch (const Exception& ex) {

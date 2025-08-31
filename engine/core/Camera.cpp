@@ -14,14 +14,13 @@ namespace R3 {
 Camera::Camera(CameraType type)
     : m_cameraType(type) {
     translateBackward(2.0f);
+    translateUp(1.0f);
 }
 
 void Camera::update(double dt) {
     if (!active()) {
         return;
     }
-
-    const float deltaT = static_cast<float>(dt / 1000.0); // convert ms to s
 
     float mouseSensitivity    = 0.25f;
     float movementSensitivity = 2.5f;
@@ -38,7 +37,7 @@ void Camera::update(double dt) {
     const fvec2 deltaPosition = fvec2(deltaX, deltaY);
     m_prevCursorPosition      = cursorPos;
 
-    const float deltaMovement = deltaT * movementSensitivity;
+    const float deltaMovement = (float)dt * movementSensitivity;
 
     m_activeKeys.w = GWindow()->keyPressed(Key::W) ? (m_activeKeys.s + 1) : 0;
     m_activeKeys.a = GWindow()->keyPressed(Key::A) ? (m_activeKeys.d + 1) : 0;
@@ -50,6 +49,10 @@ void Camera::update(double dt) {
     if (GWindow()->uiFocused()) {
         m_activeKeys = {};
         return;
+    }
+
+    if ((m_activeKeys.w || m_activeKeys.s) && (m_activeKeys.a || m_activeKeys.d)) {
+        movementSensitivity *= 0.7071f; // divide by sqrt(2) to prevent faster diagonal movement
     }
 
     if (m_activeKeys.w && (m_activeKeys.w > m_activeKeys.s)) {

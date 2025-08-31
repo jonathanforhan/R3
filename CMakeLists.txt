@@ -10,6 +10,10 @@ project(R3 LANGUAGES C CXX)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 set(R3_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_CFG_INTDIR}")
 
+if (MSVC)
+    add_definitions(/wd4251)
+ endif()
+
 ################################################################################
 # DEPENDENCIES
 ################################################################################
@@ -33,81 +37,110 @@ find_package(Tracy CONFIG REQUIRED)
 ################################################################################
 
 file(GLOB_RECURSE ENGINE_SRCS
-	${CMAKE_CURRENT_SOURCE_DIR}/engine/*.c
-	${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/engine/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/engine/*.cpp
 )
-add_library(R3_ENGINE STATIC ${ENGINE_SRCS})
+add_library(R3_ENGINE SHARED ${ENGINE_SRCS})
 
 target_link_libraries(
     R3_ENGINE
-	PUBLIC
-		glm::glm
-		EnTT::EnTT
-	PRIVATE
-		glfw
-		imgui::imgui
-		imguizmo::imguizmo
-		Tracy::TracyClient
-		Vulkan::Vulkan
-		vk-bootstrap::vk-bootstrap
-		spirv-cross-core
-		spirv-cross-glsl
-		spirv-cross-hlsl
+    PUBLIC
+    	glm::glm
+    	EnTT::EnTT
+    PRIVATE
+    	glfw
+    	Tracy::TracyClient
+    	Vulkan::Vulkan
+    	vk-bootstrap::vk-bootstrap
+    	spirv-cross-core
+    	spirv-cross-glsl
+    	spirv-cross-hlsl
 )
 
-target_include_directories(R3_ENGINE PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/engine/")
+target_include_directories(R3_ENGINE
+    PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/"
+    PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/engine/"
+)
 
 target_compile_definitions(
     R3_ENGINE PUBLIC
         $<$<CONFIG:Debug>:R3_DEBUG>
         $<$<CONFIG:RelWithDebInfo>:R3_DEBUG>
         $<$<CONFIG:Release>:R3_RELEASE>
-		$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
-		#$<$<AND:$<BOOL:${R3_VULKAN}>,$<NOT:$<CONFIG:Release>>>:R3_EDITOR>
-		R3_EDITOR=1
-		$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>
-		$<$<BOOL:${R3_DIRECTX12}>:R3_DIRECTX12>
-		GLM_FORCE_RADIANS=1
-		GLM_FORCE_DEPTH_ZERO_TO_ONE=1
+    	$<$<BOOL:${R3_VULKAN}>:R3_VULKAN>
+    	#$<$<AND:$<BOOL:${R3_VULKAN}>,$<NOT:$<CONFIG:Release>>>:R3_EDITOR>
+    	R3_EDITOR=1
+    	$<$<BOOL:${R3_OPENGL}>:R3_OPENGL>
+    	$<$<BOOL:${R3_DIRECTX12}>:R3_DIRECTX12>
+    	GLM_FORCE_RADIANS=1
+    	GLM_FORCE_DEPTH_ZERO_TO_ONE=1
 )
 
 if (MSVC)
-	target_compile_options(
-		R3_ENGINE PUBLIC
-			$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
-			/Zc:preprocessor
-			/EHsc
-			/W4
-	)
+    target_compile_options(
+    	R3_ENGINE PUBLIC
+    		$<$<COMPILE_LANGUAGE:CXX>:/Zc:__cplusplus>
+    		/Zc:preprocessor
+    		/EHsc
+    		/W4
+    )
 else()
-	target_compile_options(
-		R3_ENGINE PUBLIC
-			-Wall
-			-Wextra
-			-Wpedantic
-			-Wconversion
-	)
+    target_compile_options(
+    	R3_ENGINE PUBLIC
+    		-Wall
+    		-Wextra
+    		-Wpedantic
+    		-Wconversion
+    )
 endif()
 
 ################################################################################
-# APP
+# EDITOR
+################################################################################
+
+file(GLOB_RECURSE EDITOR_SRCS
+    ${CMAKE_CURRENT_SOURCE_DIR}/editor/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/editor/*.cpp
+)
+add_library(R3_EDITOR SHARED ${EDITOR_SRCS})
+
+target_link_libraries(R3_EDITOR
+    PUBLIC
+        R3_ENGINE
+    PRIVATE
+		imgui::imgui
+		imguizmo::imguizmo
+        Vulkan::Vulkan
+)
+
+target_include_directories(R3_EDITOR PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/editor/)
+
+################################################################################
+# App
 ################################################################################
 
 file(GLOB_RECURSE APP_SRCS
-	${CMAKE_CURRENT_SOURCE_DIR}/app/*.c
-	${CMAKE_CURRENT_SOURCE_DIR}/app/*.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/app/*.cpp
 )
-add_executable(R3 ${APP_SRCS})
+add_executable(R3_APP ${APP_SRCS})
 
-target_link_libraries(R3 PRIVATE R3_ENGINE)
+target_link_libraries(R3_APP
+    PUBLIC
+        R3_ENGINE
+        R3_EDITOR
+)
 
-target_include_directories(R3 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/)
+target_include_directories(R3_APP PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/app/)
 
 ################################################################################
-# TESTING (TODO)
+# TESTING
 ################################################################################
 
 enable_testing()
+add_subdirectory(tests)
 
 ################################################################################
 # UTIL
@@ -116,7 +149,7 @@ enable_testing()
 execute_process(
     COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different
         ${CMAKE_CURRENT_SOURCE_DIR}/assets
-		${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
+    	${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
 )
 
 find_package(Python3 COMPONENTS Interpreter)
@@ -124,21 +157,21 @@ find_package(Python3 COMPONENTS Interpreter)
 # compile shaders on configure
 execute_process(
     COMMAND
-		${Python3_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
-			${glslc_executable}
-			spirv-cross
-			${CMAKE_CURRENT_SOURCE_DIR}
-			${R3_RUNTIME_OUTPUT_DIRECTORY}
+    	${Python3_EXECUTABLE}
+    		${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
+    		${glslc_executable}
+    		spirv-cross
+    		${CMAKE_CURRENT_SOURCE_DIR}
+    		${R3_RUNTIME_OUTPUT_DIRECTORY}
 )
 
 # compile shaders on build
 add_custom_target(COMPILE_SHADERS
     ALL COMMAND
-		${Python3_EXECUTABLE}
-			${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
-			${glslc_executable}
-			spirv-cross
-			${CMAKE_CURRENT_SOURCE_DIR}
-			${R3_RUNTIME_OUTPUT_DIRECTORY}
+    	${Python3_EXECUTABLE}
+    		${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
+    		${glslc_executable}
+    		spirv-cross
+    		${CMAKE_CURRENT_SOURCE_DIR}
+    		${R3_RUNTIME_OUTPUT_DIRECTORY}
 )

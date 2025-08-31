@@ -1,11 +1,12 @@
 #pragma once
 
 #include <vector>
-#include "api/Class.hpp"
-#include "api/Types.hpp"
-#include "render/RenderContext.hpp"
-#include "render/ShaderObjects.hpp"
-#include "render/Window.hpp"
+#include "engine/api/Api.hpp"
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
+#include "engine/render/RenderContext.hpp"
+#include "engine/render/ShaderObjects.hpp"
+#include "engine/render/Window.hpp"
 #include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
@@ -17,7 +18,7 @@
 
 namespace R3::vulkan {
 
-class Renderer {
+class R3_API Renderer {
 public:
     R3_COPY_DELETE(Renderer);
     R3_MOVE_DELETE(Renderer);

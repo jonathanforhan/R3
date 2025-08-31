@@ -1,15 +1,17 @@
 #pragma once
 
+#include "engine/api/Api.hpp"
+
 namespace R3::vulkan {
 
-class Buffer;
-class CommandBuffer;
-class DescriptorSet;
-class GraphicsPipeline;
-class Image;
-class RenderContext;
-class Shader;
-class Swapchain;
-class Texture;
+class R3_API Buffer;
+class R3_API CommandBuffer;
+class R3_API DescriptorSet;
+class R3_API GraphicsPipeline;
+class R3_API Image;
+class R3_API RenderContext;
+class R3_API Shader;
+class R3_API Swapchain;
+class R3_API Texture;
 
 } // namespace R3::vulkan

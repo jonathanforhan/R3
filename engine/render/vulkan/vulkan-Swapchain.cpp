@@ -1,8 +1,5 @@
 #include "vulkan-Swapchain.hpp"
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include <format>
 #include <system_error>
 #include <vector>
@@ -54,7 +51,7 @@ VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uin
     VkPresentInfoKHR presentInfo = {
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .pNext              = nullptr,
-        .waitSemaphoreCount = 1,
+        .waitSemaphoreCount = uint32(waitSemaphore ? 1 : 0),
         .pWaitSemaphores    = &waitSemaphore,
         .swapchainCount     = 1,
         .pSwapchains        = &*m_swapchain,

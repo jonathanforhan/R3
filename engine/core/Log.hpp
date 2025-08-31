@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <print>
+#include "engine/api/Api.hpp"
 
 #define R3_ANSI_RESET   "\033[0m"
 #define R3_ANSI_BLACK   "\033[30m"
@@ -42,9 +43,9 @@
 #define R3_ANSI_REVERSE       "\033[7m"
 #define R3_ANSI_STRIKETHROUGH "\033[9m"
 
-#ifdef _WIN32
+#ifdef WIN32
 namespace R3::detail {
-void enableWindowsConsoleColors() noexcept;
+void R3_API enableWindowsConsoleColors() noexcept;
 } // namespace R3::detail
 #endif
 

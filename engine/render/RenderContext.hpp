@@ -1,7 +1,9 @@
 #pragma once
 
-#include "api/Class.hpp"
-#include "api/Types.hpp"
+#include "engine/api/Api.hpp"
+
+#include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
 
 namespace R3 {
 
@@ -12,7 +14,7 @@ concept RenderContextDerived = requires {
 };
 
 /// @brief Interface for rendering contexts.
-class IRenderContext {
+class R3_API IRenderContext {
 protected:
     R3_CTOR_DELETE(IRenderContext);
     R3_COPY_DELETE(IRenderContext);
@@ -21,6 +23,7 @@ protected:
     template <RenderContextDerived T>
     IRenderContext(std::type_identity<T>) {}
 
+public:
     virtual ~IRenderContext() noexcept {};
 };
 
