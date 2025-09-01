@@ -14,6 +14,7 @@
 #include <vulkan/vulkan.h>
 #include <engine/api/Types.hpp>
 #include <engine/components/HierarchyComponent.hpp>
+#include <engine/components/MetadataComponent.hpp>
 #include <engine/core/Engine.hpp>
 #include <engine/core/Entity.hpp>
 #include <engine/core/EventHandler.hpp>
@@ -137,7 +138,7 @@ void Editor::recordFrame(double dt) {
 
     // testImGuizmo();
 
-    // displayHierarchy();
+    displayHierarchy();
     // displayProperties();
     // displaySceneManager();
     displayDeltaTime(dt);
@@ -333,7 +334,21 @@ void Editor::displaySceneManager() {
 }
 
 void Editor::hierarchyHelper(Entity entity) {
-    if (ImGui::TreeNodeEx(std::format("{}", (uint32)entity).c_str())) {
+    std::string name;
+
+    if (const MetadataComponent* metadata = GWorld()->registry().try_get<MetadataComponent>(entity)) {
+        name = metadata->name;
+    }
+
+    if (name.empty()) {
+        name = std::format("{}", (uint32)entity);
+    }
+
+    ImGui::PushID((int)entity);
+
+    bool parent = GWorld()->registry().try_get<HierarchyComponent>(entity) != nullptr;
+
+    if (ImGui::TreeNodeEx(name.c_str(), parent ? 0 : ImGuiTreeNodeFlags_Leaf)) {
         if (const HierarchyComponent* h = GWorld()->registry().try_get<HierarchyComponent>(entity)) {
             for (Entity child : h->children) {
                 hierarchyHelper(child);
@@ -341,6 +356,8 @@ void Editor::hierarchyHelper(Entity entity) {
         }
         ImGui::TreePop();
     }
+
+    ImGui::PopID();
 }
 
 void Editor::testImGuizmo() {

@@ -32,7 +32,9 @@ public:
 
 private:
     void glTF_processNode(Entity entity, const glTF::Model& model, const glTF::Node& node);
+    void glTF_processNodeTransform(Entity entity, const glTF::Model& model, const glTF::Node& node);
     void glTF_processMesh(Entity entity, const glTF::Model& model, const glTF::Mesh& mesh);
+    void glTF_processMeshPrimitive(Entity entity, const glTF::Model& model, const glTF::MeshPrimitive& primitive);
     void glTF_processVertices(Entity entity, const glTF::Model& model, const std::map<std::string, uint32>& attributes);
     void glTF_processIndices(Entity entity, const glTF::Model& model, uint32 indices);
     void glTF_processAnimations(Entity entity, const glTF::Model& model);
@@ -58,10 +60,12 @@ private:
     // useful for converting datatypes without multiple vector copies
     // eg accesor<uint16>[] -> std::vector<uint32>
     template <typename T, typename U = T>
-    void glTF_readAccessor(const glTF::Model& model, usize iAccessor, std::vector<T>& out);
+    void glTF_readAccessor(const glTF::Model& model, uint32 iAccessor, std::vector<T>& out);
     usize glTF_sizeof(uint32 datatype); /// get size in bytes of glTF accessor datatype
     usize glTF_componentElements(std::string_view componentType);
 
+    std::string glTF_textureKey(std::filesystem::path path, TextureType type);
+    std::string glTF_textureKey(uint32 textureSource, uint32 bufferView, TextureType type);
     std::string glTF_imageKey(std::filesystem::path path);
     std::string glTF_embeddedImageKey(uint32 textureSource, uint32 bufferView);
     std::string glTF_colorKey(uint8 color[4]);

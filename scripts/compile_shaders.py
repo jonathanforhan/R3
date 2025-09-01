@@ -43,7 +43,7 @@ class Lock:
 
 def main(glslc: str, spirv_cross: str, in_dir: str, out_dir: str, force: bool):
     shader_dir = os.path.join(in_dir, "shaders")
-    shader_lock = os.path.join(shader_dir, ".shader-lock.json")
+    shader_lock = os.path.join(out_dir, ".shader-lock.json")
 
     #sub_dirs = ["_spirv", "_hlsl", "_reflection"]
     sub_dirs = ["_spirv"]
@@ -66,9 +66,6 @@ def main(glslc: str, spirv_cross: str, in_dir: str, out_dir: str, force: bool):
     lock = Lock(shader_lock)
 
     for shader_filename in os.listdir(shader_dir):
-        if shader_filename == ".shader-lock.json":
-            continue
-
         in_shader = os.path.join(shader_dir, shader_filename).replace("\\", "/")
 
         if not lock.is_valid(in_shader) or force:
