@@ -91,17 +91,31 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
 }
 
 void main() {
-    vec4 albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords);
-    vec2 mr     = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords).rg;
-    vec3 N      = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
+    vec4 albedo = vec4(1.0, 0.0, 1.0, 1.0);
+    if (c_iAlbedo < SAMPLER_MAX) {
+        albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords);
+    }
+
+    vec2 mr     = vec2(0.0);
+    if (c_iMetallicRoughness < SAMPLER_MAX) {
+        mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords).rg;
+    }
+
+    vec3 N      = vec3(0.0);
+    if (c_iNormal < SAMPLER_MAX) {
+        N = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
+    }
+
     vec3 ao = vec3(1.0);
     if (c_iAmbientOcclusion < SAMPLER_MAX) {
         ao *= vec3(texture(u_Samplers[c_iAmbientOcclusion], v_TexCoords).r);
     }
+
     vec4 emission = vec4(0.0);
     if (c_iEmissive < SAMPLER_MAX) {
         emission = texture(u_Samplers[c_iEmissive], v_TexCoords);
     }
+
     vec3 V = normalize(c_ViewPosition - v_Position);
 
     float roughness = mr.r;

@@ -132,12 +132,12 @@ void Editor::recordFrame(double dt) {
         }
     }
 
-    ImGui::ShowDemoWindow();
-    initializeDocking();
+    // ImGui::ShowDemoWindow();
+    // initializeDocking();
 
-    testImGuizmo();
+    // testImGuizmo();
 
-    displayHierarchy();
+    // displayHierarchy();
     // displayProperties();
     // displaySceneManager();
     displayDeltaTime(dt);

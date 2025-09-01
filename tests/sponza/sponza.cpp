@@ -15,6 +15,7 @@ static void moduleMain() {
 
     ModelLoader loader;
 
+#if 1
     auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
     auto futchess  = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
     auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
@@ -22,6 +23,17 @@ static void moduleMain() {
     auto helmet = futhelmet.get();
     auto chess  = futchess.get();
     auto sponza = futsponza.get();
+
+    {
+        auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
+        t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+    }
+    {
+        auto& t = GWorld()->registry().get<TransformComponent>(helmet).transform();
+        t       = glm::translate(t, fvec3(2.0f, 1.0f, 0.0f));
+        t       = glm::scale(t, fvec3(0.25));
+    }
+#endif
 
     // loader.glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
     // Entity helmet = loader.glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
@@ -38,16 +50,6 @@ static void moduleMain() {
                                                      .color     = fvec3(1.0f),
                                                      .intensity = 5.0f,
                                                  });
-
-    {
-        auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-        t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
-    }
-    {
-        auto& t = GWorld()->registry().get<TransformComponent>(helmet).transform();
-        t       = glm::translate(t, fvec3(2.0f, 1.0f, 0.0f));
-        t       = glm::scale(t, fvec3(0.25));
-    }
 }
 
 R3_MODULE void* Entry() {

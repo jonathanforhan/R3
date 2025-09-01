@@ -199,7 +199,7 @@ void Renderer::draw() {
     cmd.begin();
 
     // write ubo and storage buffer data BEFORE doing this memory barrier
-    addDescriptorMemoryBarrier(cmd);
+    // addDescriptorMemoryBarrier(cmd);
 
     transitionAttachmentsForRender(cmd, imageIndex);
     beginRenderingHelper(cmd, imageIndex);
@@ -316,7 +316,6 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
         // Transition MSAA color image to color attachment optimal
         {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .pNext               = nullptr,
             .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .srcAccessMask       = VK_ACCESS_NONE,
             .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -338,8 +337,7 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
         // Transition swapchain image to color attachment optimal
         {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .pNext               = nullptr,
-            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             .srcAccessMask       = VK_ACCESS_NONE,
             .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
             .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -360,9 +358,8 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
         // Transition depth image to depth stencil attachment optimal
         {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .pNext               = nullptr,
-            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-            .srcAccessMask       = VK_ACCESS_NONE,
+            .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
             .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
             .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -580,13 +577,13 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
         .pTexelBufferView = nullptr,
     });
 
+    // Storage buffer - Lights
+    const VkDescriptorBufferInfo ssboBufferInfo = {
+        .buffer = m_lights[frameIndex].buffer(),
+        .offset = 0,
+        .range  = sizeof(PointLightShaderObject) * numLights,
+    };
     if (numLights > 0) {
-        // Storage buffer - Lights
-        const VkDescriptorBufferInfo ssboBufferInfo = {
-            .buffer = m_lights[frameIndex].buffer(),
-            .offset = 0,
-            .range  = sizeof(PointLightShaderObject) * numLights,
-        };
         descriptorWrites.push_back(VkWriteDescriptorSet{
             .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             .pNext            = nullptr,
