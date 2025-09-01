@@ -45,8 +45,6 @@ struct R3_API PointLightShaderObject {
 struct R3_API Vertex {
     fvec3 position;
     fvec3 normal;
-    fvec3 tangent;
-    fvec3 bitangent;
     fvec2 textureCoords;
     ivec4 boneIDs;
     fvec4 weights;
@@ -77,29 +75,17 @@ struct R3_API Vertex {
             {
                 .location = 2,
                 .binding  = 0,
-                .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset   = offsetof(Vertex, tangent),
-            },
-            {
-                .location = 3,
-                .binding  = 0,
-                .format   = VK_FORMAT_R32G32B32_SFLOAT,
-                .offset   = offsetof(Vertex, bitangent),
-            },
-            {
-                .location = 4,
-                .binding  = 0,
                 .format   = VK_FORMAT_R32G32_SFLOAT,
                 .offset   = offsetof(Vertex, textureCoords),
             },
             {
-                .location = 5,
+                .location = 3,
                 .binding  = 0,
                 .format   = VK_FORMAT_R32G32B32_SINT,
                 .offset   = offsetof(Vertex, boneIDs),
             },
             {
-                .location = 6,
+                .location = 4,
                 .binding  = 0,
                 .format   = VK_FORMAT_R32G32B32A32_SFLOAT,
                 .offset   = offsetof(Vertex, weights),
