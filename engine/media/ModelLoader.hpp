@@ -53,7 +53,7 @@ private:
                                  const glTF::Model& model,
                                  const glTF::OcclusionTextureInfo& textureInfo,
                                  TextureType type);
-    void glTF_preProcessImageFiles(const glTF::Model& model);
+    void glTF_preprocessImageFiles(const glTF::Model& model);
     // can take a vector of <typename T> and read the accessor as <typename U>
     // useful for converting datatypes without multiple vector copies
     // eg accesor<uint16>[] -> std::vector<uint32>

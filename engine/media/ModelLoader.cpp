@@ -3,14 +3,12 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
-#include <cstdint>
 #include <execution>
 #include <filesystem>
 #include <format>
 #include <future>
 #include <map>
 #include <memory>
-#include <mutex>
 #include <optional>
 #include <shared_mutex>
 #include <span>
@@ -51,7 +49,7 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
     m_path = path;
 
     glTF::Model model = glTF::ModelImporter().import(path);
-    glTF_preProcessImageFiles(model);
+    glTF_preprocessImageFiles(model);
 
     std::unique_lock lock(s_modelLoaderLock);
     {
@@ -449,7 +447,7 @@ void ModelLoader::glTF_processTextureInfo(Entity entity,
     glTF_processTextureInfo(entity, model, adapter, type);
 }
 
-void ModelLoader::glTF_preProcessImageFiles(const glTF::Model& model) {
+void ModelLoader::glTF_preprocessImageFiles(const glTF::Model& model) {
     std::vector<uint32> textureSources;
     for (const glTF::Texture& texture : model.root.textures) {
         if (!texture.source) {

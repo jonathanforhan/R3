@@ -8,8 +8,6 @@
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Types.hpp"
-#include "core/Engine.hpp"
-#include "core/Log.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 
