@@ -1,3 +1,4 @@
+#include <future>
 #include <engine/api/Api.hpp>
 #include <engine/components/LightComponent.hpp>
 #include <engine/core/Engine.hpp>
@@ -12,13 +13,23 @@ static void moduleMain() {
 
     GWorld()->addSystem<R3::TransformSystem>();
 
-    // ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
-    Entity helmet = ModelLoader().glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    // Entity chess  = ModelLoader().glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
-    // Entity car = ModelLoader().glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
-    // Entity city = ModelLoader().glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
-    Entity sponza = ModelLoader().glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
-    // Entity lamp = ModelLoader().glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
+    ModelLoader loader;
+
+    auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    auto futchess  = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+
+    auto helmet = futhelmet.get();
+    auto chess  = futchess.get();
+    auto sponza = futsponza.get();
+
+    // loader.glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
+    // Entity helmet = loader.glTFLoad("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    // Entity chess  = loader.glTFLoad("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    // Entity car = loader.glTFLoad("assets/glTF-samples/Models/CarConcept/glTF/CarConcept.gltf");
+    // Entity city = loader.glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
+    // Entity sponza = loader.glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+    // Entity lamp = loader.glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
     Entity light = GWorld()->registry().create();
     GWorld()->registry().emplace<LightComponent>(light,
@@ -29,8 +40,8 @@ static void moduleMain() {
                                                  });
 
     {
-        // auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-        // t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+        auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
+        t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
     }
     {
         auto& t = GWorld()->registry().get<TransformComponent>(helmet).transform();

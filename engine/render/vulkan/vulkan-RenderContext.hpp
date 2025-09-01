@@ -90,6 +90,8 @@ public:
     VkQueue presentQueue() const noexcept { return m_presentQueue; }
     /// Compute VkQueue getter
     VkQueue computeQueue() const noexcept { return m_computeQueue; }
+    /// Transfer VkQueue getter
+    VkQueue transferQueue() const noexcept { return m_transferQueue; }
 
     /// Graphics queue family index getter
     uint32 graphicsQueueIndex() const noexcept { return m_graphicsQueueIndex; }
@@ -97,11 +99,15 @@ public:
     uint32 presentQueueIndex() const noexcept { return m_presentQueueIndex; }
     /// Compute queue family index getter
     uint32 computeQueueIndex() const noexcept { return m_computeQueueIndex; }
+    /// Transfer queue family index getter
+    uint32 transferQueueIndex() const noexcept { return m_transferQueueIndex; }
 
     /// Retrieves the graphics queue command buffer for the current frame.
     CommandBuffer& graphicsCommandBuffer(uint32 frameIndex) noexcept { return m_graphicsQueueCmds[frameIndex]; }
     /// Retrieves the compute queue command buffer for the current frame.
     CommandBuffer& computeCommandBuffer(uint32 frameIndex) noexcept { return m_computeQueueCmds[frameIndex]; }
+    /// Retrieves the transfer queue command buffer for the current frame.
+    CommandBuffer& transferCommandBuffer(uint32 frameIndex) noexcept { return m_transferQueueCmds[frameIndex]; }
 
     /// Get the image available semaphore for the current frame
     VkSemaphore& imageAvailableSemaphore(uint32 frameIndex) noexcept { return m_imageAvailableSemaphores[frameIndex]; }
@@ -139,11 +145,14 @@ private:
     Handle<VkQueue> m_graphicsQueue;
     Handle<VkQueue> m_presentQueue;
     Handle<VkQueue> m_computeQueue;
+    Handle<VkQueue> m_transferQueue;
     uint32 m_graphicsQueueIndex = UINT32_MAX;
     uint32 m_presentQueueIndex  = UINT32_MAX;
     uint32 m_computeQueueIndex  = UINT32_MAX;
+    uint32 m_transferQueueIndex = UINT32_MAX;
     std::vector<CommandBuffer> m_graphicsQueueCmds;
     std::vector<CommandBuffer> m_computeQueueCmds;
+    std::vector<CommandBuffer> m_transferQueueCmds;
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_imageAvailableSemaphores; // one per frame in flight
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT> m_inFlightFences;               // one per frame in flight
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_renderFinishedSemaphores; // one per swapchain image

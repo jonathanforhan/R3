@@ -24,10 +24,7 @@ Buffer::~Buffer() noexcept {
 }
 
 void Buffer::copy(const void* src, usize sizeBytes, usize offset) {
-    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
-    if (!m_mapped) {
-        VK_CHECK(vkMapMemory(ctx.device(), m_bufferMemory, 0, sizeBytes, 0, &m_mapped));
-    }
+    R3_ASSERT(m_mapped, "memory mapped on creation");
     std::memcpy((uint8*)m_mapped + offset, src, sizeBytes);
 }
 
@@ -59,9 +56,12 @@ void Buffer::create(const void* src, usize sizeBytes, VkBufferUsageFlags usage, 
         VK_CHECK(vkAllocateMemory(ctx.device(), &memoryInfo, nullptr, &*m_bufferMemory));
         VK_CHECK(vkBindBufferMemory(ctx.device(), m_buffer, m_bufferMemory, 0));
 
-        /* if user data */
+        if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+            VK_CHECK(vkMapMemory(ctx.device(), m_bufferMemory, 0, sizeBytes, 0, &m_mapped));
+        }
+
+        /* if user data, copy it */
         if (src) {
-            R3_ASSERT(properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, "must be host visible to write directly");
             copy(src, sizeBytes);
         }
     } catch (const Exception& ex) {

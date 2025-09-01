@@ -1,11 +1,17 @@
 #include "ModelLoader.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
+#include <execution>
 #include <filesystem>
 #include <format>
+#include <future>
 #include <map>
+#include <memory>
 #include <optional>
+#include <shared_mutex>
 #include <span>
 #include <string>
 #include <string_view>
@@ -13,6 +19,7 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <entt/resource/resource.hpp>
+#include "ImageLoader.hpp"
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
@@ -37,33 +44,52 @@
 
 namespace R3 {
 
+std::shared_mutex ModelLoader::s_modelLoaderLock;
+
 Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
-    LOG_INFO("Loading model: {}", path.string());
     m_path = path;
 
     glTF::Model model = glTF::ModelImporter().import(path);
+    glTF_preProcessImageFiles(model);
 
-    Entity root = GWorld()->registry().create();
-    GWorld()->registry().emplace<TransformComponent>(root); // give root node a default transform
+    std::unique_lock lock(s_modelLoaderLock);
+    {
+        LOG_INFO("Loading model: {}", path.string());
 
-    vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
+        Entity root = GWorld()->registry().create();
+        GWorld()->registry().emplace<TransformComponent>(root); // give root node a default transform
 
-    m_cmd = &ctx.graphicsCommandBuffer(0);
-    m_cmd->begin();
+        vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
 
-    for (glTF::Scene& scene : model.root.scenes) {
-        for (uint32 iNode : scene.nodes) {
-            glTF_processNode(root, model, model.root.nodes[iNode]);
+        m_cmd = &ctx.graphicsCommandBuffer(0);
+        m_cmd->begin();
+
+        for (glTF::Scene& scene : model.root.scenes) {
+            for (uint32 iNode : scene.nodes) {
+                glTF_processNode(root, model, model.root.nodes[iNode]);
+            }
         }
+
+        m_cmd->end();
+        ctx.submitSync(ctx.graphicsQueue(), m_cmd->commandBuffer());
+
+        // the device resources are in ResourceManager cache so we can clear our temp caches
+        m_cachedImages.clear();
+        m_cachedVertices.clear();
+        m_cachedIndices.clear();
+
+        return root;
     }
-
-    m_cmd->end();
-    ctx.submitSync(ctx.graphicsQueue(), m_cmd->commandBuffer());
-
-    return root;
 }
 
-void ModelLoader::glTF_processNode(Entity entity, glTF::Model& model, glTF::Node& node) {
+std::future<Entity> ModelLoader::glTFLoadAsync(const std::filesystem::path& path) {
+    return std::async(std::launch::async, [=] {
+        ModelLoader loader;
+        return loader.glTFLoad(path);
+    });
+}
+
+void ModelLoader::glTF_processNode(Entity entity, const glTF::Model& model, const glTF::Node& node) {
     Entity parent = entity;
 
     Entity child{GWorld()->registry().create()};
@@ -103,30 +129,64 @@ void ModelLoader::glTF_processNode(Entity entity, glTF::Model& model, glTF::Node
     }
 }
 
-void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh& mesh) {
+void ModelLoader::glTF_processMesh(Entity entity, const glTF::Model& model, const glTF::Mesh& mesh) {
     bool isParent = mesh.primitives.size() > 1;
 
-    for (glTF::MeshPrimitive& primitive : mesh.primitives) {
-        R3_ASSERT(primitive.mode == glTF::TRIANGLES, "Only TRIANGLES mode is supported");
+    for (const glTF::MeshPrimitive& primitive : mesh.primitives) {
+        Entity currentEntity;
 
-        //--- Vertices
+        if (!isParent) {
+            currentEntity = entity;
+        } else {
+            Entity child = GWorld()->registry().create();
+            GWorld()->registry().emplace<TransformComponent>(child);
+            GWorld()->registry().get<HierarchyComponent>(entity).children.push_back(child);
+            currentEntity = child;
+        }
+
+        R3_ASSERT(primitive.mode == glTF::TRIANGLES, "Only TRIANGLES mode is supported");
+        glTF_processVertices(currentEntity, model, primitive.attributes);
+
+        if (primitive.indices) {
+            glTF_processIndices(currentEntity, model, *primitive.indices);
+        }
+
+        if (primitive.material) {
+            glTF_processMaterial(currentEntity, model, model.root.materials[*primitive.material]);
+        }
+    }
+}
+
+void ModelLoader::glTF_processVertices(Entity entity,
+                                       const glTF::Model& model,
+                                       const std::map<std::string, uint32>& attributes) {
+    R3_ASSERT(attributes.contains(glTF::POSITION));
+
+    std::string key = glTF_vertexBufferKey(attributes.at(glTF::POSITION));
+    LOG_INFO("importing vertices {}", key);
+
+    usize vertexCount = model.root.accessors[attributes.at(glTF::POSITION)].count;
+
+    auto&& [vbo, vboLoaded] = GResourceManager()->loadBuffer(
+        std::string_view(key), nullptr, vertexCount * sizeof(Vertex), BufferPreset::DeviceVertex);
+
+    if (vboLoaded) {
         std::vector<fvec3> positions;
-        R3_ASSERT(primitive.attributes.contains(glTF::POSITION));
-        glTF_readAccessor(model, primitive.attributes[glTF::POSITION], positions);
+        glTF_readAccessor(model, attributes.at(glTF::POSITION), positions);
 
         std::vector<fvec3> normals;
-        if (primitive.attributes.contains(glTF::NORMAL)) {
-            glTF_readAccessor(model, primitive.attributes[glTF::NORMAL], normals);
+        if (attributes.contains(glTF::NORMAL)) {
+            glTF_readAccessor(model, attributes.at(glTF::NORMAL), normals);
         }
 
         std::vector<fvec2> texCoords;
-        if (primitive.attributes.contains(glTF::TEXCOORD_0)) {
-            glTF_readAccessor(model, primitive.attributes[glTF::TEXCOORD_0], texCoords);
+        if (attributes.contains(glTF::TEXCOORD_0)) {
+            glTF_readAccessor(model, attributes.at(glTF::TEXCOORD_0), texCoords);
         }
 
         std::vector<ivec4> joints;
-        if (primitive.attributes.contains(glTF::JOINTS_0)) {
-            usize index = primitive.attributes[glTF::JOINTS_0];
+        if (attributes.contains(glTF::JOINTS_0)) {
+            usize index = attributes.at(glTF::JOINTS_0);
             if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint8)) {
                 glTF_readAccessor<ivec4, u8vec4>(model, index, joints);
             } else if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint16)) {
@@ -138,8 +198,8 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
         }
 
         std::vector<fvec4> weights;
-        if (primitive.attributes.contains(glTF::WEIGHTS_0)) {
-            usize index = primitive.attributes[glTF::WEIGHTS_0];
+        if (attributes.contains(glTF::WEIGHTS_0)) {
+            usize index = attributes.at(glTF::WEIGHTS_0);
 
             if (glTF_sizeof(model.root.accessors[index].componentType) == sizeof(uint8)) {
                 glTF_readAccessor<fvec4, u8vec4>(model, index, weights);
@@ -150,122 +210,108 @@ void ModelLoader::glTF_processMesh(Entity entity, glTF::Model& model, glTF::Mesh
             }
         }
 
-        std::vector<Vertex> vertices(positions.size());
-        for (usize i = 0; i < vertices.size(); i++) {
-            vertices[i].position      = positions[i];
-            vertices[i].normal        = i < normals.size() ? normals[i] : fvec3(0.0f);
-            vertices[i].textureCoords = i < texCoords.size() ? texCoords[i] : fvec2(0.0f);
-            vertices[i].boneIDs       = i < joints.size() ? joints[i] : ivec4(-1);
-            vertices[i].weights       = i < weights.size() ? weights[i] : fvec4(0.0f);
-        }
+        vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+        VkBufferCopy2* vertexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
 
-        //--- Indices
-        std::vector<uint32> indices;
-        if (primitive.indices) {
-            const glTF::Accessor& accessor = model.root.accessors[*primitive.indices];
-
-            switch (glTF_sizeof(accessor.componentType)) {
-                case sizeof(uint8):
-                    glTF_readAccessor<uint32, uint8>(model, *primitive.indices, indices);
-                    break;
-                case sizeof(uint16):
-                    glTF_readAccessor<uint32, uint16>(model, *primitive.indices, indices);
-                    break;
-                case sizeof(uint32):
-                    glTF_readAccessor(model, *primitive.indices, indices);
-                    break;
-                default:
-                    throw Exception{std::format("unsupported index datatype {}", accessor.componentType)};
-            }
-        } else {
-            LOG_VERBOSE("processed mesh does not contain indices");
-        }
-
-        std::string parentPath     = m_path.parent_path().string();
-        std::string idVertexBuffer = std::format("{}/vertices/{}", parentPath, primitive.attributes[glTF::POSITION]);
-        std::string idindexBuffer  = std::format("{}/indices/{}", parentPath, primitive.indices.value_or(0));
-        LOG_INFO("importing mesh {}, {}", idVertexBuffer, idindexBuffer);
-
-        auto&& [vbo, vboLoaded] = GResourceManager()->loadBuffer(
-            std::string_view(idVertexBuffer), nullptr, vertices.size() * sizeof(Vertex), BufferPreset::DeviceVertex);
-
-        auto&& [ibo, iboLoaded] = GResourceManager()->loadBuffer(
-            std::string_view(idindexBuffer), nullptr, indices.size() * sizeof(uint32), BufferPreset::DeviceIndex);
-
-        if (vboLoaded) {
-            vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-            VkBufferCopy2* vertexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
-
-            *vertexStagingBuffer = vulkan::Buffer{std::span<const Vertex>{vertices}, BufferPreset::Staging};
-            *vertexCopyRegion    = {
-                   .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                   .srcOffset = 0,
-                   .dstOffset = 0,
-                   .size      = vertices.size() * sizeof(Vertex),
+        *vertexStagingBuffer = vulkan::Buffer{nullptr, vertexCount * sizeof(Vertex), BufferPreset::Staging};
+        for (usize i = 0; i < vertexCount; i++) {
+            const Vertex vertex = {
+                .position      = positions[i],
+                .normal        = i < normals.size() ? normals[i] : fvec3(0.0f),
+                .textureCoords = i < texCoords.size() ? texCoords[i] : fvec2(0.0f),
+                .boneIDs       = i < joints.size() ? joints[i] : ivec4(-1),
+                .weights       = i < weights.size() ? weights[i] : fvec4(0.0f),
             };
-            m_cmd->copyBuffer({
-                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                .srcBuffer   = vertexStagingBuffer->buffer(),
-                .dstBuffer   = vbo->buffer(),
-                .regionCount = 1,
-                .pRegions    = vertexCopyRegion,
-            });
+            vertexStagingBuffer->copy(&vertex, sizeof(Vertex), i * sizeof(Vertex));
         }
-
-        if (iboLoaded) {
-            vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-            VkBufferCopy2* indexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
-
-            *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
-            *indexCopyRegion    = {
-                   .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-                   .srcOffset = 0,
-                   .dstOffset = 0,
-                   .size      = indices.size() * sizeof(uint32),
-            };
-            m_cmd->copyBuffer({
-                .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-                .srcBuffer   = indexStagingBuffer->buffer(),
-                .dstBuffer   = ibo->buffer(),
-                .regionCount = 1,
-                .pRegions    = indexCopyRegion,
-            });
-        }
-
-        if (!isParent) {
-            GWorld()->registry().emplace<MeshComponent>(
-                entity, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
-
-            if (primitive.material) {
-                glTF_processMaterial(entity, model, model.root.materials[*primitive.material]);
-            }
-        } else {
-            Entity child = GWorld()->registry().create();
-            GWorld()->registry().emplace<TransformComponent>(child);
-            GWorld()->registry().get<HierarchyComponent>(entity).children.push_back(child);
-            GWorld()->registry().emplace<MeshComponent>(
-                child, std::move(vbo), vertices.size(), std::move(ibo), indices.size());
-
-            if (primitive.material) {
-                glTF_processMaterial(child, model, model.root.materials[*primitive.material]);
-            }
-        }
+        *vertexCopyRegion = {
+            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = vertexCount * sizeof(Vertex),
+        };
+        m_cmd->copyBuffer({
+            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+            .srcBuffer   = vertexStagingBuffer->buffer(),
+            .dstBuffer   = vbo->buffer(),
+            .regionCount = 1,
+            .pRegions    = vertexCopyRegion,
+        });
     }
+
+    R3_ASSERT(!GWorld()->registry().try_get<MeshComponent>(entity));
+
+    auto& mesh             = GWorld()->registry().emplace<MeshComponent>(entity);
+    mesh.vertexBufferIndex = std::move(vbo);
+    mesh.vertexCount       = vertexCount;
 }
 
-void ModelLoader::glTF_processAnimations(Entity entity, glTF::Model& model) {
+void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, uint32 iIndices) {
+    std::string key = glTF_indexBufferKey(iIndices);
+    LOG_INFO("importing indices {}", key);
+
+    const glTF::Accessor& accessor = model.root.accessors[iIndices];
+
+    usize indexCount = accessor.count;
+
+    auto&& [ibo, iboLoaded] = GResourceManager()->loadBuffer(
+        std::string_view(key), nullptr, indexCount * sizeof(uint32), BufferPreset::DeviceIndex);
+
+    std::vector<uint32> indices;
+    if (iboLoaded) {
+        switch (glTF_sizeof(accessor.componentType)) {
+            case sizeof(uint8):
+                glTF_readAccessor<uint32, uint8>(model, iIndices, indices);
+                break;
+            case sizeof(uint16):
+                glTF_readAccessor<uint32, uint16>(model, iIndices, indices);
+                break;
+            case sizeof(uint32):
+                glTF_readAccessor(model, iIndices, indices);
+                break;
+            default:
+                throw Exception{std::format("unsupported index datatype {}", accessor.componentType)};
+        }
+
+        vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+        VkBufferCopy2* indexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
+
+        *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
+        *indexCopyRegion    = {
+               .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+               .srcOffset = 0,
+               .dstOffset = 0,
+               .size      = indices.size() * sizeof(uint32),
+        };
+        m_cmd->copyBuffer({
+            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
+            .srcBuffer   = indexStagingBuffer->buffer(),
+            .dstBuffer   = ibo->buffer(),
+            .regionCount = 1,
+            .pRegions    = indexCopyRegion,
+        });
+    }
+
+    R3_ASSERT(GWorld()->registry().try_get<MeshComponent>(entity));
+
+    auto& mesh            = GWorld()->registry().get<MeshComponent>(entity);
+    mesh.indexBufferIndex = std::move(ibo);
+    mesh.indexCount       = indexCount;
+}
+
+void ModelLoader::glTF_processAnimations(Entity entity, const glTF::Model& model) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processSkeleton(Entity entity, glTF::Model& model) {
+void ModelLoader::glTF_processSkeleton(Entity entity, const glTF::Model& model) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processJoint(Entity entity, glTF::Model& model, usize modelIndex, usize parentJoint) {
+void ModelLoader::glTF_processJoint(Entity entity, const glTF::Model& model, usize modelIndex, usize parentJoint) {
     /* TODO */
 }
 
-void ModelLoader::glTF_processMaterial(Entity entity, glTF::Model& model, glTF::Material& material) {
+void ModelLoader::glTF_processMaterial(Entity entity, const glTF::Model& model, const glTF::Material& material) {
     if (material.emissiveTexture) {
         glTF_processTextureInfo(entity, model, *material.emissiveTexture, TextureType::Emissive);
     }
@@ -296,7 +342,10 @@ void ModelLoader::glTF_processMaterial(Entity entity, glTF::Model& model, glTF::
     }
 }
 
-void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::Texture& texture, TextureType type) {
+void ModelLoader::glTF_processTexture(Entity entity,
+                                      const glTF::Model& model,
+                                      const glTF::Texture& texture,
+                                      TextureType type) {
     if (!texture.source) {
         return;
     }
@@ -304,69 +353,71 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, glTF::T
     const glTF::Image& image = model.root.images[*texture.source];
 
     Handle<vulkan::Texture> hTexture;
-    std::string name;
+    std::string key;
 
     if (!image.uri.empty()) {
-        std::filesystem::path imagePath = m_path;
+        std::filesystem::path imagePath = path();
         imagePath.replace_filename(image.uri);
 
-        name = imagePath.string();
-        LOG_INFO("importing texture {}", name);
+        key = glTF_imageKey(imagePath);
+        LOG_INFO("importing texture {}", key);
 
-        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
+        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(key));
 
         if (texLoaded) {
             vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
-            *tex = vulkan::Texture{*m_cmd, imagePath, type, *stagingBuffer};
+            R3_ASSERT(m_cachedImages.contains(key));
+            auto& imgDesc = m_cachedImages.at(key);
+
+            *tex = vulkan::Texture{
+                *m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type, *stagingBuffer};
         }
 
         hTexture = std::move(tex);
     } else {
-        glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
-        const std::byte* data        = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
+        const glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
+        const std::byte* data              = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
 
-        name = std::format("{}/embedded/{}/{}", m_path.parent_path().string(), *texture.source, *image.bufferView);
-        LOG_INFO("importing texture {}", name);
-        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
+        key = glTF_embeddedImageKey(*texture.source, *image.bufferView);
+        LOG_INFO("importing texture {}", key);
+        auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(key));
 
         if (texLoaded) {
             vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
-            *tex = vulkan::Texture{*m_cmd, data, bufferView.byteLength, type, *stagingBuffer};
+            R3_ASSERT(m_cachedImages.contains(key));
+            auto& imgDesc = m_cachedImages.at(key);
+
+            *tex = vulkan::Texture{
+                *m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type, *stagingBuffer};
         }
 
         hTexture = std::move(tex);
     }
 
     MaterialComponent& mat = GWorld()->registry().get_or_emplace<MaterialComponent>(entity);
-    uint32 slot            = GResourceManager()->bindTexture(std::string_view(name), *hTexture);
+    uint32 slot            = GResourceManager()->bindTexture(std::string_view(key), *hTexture);
     mat.setTextureSlot(type, slot);
 
     TextureLifetimeComponent& textureLifetime = GWorld()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
     textureLifetime.textures.emplace_back(std::move(hTexture)); // ensure texture lives as long as entity
 }
 
-void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, uint8 color[4], TextureType type) {
-    std::string name = std::format("{}/solid_colors/{}_{}_{}_{}_{}",
-                                   m_path.parent_path().string(),
-                                   static_cast<int>((uint16)type),
-                                   static_cast<int>(color[0]),
-                                   static_cast<int>(color[1]),
-                                   static_cast<int>(color[2]),
-                                   static_cast<int>(color[3]));
+void ModelLoader::glTF_processTexture(Entity entity, const glTF::Model& model, uint8 color[4], TextureType type) {
+    std::string key = glTF_colorKey(color);
 
-    LOG_INFO("importing texture {}", name);
-    auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(name));
+    LOG_INFO("importing texture {}", key);
+    auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(key));
 
     if (texLoaded) {
         vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
 
-        *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, type, *stagingBuffer};
+        *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, 4, type, *stagingBuffer};
     }
 
     MaterialComponent& mat = GWorld()->registry().get_or_emplace<MaterialComponent>(entity);
-    uint32 slot            = GResourceManager()->bindTexture(std::string_view(name), *tex);
+    uint32 slot            = GResourceManager()->bindTexture(std::string_view(key), *tex);
     mat.setTextureSlot(type, slot);
 
     TextureLifetimeComponent& textureLifetime = GWorld()->registry().get_or_emplace<TextureLifetimeComponent>(entity);
@@ -374,31 +425,85 @@ void ModelLoader::glTF_processTexture(Entity entity, glTF::Model& model, uint8 c
 }
 
 void ModelLoader::glTF_processTextureInfo(Entity entity,
-                                          glTF::Model& model,
-                                          glTF::TextureInfo& textureInfo,
+                                          const glTF::Model& model,
+                                          const glTF::TextureInfo& textureInfo,
                                           TextureType type) {
-    glTF::Texture& texture = model.root.textures[textureInfo.index];
+    const glTF::Texture& texture = model.root.textures[textureInfo.index];
     glTF_processTexture(entity, model, texture, type);
 }
 
 void ModelLoader::glTF_processTextureInfo(Entity entity,
-                                          glTF::Model& model,
-                                          glTF::NormalTextureInfo& textureInfo,
+                                          const glTF::Model& model,
+                                          const glTF::NormalTextureInfo& textureInfo,
                                           TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo.index};
     glTF_processTextureInfo(entity, model, adapter, type);
 }
 
 void ModelLoader::glTF_processTextureInfo(Entity entity,
-                                          glTF::Model& model,
-                                          glTF::OcclusionTextureInfo& textureInfo,
+                                          const glTF::Model& model,
+                                          const glTF::OcclusionTextureInfo& textureInfo,
                                           TextureType type) {
     glTF::TextureInfo adapter{.index = textureInfo.index};
     glTF_processTextureInfo(entity, model, adapter, type);
 }
 
+void ModelLoader::glTF_preProcessImageFiles(const glTF::Model& model) {
+    std::vector<uint32> textureSources;
+    for (const glTF::Texture& texture : model.root.textures) {
+        if (!texture.source) {
+            continue;
+        }
+
+        uint32 source = *texture.source;
+
+        if (std::find(textureSources.begin(), textureSources.end(), source) != textureSources.end()) {
+            continue; // already queued
+        }
+
+        textureSources.push_back(source);
+    }
+
+    std::vector<std::pair<std::string, ImageLoader::ImageDescriptor>> imageKeyValues(textureSources.size());
+
+    auto parLoadImages = [&](uint32 textureSource) -> std::pair<std::string, ImageLoader::ImageDescriptor> {
+        const glTF::Image& image = model.root.images[textureSource];
+
+        std::string imageKey;
+        ImageLoader::ImageDescriptor imageDesc;
+
+        if (image.uri.empty()) {
+            R3_ASSERT(image.bufferView.has_value());
+            const glTF::BufferView& bufferView = model.root.bufferViews[*image.bufferView];
+            const std::byte* data              = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
+
+            imageKey  = glTF_embeddedImageKey(textureSource, *image.bufferView);
+            imageDesc = ImageLoader::loadImageCompressed(data, bufferView.byteLength);
+        } else {
+            std::filesystem::path imagePath = path();
+            imagePath.replace_filename(image.uri);
+
+            imageKey  = glTF_imageKey(imagePath);
+            imageDesc = ImageLoader::loadImageFile(imagePath);
+        }
+
+        return std::make_pair(std::move(imageKey), std::move(imageDesc));
+    };
+    std::transform(
+        std::execution::par_unseq, textureSources.begin(), textureSources.end(), imageKeyValues.begin(), parLoadImages);
+
+    for (auto& [imageKey, imageValue] : imageKeyValues) {
+        if (imageValue.data == nullptr) {
+            LOG_WARNING("Failed to load image: {}", imageKey);
+            continue;
+        }
+        R3_ASSERT(imageValue.data.get());
+        m_cachedImages.emplace(std::move(imageKey), std::move(imageValue));
+    }
+}
+
 template <typename T, typename U>
-void ModelLoader::glTF_readAccessor(glTF::Model& model, usize iAccessor, std::vector<T>& out) {
+void ModelLoader::glTF_readAccessor(const glTF::Model& model, usize iAccessor, std::vector<T>& out) {
     const glTF::Accessor& accessor = model.root.accessors[iAccessor];
     R3_ASSERT(glTF_sizeof(accessor.componentType) * glTF_componentElements(accessor.type) == sizeof(U));
 
@@ -455,6 +560,31 @@ usize ModelLoader::glTF_componentElements(std::string_view componentType) {
     } else {
         throw Exception{std::format("Unknown glTF component type: {}", componentType)};
     }
+}
+
+std::string ModelLoader::glTF_imageKey(std::filesystem::path path) {
+    return path.string();
+}
+
+std::string ModelLoader::glTF_embeddedImageKey(uint32 textureSource, uint32 bufferView) {
+    return std::format("{}/embedded/{}_{}", path().parent_path().string(), textureSource, bufferView);
+}
+
+std::string ModelLoader::glTF_colorKey(uint8 color[4]) {
+    return std::format("{}/solid_color/{}_{}_{}_{}",
+                       path().parent_path().string(),
+                       static_cast<int>(color[0]),
+                       static_cast<int>(color[1]),
+                       static_cast<int>(color[2]),
+                       static_cast<int>(color[3]));
+}
+
+std::string ModelLoader::glTF_vertexBufferKey(uint32 index) {
+    return std::format("{}/vertices/{}", path().parent_path().string(), index);
+}
+
+std::string ModelLoader::glTF_indexBufferKey(uint32 index) {
+    return std::format("{}/indices/{}", path().parent_path().string(), index);
 }
 
 } // namespace R3

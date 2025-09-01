@@ -62,6 +62,7 @@ RenderContext::RenderContext(Window& window)
         setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);
         setupQueue(device, vkb::QueueType::present, m_presentQueue, m_presentQueueIndex);
         setupQueue(device, vkb::QueueType::compute, m_computeQueue, m_computeQueueIndex);
+        setupQueue(device, vkb::QueueType::transfer, m_transferQueue, m_transferQueueIndex);
 
         //--- Command Buffers
         createCommandPools();
@@ -101,6 +102,7 @@ RenderContext::~RenderContext() noexcept {
 
         m_graphicsQueueCmds.clear();
         m_computeQueueCmds.clear();
+        m_transferQueueCmds.clear();
 
         // destroy device
         vkDestroyDevice(m_device, nullptr);
@@ -295,7 +297,6 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
                       })
                       .add_required_extensions({
                           VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                          "VK_KHR_maintenance5",
                           VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
                           VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
                       })
@@ -342,6 +343,7 @@ void RenderContext::createCommandPools() {
     const VkCommandPoolCreateFlags poolFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     m_graphicsQueueCmds = CommandBuffer::allocate(*this, graphicsQueueIndex(), poolFlags, maxFramesInFlight());
     m_computeQueueCmds  = CommandBuffer::allocate(*this, computeQueueIndex(), poolFlags, maxFramesInFlight());
+    m_transferQueueCmds = CommandBuffer::allocate(*this, transferQueueIndex(), poolFlags, maxFramesInFlight());
 }
 
 void RenderContext::createSyncObjects() {

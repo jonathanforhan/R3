@@ -1,14 +1,13 @@
 #include "vulkan-Texture.hpp"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
+#include <cstring>
 #include <filesystem>
 #include <string>
+#include <stb_image.h>
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
@@ -29,20 +28,11 @@ Texture::Texture(CommandBuffer& cmd,
                  const std::byte* raw,
                  usize width,
                  usize height,
+                 uint32 channels,
                  TextureType type,
                  Buffer& stagingBuffer) {
     R3_ASSERT(raw, "Texture raw data is null");
-    create(cmd, raw, width, height, type, stagingBuffer);
-}
-
-Texture::Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer) {
-    R3_ASSERT(compressed, "Texture raw data is null");
-    int req = (int)queryPreferredChannels(type);
-    int width, height, channels;
-    std::byte* raw = (std::byte*)stbi_load_from_memory(
-        (const uint8*)compressed, static_cast<int>(size), &width, &height, &channels, req);
-    create(cmd, raw, width, height, type, stagingBuffer);
-    stbi_image_free(raw);
+    create(cmd, raw, width, height, channels, type, stagingBuffer);
 }
 
 Texture::Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer) {
@@ -50,7 +40,7 @@ Texture::Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, Text
     int req = (int)queryPreferredChannels(type);
     int width, height, channels;
     std::byte* raw = (std::byte*)stbi_load(filepath.string().c_str(), &width, &height, &channels, req);
-    create(cmd, raw, width, height, type, stagingBuffer);
+    create(cmd, raw, width, height, channels, type, stagingBuffer);
     stbi_image_free(raw);
 }
 
@@ -93,6 +83,7 @@ void Texture::create(CommandBuffer& cmd,
                      const std::byte* raw,
                      usize width,
                      usize height,
+                     uint32 channels,
                      TextureType type,
                      Buffer& stagingBuffer) {
     R3_ASSERT(type != TextureType::CubeMap, "Use createCubeMap for CubeMap textures");
@@ -104,29 +95,62 @@ void Texture::create(CommandBuffer& cmd,
         if (!supportsBlitting(preferredFormat)) {
             LOG_WARNING("Texture format does not support blitting");
         }
-        const uint32 channels = queryPreferredChannels(type);
+        const uint32 preferredChannels = queryPreferredChannels(type);
 
         const VkExtent2D extent = {(uint32)width, (uint32)height};
         const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
-        const usize imageSize   = width * height * channels;
+        const usize imgSize     = width * height * preferredChannels;
+        const usize rawSize     = width * height * channels;
 
-        // create staging buffer for CPU writes
-        if (type == TextureType::MetallicRoughness) {
-            usize bufferSize = width * height * 2; // 2 bytes per pixel (RG)
-            stagingBuffer    = Buffer{nullptr, bufferSize, BufferPreset::Staging};
-            // copy the GB channels from raw to staging buffer's RG channels
-            for (usize rg = 0, ch = 0; rg < bufferSize; rg += 2, ch += channels) {
-                stagingBuffer.copy(&raw[ch + 1], 2, rg);
+        stagingBuffer = Buffer{nullptr, imgSize, BufferPreset::Staging};
+
+        // copy data to staging buffer with proper channel mapping
+        switch (type) {
+            case TextureType::MetallicRoughness: {
+                R3_ASSERT(channels >= 3);
+                // copy the GB channels from raw to staging buffer's RG channels
+                for (usize rg = 0, ch = 0; rg < imgSize; rg += preferredChannels, ch += channels) {
+                    R3_ASSERT(ch < rawSize);
+                    stagingBuffer.copy(&raw[ch + 1], 2, rg);
+                }
+                break;
             }
-        } else if (type == TextureType::Normal) {
-            usize bufferSize = width * height * 2; // 2 bytes per pixel (RG)
-            stagingBuffer    = Buffer{nullptr, bufferSize, BufferPreset::Staging};
-            // copy the RG channels from raw to staging buffer's RG channels
-            for (usize rg = 0, ch = 0; rg < bufferSize; rg += 2, ch += channels) {
-                stagingBuffer.copy(&raw[ch], 2, rg);
+            case TextureType::Normal: {
+                R3_ASSERT(channels >= 3);
+                // copy the RG channels from raw to staging buffer's RG channels
+                for (usize rg = 0, ch = 0; rg < imgSize; rg += preferredChannels, ch += channels) {
+                    R3_ASSERT(ch < rawSize);
+                    stagingBuffer.copy(&raw[ch], 2, rg);
+                }
+                break;
             }
-        } else {
-            stagingBuffer = Buffer{raw, imageSize, BufferPreset::Staging};
+            case TextureType::AmbientOcclusion: {
+                // copy the R channel from raw to staging buffer's R channel
+                for (usize r = 0, ch = 0; r < imgSize; r += preferredChannels, ch += channels) {
+                    R3_ASSERT(ch < rawSize);
+                    stagingBuffer.copy(&raw[ch], 1, r);
+                }
+                break;
+            }
+            // case TextureType::Albedo:
+            // case TextureType::Emissive:
+            default: {
+                R3_ASSERT(preferredChannels == 4);
+                if (channels == 4) {
+                    for (usize rgba = 0, ch = 0; rgba < imgSize; rgba += preferredChannels, ch += channels) {
+                        R3_ASSERT(ch < rawSize);
+                        stagingBuffer.copy(&raw[ch], channels, rgba);
+                    }
+                } else {
+                    uint8 color[4] = {0, 0, 0, 255};
+                    for (usize rgba = 0, ch = 0; rgba < imgSize; rgba += preferredChannels, ch += channels) {
+                        R3_ASSERT(ch < rawSize);
+                        std::memcpy(color, &raw[ch], channels);
+                        stagingBuffer.copy(color, sizeof(color), rgba);
+                    }
+                }
+                break;
+            }
         }
 
         // image used for texture
@@ -418,9 +442,9 @@ uint32 Texture::queryPreferredChannels(TextureType type) const noexcept {
         case TextureType::Albedo:
             return 4; // RGBA
         case TextureType::MetallicRoughness:
-            return 3; // RGA (GB -> RG)
+            return 2; // RGA (GB -> RG)
         case TextureType::Normal:
-            return 3; // RG
+            return 2; // RG
         case TextureType::AmbientOcclusion:
             return 1; // R
         case TextureType::Emissive:

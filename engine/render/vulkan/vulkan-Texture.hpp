@@ -28,24 +28,18 @@ public:
     /// @brief Initializes a texture image and sampler from raw data using a command buffer and a staging buffer.
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
     /// @param raw Pointer to the raw texture data.
-    /// @param width Width of the texture in pixels.
-    /// @param height Height of the texture in pixels.
+    /// @param width Width of the texture in bytes.
+    /// @param height Height of the texture in bytes.
+    /// @param channels Channels of the texture in bytes.
     /// @param type Type of the texture
     /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
     Texture(CommandBuffer& cmd,
             const std::byte* raw,
             usize width,
             usize height,
+            uint32 channels,
             TextureType type,
             Buffer& stagingBuffer);
-
-    /// @brief Initializes a texture image and sampler from compressed data using a command buffer and a staging buffer.
-    /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
-    /// @param compressed Pointer to the compressed texture data.
-    /// @param size The size, in bytes, of the compressed data.
-    /// @param type Type of the texture
-    /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
-    Texture(CommandBuffer& cmd, const std::byte* compressed, usize size, TextureType type, Buffer& stagingBuffer);
 
     /// @brief Initializes a texture image and sampler from filesystem using a command buffer and a staging buffer.
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
@@ -75,6 +69,7 @@ private:
                 const std::byte* raw,
                 usize width,
                 usize height,
+                uint32 channels,
                 TextureType type,
                 Buffer& stagingBuffer);
 
