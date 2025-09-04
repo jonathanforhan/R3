@@ -134,7 +134,7 @@ void Editor::recordFrame(double dt) {
     }
 
     // ImGui::ShowDemoWindow();
-    // initializeDocking();
+    initializeDocking();
 
     // testImGuizmo();
 

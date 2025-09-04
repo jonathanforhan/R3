@@ -7,6 +7,8 @@
 
 namespace R3 {
 
+using flag_t = uint32_t; /// bitmask flag type
+
 using uint8  = std::uint8_t;  /// 8-bit unsigned integer
 using uint16 = std::uint16_t; /// 16-bit unsigned integer
 using uint32 = std::uint32_t; /// 32-bit unsigned integer

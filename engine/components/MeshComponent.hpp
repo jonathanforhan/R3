@@ -8,9 +8,9 @@
 namespace R3 {
 
 struct R3_API MeshComponent {
-    Handle<vulkan::Buffer> vertexBufferIndex;
+    Handle<Buffer> vertexBufferIndex;
     usize vertexCount;
-    Handle<vulkan::Buffer> indexBufferIndex;
+    Handle<Buffer> indexBufferIndex;
     usize indexCount;
 };
 

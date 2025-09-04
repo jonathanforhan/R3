@@ -3,10 +3,17 @@
 #include <engine/components/LightComponent.hpp>
 #include <engine/core/Engine.hpp>
 #include <engine/core/Entity.hpp>
+#include <engine/core/EventHandler.hpp>
+#include <engine/core/Events.hpp>
 #include <engine/core/Log.hpp>
 #include <engine/core/World.hpp>
+#include <engine/input/InputCodes.hpp>
+#include <engine/input/InputEvents.hpp>
 #include <engine/media/ModelLoader.hpp>
+#include <engine/render/Window.hpp>
 #include <engine/systems/TransformSystem.hpp>
+
+static R3::Entity light = entt::null;
 
 static void moduleMain() {
     using namespace R3;
@@ -43,12 +50,12 @@ static void moduleMain() {
     // Entity sponza = loader.glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
     // Entity lamp = loader.glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
-    Entity light = GWorld()->registry().create();
+    light = GWorld()->registry().create();
     GWorld()->registry().emplace<LightComponent>(light,
                                                  LightComponent{
                                                      .position  = fvec3(0.0f, 2.0f, 0.0f),
                                                      .color     = fvec3(1.0f),
-                                                     .intensity = 5.0f,
+                                                     .intensity = 10.0f,
                                                  });
 }
 
@@ -59,4 +66,25 @@ R3_MODULE void* Entry() {
 
 R3_MODULE void Exit(void*) {}
 
-R3_MODULE void Loop() {}
+R3_MODULE void Loop() {
+    using namespace R3;
+
+    if (GWindow()->keyPressed(Key::I)) {
+        GWorld()->registry().get<LightComponent>(light).position.z += 0.005f;
+    }
+    if (GWindow()->keyPressed(Key::K)) {
+        GWorld()->registry().get<LightComponent>(light).position.z -= 0.005f;
+    }
+    if (GWindow()->keyPressed(Key::J)) {
+        GWorld()->registry().get<LightComponent>(light).position.x += 0.005f;
+    }
+    if (GWindow()->keyPressed(Key::L)) {
+        GWorld()->registry().get<LightComponent>(light).position.x -= 0.005f;
+    }
+    if (GWindow()->keyPressed(Key::U)) {
+        GWorld()->registry().get<LightComponent>(light).position.y += 0.005f;
+    }
+    if (GWindow()->keyPressed(Key::O)) {
+        GWorld()->registry().get<LightComponent>(light).position.y -= 0.005f;
+    }
+}

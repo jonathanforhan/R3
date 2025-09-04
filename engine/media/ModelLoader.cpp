@@ -35,9 +35,9 @@
 #include "core/World.hpp"
 #include "glTF/glTF-ModelImporter.hpp"
 #include "glTF/glTF.hpp"
+#include "render/Buffer.hpp"
 #include "render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
-#include "render/vulkan/vulkan-Buffer.hpp"
 #include "render/vulkan/vulkan-CommandBuffer.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Texture.hpp"
@@ -208,8 +208,8 @@ void ModelLoader::glTF_processVertices(Entity entity,
 
     usize vertexCount = model.root.accessors[attributes.at(glTF::POSITION)].count;
 
-    auto&& [vbo, vboLoaded] = GResourceManager()->loadBuffer(
-        std::string_view(key), nullptr, vertexCount * sizeof(Vertex), BufferPreset::DeviceVertex);
+    auto&& [vbo, vboLoaded] =
+        GResourceManager()->loadBuffer(std::string_view(key), vertexCount * sizeof(Vertex), BufferUsage::DeviceVertex);
 
     if (vboLoaded) {
         std::vector<fvec3> positions;
@@ -253,10 +253,10 @@ void ModelLoader::glTF_processVertices(Entity entity,
             }
         }
 
-        vulkan::Buffer* vertexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-        VkBufferCopy2* vertexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
+        Buffer* vertexStagingBuffer     = GResourceManager()->newFrameScopedObject<Buffer>();
+        VkBufferCopy2* vertexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
 
-        *vertexStagingBuffer = vulkan::Buffer{nullptr, vertexCount * sizeof(Vertex), BufferPreset::Staging};
+        *vertexStagingBuffer = Buffer{vertexCount * sizeof(Vertex), BufferUsage::HostStaging};
         for (usize i = 0; i < vertexCount; i++) {
             const Vertex vertex = {
                 .position      = positions[i],
@@ -265,7 +265,7 @@ void ModelLoader::glTF_processVertices(Entity entity,
                 .boneIDs       = i < joints.size() ? joints[i] : ivec4(-1),
                 .weights       = i < weights.size() ? weights[i] : fvec4(0.0f),
             };
-            vertexStagingBuffer->copy(&vertex, sizeof(Vertex), i * sizeof(Vertex));
+            vertexStagingBuffer->copy(&vertex, i * sizeof(Vertex), sizeof(Vertex));
         }
         *vertexCopyRegion = {
             .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
@@ -275,8 +275,8 @@ void ModelLoader::glTF_processVertices(Entity entity,
         };
         m_cmd->copyBuffer({
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = vertexStagingBuffer->buffer(),
-            .dstBuffer   = vbo->buffer(),
+            .srcBuffer   = vertexStagingBuffer->handle<VkBuffer>(),
+            .dstBuffer   = vbo->handle<VkBuffer>(),
             .regionCount = 1,
             .pRegions    = vertexCopyRegion,
         });
@@ -297,8 +297,8 @@ void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, u
 
     usize indexCount = accessor.count;
 
-    auto&& [ibo, iboLoaded] = GResourceManager()->loadBuffer(
-        std::string_view(key), nullptr, indexCount * sizeof(uint32), BufferPreset::DeviceIndex);
+    auto&& [ibo, iboLoaded] =
+        GResourceManager()->loadBuffer(std::string_view(key), indexCount * sizeof(uint32), BufferUsage::DeviceIndex);
 
     std::vector<uint32> indices;
     if (iboLoaded) {
@@ -316,20 +316,22 @@ void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, u
                 throw Exception{std::format("unsupported index datatype {}", accessor.componentType)};
         }
 
-        vulkan::Buffer* indexStagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
-        VkBufferCopy2* indexCopyRegion     = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
+        Buffer* indexStagingBuffer     = GResourceManager()->newFrameScopedObject<Buffer>();
+        VkBufferCopy2* indexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
 
-        *indexStagingBuffer = vulkan::Buffer{std::span<const uint32>{indices}, BufferPreset::Staging};
-        *indexCopyRegion    = {
-               .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-               .srcOffset = 0,
-               .dstOffset = 0,
-               .size      = indices.size() * sizeof(uint32),
+        *indexStagingBuffer = Buffer{indices.size() * sizeof(indices[0]), BufferUsage::HostStaging};
+        indexStagingBuffer->copy(indices.data(), 0, indices.size() * sizeof(uint32));
+
+        *indexCopyRegion = {
+            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
+            .srcOffset = 0,
+            .dstOffset = 0,
+            .size      = indices.size() * sizeof(uint32),
         };
         m_cmd->copyBuffer({
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = indexStagingBuffer->buffer(),
-            .dstBuffer   = ibo->buffer(),
+            .srcBuffer   = indexStagingBuffer->handle<VkBuffer>(),
+            .dstBuffer   = ibo->handle<VkBuffer>(),
             .regionCount = 1,
             .pRegions    = indexCopyRegion,
         });
@@ -409,7 +411,7 @@ void ModelLoader::glTF_processTexture(Entity entity,
             std::string imgKey = glTF_imageKey(imagePath);
             LOG_INFO("importing image {}", imgKey);
 
-            vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
 
             R3_ASSERT(m_cachedImages.contains(imgKey));
             auto& imgDesc = m_cachedImages.at(imgKey);
@@ -431,7 +433,7 @@ void ModelLoader::glTF_processTexture(Entity entity,
             std::string imgKey = glTF_embeddedImageKey(*texture.source, *image.bufferView);
             LOG_INFO("importing image {}", imgKey);
 
-            vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+            Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
 
             R3_ASSERT(m_cachedImages.contains(imgKey));
             auto& imgDesc = m_cachedImages.at(imgKey);
@@ -459,7 +461,7 @@ void ModelLoader::glTF_processTexture(Entity entity, const glTF::Model& model, u
     auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(key));
 
     if (texLoaded) {
-        vulkan::Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<vulkan::Buffer>();
+        Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
 
         *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, 4, type, *stagingBuffer};
     }

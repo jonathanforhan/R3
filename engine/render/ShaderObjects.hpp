@@ -35,6 +35,14 @@ struct R3_API FragmentPushConstantsCubemap {
     alignas(4) uint32 iCubemap;
 };
 
+struct R3_API VertexPushConstantsShadow {
+    alignas(16) fmat4 model;
+};
+
+struct R3_API GeometryPushConstantsShadow {
+    alignas(16) fvec3 position;
+};
+
 struct R3_API PointLightShaderObject {
     alignas(16) fvec3 position;
     alignas(16) fvec3 color;

@@ -13,7 +13,8 @@
 
 namespace R3::vulkan {
 
-Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties) {
+Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties)
+    : m_aspectFlags(aspectFlags) {
     RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
@@ -42,7 +43,7 @@ Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemo
             .components = {},
             .subresourceRange =
                 {
-                    .aspectMask     = aspectFlags,
+                    .aspectMask     = m_aspectFlags,
                     .baseMipLevel   = 0,
                     .levelCount     = imageInfo.mipLevels,
                     .baseArrayLayer = 0,
@@ -79,7 +80,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .image               = m_image,
         .subresourceRange =
             {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask     = m_aspectFlags,
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
@@ -100,7 +101,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .image               = m_image,
         .subresourceRange =
             {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask     = m_aspectFlags,
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
@@ -121,7 +122,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .image               = m_image,
         .subresourceRange =
             {
-                .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                .aspectMask     = m_aspectFlags,
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
@@ -148,7 +149,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
                 .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
                 .srcSubresource =
                     {
-                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .aspectMask     = m_aspectFlags,
                         .mipLevel       = mipLevel,
                         .baseArrayLayer = layer,
                         .layerCount     = 1,
@@ -160,7 +161,7 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
                     },
                 .dstSubresource =
                     {
-                        .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                        .aspectMask     = m_aspectFlags,
                         .mipLevel       = mipLevel + 1,
                         .baseArrayLayer = layer,
                         .layerCount     = 1,

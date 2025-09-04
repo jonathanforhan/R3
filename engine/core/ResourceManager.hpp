@@ -4,7 +4,6 @@
 #if !R3_VULKAN
 #error "Vulkan is currently the only supported RenderContext"
 #else
-#include "engine/render/vulkan/vulkan-Buffer.hpp"
 #include "engine/render/vulkan/vulkan-Image.hpp"
 #include "engine/render/vulkan/vulkan-Texture.hpp"
 #endif
@@ -22,6 +21,8 @@
 #include "engine/api/Class.hpp"
 #include "engine/api/Hash.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/render/Buffer.hpp"
+#include "engine/render/vulkan/vulkan-Cubemap.hpp"
 
 namespace R3 {
 
@@ -36,7 +37,7 @@ private:
 
 public:
     template <typename... Args>
-    std::pair<Handle<vulkan::Buffer>, bool> loadBuffer(hash::uuid id, Args&&... args) {
+    std::pair<Handle<Buffer>, bool> loadBuffer(hash::uuid id, Args&&... args) {
         auto&& [it, b] = m_bufferCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
         return {it->second, b};
     }
@@ -55,6 +56,8 @@ public:
 
     uint32 bindTexture(hash::uuid id, const vulkan::Texture& texture);
 
+    uint32 bindTexture(hash::uuid id, const vulkan::Cubemap& cubemap);
+
     void unbindTexture(uint32 slot);
 
     template <typename T, typename... Args>
@@ -70,7 +73,7 @@ public:
     void clear();
 
 private:
-    entt::resource_cache<vulkan::Buffer> m_bufferCache;
+    entt::resource_cache<Buffer> m_bufferCache;
     entt::resource_cache<vulkan::Image> m_imageCache;
     entt::resource_cache<vulkan::Texture> m_textureCache;
 

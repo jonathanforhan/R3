@@ -1,14 +1,16 @@
 #pragma once
 
+#include <array>
 #include <vector>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/render/Buffer.hpp"
 #include "engine/render/RenderContext.hpp"
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/Window.hpp"
-#include "vulkan-Buffer.hpp"
 #include "vulkan-CommandBuffer.hpp"
+#include "vulkan-Cubemap.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -54,6 +56,14 @@ private:
 
     uint32 updateLights(uint32 frameIndex);
 
+    std::array<fmat4, 6> getShadowViewMatrices(const fvec3& lightPos);
+
+    void renderShadowMaps(CommandBuffer& cmd, uint32 frameIndex);
+
+    void beginShadowRendering(CommandBuffer& cmd);
+
+    void transitionShadowMapForSampling(CommandBuffer& cmd);
+
 private:
     Window& m_window;     // must out-live renderer
     RenderContext& m_ctx; // must out-live renderer
@@ -65,12 +75,18 @@ private:
     Shader m_fragmentShader;
     Shader m_cubemapVertexShader;
     Shader m_cubemapFragmentShader;
+    Shader m_shadowVertexShader;
+    Shader m_shadowGeometryShader;
+    Shader m_shadowFragmentShader;
     GraphicsPipeline m_graphicsPipeline;
     GraphicsPipeline m_cubemapPipeline;
-    Texture m_cubemapTexture;
+    GraphicsPipeline m_shadowPipeline;
+    Cubemap m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
-    std::vector<Buffer> m_ubos;
-    std::vector<Buffer> m_lights;
+    std::vector<R3::Buffer> m_ubos;
+    std::vector<R3::Buffer> m_lights;
+    std::vector<R3::Buffer> m_shadowViews;
+    Cubemap m_shadowMap;
 };
 
 } // namespace R3::vulkan

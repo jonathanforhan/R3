@@ -22,7 +22,9 @@ layout (binding = 3) readonly buffer LightBuffer {
     PointLight u_Lights[];
 };
 
-layout (push_constant) uniform FragmentPushConstants {
+layout (binding = 5) uniform samplerCube u_ShadowMap;
+
+layout (push_constant, std140) uniform FragmentPushConstants {
 layout(offset = 64)
     vec3 c_ViewPosition;
     uint c_NumLights;
@@ -88,6 +90,26 @@ float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+float calcShadow(vec3 pos) {
+/*
+    vec3 lightToPos = pos - u_Lights[0].position;
+    float shadowDepth = texture(u_ShadowMap, lightToPos).r * 25.0;  // far plane is 25.0
+    float currentDepth = length(lightToPos);
+    float bias = 0.05;
+    float shadow = currentDepth - bias > shadowDepth ? 1.0 : 0.0;
+ */
+
+    vec3 lightToPos = pos - u_Lights[0].position;
+	float shadowDepth = texture(u_ShadowMap, lightToPos).r;
+	float currentDepth = length(lightToPos) / 25.0; // Normalize by far plane
+    float bias = 0.05;
+	float shadow = currentDepth <= shadowDepth + bias ? 1.0 : 0.0;
+
+    // f_Color = vec4(vec3(shadowDepth / 25.0), 1.0);  
+
+    return shadow;
 }
 
 void main() {
@@ -168,6 +190,10 @@ void main() {
 
     // gamma correct
     // color = pow(color, vec3(1.0 / gamma)); // to sRGB
+
+    float shadow = calcShadow(v_Position);
+
+    // color.rgb *= shadow;
 
     f_Color = vec4(color, 1.0);
 }

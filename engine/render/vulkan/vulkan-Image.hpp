@@ -30,6 +30,7 @@ private:
     Handle<VkImage> m_image;
     Handle<VkDeviceMemory> m_imageMemory;
     Handle<VkImageView> m_imageView;
+    VkImageAspectFlags m_aspectFlags = {};
 };
 
 } // namespace R3::vulkan

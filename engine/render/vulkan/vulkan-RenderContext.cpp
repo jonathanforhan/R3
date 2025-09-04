@@ -24,6 +24,8 @@
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Handle.hpp"
 
+VkDevice g_device = VK_NULL_HANDLE;
+
 namespace R3::vulkan {
 
 #if R3_VALIDATION_LAYERS_ENABLED
@@ -57,6 +59,7 @@ RenderContext::RenderContext(Window& window)
         //--- Logical Device
         const vkb::Device device = createLogicalDevice(physicalDevice);
         m_device                 = device.device;
+        g_device                 = m_device;
 
         //--- Queues
         setupQueue(device, vkb::QueueType::graphics, m_graphicsQueue, m_graphicsQueueIndex);
@@ -118,6 +121,8 @@ RenderContext::~RenderContext() noexcept {
         // destroy instance
         vkDestroyInstance(m_instance, nullptr);
     }
+
+    g_device = VK_NULL_HANDLE;
 }
 
 void RenderContext::waitIdle() {
@@ -393,10 +398,24 @@ void RenderContext::createDescriptorSets() {
             .descriptorCount = maxTextureSamplerBindings(),
             .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
         },
-        // [3]: Light UBO
+        // [3]: Light SSBO
         {
             .binding         = 3,
             .descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
+        },
+        // [4]: Shadow Matrices UBO
+        {
+            .binding         = 4,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            .descriptorCount = 1,
+            .stageFlags      = VK_SHADER_STAGE_GEOMETRY_BIT,
+        },
+        // [5]: Shadow Map Sampler
+        {
+            .binding         = 5,
+            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             .descriptorCount = 1,
             .stageFlags      = VK_SHADER_STAGE_FRAGMENT_BIT,
         },
@@ -407,7 +426,8 @@ void RenderContext::createDescriptorSets() {
         0,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT | VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT,
         0,
-
+        0,
+        0,
     };
 
     const VkDescriptorPoolSize poolSizes[] = {
@@ -415,6 +435,8 @@ void RenderContext::createDescriptorSets() {
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight() * maxTextureSamplerBindings()},
         {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxFramesInFlight()},
+        {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxFramesInFlight()},
     };
 
     const VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo = {

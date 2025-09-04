@@ -4,7 +4,6 @@
 
 namespace R3::vulkan {
 
-class R3_API Buffer;
 class R3_API CommandBuffer;
 class R3_API DescriptorSet;
 class R3_API GraphicsPipeline;

@@ -2,12 +2,12 @@
 
 #include "engine/api/Api.hpp"
 
-#include <array>
 #include <cstddef>
 #include <filesystem>
 #include <vulkan/vulkan.h>
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/render/Buffer.hpp"
 #include "engine/render/Flags.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
@@ -48,19 +48,11 @@ public:
     /// @param stagingBuffer Buffer used for staging the texture data before transfer (must live until cmd.submit()).
     Texture(CommandBuffer& cmd, const std::filesystem::path& filepath, TextureType type, Buffer& stagingBuffer);
 
-    /// @brief Create cube texture map from 6 file paths
-    /// @param cmd Command buffer for recording GPU commands
-    /// @param facePaths Array of 6 file paths in order: +X, -X, +Y, -Y, +Z, -Z
-    /// @param type Texture type for format selection
-    /// @param stagingBuffer Staging buffer for transfer
-    Texture(CommandBuffer& cmd,
-            const std::array<std::filesystem::path, 6>& facePaths,
-            TextureType type,
-            Buffer& stagingBuffer);
-
     ~Texture() noexcept;
 
     VkSampler sampler() const noexcept { return m_sampler; }
+
+    VkImage image() const noexcept { return m_image.image(); }
 
     VkImageView imageView() const noexcept { return m_image.imageView(); }
 
@@ -72,13 +64,6 @@ private:
                 uint32 channels,
                 TextureType type,
                 Buffer& stagingBuffer);
-
-    void createCubeMap(CommandBuffer& cmd,
-                       std::array<const std::byte*, 6> faces,
-                       usize width,
-                       usize height,
-                       TextureType type,
-                       Buffer& stagingBuffer);
 
     bool supportsBlitting(VkFormat format) noexcept;
 
