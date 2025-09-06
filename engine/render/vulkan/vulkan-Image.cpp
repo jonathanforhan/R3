@@ -1,5 +1,6 @@
 #include "engine/render/Image.hpp"
 
+#include <algorithm>
 #include <vulkan/vulkan.h>
 #include "api/MovableHandle.hpp"
 #include "api/Types.hpp"
@@ -49,10 +50,10 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
             .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
             .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
         };
-        VK_CHECK(vkCreateImage(g_device, &imageInfo, nullptr, &m_image.get<VkImage>()));
+        VK_CHECK(vkCreateImage(g_device, &imageInfo, nullptr, &*m_image));
 
         VkMemoryRequirements memoryRequirements;
-        vkGetImageMemoryRequirements(g_device, m_image.get<VkImage>(), &memoryRequirements);
+        vkGetImageMemoryRequirements(g_device, m_image, &memoryRequirements);
 
         const VkMemoryAllocateInfo memoryInfo = {
             .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -61,12 +62,12 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
             .memoryTypeIndex = GEngine()->RenderContext<vulkan::RenderContext>().queryDeviceMemoryTypeIndex(
                 memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
         };
-        VK_CHECK(vkAllocateMemory(g_device, &memoryInfo, nullptr, &m_memory.get<VkDeviceMemory>()));
-        VK_CHECK(vkBindImageMemory(g_device, m_image.get<VkImage>(), m_memory.get<VkDeviceMemory>(), 0));
+        VK_CHECK(vkAllocateMemory(g_device, &memoryInfo, nullptr, &*m_memory));
+        VK_CHECK(vkBindImageMemory(g_device, m_image, m_memory, 0));
 
         const VkImageViewCreateInfo imageViewInfo = {
             .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .image      = m_image.get<VkImage>(),
+            .image      = m_image,
             .viewType   = TO_VK_IMAGE_VIEW_TYPE(type),
             .format     = imageInfo.format,
             .components = {},
@@ -79,7 +80,7 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
                     .layerCount     = layerCount,
                 },
         };
-        VK_CHECK(vkCreateImageView(g_device, &imageViewInfo, nullptr, &m_imageView.get<VkImageView>()));
+        VK_CHECK(vkCreateImageView(g_device, &imageViewInfo, nullptr, &*m_imageView));
     } catch (...) {
         this->~Image();
         throw;
@@ -87,9 +88,9 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
 }
 
 Image::~Image() {
-    vkDestroyImage(g_device, m_image.get<VkImage>(), nullptr);
-    vkFreeMemory(g_device, m_memory.get<VkDeviceMemory>(), nullptr);
-    vkDestroyImageView(g_device, m_imageView.get<VkImageView>(), nullptr);
+    vkDestroyImage(g_device, m_image, nullptr);
+    vkFreeMemory(g_device, m_memory, nullptr);
+    vkDestroyImageView(g_device, m_imageView, nullptr);
 }
 
 void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
@@ -107,7 +108,7 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
         .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image.get<VkImage>(),
+        .image               = m_image,
         .subresourceRange =
             {
                 .aspectMask     = aspectMask,
@@ -128,7 +129,7 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image.get<VkImage>(),
+        .image               = m_image,
         .subresourceRange =
             {
                 .aspectMask     = aspectMask,
@@ -149,7 +150,7 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image.get<VkImage>(),
+        .image               = m_image,
         .subresourceRange =
             {
                 .aspectMask     = aspectMask,
@@ -186,8 +187,16 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
                 },
             .srcOffsets =
                 {
-                    {0, 0, 0},
-                    {w, h, 1},
+                    {
+                        .x = 0,
+                        .y = 0,
+                        .z = 0,
+                    },
+                    {
+                        .x = w,
+                        .y = h,
+                        .z = 1,
+                    },
                 },
             .dstSubresource =
                 {
@@ -198,16 +207,24 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
                 },
             .dstOffsets =
                 {
-                    {0, 0, 0},
-                    {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1},
+                    {
+                        .x = 0,
+                        .y = 0,
+                        .z = 0,
+                    },
+                    {
+                        .x = std::max(w / 2, 1),
+                        .y = std::max(h / 2, 1),
+                        .z = 1,
+                    },
                 },
         };
 
         cmd.blitImage({
             .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-            .srcImage       = m_image.get<VkImage>(),
+            .srcImage       = m_image,
             .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-            .dstImage       = m_image.get<VkImage>(),
+            .dstImage       = m_image,
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .regionCount    = 1,
             .pRegions       = &blitRegion,
@@ -221,8 +238,8 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
             .pImageMemoryBarriers    = &memoryBarrierShader,
         });
 
-        w = w > 1 ? w / 2 : 1;
-        h = h > 1 ? h / 2 : 1;
+        w = std::max(w / 2, 1);
+        h = std::max(h / 2, 1);
     }
 
     cmd.pipelineBarrier({

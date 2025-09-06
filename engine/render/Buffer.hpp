@@ -74,17 +74,15 @@ public:
     /// @return Usage flags of the buffer, set during construction.
     BufferUsageFlags usage() const noexcept { return m_usage; }
 
-    /// @brief Get the underlying RenderHandle of the buffer as a T&.
-    /// @tparam T Type to cast the handle to (e.g., VkBuffer)
     /// @return A reference to the underlying buffer handle.
-    template <typename T>
-    const T& handle() const noexcept {
-        return m_buffer.get<T>();
-    }
+    BufferRenderHandle& bufferHandle() noexcept { return m_buffer; }
+
+    /// @return A const reference to the underlying buffer handle.
+    const BufferRenderHandle& bufferHandle() const noexcept { return m_buffer; }
 
 private:
-    MovableHandle<RenderHandle> m_buffer;
-    MovableHandle<RenderHandle> m_memory;
+    MovableHandle<BufferRenderHandle> m_buffer;
+    MovableHandle<DeviceMemoryRenderHandle> m_memory;
     void* m_mapped           = nullptr;
     usize m_size             = 0;
     BufferUsageFlags m_usage = BufferUsageFlags(-1);

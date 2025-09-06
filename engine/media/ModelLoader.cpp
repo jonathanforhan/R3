@@ -275,8 +275,8 @@ void ModelLoader::glTF_processVertices(Entity entity,
         };
         m_cmd->copyBuffer({
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = vertexStagingBuffer->handle<VkBuffer>(),
-            .dstBuffer   = vbo->handle<VkBuffer>(),
+            .srcBuffer   = vertexStagingBuffer->bufferHandle(),
+            .dstBuffer   = vbo->bufferHandle(),
             .regionCount = 1,
             .pRegions    = vertexCopyRegion,
         });
@@ -330,8 +330,8 @@ void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, u
         };
         m_cmd->copyBuffer({
             .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = indexStagingBuffer->handle<VkBuffer>(),
-            .dstBuffer   = ibo->handle<VkBuffer>(),
+            .srcBuffer   = indexStagingBuffer->bufferHandle(),
+            .dstBuffer   = ibo->bufferHandle(),
             .regionCount = 1,
             .pRegions    = indexCopyRegion,
         });

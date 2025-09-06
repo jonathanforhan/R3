@@ -40,26 +40,22 @@ public:
     void generateMipMaps(vulkan::CommandBuffer& cmd);
     // ^^^ TODO make renderer agnostic
 
-    /// @brief Get the underlying RenderHandle of the image as a T&.
-    /// @tparam T Type to cast the handle to (e.g., VkImage)
     /// @return A reference to the underlying image handle.
-    template <typename T>
-    const T& handle() const noexcept {
-        return m_image.get<T>();
-    }
+    ImageRenderHandle& imageHandle() noexcept { return m_image; }
 
-    /// @brief Get the underlying RenderHandle of the image-view as a T&.
-    /// @tparam T Type to cast the handle to (e.g., VkImageView)
+    /// @return A const reference to the underlying image handle.
+    const ImageRenderHandle& imageHandle() const noexcept { return m_image; }
+
     /// @return A reference to the underlying image-view handle.
-    template <typename T>
-    const T& imageView() const noexcept {
-        return m_imageView.get<T>();
-    }
+    ImageViewRenderHandle& imageViewHandle() noexcept { return m_imageView; }
+
+    /// @return A const reference to the underlying image-view handle.
+    const ImageViewRenderHandle& imageViewHandle() const noexcept { return m_imageView; }
 
 private:
-    MovableHandle<RenderHandle> m_image;
-    MovableHandle<RenderHandle> m_imageView;
-    MovableHandle<RenderHandle> m_memory;
+    MovableHandle<ImageRenderHandle> m_image;
+    MovableHandle<ImageViewRenderHandle> m_imageView;
+    MovableHandle<DeviceMemoryRenderHandle> m_memory;
     usize3 m_extent         = {0, 0, 0};
     uint32 m_mipLevels      = 1;
     uint32 m_samples        = 1;

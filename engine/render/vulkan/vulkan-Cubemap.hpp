@@ -39,9 +39,9 @@ public:
 
     VkSampler sampler() const noexcept { return m_sampler; }
 
-    VkImage image() const noexcept { return m_image.handle<VkImage>(); }
+    VkImage image() const noexcept { return m_image.imageHandle(); }
 
-    VkImageView imageView() const noexcept { return m_image.imageView<VkImageView>(); }
+    VkImageView imageView() const noexcept { return m_image.imageViewHandle(); }
 
 private:
     void create(CommandBuffer& cmd,

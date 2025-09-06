@@ -6,6 +6,7 @@
 #include "api/MovableHandle.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
+#include "render/Flags.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -34,10 +35,10 @@ Buffer::Buffer(usize size, BufferUsageFlags usage)
             .queueFamilyIndexCount = 0,
             .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
         };
-        VK_CHECK(vkCreateBuffer(g_device, &bufferInfo, nullptr, &m_buffer.get<VkBuffer>()));
+        VK_CHECK(vkCreateBuffer(g_device, &bufferInfo, nullptr, &*m_buffer));
 
         VkMemoryRequirements memoryRequirements;
-        vkGetBufferMemoryRequirements(g_device, m_buffer.get<VkBuffer>(), &memoryRequirements);
+        vkGetBufferMemoryRequirements(g_device, m_buffer, &memoryRequirements);
 
         const VkMemoryAllocateInfo memoryInfo = {
             .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -46,8 +47,8 @@ Buffer::Buffer(usize size, BufferUsageFlags usage)
             .memoryTypeIndex = GEngine()->RenderContext<vulkan::RenderContext>().queryDeviceMemoryTypeIndex(
                 memoryRequirements.memoryTypeBits, vkMemFlags),
         };
-        VK_CHECK(vkAllocateMemory(g_device, &memoryInfo, nullptr, &m_memory.get<VkDeviceMemory>()));
-        VK_CHECK(vkBindBufferMemory(g_device, m_buffer.get<VkBuffer>(), m_memory.get<VkDeviceMemory>(), 0));
+        VK_CHECK(vkAllocateMemory(g_device, &memoryInfo, nullptr, &*m_memory));
+        VK_CHECK(vkBindBufferMemory(g_device, m_buffer, m_memory, 0));
 
         if (usage & BufferUsage::MapOnCreation) {
             map();
@@ -59,24 +60,24 @@ Buffer::Buffer(usize size, BufferUsageFlags usage)
 }
 
 Buffer::~Buffer() {
-    vkDestroyBuffer(g_device, m_buffer.get<VkBuffer>(), nullptr);
+    vkDestroyBuffer(g_device, m_buffer, nullptr);
     if (m_memory && m_mapped) {
-        vkUnmapMemory(g_device, m_memory.get<VkDeviceMemory>());
+        vkUnmapMemory(g_device, m_memory);
     }
-    vkFreeMemory(g_device, m_memory.get<VkDeviceMemory>(), nullptr);
+    vkFreeMemory(g_device, m_memory, nullptr);
 }
 
 void Buffer::map() {
     R3_ASSERT(TO_VK_MEMORY_FLAGS(m_usage) & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
-    VK_CHECK(vkMapMemory(g_device, m_memory.get<VkDeviceMemory>(), 0, m_size, 0, &m_mapped));
+    VK_CHECK(vkMapMemory(g_device, m_memory, 0, m_size, 0, &m_mapped));
 }
 
 void Buffer::mapRange(usize offset, usize size) {
-    VK_CHECK(vkMapMemory(g_device, m_memory.get<VkDeviceMemory>(), offset, size, 0, &m_mapped));
+    VK_CHECK(vkMapMemory(g_device, m_memory, offset, size, 0, &m_mapped));
 }
 
 void Buffer::unmap() {
-    vkUnmapMemory(g_device, m_memory.get<VkDeviceMemory>());
+    vkUnmapMemory(g_device, m_memory);
     m_mapped = nullptr;
 }
 
@@ -89,7 +90,7 @@ void Buffer::copy(const void* src, usize offset, usize size) {
 void Buffer::flush() {
     const VkMappedMemoryRange memoryRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = m_memory.get<VkDeviceMemory>(),
+        .memory = m_memory,
         .offset = 0,
         .size   = m_size,
     };
@@ -100,7 +101,7 @@ void Buffer::flushRange(usize offset, usize size) {
     R3_ASSERT(offset + size <= m_size, "range exceeds buffer size");
     const VkMappedMemoryRange memoryRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = m_memory.get<VkDeviceMemory>(),
+        .memory = m_memory,
         .offset = offset,
         .size   = size,
     };
@@ -110,7 +111,7 @@ void Buffer::flushRange(usize offset, usize size) {
 void Buffer::invalidate() {
     const VkMappedMemoryRange memoryRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = m_memory.get<VkDeviceMemory>(),
+        .memory = m_memory,
         .offset = 0,
         .size   = m_size,
     };
@@ -121,7 +122,7 @@ void Buffer::invalidateRange(usize offset, usize size) {
     R3_ASSERT(offset + size <= m_size, "range exceeds buffer size");
     const VkMappedMemoryRange memoryRange = {
         .sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-        .memory = m_memory.get<VkDeviceMemory>(),
+        .memory = m_memory,
         .offset = offset,
         .size   = size,
     };

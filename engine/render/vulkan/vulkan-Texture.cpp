@@ -130,7 +130,7 @@ void Texture::create(CommandBuffer& cmd,
             .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_image.handle<VkImage>(),
+            .image               = m_image.imageHandle(),
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -166,8 +166,8 @@ void Texture::create(CommandBuffer& cmd,
 
         cmd.copyBufferToImage({
             .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
-            .srcBuffer      = stagingBuffer.handle<VkBuffer>(),
-            .dstImage       = m_image.handle<VkImage>(),
+            .srcBuffer      = stagingBuffer.bufferHandle(),
+            .dstImage       = m_image.imageHandle(),
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .regionCount    = 1,
             .pRegions       = &bufferToImage,

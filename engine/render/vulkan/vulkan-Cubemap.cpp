@@ -70,14 +70,6 @@ void Cubemap::create(CommandBuffer& cmd,
         const uint32 mipLevels = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
         const usize faceSize   = width * height * channels;
 
-        // Create staging buffer for all 6 faces
-        stagingBuffer = Buffer{faceSize * 6, BufferUsage::HostStaging};
-        for (usize i = 0; i < 6; ++i) {
-            if (faces[i] != nullptr) {
-                stagingBuffer.copy(faces[i], i * faceSize, faceSize);
-            }
-        }
-
         VkImageAspectFlags aspectMask =
             type == TextureType::ShadowCubeMap ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
         ImageUsageFlags usage =
@@ -86,8 +78,19 @@ void Cubemap::create(CommandBuffer& cmd,
         // Create cube map image (note: 6 array layers for cube faces)
         m_image = Image{extent, mipLevels, 1, usage, Format(format), ImageType::ImageCube};
 
+        // Create staging buffer for all 6 faces
+        stagingBuffer = Buffer{faceSize * 6, BufferUsage::HostStaging};
+        for (usize i = 0; i < 6; ++i) {
+            if (faces[i] != nullptr) {
+                stagingBuffer.copy(faces[i], i * faceSize, faceSize);
+            } else {
+                goto l_skip_copy;
+            }
+        }
+
         // Transition image layout for transfer
-        const VkImageMemoryBarrier2 barrier = {
+        VkImageMemoryBarrier2 barrier;
+        barrier = {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .pNext               = nullptr,
             .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -98,7 +101,7 @@ void Cubemap::create(CommandBuffer& cmd,
             .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_image.handle<VkImage>(),
+            .image               = m_image.imageHandle(),
             .subresourceRange =
                 {
                     .aspectMask     = aspectMask,
@@ -137,8 +140,8 @@ void Cubemap::create(CommandBuffer& cmd,
 
         cmd.copyBufferToImage({
             .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
-            .srcBuffer      = stagingBuffer.handle<VkBuffer>(),
-            .dstImage       = m_image.handle<VkImage>(),
+            .srcBuffer      = stagingBuffer.bufferHandle(),
+            .dstImage       = m_image.imageHandle(),
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .regionCount    = static_cast<uint32>(copyRegions.size()),
             .pRegions       = copyRegions.data(),
@@ -169,6 +172,8 @@ void Cubemap::create(CommandBuffer& cmd,
             vkCreateImageView(ctx.device(), &viewInfo, nullptr, &*m_faceViews[face]);
         }
 #endif
+
+    l_skip_copy:
 
         // Create sampler for cube map
         VkPhysicalDeviceProperties properties;

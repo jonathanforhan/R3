@@ -205,7 +205,8 @@ void Renderer::draw() {
     uint32 imageIndex;
     VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(currFrame), imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        return; // Will be handled by resize logic
+        handleWindowResize();
+        return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
@@ -311,9 +312,9 @@ void Renderer::draw() {
                 .pValues    = &fragPushConstants,
             });
 
-            const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->handle<VkBuffer>()};
+            const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};
             const VkDeviceSize offsets[] = {0};
-            const VkBuffer iboIndex      = mesh.indexBufferIndex->handle<VkBuffer>();
+            const VkBuffer iboIndex      = mesh.indexBufferIndex->bufferHandle();
             cmd.bindVertexBuffers(0, vboIndices, offsets);
             cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
             cmd.drawIndexed(static_cast<uint32>(mesh.indexCount));
@@ -361,7 +362,7 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
             .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_colorImage.handle<VkImage>(), // MSAA image
+            .image               = m_colorImage.imageHandle(), // MSAA image
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -403,7 +404,7 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
             .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_depthImage.handle<VkImage>(), // Your depth image
+            .image               = m_depthImage.imageHandle(), // Your depth image
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -458,7 +459,7 @@ void Renderer::transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageI
             .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_colorImage.handle<VkImage>(),
+            .image               = m_colorImage.imageHandle(),
             .subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         },
     };
@@ -514,7 +515,7 @@ void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     const VkRenderingAttachmentInfo colorAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .pNext              = nullptr,
-        .imageView          = m_colorImage.imageView<VkImageView>(),
+        .imageView          = m_colorImage.imageViewHandle(),
         .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
         .resolveImageView   = m_swapchain.imageViews()[imageIndex],
@@ -526,7 +527,7 @@ void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     const VkRenderingAttachmentInfo depthAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .pNext              = nullptr,
-        .imageView          = m_depthImage.imageView<VkImageView>(),
+        .imageView          = m_depthImage.imageViewHandle(),
         .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         .resolveMode        = VK_RESOLVE_MODE_NONE,
         .resolveImageView   = VK_NULL_HANDLE,
@@ -571,7 +572,7 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
     std::vector<VkWriteDescriptorSet> descriptorWrites;
     // MVP buffer
     const VkDescriptorBufferInfo uboBufferInfo = {
-        .buffer = m_ubos[frameIndex].handle<VkBuffer>(),
+        .buffer = m_ubos[frameIndex].bufferHandle(),
         .offset = 0,
         .range  = sizeof(VertexUniformBufferObject),
     };
@@ -589,7 +590,7 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
 
     // Storage buffer - Lights
     const VkDescriptorBufferInfo ssboBufferInfo = {
-        .buffer = m_lights[frameIndex].handle<VkBuffer>(),
+        .buffer = m_lights[frameIndex].bufferHandle(),
         .offset = 0,
         .range  = sizeof(PointLightShaderObject) * numLights,
     };
@@ -609,7 +610,7 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
 
     // Shadow view matrices buffer for binding 4
     const VkDescriptorBufferInfo shadowViewsBufferInfo = {
-        .buffer = m_shadowViews[frameIndex].handle<VkBuffer>(),
+        .buffer = m_shadowViews[frameIndex].bufferHandle(),
         .offset = 0,
         .range  = sizeof(fmat4) * 6,
     };
@@ -701,7 +702,7 @@ void Renderer::presentFrameHelper(uint32 frameIndex, uint32 imageIndex) {
     VkResult result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        // Handle swapchain recreation
+        handleWindowResize();
     } else if (result != VK_SUCCESS) {
         throw Exception{std::format("vkQueuePresentKHR returned: {}", static_cast<int>(result))};
     }
@@ -792,9 +793,9 @@ void Renderer::renderShadowMaps(CommandBuffer& cmd, uint32 frameIndex) {
         });
 
         // Bind mesh and draw
-        const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->handle<VkBuffer>()};
+        const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};
         const VkDeviceSize offsets[] = {0};
-        const VkBuffer iboIndex      = mesh.indexBufferIndex->handle<VkBuffer>();
+        const VkBuffer iboIndex      = mesh.indexBufferIndex->bufferHandle();
         cmd.bindVertexBuffers(0, vboIndices, offsets);
         cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
         cmd.drawIndexed(static_cast<uint32>(mesh.indexCount));
