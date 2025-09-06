@@ -49,12 +49,33 @@ void R3_API enableWindowsConsoleColors() noexcept;
 } // namespace R3::detail
 #endif
 
-#define LOG_ERROR(_Fmt, ...)   (std::println(stderr, R3_ANSI_RED "[ERROR] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
+#define R3_ENABLE_LOG_ERROR   1
+#define R3_ENABLE_LOG_WARNING 1
+#define R3_ENABLE_LOG_INFO    1
+#define R3_ENABLE_LOG_VERBOSE 0
+
+#if R3_ENABLE_LOG_ERROR
+#define LOG_ERROR(_Fmt, ...) (std::println(stderr, R3_ANSI_RED "[ERROR] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
+#else
+#define LOG_ERROR(_Fmt, ...) (void)0
+#endif
+
+#if R3_ENABLE_LOG_WARNING
 #define LOG_WARNING(_Fmt, ...) (std::println(stderr, R3_ANSI_YELLOW "[WARNING] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
-#define LOG_INFO(_Fmt, ...)    (std::println(stdout, R3_ANSI_GREEN "[INFO] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
-#if 1
+#else
+#define LOG_WARNING(_Fmt, ...) (void)0
+#endif
+
+#if R3_ENABLE_LOG_INFO
+#define LOG_INFO(_Fmt, ...) (std::println(stdout, R3_ANSI_GREEN "[INFO] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
+#else
+#define LOG_INFO(_Fmt, ...) (void)0
+#endif
+
+#if R3_ENABLE_LOG_VERBOSE
 #define LOG_VERBOSE(_Fmt, ...) (std::println(stdout, R3_ANSI_CYAN "[VERBOSE] " R3_ANSI_RESET _Fmt, ##__VA_ARGS__))
 #else
 #define LOG_VERBOSE(_Fmt, ...) (void)0
 #endif
+
 #define LOG(_Fmt, ...) (std::println(stdout, _Fmt, ##__VA_ARGS__))

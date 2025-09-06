@@ -5,19 +5,12 @@
 #include "api/MovableHandle.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
+#include "render/CommandBuffer.hpp"
 #include "render/Flags.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-RenderContext.hpp"
-
-#define TO_VK_USAGE_FLAGS(usage)    ((VkImageUsageFlags)((usage) & 0x0000'FFFF) | VK_IMAGE_USAGE_SAMPLED_BIT)
-#define TO_VK_FORMAT(format)        ((VkFormat)(format))
-#define TO_VK_IMAGE_TYPE(type)      ((type) == ImageType::ImageCube ? VK_IMAGE_TYPE_2D : (VkImageType)(type))
-#define TO_VK_IMAGE_VIEW_TYPE(type) ((VkImageViewType)(type))
-#define TO_VK_IMAGE_ASPECT(usage)                                                                 \
-    ((VkImageUsageFlags)((usage) & ImageUsage::DepthStencilAttachment ? VK_IMAGE_ASPECT_DEPTH_BIT \
-                                                                      : VK_IMAGE_ASPECT_COLOR_BIT))
-/* ^^^ TODO should support stencil and maybe multi-plane in the future */
+#include "vulkan-Translation.hpp"
 
 extern VkDevice g_device;
 
@@ -30,18 +23,19 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
       m_usage{usage},
       m_format{format},
       m_type{type} {
-    const VkImageUsageFlags vkUsageFlags = TO_VK_USAGE_FLAGS(usage);
-    const uint32 layerCount              = type == ImageType::ImageCube ? 6U : 1U;
+    const VkImageUsageFlags vkUsageFlags = TO_VK_IMAGE_USAGE_FLAGS(usage);
+    const uint32 layerCount              = this->layerCount();
+    const VkExtent3D vkExtent            = {(uint32)extent.x, (uint32)extent.y, (uint32)extent.z};
 
     try {
         const VkImageCreateInfo imageInfo = {
-            .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .flags     = type == ImageType::ImageCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0U,
-            .imageType = TO_VK_IMAGE_TYPE(type),
-            .format    = TO_VK_FORMAT(format),
-            .extent    = {static_cast<uint32>(extent.x), static_cast<uint32>(extent.y), static_cast<uint32>(extent.z)},
-            .mipLevels = mipLevels,
-            .arrayLayers           = type == ImageType::ImageCube ? 6U : 1U,
+            .sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .flags                 = type == ImageType::ImageCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0U,
+            .imageType             = TO_VK_IMAGE_TYPE(type),
+            .format                = TO_VK_FORMAT(format),
+            .extent                = vkExtent,
+            .mipLevels             = mipLevels,
+            .arrayLayers           = layerCount,
             .samples               = VkSampleCountFlagBits(samples),
             .tiling                = VK_IMAGE_TILING_OPTIMAL,
             .usage                 = vkUsageFlags,
@@ -93,9 +87,10 @@ Image::~Image() {
     vkDestroyImageView(g_device, m_imageView, nullptr);
 }
 
-void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
+void Image::generateMipMaps(ICommandBuffer& cmd_) {
+    vulkan::CommandBuffer cmd = static_cast<vulkan::CommandBuffer&>(cmd_);
     const VkImageAspectFlags aspectMask{TO_VK_IMAGE_ASPECT(m_usage)};
-    const uint32 layerCount = m_type == ImageType::ImageCube ? 6U : 1U;
+    const uint32 layerCount = this->layerCount();
     uint32 mipLevels        = m_mipLevels;
 
     VkImageMemoryBarrier2 memoryBarrierWrite = {
@@ -187,16 +182,8 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
                 },
             .srcOffsets =
                 {
-                    {
-                        .x = 0,
-                        .y = 0,
-                        .z = 0,
-                    },
-                    {
-                        .x = w,
-                        .y = h,
-                        .z = 1,
-                    },
+                    VkOffset3D{0, 0, 0},
+                    VkOffset3D{w, h, 1},
                 },
             .dstSubresource =
                 {
@@ -207,18 +194,12 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
                 },
             .dstOffsets =
                 {
-                    {
-                        .x = 0,
-                        .y = 0,
-                        .z = 0,
-                    },
-                    {
-                        .x = std::max(w / 2, 1),
-                        .y = std::max(h / 2, 1),
-                        .z = 1,
-                    },
+                    VkOffset3D{0, 0, 0},
+                    VkOffset3D{std::max(w / 2, 1), std::max(h / 2, 1), 1},
                 },
         };
+        w = std::max(w / 2, 1);
+        h = std::max(h / 2, 1);
 
         cmd.blitImage({
             .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
@@ -237,9 +218,6 @@ void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
             .imageMemoryBarrierCount = 1,
             .pImageMemoryBarriers    = &memoryBarrierShader,
         });
-
-        w = std::max(w / 2, 1);
-        h = std::max(h / 2, 1);
     }
 
     cmd.pipelineBarrier({

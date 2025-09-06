@@ -9,9 +9,7 @@
 #include "render/Flags.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
-
-#define TO_VK_USAGE_FLAGS(usage)  ((VkBufferUsageFlags)((usage) & 0x0000'FFFF))
-#define TO_VK_MEMORY_FLAGS(usage) (((VkMemoryPropertyFlags)((usage) >> 16)) & 0xFF)
+#include "vulkan-Translation.hpp"
 
 extern VkDevice g_device;
 
@@ -23,7 +21,7 @@ Buffer::Buffer(usize size, BufferUsageFlags usage)
     R3_ASSERT(usage & (BufferUsage::HostVisible | BufferUsage::DeviceLocal),
               "Buffer usage must include either HostVisible or DeviceLocal");
 
-    const VkBufferUsageFlags vkUsageFlags  = TO_VK_USAGE_FLAGS(usage);
+    const VkBufferUsageFlags vkUsageFlags  = TO_VK_BUFFER_USAGE_FLAGS(usage);
     const VkMemoryPropertyFlags vkMemFlags = TO_VK_MEMORY_FLAGS(usage);
 
     try {

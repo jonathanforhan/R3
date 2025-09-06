@@ -50,7 +50,7 @@ private:
     bool m_active = false;
 
     // 0 = not pressed, 1 = pressed, >1 = pressed while opposite key is pressed, highest gets priority
-    struct R3_API ActiveKeys {
+    struct ActiveKeys {
         int w = 0;
         int a = 0;
         int s = 0;

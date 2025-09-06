@@ -7,11 +7,14 @@
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/render/Buffer.hpp"
+#include "engine/render/CommandBuffer.hpp"
+#include "engine/render/Image.hpp"
 #include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
 
-class R3_API CommandBuffer {
+class R3_API CommandBuffer : public ICommandBuffer {
 public:
     R3_CTOR_DEFAULT(CommandBuffer);
 
@@ -35,6 +38,9 @@ public:
     void reset(VkCommandBufferResetFlags flags = 0);
     void beginRendering(const VkRenderingInfo& beginInfo);
     void endRendering();
+
+    virtual void beginCommands() override { begin(); }
+    virtual void endCommands() override { end(); }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// Bind Commands
@@ -87,6 +93,23 @@ public:
     void copyImageToBuffer(const VkCopyImageToBufferInfo2& copyInfo);
     void blitImage(const VkBlitImageInfo2& blitInfo);
     void resolveImage(const VkResolveImageInfo2& resolveInfo);
+
+    virtual void copyBuffer(const Buffer& src, Buffer& dst) override;
+    virtual void copyBuffer(const Buffer& src, usize srcOffset, Buffer& dst, usize dstOffset, usize size) override;
+    virtual void copyImage(const Image& src, Image& dst) override;
+    virtual void copyImage(const Image& src, usize3 srcOffset, Image& dst, usize3 dstOffset, usize3 extent) override;
+    virtual void copyBufferToImage(const Buffer& src, Image& dst) override;
+    virtual void copyBufferToImage(const Buffer& src,
+                                   usize srcOffset,
+                                   Image& dst,
+                                   usize3 dstOffset,
+                                   usize3 dstExtent) override;
+    virtual void copyImageToBuffer(const Image& src, Buffer& dst) override;
+    virtual void copyImageToBuffer(const Image& src,
+                                   usize3 srcOffset,
+                                   usize3 srcExtent,
+                                   Buffer& dst,
+                                   usize dstOffset) override;
 
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /// Synchronization Commands

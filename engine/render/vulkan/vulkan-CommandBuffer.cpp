@@ -8,8 +8,11 @@
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Types.hpp"
+#include "render/Buffer.hpp"
+#include "render/Image.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
+#include "vulkan-Translation.hpp"
 
 namespace R3::vulkan {
 
@@ -212,6 +215,168 @@ void CommandBuffer::blitImage(const VkBlitImageInfo2& blitInfo) {
 void CommandBuffer::resolveImage(const VkResolveImageInfo2& resolveInfo) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
     vkCmdResolveImage2(m_commandBuffer, &resolveInfo);
+}
+
+void CommandBuffer::copyBuffer(const Buffer& src, Buffer& dst) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    R3_ASSERT(src.size() == dst.size(), "Source and destination buffer sizes must match!");
+    const VkBufferCopy copy = {.srcOffset = 0, .dstOffset = 0, .size = src.size()};
+    vkCmdCopyBuffer(m_commandBuffer, src.bufferHandle(), dst.bufferHandle(), 1, &copy);
+}
+
+void CommandBuffer::copyBuffer(const Buffer& src, usize srcOffset, Buffer& dst, usize dstOffset, usize size) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkBufferCopy copy = {.srcOffset = srcOffset, .dstOffset = dstOffset, .size = size};
+    vkCmdCopyBuffer(m_commandBuffer, src.bufferHandle(), dst.bufferHandle(), 1, &copy);
+}
+
+void CommandBuffer::copyImage(const Image& src, Image& dst) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    R3_ASSERT(src.extent() == dst.extent(), "Source and destination image extents must match!");
+    const VkImageCopy copy = {
+        .srcSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(src.usage()),
+                .mipLevel       = src.mipLevels(),
+                .baseArrayLayer = 0,
+                .layerCount     = src.layerCount(),
+            },
+        .srcOffset = {0, 0, 0},
+        .dstSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
+                .mipLevel       = dst.mipLevels(),
+                .baseArrayLayer = 0,
+                .layerCount     = dst.layerCount(),
+            },
+        .dstOffset = {0, 0, 0},
+        .extent    = {(uint32)dst.extent().x, (uint32)dst.extent().y, (uint32)dst.extent().z},
+    };
+    vkCmdCopyImage(m_commandBuffer,
+                   src.imageHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   dst.imageHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1,
+                   &copy);
+}
+
+void CommandBuffer::copyImage(const Image& src, usize3 srcOffset, Image& dst, usize3 dstOffset, usize3 extent) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkImageCopy copy = {
+        .srcSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(src.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = src.layerCount(),
+            },
+        .srcOffset = {(int32)srcOffset.x, (int32)srcOffset.y, (int32)srcOffset.z},
+        .dstSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = dst.layerCount(),
+            },
+        .dstOffset = {(int32)dstOffset.x, (int32)dstOffset.y, (int32)dstOffset.z},
+        .extent    = {(uint32)extent.x, (uint32)extent.y, (uint32)extent.z},
+    };
+    vkCmdCopyImage(m_commandBuffer,
+                   src.imageHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                   dst.imageHandle(),
+                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                   1,
+                   &copy);
+}
+
+void CommandBuffer::copyBufferToImage(const Buffer& src, Image& dst) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = 0,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = dst.layerCount(),
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {(uint32)dst.extent().x, (uint32)dst.extent().y, (uint32)dst.extent().z},
+    };
+    vkCmdCopyBufferToImage(
+        m_commandBuffer, src.bufferHandle(), dst.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+}
+
+void CommandBuffer::copyBufferToImage(const Buffer& src,
+                                      usize srcOffset,
+                                      Image& dst,
+                                      usize3 dstOffset,
+                                      usize3 dstExtent) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = srcOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = dst.layerCount(),
+            },
+        .imageOffset = {(int32)dstOffset.x, (int32)dstOffset.y, (int32)dstOffset.z},
+        .imageExtent = {(uint32)dstExtent.x, (uint32)dstExtent.y, (uint32)dstExtent.z},
+    };
+    vkCmdCopyBufferToImage(
+        m_commandBuffer, src.bufferHandle(), dst.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+}
+
+void CommandBuffer::copyImageToBuffer(const Image& src, Buffer& dst) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = 0,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(src.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = src.layerCount(),
+            },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {(uint32)src.extent().x, (uint32)src.extent().y, (uint32)src.extent().z},
+    };
+    vkCmdCopyImageToBuffer(
+        m_commandBuffer, src.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.bufferHandle(), 1, &copy);
+}
+
+void CommandBuffer::copyImageToBuffer(const Image& src,
+                                      usize3 srcOffset,
+                                      usize3 srcExtent,
+                                      Buffer& dst,
+                                      usize dstOffset) {
+    R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
+    const VkBufferImageCopy copy = {
+        .bufferOffset      = dstOffset,
+        .bufferRowLength   = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource =
+            {
+                .aspectMask     = TO_VK_IMAGE_ASPECT(src.usage()),
+                .mipLevel       = 0,
+                .baseArrayLayer = 0,
+                .layerCount     = src.layerCount(),
+            },
+        .imageOffset = {(int32)srcOffset.x, (int32)srcOffset.y, (int32)srcOffset.z},
+        .imageExtent = {(uint32)srcExtent.x, (uint32)srcExtent.y, (uint32)srcExtent.z},
+    };
+    vkCmdCopyImageToBuffer(
+        m_commandBuffer, src.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst.bufferHandle(), 1, &copy);
 }
 
 void CommandBuffer::pipelineBarrier(VkDependencyInfo dependencyInfo) {

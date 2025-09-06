@@ -1,13 +1,12 @@
 #pragma once
 
+#include "Flags.hpp"
+#include "RenderFwd.hpp"
 #include "RenderHandle.hpp"
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/MovableHandle.hpp"
 #include "engine/api/Types.hpp"
-#include "engine/render/Flags.hpp"
-
-#include "engine/render/vulkan/vulkan-Fwd.hpp"
 
 namespace R3 {
 
@@ -37,18 +36,29 @@ public:
 
     /// @brief Generate mipmaps for the image using the provided command buffer.
     /// @param cmd A reference to a command buffer that is currently recording commands.
-    void generateMipMaps(vulkan::CommandBuffer& cmd);
+    void generateMipMaps(ICommandBuffer& cmd);
     // ^^^ TODO make renderer agnostic
 
+    /// @return The 3D image extent in texels/pixels, represented as a usize3.
+    usize3 extent() const noexcept { return m_extent; }
+    /// @return Image mip levels.
+    uint32 mipLevels() const noexcept { return m_mipLevels; }
+    /// @return Image samples per texel.
+    uint32 samples() const noexcept { return m_samples; }
+    /// @return Image usage flags.
+    ImageUsageFlags usage() const noexcept { return m_usage; }
+    /// @return Image format.
+    Format format() const noexcept { return m_format; }
+    /// @return Image type.
+    ImageType type() const noexcept { return m_type; }
+    /// @return The number of array layers (6 for cube maps, 1 otherwise).
+    uint32 layerCount() const noexcept { return m_type == ImageType::ImageCube ? 6U : 1U; }
     /// @return A reference to the underlying image handle.
     ImageRenderHandle& imageHandle() noexcept { return m_image; }
-
     /// @return A const reference to the underlying image handle.
     const ImageRenderHandle& imageHandle() const noexcept { return m_image; }
-
     /// @return A reference to the underlying image-view handle.
     ImageViewRenderHandle& imageViewHandle() noexcept { return m_imageView; }
-
     /// @return A const reference to the underlying image-view handle.
     const ImageViewRenderHandle& imageViewHandle() const noexcept { return m_imageView; }
 

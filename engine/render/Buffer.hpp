@@ -62,21 +62,14 @@ public:
     /// @param size Size in bytes of the range to invalidate.
     void invalidateRange(usize offset, usize size);
 
-    /// @brief Query the allocated size of the buffer in bytes.
     /// @return The allocated size of the buffer in bytes, set during construction.
     usize size() const noexcept { return m_size; }
-
-    /// @brief Query the mapped pointer of the buffer memory.
     /// @return The mapped pointer of the buffer memory, or nullptr if not mapped.
     void* data() const noexcept { return m_mapped; }
-
-    /// @brief Query the usage flags of the buffer.
     /// @return Usage flags of the buffer, set during construction.
     BufferUsageFlags usage() const noexcept { return m_usage; }
-
     /// @return A reference to the underlying buffer handle.
     BufferRenderHandle& bufferHandle() noexcept { return m_buffer; }
-
     /// @return A const reference to the underlying buffer handle.
     const BufferRenderHandle& bufferHandle() const noexcept { return m_buffer; }
 
