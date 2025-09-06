@@ -77,7 +77,7 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
         .RenderPass          = VK_NULL_HANDLE,
         .MinImageCount       = ctx.maxFramesInFlight(),
         .ImageCount          = ctx.maxFramesInFlight(),
-        .MSAASamples         = ctx.queryMaxUsableSampleCount(),
+        .MSAASamples         = (VkSampleCountFlagBits)ctx.queryMaxUsableSampleCount(),
         .Subpass             = 0,
         .UseDynamicRendering = true,
         .PipelineRenderingCreateInfo =

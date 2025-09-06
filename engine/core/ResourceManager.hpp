@@ -4,7 +4,6 @@
 #if !R3_VULKAN
 #error "Vulkan is currently the only supported RenderContext"
 #else
-#include "engine/render/vulkan/vulkan-Image.hpp"
 #include "engine/render/vulkan/vulkan-Texture.hpp"
 #endif
 
@@ -16,12 +15,12 @@
 #include <entt/resource/cache.hpp>
 #include <entt/resource/resource.hpp>
 #include "Engine.hpp"
-#include "EventHandler.hpp"
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Hash.hpp"
 #include "engine/api/Types.hpp"
 #include "engine/render/Buffer.hpp"
+#include "engine/render/Image.hpp"
 #include "engine/render/vulkan/vulkan-Cubemap.hpp"
 
 namespace R3 {
@@ -43,7 +42,7 @@ public:
     }
 
     template <typename... Args>
-    std::pair<Handle<vulkan::Image>, bool> loadImage(hash::uuid id, Args&&... args) {
+    std::pair<Handle<Image>, bool> loadImage(hash::uuid id, Args&&... args) {
         auto&& [it, b] = m_imageCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
         return {it->second, b};
     }
@@ -74,7 +73,7 @@ public:
 
 private:
     entt::resource_cache<Buffer> m_bufferCache;
-    entt::resource_cache<vulkan::Image> m_imageCache;
+    entt::resource_cache<Image> m_imageCache;
     entt::resource_cache<vulkan::Texture> m_textureCache;
 
     std::map<uint64, uint32> m_textureBindMap;

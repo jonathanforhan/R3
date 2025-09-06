@@ -176,7 +176,7 @@ uint32 RenderContext::queryDeviceMemoryTypeIndex(uint32 typeFilter, VkMemoryProp
     throw Exception("Failed to find suitable memory type");
 }
 
-VkSampleCountFlagBits RenderContext::queryMaxUsableSampleCount() const noexcept {
+uint32 RenderContext::queryMaxUsableSampleCount() const noexcept {
     VkPhysicalDeviceProperties physicalDeviceProperties;
     vkGetPhysicalDeviceProperties(m_physicalDevice, &physicalDeviceProperties);
 
@@ -187,7 +187,7 @@ VkSampleCountFlagBits RenderContext::queryMaxUsableSampleCount() const noexcept 
 
     for (uint32 sampleCount = MAX_SAMPLES; sampleCount != 0; sampleCount >>= 1) {
         if (supportedSampleCounts & sampleCount) {
-            return static_cast<VkSampleCountFlagBits>(sampleCount);
+            return sampleCount;
         }
     }
 

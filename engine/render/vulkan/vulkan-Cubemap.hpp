@@ -10,9 +10,9 @@
 #include "engine/api/Types.hpp"
 #include "engine/render/Buffer.hpp"
 #include "engine/render/Flags.hpp"
+#include "engine/render/Image.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-Image.hpp"
 
 namespace R3::vulkan {
 
@@ -39,9 +39,9 @@ public:
 
     VkSampler sampler() const noexcept { return m_sampler; }
 
-    VkImage image() const noexcept { return m_image.image(); }
+    VkImage image() const noexcept { return m_image.handle<VkImage>(); }
 
-    VkImageView imageView() const noexcept { return m_image.imageView(); }
+    VkImageView imageView() const noexcept { return m_image.imageView<VkImageView>(); }
 
 private:
     void create(CommandBuffer& cmd,

@@ -4,24 +4,20 @@
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <cstring>
 #include <filesystem>
 #include <memory>
-#include <string>
-#include <stb_image.h>
 #include <vulkan/vulkan.h>
 #include "api/Assert.hpp"
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "core/Log.hpp"
 #include "media/ImageLoader.hpp"
 #include "render/Buffer.hpp"
 #include "render/Flags.hpp"
+#include "render/Image.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
@@ -69,10 +65,10 @@ void Cubemap::create(CommandBuffer& cmd,
     RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
 
     try {
-        const VkFormat format   = queryPreferredFormat(type);
-        const VkExtent2D extent = {static_cast<uint32>(width), static_cast<uint32>(height)};
-        const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
-        const usize faceSize    = width * height * channels;
+        const VkFormat format  = queryPreferredFormat(type);
+        const usize3 extent    = {width, height, 1};
+        const uint32 mipLevels = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
+        const usize faceSize   = width * height * channels;
 
         // Create staging buffer for all 6 faces
         stagingBuffer = Buffer{faceSize * 6, BufferUsage::HostStaging};
@@ -84,26 +80,11 @@ void Cubemap::create(CommandBuffer& cmd,
 
         VkImageAspectFlags aspectMask =
             type == TextureType::ShadowCubeMap ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-        VkImageUsageFlags usage = type == TextureType::ShadowCubeMap ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : 0;
+        ImageUsageFlags usage =
+            type == TextureType::ShadowCubeMap ? ImageUsage::DepthStencilAttachment : ImageUsage::Texture;
 
         // Create cube map image (note: 6 array layers for cube faces)
-        m_image = Image{
-            VkImageCreateInfo{
-                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .flags       = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
-                .imageType   = VK_IMAGE_TYPE_2D,
-                .format      = format,
-                .extent      = {extent.width, extent.height, 1},
-                .mipLevels   = mipLevels,
-                .arrayLayers = 6, // 6 faces for cube map
-                .samples     = VK_SAMPLE_COUNT_1_BIT,
-                .tiling      = VK_IMAGE_TILING_OPTIMAL,
-                .usage       = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                         VK_IMAGE_USAGE_SAMPLED_BIT | usage,
-            },
-            aspectMask,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        };
+        m_image = Image{extent, mipLevels, 1, usage, Format(format), ImageType::ImageCube};
 
         // Transition image layout for transfer
         const VkImageMemoryBarrier2 barrier = {
@@ -117,7 +98,7 @@ void Cubemap::create(CommandBuffer& cmd,
             .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_image.image(),
+            .image               = m_image.handle<VkImage>(),
             .subresourceRange =
                 {
                     .aspectMask     = aspectMask,
@@ -150,14 +131,14 @@ void Cubemap::create(CommandBuffer& cmd,
                         .layerCount     = 1,
                     },
                 .imageOffset = {0, 0, 0},
-                .imageExtent = {extent.width, extent.height, 1},
+                .imageExtent = {static_cast<uint32>(extent.x), static_cast<uint32>(extent.y), 1},
             };
         }
 
         cmd.copyBufferToImage({
             .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
             .srcBuffer      = stagingBuffer.handle<VkBuffer>(),
-            .dstImage       = m_image.image(),
+            .dstImage       = m_image.handle<VkImage>(),
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .regionCount    = static_cast<uint32>(copyRegions.size()),
             .pRegions       = copyRegions.data(),
@@ -165,7 +146,7 @@ void Cubemap::create(CommandBuffer& cmd,
 
         // Generate mipmaps for cube map (if supported)
         if (type != TextureType::ShadowCubeMap && supportsBlitting(format)) {
-            m_image.generateMipMaps(cmd, extent, mipLevels, 6);
+            m_image.generateMipMaps(cmd);
         }
 
 #if 0

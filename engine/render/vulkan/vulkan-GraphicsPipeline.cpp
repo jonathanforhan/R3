@@ -1,17 +1,14 @@
 #include "vulkan-GraphicsPipeline.hpp"
 
-#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <iterator>
-#include <span>
 #include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
-#include "render/ShaderObjects.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -21,7 +18,7 @@ namespace R3::vulkan {
 
 GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
                                    std::vector<std::reference_wrapper<Shader>> shaders,
-                                   VkSampleCountFlagBits msaaSamples,
+                                   uint32 msaaSamples,
                                    std::vector<VkFormat> colorFormats,
                                    std::vector<VkDescriptorSetLayout> layouts,
                                    std::vector<VkPushConstantRange> pushConstantRanges,
@@ -126,7 +123,7 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .pNext                 = nullptr,
         .flags                 = 0,
-        .rasterizationSamples  = msaaSamples,
+        .rasterizationSamples  = (VkSampleCountFlagBits)msaaSamples,
         .sampleShadingEnable   = VK_FALSE,
         .minSampleShading      = 0.0f,
         .pSampleMask           = nullptr,

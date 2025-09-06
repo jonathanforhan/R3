@@ -24,13 +24,13 @@
 #include "engine/editor/Editor.hpp"
 #include "render/Buffer.hpp"
 #include "render/Flags.hpp"
+#include "render/Image.hpp"
 #include "render/ShaderObjects.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
-#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
@@ -47,36 +47,11 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     //--- Color/Depth Image
     auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
-    m_colorImage     = Image{
-        VkImageCreateInfo{
-                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .imageType   = VK_IMAGE_TYPE_2D,
-                .format      = m_swapchain.format(),
-                .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
-                .mipLevels   = 1,
-                .arrayLayers = 1,
-                .samples     = msaaSamples,
-                .tiling      = VK_IMAGE_TILING_OPTIMAL,
-                .usage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        },
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
-    m_depthImage = Image{
-        VkImageCreateInfo{
-            .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType   = VK_IMAGE_TYPE_2D,
-            .format      = m_ctx.queryDepthFormat(),
-            .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
-            .mipLevels   = 1,
-            .arrayLayers = 1,
-            .samples     = msaaSamples,
-            .tiling      = VK_IMAGE_TILING_OPTIMAL,
-            .usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        },
-        VK_IMAGE_ASPECT_DEPTH_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
+
+    usize3 extent = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
+
+    m_colorImage = Image{extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format())};
+    m_depthImage = Image{extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat())};
 
     //--- Shaders
     m_vertexShader          = Shader{m_ctx, "_spirv/pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
@@ -386,7 +361,7 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
             .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_colorImage.image(), // MSAA image
+            .image               = m_colorImage.handle<VkImage>(), // MSAA image
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -428,7 +403,7 @@ void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIn
             .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_depthImage.image(), // Your depth image
+            .image               = m_depthImage.handle<VkImage>(), // Your depth image
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -483,7 +458,7 @@ void Renderer::transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageI
             .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_colorImage.image(),
+            .image               = m_colorImage.handle<VkImage>(),
             .subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1},
         },
     };
@@ -508,37 +483,11 @@ void Renderer::handleWindowResize() {
     m_swapchain.recreate(m_ctx, framebufferSize);
 
     // recreate attachments
-    auto msaaSamples = m_ctx.queryMaxUsableSampleCount();
-    m_colorImage     = Image{
-        VkImageCreateInfo{
-                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .imageType   = VK_IMAGE_TYPE_2D,
-                .format      = m_swapchain.format(),
-                .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
-                .mipLevels   = 1,
-                .arrayLayers = 1,
-                .samples     = msaaSamples,
-                .tiling      = VK_IMAGE_TILING_OPTIMAL,
-                .usage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        },
-        VK_IMAGE_ASPECT_COLOR_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
-    m_depthImage = Image{
-        VkImageCreateInfo{
-            .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-            .imageType   = VK_IMAGE_TYPE_2D,
-            .format      = m_ctx.queryDepthFormat(),
-            .extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1},
-            .mipLevels   = 1,
-            .arrayLayers = 1,
-            .samples     = msaaSamples,
-            .tiling      = VK_IMAGE_TILING_OPTIMAL,
-            .usage       = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        },
-        VK_IMAGE_ASPECT_DEPTH_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-    };
+    uint32 msaaSamples = m_ctx.queryMaxUsableSampleCount();
+    usize3 extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
+
+    m_colorImage = Image{extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format())};
+    m_depthImage = Image{extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat())};
 }
 
 void Renderer::addDescriptorMemoryBarrier(CommandBuffer& cmd) {
@@ -565,7 +514,7 @@ void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     const VkRenderingAttachmentInfo colorAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .pNext              = nullptr,
-        .imageView          = m_colorImage.imageView(),
+        .imageView          = m_colorImage.imageView<VkImageView>(),
         .imageLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         .resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT,
         .resolveImageView   = m_swapchain.imageViews()[imageIndex],
@@ -577,7 +526,7 @@ void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     const VkRenderingAttachmentInfo depthAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
         .pNext              = nullptr,
-        .imageView          = m_depthImage.imageView(),
+        .imageView          = m_depthImage.imageView<VkImageView>(),
         .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
         .resolveMode        = VK_RESOLVE_MODE_NONE,
         .resolveImageView   = VK_NULL_HANDLE,

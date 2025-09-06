@@ -12,13 +12,13 @@
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
 #include "core/Log.hpp"
-#include "engine/render/Buffer.hpp"
 #include "media/ImageLoader.hpp"
+#include "render/Buffer.hpp"
 #include "render/Flags.hpp"
+#include "render/Image.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Handle.hpp"
-#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 
 namespace R3::vulkan {
@@ -61,10 +61,10 @@ void Texture::create(CommandBuffer& cmd,
         }
         const uint32 preferredChannels = queryPreferredChannels(type);
 
-        const VkExtent2D extent = {(uint32)width, (uint32)height};
-        const uint32 mipLevels  = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
-        const usize imgSize     = width * height * preferredChannels;
-        const usize rawSize     = width * height * channels;
+        const usize3 extent    = {width, height, 1};
+        const uint32 mipLevels = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
+        const usize imgSize    = width * height * preferredChannels;
+        const usize rawSize    = width * height * channels;
 
         stagingBuffer = Buffer{imgSize, BufferUsage::HostStaging};
 
@@ -118,21 +118,7 @@ void Texture::create(CommandBuffer& cmd,
         }
 
         // image used for texture
-        m_image = Image{
-            VkImageCreateInfo{
-                .sType       = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                .imageType   = VK_IMAGE_TYPE_2D,
-                .format      = preferredFormat,
-                .extent      = {extent.width, extent.height, 1},
-                .mipLevels   = mipLevels,
-                .arrayLayers = 1,
-                .samples     = VK_SAMPLE_COUNT_1_BIT,
-                .tiling      = VK_IMAGE_TILING_OPTIMAL,
-                .usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-            },
-            VK_IMAGE_ASPECT_COLOR_BIT,
-            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        };
+        m_image = Image{extent, mipLevels, 1, ImageUsage::Texture, Format(preferredFormat)};
 
         const VkImageMemoryBarrier2 barrier = {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -144,7 +130,7 @@ void Texture::create(CommandBuffer& cmd,
             .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_image.image(),
+            .image               = m_image.handle<VkImage>(),
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
@@ -175,19 +161,19 @@ void Texture::create(CommandBuffer& cmd,
                     .layerCount     = 1,
                 },
             .imageOffset = {0, 0, 0},
-            .imageExtent = {extent.width, extent.height, 1},
+            .imageExtent = {static_cast<uint32>(extent.x), static_cast<uint32>(extent.y), 1},
         };
 
         cmd.copyBufferToImage({
             .sType          = VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2,
             .srcBuffer      = stagingBuffer.handle<VkBuffer>(),
-            .dstImage       = m_image.image(),
+            .dstImage       = m_image.handle<VkImage>(),
             .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .regionCount    = 1,
             .pRegions       = &bufferToImage,
         });
 
-        m_image.generateMipMaps(cmd, extent, mipLevels);
+        m_image.generateMipMaps(cmd);
 
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(ctx.physicalDevice(), &properties);

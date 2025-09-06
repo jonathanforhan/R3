@@ -6,7 +6,6 @@
 #include "api/MovableHandle.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "render/RenderHandle.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-RenderContext.hpp"
 
@@ -18,8 +17,11 @@ extern VkDevice g_device;
 namespace R3 {
 
 Buffer::Buffer(usize size, BufferUsageFlags usage)
-    : m_size(size),
-      m_usage(usage) {
+    : m_size{size},
+      m_usage{usage} {
+    R3_ASSERT(usage & (BufferUsage::HostVisible | BufferUsage::DeviceLocal),
+              "Buffer usage must include either HostVisible or DeviceLocal");
+
     const VkBufferUsageFlags vkUsageFlags  = TO_VK_USAGE_FLAGS(usage);
     const VkMemoryPropertyFlags vkMemFlags = TO_VK_MEMORY_FLAGS(usage);
 
@@ -75,12 +77,13 @@ void Buffer::mapRange(usize offset, usize size) {
 
 void Buffer::unmap() {
     vkUnmapMemory(g_device, m_memory.get<VkDeviceMemory>());
+    m_mapped = nullptr;
 }
 
 void Buffer::copy(const void* src, usize offset, usize size) {
     R3_ASSERT(m_mapped, "memory must be mapped prior to copy");
     R3_ASSERT(offset + size <= m_size, "range exceeds buffer size");
-    std::memcpy((uint8*)m_mapped + offset, src, size);
+    (void)std::memcpy((uint8*)m_mapped + offset, src, size);
 }
 
 void Buffer::flush() {
@@ -123,11 +126,6 @@ void Buffer::invalidateRange(usize offset, usize size) {
         .size   = size,
     };
     VK_CHECK(vkInvalidateMappedMemoryRanges(g_device, 1, &memoryRange));
-}
-
-template <>
-const VkBuffer& Buffer::handle() const noexcept {
-    return m_buffer.get<VkBuffer>();
 }
 
 } // namespace R3

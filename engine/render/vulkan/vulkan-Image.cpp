@@ -1,72 +1,102 @@
-#include "vulkan-Image.hpp"
+#include "engine/render/Image.hpp"
 
-#include <algorithm>
 #include <vulkan/vulkan.h>
-#include "api/Exception.hpp"
+#include "api/MovableHandle.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "core/Log.hpp"
+#include "render/Flags.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
-#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 
-namespace R3::vulkan {
+#define TO_VK_USAGE_FLAGS(usage)    ((VkImageUsageFlags)((usage) & 0x0000'FFFF) | VK_IMAGE_USAGE_SAMPLED_BIT)
+#define TO_VK_FORMAT(format)        ((VkFormat)(format))
+#define TO_VK_IMAGE_TYPE(type)      ((type) == ImageType::ImageCube ? VK_IMAGE_TYPE_2D : (VkImageType)(type))
+#define TO_VK_IMAGE_VIEW_TYPE(type) ((VkImageViewType)(type))
+#define TO_VK_IMAGE_ASPECT(usage)                                                                 \
+    ((VkImageUsageFlags)((usage) & ImageUsage::DepthStencilAttachment ? VK_IMAGE_ASPECT_DEPTH_BIT \
+                                                                      : VK_IMAGE_ASPECT_COLOR_BIT))
+/* ^^^ TODO should support stencil and maybe multi-plane in the future */
 
-Image::Image(VkImageCreateInfo imageInfo, VkImageAspectFlags aspectFlags, VkMemoryPropertyFlags properties)
-    : m_aspectFlags(aspectFlags) {
-    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
+extern VkDevice g_device;
+
+namespace R3 {
+
+Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags usage, Format format, ImageType type)
+    : m_extent{extent},
+      m_mipLevels{mipLevels},
+      m_samples{samples},
+      m_usage{usage},
+      m_format{format},
+      m_type{type} {
+    const VkImageUsageFlags vkUsageFlags = TO_VK_USAGE_FLAGS(usage);
+    const uint32 layerCount              = type == ImageType::ImageCube ? 6U : 1U;
 
     try {
-        VK_CHECK(vkCreateImage(ctx.device(), &imageInfo, nullptr, &*m_image));
+        const VkImageCreateInfo imageInfo = {
+            .sType     = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .flags     = type == ImageType::ImageCube ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0U,
+            .imageType = TO_VK_IMAGE_TYPE(type),
+            .format    = TO_VK_FORMAT(format),
+            .extent    = {static_cast<uint32>(extent.x), static_cast<uint32>(extent.y), static_cast<uint32>(extent.z)},
+            .mipLevels = mipLevels,
+            .arrayLayers           = type == ImageType::ImageCube ? 6U : 1U,
+            .samples               = VkSampleCountFlagBits(samples),
+            .tiling                = VK_IMAGE_TILING_OPTIMAL,
+            .usage                 = vkUsageFlags,
+            .sharingMode           = VK_SHARING_MODE_EXCLUSIVE,
+            .queueFamilyIndexCount = 0,
+            .pQueueFamilyIndices   = nullptr, /* only needed when sharingMode == VK_SHARING_MODE_CONCURRENT */
+            .initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+        VK_CHECK(vkCreateImage(g_device, &imageInfo, nullptr, &m_image.get<VkImage>()));
 
         VkMemoryRequirements memoryRequirements;
-        vkGetImageMemoryRequirements(ctx.device(), m_image, &memoryRequirements);
+        vkGetImageMemoryRequirements(g_device, m_image.get<VkImage>(), &memoryRequirements);
 
         const VkMemoryAllocateInfo memoryInfo = {
             .sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             .pNext           = nullptr,
             .allocationSize  = memoryRequirements.size,
-            .memoryTypeIndex = ctx.queryDeviceMemoryTypeIndex(memoryRequirements.memoryTypeBits, properties),
+            .memoryTypeIndex = GEngine()->RenderContext<vulkan::RenderContext>().queryDeviceMemoryTypeIndex(
+                memoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
         };
-        VK_CHECK(vkAllocateMemory(ctx.device(), &memoryInfo, nullptr, &*m_imageMemory));
-        VK_CHECK(vkBindImageMemory(ctx.device(), m_image, m_imageMemory, 0));
+        VK_CHECK(vkAllocateMemory(g_device, &memoryInfo, nullptr, &m_memory.get<VkDeviceMemory>()));
+        VK_CHECK(vkBindImageMemory(g_device, m_image.get<VkImage>(), m_memory.get<VkDeviceMemory>(), 0));
 
         const VkImageViewCreateInfo imageViewInfo = {
             .sType      = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext      = nullptr,
-            .flags      = {},
-            .image      = m_image,
-            .viewType   = (imageInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? VK_IMAGE_VIEW_TYPE_CUBE
-                                                                                  : VK_IMAGE_VIEW_TYPE_2D,
+            .image      = m_image.get<VkImage>(),
+            .viewType   = TO_VK_IMAGE_VIEW_TYPE(type),
             .format     = imageInfo.format,
             .components = {},
             .subresourceRange =
                 {
-                    .aspectMask     = m_aspectFlags,
+                    .aspectMask     = TO_VK_IMAGE_ASPECT(usage),
                     .baseMipLevel   = 0,
                     .levelCount     = imageInfo.mipLevels,
                     .baseArrayLayer = 0,
-                    .layerCount     = (uint32)((imageInfo.flags & VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT) ? 6 : 1),
+                    .layerCount     = layerCount,
                 },
         };
-        VK_CHECK(vkCreateImageView(ctx.device(), &imageViewInfo, nullptr, &*m_imageView));
-    } catch (const Exception& ex) {
-        vkDestroyImage(ctx.device(), m_image, nullptr);
-        vkFreeMemory(ctx.device(), m_imageMemory, nullptr);
-        vkDestroyImageView(ctx.device(), m_imageView, nullptr);
-        throw ex;
+        VK_CHECK(vkCreateImageView(g_device, &imageViewInfo, nullptr, &m_imageView.get<VkImageView>()));
+    } catch (...) {
+        this->~Image();
+        throw;
     }
 }
 
-Image::~Image() noexcept {
-    RenderContext& ctx = GEngine()->RenderContext<RenderContext>();
-    vkDestroyImage(ctx.device(), m_image, nullptr);
-    vkFreeMemory(ctx.device(), m_imageMemory, nullptr);
-    vkDestroyImageView(ctx.device(), m_imageView, nullptr);
+Image::~Image() {
+    vkDestroyImage(g_device, m_image.get<VkImage>(), nullptr);
+    vkFreeMemory(g_device, m_memory.get<VkDeviceMemory>(), nullptr);
+    vkDestroyImageView(g_device, m_imageView.get<VkImageView>(), nullptr);
 }
 
-void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLevels, uint32 layerCount) {
+void Image::generateMipMaps(vulkan::CommandBuffer& cmd) {
+    const VkImageAspectFlags aspectMask{TO_VK_IMAGE_ASPECT(m_usage)};
+    const uint32 layerCount = m_type == ImageType::ImageCube ? 6U : 1U;
+    uint32 mipLevels        = m_mipLevels;
+
     VkImageMemoryBarrier2 memoryBarrierWrite = {
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
         .srcStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
@@ -77,14 +107,14 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image,
+        .image               = m_image.get<VkImage>(),
         .subresourceRange =
             {
-                .aspectMask     = m_aspectFlags,
+                .aspectMask     = aspectMask,
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 1,
+                .layerCount     = layerCount,
             },
     };
 
@@ -98,14 +128,14 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image,
+        .image               = m_image.get<VkImage>(),
         .subresourceRange =
             {
-                .aspectMask     = m_aspectFlags,
+                .aspectMask     = aspectMask,
                 .baseMipLevel   = 0,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
-                .layerCount     = 1,
+                .layerCount     = layerCount,
             },
     };
 
@@ -119,10 +149,10 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_image,
+        .image               = m_image.get<VkImage>(),
         .subresourceRange =
             {
-                .aspectMask     = m_aspectFlags,
+                .aspectMask     = aspectMask,
                 .baseMipLevel   = mipLevels - 1,
                 .levelCount     = 1,
                 .baseArrayLayer = 0,
@@ -132,71 +162,67 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
 
     // incremental mipmap generation
     // w and h are halved each iteration
-    for (uint32 layer = 0; layer < layerCount; ++layer) {
-        int32 w = static_cast<int32>(extent.width);
-        int32 h = static_cast<int32>(extent.height);
 
-        for (uint32 mipLevel = 0; mipLevel < mipLevels - 1; ++mipLevel) {
-            memoryBarrierWrite.subresourceRange.baseMipLevel   = mipLevel;
-            memoryBarrierWrite.subresourceRange.baseArrayLayer = layer;
-            cmd.pipelineBarrier({
-                .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .imageMemoryBarrierCount = 1,
-                .pImageMemoryBarriers    = &memoryBarrierWrite,
-            });
+    int32 w = static_cast<int32>(m_extent.x);
+    int32 h = static_cast<int32>(m_extent.y);
 
-            const VkImageBlit2 blitRegion = {
-                .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
-                .srcSubresource =
-                    {
-                        .aspectMask     = m_aspectFlags,
-                        .mipLevel       = mipLevel,
-                        .baseArrayLayer = layer,
-                        .layerCount     = 1,
-                    },
-                .srcOffsets =
-                    {
-                        {0, 0, 0},
-                        {w, h, 1},
-                    },
-                .dstSubresource =
-                    {
-                        .aspectMask     = m_aspectFlags,
-                        .mipLevel       = mipLevel + 1,
-                        .baseArrayLayer = layer,
-                        .layerCount     = 1,
-                    },
-                .dstOffsets =
-                    {
-                        {0, 0, 0},
-                        {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1},
-                    },
-            };
+    for (uint32 mipLevel = 0; mipLevel < mipLevels - 1; ++mipLevel) {
+        memoryBarrierWrite.subresourceRange.baseMipLevel = mipLevel;
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &memoryBarrierWrite,
+        });
+        memoryBarrierWrite.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // mipLevel 0 is DST_OPTIMAL, others are UNDEFINED
 
-            cmd.blitImage({
-                .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
-                .pNext          = nullptr,
-                .srcImage       = m_image,
-                .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                .dstImage       = m_image,
-                .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .regionCount    = 1,
-                .pRegions       = &blitRegion,
-                .filter         = VK_FILTER_LINEAR,
-            });
+        const VkImageBlit2 blitRegion = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_BLIT_2,
+            .srcSubresource =
+                {
+                    .aspectMask     = aspectMask,
+                    .mipLevel       = mipLevel,
+                    .baseArrayLayer = 0,
+                    .layerCount     = layerCount,
+                },
+            .srcOffsets =
+                {
+                    {0, 0, 0},
+                    {w, h, 1},
+                },
+            .dstSubresource =
+                {
+                    .aspectMask     = aspectMask,
+                    .mipLevel       = mipLevel + 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = layerCount,
+                },
+            .dstOffsets =
+                {
+                    {0, 0, 0},
+                    {w > 1 ? w / 2 : 1, h > 1 ? h / 2 : 1, 1},
+                },
+        };
 
-            memoryBarrierShader.subresourceRange.baseMipLevel   = mipLevel;
-            memoryBarrierShader.subresourceRange.baseArrayLayer = layer;
+        cmd.blitImage({
+            .sType          = VK_STRUCTURE_TYPE_BLIT_IMAGE_INFO_2,
+            .srcImage       = m_image.get<VkImage>(),
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstImage       = m_image.get<VkImage>(),
+            .dstImageLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            .regionCount    = 1,
+            .pRegions       = &blitRegion,
+            .filter         = VK_FILTER_LINEAR,
+        });
 
-            cmd.pipelineBarrier({
-                .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-                .imageMemoryBarrierCount = 1,
-                .pImageMemoryBarriers    = &memoryBarrierShader,
-            });
+        memoryBarrierShader.subresourceRange.baseMipLevel = mipLevel;
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &memoryBarrierShader,
+        });
 
-            w = w > 1 ? w / 2 : 1;
-            h = h > 1 ? h / 2 : 1;
-        }
+        w = w > 1 ? w / 2 : 1;
+        h = h > 1 ? h / 2 : 1;
     }
 
     cmd.pipelineBarrier({
@@ -206,4 +232,4 @@ void Image::generateMipMaps(CommandBuffer& cmd, VkExtent2D extent, uint32 mipLev
     });
 }
 
-} // namespace R3::vulkan
+} // namespace R3

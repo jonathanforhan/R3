@@ -27,21 +27,21 @@ public:
 
     void hide();
 
-    ivec2 size() const;
+    usize2 size() const;
 
-    int32 width() const;
+    usize width() const;
 
-    int32 height() const;
+    usize height() const;
 
-    ivec2 framebufferSize() const;
+    usize2 framebufferSize() const;
 
-    int32 framebufferWidth() const;
+    usize framebufferWidth() const;
 
-    int32 framebufferHeight() const;
+    usize framebufferHeight() const;
 
-    void setSize(ivec2 size);
+    void setSize(usize2 size);
 
-    void setSize(int32 width, int32 height);
+    void setSize(usize width, usize height);
 
     ivec2 position() const;
 
@@ -81,6 +81,8 @@ public:
 
 private:
     void update(bool uiFocused = false);
+
+    void setupCallbacks();
 
 private:
     GLFWwindow* m_window                   = nullptr;

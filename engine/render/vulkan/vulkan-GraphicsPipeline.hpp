@@ -1,11 +1,11 @@
 #pragma once
 
 #include <functional>
-#include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
+#include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 
@@ -19,7 +19,7 @@ public:
 
     GraphicsPipeline(RenderContext& ctx,
                      std::vector<std::reference_wrapper<Shader>> shaders,
-                     VkSampleCountFlagBits msaaSamples,
+                     uint32 msaaSamples,
                      std::vector<VkFormat> colorFormats,
                      std::vector<VkDescriptorSetLayout> layouts,
                      std::vector<VkPushConstantRange> pushConstantRanges,

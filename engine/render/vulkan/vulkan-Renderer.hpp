@@ -6,17 +6,16 @@
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
 #include "engine/render/Buffer.hpp"
+#include "engine/render/Image.hpp"
 #include "engine/render/RenderContext.hpp"
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/Window.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-Cubemap.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
-#include "vulkan-Image.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
-#include "vulkan-Texture.hpp"
 
 namespace R3::vulkan {
 
