@@ -10,7 +10,7 @@
 
 namespace R3 {
 
-/// @brief Image class encapsulates an image, its memory, and its image view.
+/// @brief Image class encapsulates an image and image-view with associated device memory management.
 class R3_API Image {
 public:
     R3_CTOR_DEFAULT(Image);
@@ -32,12 +32,11 @@ public:
           ImageType type = ImageType::Image2D);
 
     /// @brief Destroy the image, its memory, and its image view.
-    ~Image();
+    ~Image() noexcept;
 
     /// @brief Generate mipmaps for the image using the provided command buffer.
     /// @param cmd A reference to a command buffer that is currently recording commands.
-    void generateMipMaps(ICommandBuffer& cmd);
-    // ^^^ TODO make renderer agnostic
+    void generateMipmaps(ICommandBuffer& cmd);
 
     /// @return The 3D image extent in texels/pixels, represented as a usize3.
     usize3 extent() const noexcept { return m_extent; }
@@ -49,6 +48,8 @@ public:
     ImageUsageFlags usage() const noexcept { return m_usage; }
     /// @return Image format.
     Format format() const noexcept { return m_format; }
+    /// @return Bytes per pixel for the image format.
+    uint32 bytesPerPixel() const noexcept { return formatPixelSize(m_format); }
     /// @return Image type.
     ImageType type() const noexcept { return m_type; }
     /// @return The number of array layers (6 for cube maps, 1 otherwise).

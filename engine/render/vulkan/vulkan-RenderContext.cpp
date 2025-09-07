@@ -24,7 +24,8 @@
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-Handle.hpp"
 
-VkDevice g_device = VK_NULL_HANDLE;
+VkDevice g_device                 = VK_NULL_HANDLE;
+VkPhysicalDevice g_physicalDevice = VK_NULL_HANDLE;
 
 namespace R3::vulkan {
 
@@ -55,6 +56,7 @@ RenderContext::RenderContext(Window& window)
         //--- Physical Device
         const vkb::PhysicalDevice physicalDevice = selectPhysicalDevice(instance, m_surface);
         m_physicalDevice                         = physicalDevice.physical_device;
+        g_physicalDevice                         = m_physicalDevice;
 
         //--- Logical Device
         const vkb::Device device = createLogicalDevice(physicalDevice);

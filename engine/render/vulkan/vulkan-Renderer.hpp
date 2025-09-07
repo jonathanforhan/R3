@@ -9,9 +9,9 @@
 #include "engine/render/Image.hpp"
 #include "engine/render/RenderContext.hpp"
 #include "engine/render/ShaderObjects.hpp"
+#include "engine/render/Texture.hpp"
 #include "engine/render/Window.hpp"
 #include "vulkan-CommandBuffer.hpp"
-#include "vulkan-Cubemap.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-Shader.hpp"
@@ -80,12 +80,12 @@ private:
     GraphicsPipeline m_graphicsPipeline;
     GraphicsPipeline m_cubemapPipeline;
     GraphicsPipeline m_shadowPipeline;
-    Cubemap m_cubemapTexture;
+    Texture m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
     std::vector<R3::Buffer> m_ubos;
     std::vector<R3::Buffer> m_lights;
     std::vector<R3::Buffer> m_shadowViews;
-    Cubemap m_shadowMap;
+    Texture m_shadowMap;
 };
 
 } // namespace R3::vulkan

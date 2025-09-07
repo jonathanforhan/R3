@@ -10,6 +10,5 @@ class R3_API GraphicsPipeline;
 class R3_API RenderContext;
 class R3_API Shader;
 class R3_API Swapchain;
-class R3_API Texture;
 
 } // namespace R3::vulkan

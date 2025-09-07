@@ -11,7 +11,6 @@
 #include <memory>
 #include <optional>
 #include <shared_mutex>
-#include <span>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -36,11 +35,12 @@
 #include "glTF/glTF-ModelImporter.hpp"
 #include "glTF/glTF.hpp"
 #include "render/Buffer.hpp"
+#include "render/CommandBuffer.hpp"
 #include "render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
+#include "render/Texture.hpp"
 #include "render/vulkan/vulkan-CommandBuffer.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 
@@ -62,7 +62,7 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
         vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
 
         m_cmd = &ctx.graphicsCommandBuffer(0);
-        m_cmd->begin();
+        m_cmd->beginCommands();
 
         for (glTF::Scene& scene : model.root.scenes) {
             // TODO handle multiple scenes?
@@ -80,8 +80,8 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
             }
         }
 
-        m_cmd->end();
-        ctx.submitSync(ctx.graphicsQueue(), m_cmd->commandBuffer());
+        m_cmd->endCommands();
+        ctx.submitSync(ctx.graphicsQueue(), ((vulkan::CommandBuffer*)m_cmd)->commandBuffer());
 
         // the device resources are in ResourceManager cache so we can clear our temp caches
         m_cachedImages.clear();
@@ -267,19 +267,7 @@ void ModelLoader::glTF_processVertices(Entity entity,
             };
             vertexStagingBuffer->copy(&vertex, i * sizeof(Vertex), sizeof(Vertex));
         }
-        *vertexCopyRegion = {
-            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-            .srcOffset = 0,
-            .dstOffset = 0,
-            .size      = vertexCount * sizeof(Vertex),
-        };
-        m_cmd->copyBuffer({
-            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = vertexStagingBuffer->bufferHandle(),
-            .dstBuffer   = vbo->bufferHandle(),
-            .regionCount = 1,
-            .pRegions    = vertexCopyRegion,
-        });
+        m_cmd->copyBuffer(*vertexStagingBuffer, vbo);
     }
 
     R3_ASSERT(!GWorld()->registry().try_get<MeshComponent>(entity));
@@ -322,19 +310,7 @@ void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, u
         *indexStagingBuffer = Buffer{indices.size() * sizeof(indices[0]), BufferUsage::HostStaging};
         indexStagingBuffer->copy(indices.data(), 0, indices.size() * sizeof(uint32));
 
-        *indexCopyRegion = {
-            .sType     = VK_STRUCTURE_TYPE_BUFFER_COPY_2,
-            .srcOffset = 0,
-            .dstOffset = 0,
-            .size      = indices.size() * sizeof(uint32),
-        };
-        m_cmd->copyBuffer({
-            .sType       = VK_STRUCTURE_TYPE_COPY_BUFFER_INFO_2,
-            .srcBuffer   = indexStagingBuffer->bufferHandle(),
-            .dstBuffer   = ibo->bufferHandle(),
-            .regionCount = 1,
-            .pRegions    = indexCopyRegion,
-        });
+        m_cmd->copyBuffer(*indexStagingBuffer, ibo);
     }
 
     R3_ASSERT(GWorld()->registry().try_get<MeshComponent>(entity));
@@ -397,7 +373,7 @@ void ModelLoader::glTF_processTexture(Entity entity,
 
     const glTF::Image& image = model.root.images[*texture.source];
 
-    Handle<vulkan::Texture> hTexture;
+    Handle<Texture> hTexture;
     std::string key;
 
     if (!image.uri.empty()) {
@@ -411,13 +387,13 @@ void ModelLoader::glTF_processTexture(Entity entity,
             std::string imgKey = glTF_imageKey(imagePath);
             LOG_INFO("importing image {}", imgKey);
 
-            Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-
             R3_ASSERT(m_cachedImages.contains(imgKey));
             auto& imgDesc = m_cachedImages.at(imgKey);
 
-            *tex = vulkan::Texture{
-                *m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type, *stagingBuffer};
+            Buffer* textureStagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
+            *textureStagingBuffer = Buffer{imgDesc.width * imgDesc.height * imgDesc.channels, BufferUsage::HostStaging};
+
+            *tex = Texture{*m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type};
         }
 
         key      = std::move(texKey);
@@ -433,13 +409,10 @@ void ModelLoader::glTF_processTexture(Entity entity,
             std::string imgKey = glTF_embeddedImageKey(*texture.source, *image.bufferView);
             LOG_INFO("importing image {}", imgKey);
 
-            Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-
             R3_ASSERT(m_cachedImages.contains(imgKey));
             auto& imgDesc = m_cachedImages.at(imgKey);
 
-            *tex = vulkan::Texture{
-                *m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type, *stagingBuffer};
+            *tex = Texture{*m_cmd, imgDesc.data.get(), imgDesc.width, imgDesc.height, imgDesc.channels, type};
         }
 
         key      = std::move(texKey);
@@ -461,9 +434,7 @@ void ModelLoader::glTF_processTexture(Entity entity, const glTF::Model& model, u
     auto&& [tex, texLoaded] = GResourceManager()->loadTexture(std::string_view(key));
 
     if (texLoaded) {
-        Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-
-        *tex = vulkan::Texture{*m_cmd, (const std::byte*)color, 1, 1, 4, type, *stagingBuffer};
+        *tex = Texture{*m_cmd, (const std::byte*)color, 1, 1, 4, type};
     }
 
     MaterialComponent& mat = GWorld()->registry().get_or_emplace<MaterialComponent>(entity);

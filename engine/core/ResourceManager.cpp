@@ -6,20 +6,17 @@
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <entt/resource/cache.hpp>
-#include "Log.hpp"
 #include "api/Assert.hpp"
 #include "api/Hash.hpp"
 #include "api/Types.hpp"
 #include "core/Engine.hpp"
-#include "render/ShaderObjects.hpp"
-#include "render/vulkan/vulkan-Cubemap.hpp"
+#include "render/Texture.hpp"
 #include "render/vulkan/vulkan-DescriptorSet.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
-#include "render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 
-uint32 ResourceManager::bindTexture(hash::uuid id, const vulkan::Texture& texture) {
+uint32 ResourceManager::bindTexture(hash::uuid id, const Texture& texture) {
     if (m_textureBindMap.contains(id)) {
         uint32 index = m_textureBindMap[id];
         m_textureBindSlots[index].first++;
@@ -42,55 +39,8 @@ uint32 ResourceManager::bindTexture(hash::uuid id, const vulkan::Texture& textur
     R3_ASSERT(slot < ctx.maxTextureSamplerBindings(), "Texture bind slot out of range");
 
     const VkDescriptorImageInfo imageInfo = {
-        .sampler     = texture.sampler(),
-        .imageView   = texture.imageView(),
-        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-    };
-    VkWriteDescriptorSet descriptorWrite = {
-        .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .pNext            = nullptr,
-        .dstSet           = nullptr /* Descriptor set to update */,
-        .dstBinding       = 2,
-        .dstArrayElement  = slot,
-        .descriptorCount  = 1,
-        .descriptorType   = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .pImageInfo       = &imageInfo,
-        .pBufferInfo      = nullptr,
-        .pTexelBufferView = nullptr,
-    };
-    for (uint32 i = 0; i < ctx.maxFramesInFlight(); i++) {
-        descriptorWrite.dstSet = ctx.descriptorSet(i).descriptorSet();
-        vkUpdateDescriptorSets(ctx.device(), 1, &descriptorWrite, 0, nullptr);
-    }
-
-    return slot;
-}
-
-uint32 ResourceManager::bindTexture(hash::uuid id, const vulkan::Cubemap& cubemap) {
-    if (m_textureBindMap.contains(id)) {
-        uint32 index = m_textureBindMap[id];
-        m_textureBindSlots[index].first++;
-        return index;
-    }
-
-    vulkan::RenderContext& ctx = GEngine()->RenderContext<vulkan::RenderContext>();
-
-    uint32 slot;
-    if (m_textureFreeBindSlots.empty()) {
-        slot = static_cast<uint32>(m_textureBindSlots.size());
-        m_textureBindSlots.emplace_back(1, id);
-    } else {
-        slot = m_textureFreeBindSlots.back();
-        m_textureFreeBindSlots.pop_back();
-        m_textureBindSlots[slot] = std::pair{1, id};
-    }
-    m_textureBindMap.emplace(id, slot);
-
-    R3_ASSERT(slot < ctx.maxTextureSamplerBindings(), "Texture bind slot out of range");
-
-    const VkDescriptorImageInfo imageInfo = {
-        .sampler     = cubemap.sampler(),
-        .imageView   = cubemap.imageView(),
+        .sampler     = texture.samplerHandle(),
+        .imageView   = texture.imageViewHandle(),
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
     VkWriteDescriptorSet descriptorWrite = {

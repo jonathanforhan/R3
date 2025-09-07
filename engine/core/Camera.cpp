@@ -11,8 +11,7 @@
 
 namespace R3 {
 
-Camera::Camera(CameraType type)
-    : m_cameraType(type) {
+Camera::Camera() {
     translateBackward(2.0f);
     translateUp(1.0f);
 }
@@ -115,21 +114,17 @@ void Camera::lookAround(float dx, float dy) noexcept {
     m_front   = glm::normalize(m_front);
 }
 
-void Camera::apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept {
-    switch (m_cameraType) {
-        case CameraType::Perspective: {
-            projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
-        } break;
-        case CameraType::Orthographic: {
-            float denom = std::max(windowSize.x, windowSize.y) / 2.0f;
-            float w     = windowSize.x / denom;
-            float h     = windowSize.y / denom;
-            projection  = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
-        } break;
-        default:
-            break;
-    }
-    view = glm::lookAt(m_position, m_position + m_front, m_up);
+void Camera::applyPerspective(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept {
+    projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
+    view       = glm::lookAt(m_position, m_position + m_front, m_up);
+}
+
+void Camera::applyOrthographic(ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept {
+    float denom = std::max(windowSize.x, windowSize.y) / 2.0f;
+    float w     = windowSize.x / denom;
+    float h     = windowSize.y / denom;
+    projection  = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
+    view        = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
 } // namespace R3

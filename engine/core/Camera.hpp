@@ -5,14 +5,9 @@
 
 namespace R3 {
 
-enum class R3_API CameraType {
-    Perspective,
-    Orthographic,
-};
-
 class R3_API Camera {
 public:
-    explicit Camera(CameraType type = CameraType::Perspective);
+    Camera();
 
     void update(double dt);
 
@@ -24,8 +19,6 @@ public:
     void translateDown(float magnitude) noexcept;
     void lookAround(float dx, float dy) noexcept;
 
-    CameraType cameraType() const noexcept { return m_cameraType; }
-    void setCameraType(CameraType type) noexcept { m_cameraType = type; }
     fvec3 front() const noexcept { return m_front; }
     float fov() const noexcept { return m_fov; }
     void setFov(float fov) noexcept { m_fov = fov; }
@@ -34,11 +27,10 @@ public:
     bool active() const noexcept { return m_active; }
     void setActive(bool active = true) noexcept { m_active = active; }
 
-    void apply(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
+    void applyPerspective(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
+    void applyOrthographic(ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
 
 private:
-    CameraType m_cameraType;
-
     float m_fov{45.0f};
     float m_yaw{90.0f};
     float m_pitch{0.0f};

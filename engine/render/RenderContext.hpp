@@ -1,7 +1,6 @@
 #pragma once
 
 #include "engine/api/Api.hpp"
-
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
 

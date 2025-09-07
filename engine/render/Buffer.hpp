@@ -9,7 +9,7 @@
 
 namespace R3 {
 
-/// @brief Buffer class encapsulates a Host or Device buffer and its associated memory.
+/// @brief Buffer class encapsulates a buffer with associated device memory management.
 class R3_API Buffer {
 public:
     R3_CTOR_DEFAULT(Buffer);
@@ -22,7 +22,7 @@ public:
     Buffer(usize size, BufferUsageFlags usage);
 
     /// @brief Destroy the buffer and free its associated memory.
-    ~Buffer();
+    ~Buffer() noexcept;
 
     /// @brief Map the entire buffer memory to CPU accessible address space.
     void map();

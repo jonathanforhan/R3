@@ -81,13 +81,13 @@ Image::Image(usize3 extent, uint32 mipLevels, uint32 samples, ImageUsageFlags us
     }
 }
 
-Image::~Image() {
+Image::~Image() noexcept {
     vkDestroyImage(g_device, m_image, nullptr);
     vkFreeMemory(g_device, m_memory, nullptr);
     vkDestroyImageView(g_device, m_imageView, nullptr);
 }
 
-void Image::generateMipMaps(ICommandBuffer& cmd_) {
+void Image::generateMipmaps(ICommandBuffer& cmd_) {
     vulkan::CommandBuffer cmd = static_cast<vulkan::CommandBuffer&>(cmd_);
     const VkImageAspectFlags aspectMask{TO_VK_IMAGE_ASPECT(m_usage)};
     const uint32 layerCount = this->layerCount();

@@ -293,22 +293,7 @@ void CommandBuffer::copyImage(const Image& src, usize3 srcOffset, Image& dst, us
 
 void CommandBuffer::copyBufferToImage(const Buffer& src, Image& dst) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    const VkBufferImageCopy copy = {
-        .bufferOffset      = 0,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource =
-            {
-                .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
-                .mipLevel       = 0,
-                .baseArrayLayer = 0,
-                .layerCount     = dst.layerCount(),
-            },
-        .imageOffset = {0, 0, 0},
-        .imageExtent = {(uint32)dst.extent().x, (uint32)dst.extent().y, (uint32)dst.extent().z},
-    };
-    vkCmdCopyBufferToImage(
-        m_commandBuffer, src.bufferHandle(), dst.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    copyBufferToImage(src, 0, dst, {0, 0, 0}, dst.extent());
 }
 
 void CommandBuffer::copyBufferToImage(const Buffer& src,
@@ -317,22 +302,53 @@ void CommandBuffer::copyBufferToImage(const Buffer& src,
                                       usize3 dstOffset,
                                       usize3 dstExtent) {
     R3_ASSERT(m_isRecording, "CommandBuffer must be recording!");
-    const VkBufferImageCopy copy = {
-        .bufferOffset      = srcOffset,
-        .bufferRowLength   = 0,
-        .bufferImageHeight = 0,
-        .imageSubresource =
+
+    const VkImageMemoryBarrier2 barrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        .srcAccessMask       = VK_ACCESS_NONE,
+        .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+        .dstAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = dst.imageHandle(),
+        .subresourceRange =
             {
                 .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
-                .mipLevel       = 0,
+                .baseMipLevel   = 0,
+                .levelCount     = dst.mipLevels(),
                 .baseArrayLayer = 0,
                 .layerCount     = dst.layerCount(),
             },
-        .imageOffset = {(int32)dstOffset.x, (int32)dstOffset.y, (int32)dstOffset.z},
-        .imageExtent = {(uint32)dstExtent.x, (uint32)dstExtent.y, (uint32)dstExtent.z},
     };
-    vkCmdCopyBufferToImage(
-        m_commandBuffer, src.bufferHandle(), dst.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    pipelineBarrier({
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers    = &barrier,
+    });
+
+    const uint32 faceSize = (uint32)(dst.extent().x * dst.extent().y * dst.extent().z) * dst.bytesPerPixel();
+
+    for (uint32 face = 0; face < dst.layerCount(); ++face) {
+        const VkBufferImageCopy copy = {
+            .bufferOffset      = srcOffset + (face * faceSize),
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource =
+                {
+                    .aspectMask     = TO_VK_IMAGE_ASPECT(dst.usage()),
+                    .mipLevel       = 0,
+                    .baseArrayLayer = face,
+                    .layerCount     = 1,
+                },
+            .imageOffset = {(int32)dstOffset.x, (int32)dstOffset.y, (int32)dstOffset.z},
+            .imageExtent = {(uint32)dstExtent.x, (uint32)dstExtent.y, (uint32)dstExtent.z},
+        };
+        vkCmdCopyBufferToImage(
+            m_commandBuffer, src.bufferHandle(), dst.imageHandle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
+    }
 }
 
 void CommandBuffer::copyImageToBuffer(const Image& src, Buffer& dst) {

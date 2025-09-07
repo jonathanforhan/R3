@@ -13,6 +13,7 @@
 #include "engine/api/Types.hpp"
 #include "engine/core/Entity.hpp"
 #include "engine/render/Flags.hpp"
+#include "engine/render/RenderFwd.hpp"
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/vulkan/vulkan-CommandBuffer.hpp"
 #include "glTF/glTF-ModelImporter.hpp"
@@ -77,7 +78,7 @@ private:
 
 private:
     std::filesystem::path m_path;
-    vulkan::CommandBuffer* m_cmd = nullptr;
+    ICommandBuffer* m_cmd = nullptr;
     std::map<std::string, ImageLoader::ImageDescriptor> m_cachedImages;
     std::vector<Vertex> m_cachedVertices;
     std::vector<uint32> m_cachedIndices;

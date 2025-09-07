@@ -1,7 +1,6 @@
 #include "vulkan-Renderer.hpp"
 
 #include <array>
-#include <cstddef>
 #include <filesystem>
 #include <format>
 #include <iterator>
@@ -20,12 +19,14 @@
 #include "components/TransformComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/Engine.hpp"
+#include "core/ResourceManager.hpp"
 #include "core/World.hpp"
 #include "engine/editor/Editor.hpp"
 #include "render/Buffer.hpp"
 #include "render/Flags.hpp"
 #include "render/Image.hpp"
 #include "render/ShaderObjects.hpp"
+#include "render/Texture.hpp"
 #include "render/Window.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -135,8 +136,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         "assets/textures/skybox/back.jpg",
     };
     {
-        Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-        m_cubemapTexture = Cubemap{m_ctx.graphicsCommandBuffer(0), facePaths, TextureType::CubeMap, *stagingBuffer};
+        m_cubemapTexture        = Texture{m_ctx.graphicsCommandBuffer(0), facePaths, TextureType::Cubemap};
         m_cubemapTextureBinding = GResourceManager()->bindTexture("skybox", m_cubemapTexture);
     }
     cmd.end();
@@ -170,14 +170,14 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Shadow Maps
     cmd.begin();
     {
-        Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>();
-        m_shadowMap           = Cubemap{m_ctx.graphicsCommandBuffer(0),
-                              std::array<const std::byte*, 6>{},
-                              1024,
-                              1024,
-                              4,
-                              TextureType::ShadowCubeMap,
-                              *stagingBuffer};
+        m_shadowMap = Texture{
+            m_ctx.graphicsCommandBuffer(0),
+            nullptr,
+            1024,
+            1024,
+            4,
+            TextureType::DepthCubemap,
+        };
     }
     cmd.end();
     m_ctx.submitSync(m_ctx.graphicsQueue(), cmd.commandBuffer());
@@ -212,7 +212,8 @@ void Renderer::draw() {
     }
 
     // update view projection matrices in ubo
-    GWorld()->camera().apply(m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
+    GWorld()->camera().applyPerspective(
+        m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
     m_ubos[currFrame].copy(&m_viewProj, 0, sizeof(m_viewProj));
 
     uint32 numLights = updateLights(currFrame);
@@ -627,8 +628,8 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
 
     // Shadow sampler
     const VkDescriptorImageInfo shadowImageInfo = {
-        .sampler     = m_shadowMap.sampler(),
-        .imageView   = m_shadowMap.imageView(),
+        .sampler     = m_shadowMap.samplerHandle(),
+        .imageView   = m_shadowMap.imageViewHandle(),
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
     descriptorWrites.push_back(VkWriteDescriptorSet{
@@ -816,7 +817,7 @@ void Renderer::beginShadowRendering(CommandBuffer& cmd) {
         .newLayout           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_shadowMap.image(), // Your shadow cubemap
+        .image               = m_shadowMap.imageHandle(), // Your shadow cubemap
         .subresourceRange =
             {
                 .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -837,7 +838,7 @@ void Renderer::beginShadowRendering(CommandBuffer& cmd) {
     // Begin rendering - ONLY depth attachment, no color
     const VkRenderingAttachmentInfo depthAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView          = m_shadowMap.imageView(),
+        .imageView          = m_shadowMap.imageViewHandle(),
         .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
         .resolveMode        = VK_RESOLVE_MODE_NONE,
         .resolveImageView   = VK_NULL_HANDLE,
@@ -872,7 +873,7 @@ void Renderer::transitionShadowMapForSampling(CommandBuffer& cmd) {
         .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_shadowMap.image(),
+        .image               = m_shadowMap.imageHandle(),
         .subresourceRange    = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 6},
     };
 

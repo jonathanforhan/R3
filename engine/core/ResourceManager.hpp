@@ -1,12 +1,5 @@
 #pragma once
 
-// TODO make this renderer agnostic
-#if !R3_VULKAN
-#error "Vulkan is currently the only supported RenderContext"
-#else
-#include "engine/render/vulkan/vulkan-Texture.hpp"
-#endif
-
 #include <map>
 #include <memory>
 #include <utility>
@@ -21,7 +14,7 @@
 #include "engine/api/Types.hpp"
 #include "engine/render/Buffer.hpp"
 #include "engine/render/Image.hpp"
-#include "engine/render/vulkan/vulkan-Cubemap.hpp"
+#include "engine/render/Texture.hpp"
 
 namespace R3 {
 
@@ -48,14 +41,12 @@ public:
     }
 
     template <typename... Args>
-    std::pair<Handle<vulkan::Texture>, bool> loadTexture(hash::uuid id, Args&&... args) {
+    std::pair<Handle<Texture>, bool> loadTexture(hash::uuid id, Args&&... args) {
         auto&& [it, b] = m_textureCache.load((entt::id_type)(uint64)id, std::forward<Args>(args)...);
         return {it->second, b};
     }
 
-    uint32 bindTexture(hash::uuid id, const vulkan::Texture& texture);
-
-    uint32 bindTexture(hash::uuid id, const vulkan::Cubemap& cubemap);
+    uint32 bindTexture(hash::uuid id, const Texture& texture);
 
     void unbindTexture(uint32 slot);
 
@@ -74,7 +65,7 @@ public:
 private:
     entt::resource_cache<Buffer> m_bufferCache;
     entt::resource_cache<Image> m_imageCache;
-    entt::resource_cache<vulkan::Texture> m_textureCache;
+    entt::resource_cache<Texture> m_textureCache;
 
     std::map<uint64, uint32> m_textureBindMap;
     std::vector<std::pair<uint32, uint64>> m_textureBindSlots;

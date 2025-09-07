@@ -87,6 +87,65 @@ enum class R3_API Format {
     D24_UNORM_S8_UINT   = 129,
 };
 
+constexpr uint32 R3_API formatPixelSize(Format format) {
+    switch (format) {
+        case Format::R8_UNORM:
+            return 1;
+        case Format::R8G8_UNORM:
+            return 2;
+        case Format::R8G8B8A8_UNORM:
+            return 4;
+        case Format::R8G8B8A8_SRGB:
+            return 4;
+        case Format::B8G8R8A8_SRGB:
+            return 4;
+        case Format::R16_SFLOAT:
+            return 2;
+        case Format::R16G16_SFLOAT:
+            return 4;
+        case Format::R16G16B16A16_SFLOAT:
+            return 8;
+        case Format::R32_SFLOAT:
+            return 4;
+        case Format::R32G32_SFLOAT:
+            return 8;
+        case Format::R32G32B32_SFLOAT:
+            return 12;
+        case Format::R32G32B32A32_SFLOAT:
+            return 16;
+        case Format::D16_UNORM:
+            return 2;
+        case Format::D24_UNORM:
+            return 3;
+        case Format::D32_SFLOAT:
+            return 4;
+        case Format::D24_UNORM_S8_UINT:
+            return 4;
+        default:
+            return 0;
+    }
+}
+
+/// @brief Enumerates the available filtering modes.
+enum class R3_API Filter {
+    Nearest = 0,
+    Linear  = 1,
+};
+
+/// @brief Enumerates the available mipmap filtering modes.
+enum class R3_API MipmapMode {
+    Nearest = 0,
+    Linear  = 1,
+};
+
+/// @brief Enumerates the possible modes for addressing texture coordinates.
+enum class R3_API AddressMode {
+    Repeat         = 0,
+    MirroredRepeat = 1,
+    ClampToEdge    = 2,
+    ClampToBorder  = 3,
+};
+
 /// @brief Defines different types of textures used in rendering, specifying their intended use cases.
 enum class R3_API TextureType {
     Albedo            = 0,
@@ -94,8 +153,9 @@ enum class R3_API TextureType {
     Normal            = 2,
     AmbientOcclusion  = 3,
     Emissive          = 4,
-    CubeMap           = 5,
-    ShadowCubeMap     = 6,
+    Cubemap           = 5,
+    Depth             = 6,
+    DepthCubemap      = 7,
 };
 
 } // namespace R3

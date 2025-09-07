@@ -57,11 +57,8 @@ Buffer::Buffer(usize size, BufferUsageFlags usage)
     }
 }
 
-Buffer::~Buffer() {
+Buffer::~Buffer() noexcept {
     vkDestroyBuffer(g_device, m_buffer, nullptr);
-    if (m_memory && m_mapped) {
-        vkUnmapMemory(g_device, m_memory);
-    }
     vkFreeMemory(g_device, m_memory, nullptr);
 }
 

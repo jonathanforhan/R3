@@ -10,7 +10,6 @@
 #include "engine/render/Flags.hpp"
 #include "engine/render/vulkan/vulkan-DescriptorSet.hpp"
 #include "engine/render/vulkan/vulkan-GraphicsPipeline.hpp"
-#include "engine/render/vulkan/vulkan-Texture.hpp"
 
 namespace R3 {
 

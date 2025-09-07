@@ -17,3 +17,8 @@
 /* ^^^ TODO should support stencil and maybe multi-plane in the future */
 
 #define TO_VK_FORMAT(format) ((VkFormat)(format))
+
+// Sampler
+#define TO_VK_FILTER(filter)             ((VkFilter)(filter))
+#define TO_VK_SAMPLER_MIPMAP_MODE(mode)  ((VkSamplerMipmapMode)(mode))
+#define TO_VK_SAMPLER_ADDRESS_MODE(mode) ((VkSamplerAddressMode)(mode))
