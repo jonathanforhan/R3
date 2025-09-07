@@ -253,10 +253,9 @@ void ModelLoader::glTF_processVertices(Entity entity,
             }
         }
 
-        Buffer* vertexStagingBuffer     = GResourceManager()->newFrameScopedObject<Buffer>();
-        VkBufferCopy2* vertexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
-
-        *vertexStagingBuffer = Buffer{vertexCount * sizeof(Vertex), BufferUsage::HostStaging};
+        usize vboSize = vertexCount * sizeof(Vertex);
+        Buffer* vertexStagingBuffer =
+            GResourceManager()->newFrameScopedObject<Buffer>(vboSize, BufferUsage::HostStaging);
         for (usize i = 0; i < vertexCount; i++) {
             const Vertex vertex = {
                 .position      = positions[i],
@@ -304,10 +303,9 @@ void ModelLoader::glTF_processIndices(Entity entity, const glTF::Model& model, u
                 throw Exception{std::format("unsupported index datatype {}", accessor.componentType)};
         }
 
-        Buffer* indexStagingBuffer     = GResourceManager()->newFrameScopedObject<Buffer>();
-        VkBufferCopy2* indexCopyRegion = GResourceManager()->newFrameScopedObject<VkBufferCopy2>();
-
-        *indexStagingBuffer = Buffer{indices.size() * sizeof(indices[0]), BufferUsage::HostStaging};
+        usize iboSize = indices.size() * sizeof(uint32);
+        Buffer* indexStagingBuffer =
+            GResourceManager()->newFrameScopedObject<Buffer>(iboSize, BufferUsage::HostStaging);
         indexStagingBuffer->copy(indices.data(), 0, indices.size() * sizeof(uint32));
 
         m_cmd->copyBuffer(*indexStagingBuffer, ibo);

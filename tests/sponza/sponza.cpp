@@ -23,22 +23,23 @@ static void moduleMain() {
     ModelLoader loader;
 
 #if 1
-    auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    auto futchess  = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
-    auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+    // auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    auto futchess = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    // auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
 
-    auto helmet = futhelmet.get();
-    auto chess  = futchess.get();
-    auto sponza = futsponza.get();
+    // auto helmet = futhelmet.get();
+    auto chess = futchess.get();
+    // auto sponza = futsponza.get();
 
     {
         auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-        t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+        // t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
+        t = glm::scale(t, fvec3(10.0f));
     }
     {
-        auto& t = GWorld()->registry().get<TransformComponent>(helmet).transform();
-        t       = glm::translate(t, fvec3(2.0f, 1.0f, 0.0f));
-        t       = glm::scale(t, fvec3(0.25));
+        // auto& t = GWorld()->registry().get<TransformComponent>(helmet).transform();
+        // t       = glm::translate(t, fvec3(2.0f, 1.0f, 0.0f));
+        // t       = glm::scale(t, fvec3(0.25));
     }
 #endif
 
@@ -53,9 +54,9 @@ static void moduleMain() {
     light = GWorld()->registry().create();
     GWorld()->registry().emplace<LightComponent>(light,
                                                  LightComponent{
-                                                     .position  = fvec3(0.0f, 2.0f, 0.0f),
+                                                     .position  = fvec3(-2.0f, 4.0f, -4.0f),
                                                      .color     = fvec3(1.0f),
-                                                     .intensity = 10.0f,
+                                                     .intensity = 25.0f,
                                                  });
 }
 

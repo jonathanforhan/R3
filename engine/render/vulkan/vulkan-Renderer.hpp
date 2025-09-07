@@ -30,6 +30,13 @@ public:
 
     void draw();
 
+    IRenderContext* context() noexcept { return &m_ctx; }
+
+private:
+    void shadowPass(CommandBuffer& cmd, uint32 frameIndex);
+
+    void cubemapPass(CommandBuffer& cmd, uint32 frameIndex);
+
     // needed because using dynamic rendering
     void transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex);
 
@@ -38,30 +45,13 @@ public:
 
     void handleWindowResize();
 
-    IRenderContext* context() noexcept { return &m_ctx; }
-
-private:
-    void addDescriptorMemoryBarrier(CommandBuffer& cmd);
-
     void beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex);
 
     void bindPipelineHelper(CommandBuffer& cmd, const GraphicsPipeline& pipeline);
 
     void writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights);
 
-    void submitHelper(CommandBuffer& cmd, uint32 frameIndex);
-
-    void presentFrameHelper(uint32 frameIndex, uint32 imageIndex);
-
     uint32 updateLights(uint32 frameIndex);
-
-    std::array<fmat4, 6> getShadowViewMatrices(const fvec3& lightPos);
-
-    void renderShadowMaps(CommandBuffer& cmd, uint32 frameIndex);
-
-    void beginShadowRendering(CommandBuffer& cmd);
-
-    void transitionShadowMapForSampling(CommandBuffer& cmd);
 
 private:
     Window& m_window;     // must out-live renderer
@@ -69,23 +59,21 @@ private:
     Swapchain m_swapchain;
     Image m_colorImage;
     Image m_depthImage;
-    ViewProjection m_viewProj;
+    VertexUniformBufferObject m_ubo;
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Shader m_cubemapVertexShader;
     Shader m_cubemapFragmentShader;
-    Shader m_shadowVertexShader;
-    Shader m_shadowGeometryShader;
-    Shader m_shadowFragmentShader;
+    Shader m_directionalShadowMapVertexShader;
+    Shader m_directionalShadowMapFragmentShader;
     GraphicsPipeline m_graphicsPipeline;
     GraphicsPipeline m_cubemapPipeline;
-    GraphicsPipeline m_shadowPipeline;
+    GraphicsPipeline m_directionalShadowMapPipeline;
     Texture m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
+    Texture m_directionalShadowMapTexture;
     std::vector<R3::Buffer> m_ubos;
     std::vector<R3::Buffer> m_lights;
-    std::vector<R3::Buffer> m_shadowViews;
-    Texture m_shadowMap;
 };
 
 } // namespace R3::vulkan

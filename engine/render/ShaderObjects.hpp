@@ -7,14 +7,10 @@
 
 namespace R3 {
 
-struct R3_API ViewProjection {
-    alignas(16) fmat4 view;
-    alignas(16) fmat4 projection;
-};
-
 struct R3_API VertexUniformBufferObject {
     alignas(16) fmat4 view;
     alignas(16) fmat4 projection;
+    alignas(16) fmat4 lightViewProjection;
 };
 
 struct R3_API VertexPushConstants {
@@ -37,10 +33,7 @@ struct R3_API FragmentPushConstantsCubemap {
 
 struct R3_API VertexPushConstantsShadow {
     alignas(16) fmat4 model;
-};
-
-struct R3_API GeometryPushConstantsShadow {
-    alignas(16) fvec3 position;
+    alignas(16) fmat4 lightViewProj;
 };
 
 struct R3_API PointLightShaderObject {

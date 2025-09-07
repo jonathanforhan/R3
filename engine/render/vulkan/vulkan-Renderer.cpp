@@ -38,6 +38,11 @@
 
 namespace R3::vulkan {
 
+static glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+static glm::mat4 lightView =
+    glm::lookAt(glm::vec3(-2.0f, 4.0f, -4.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+static glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+
 Renderer::Renderer(Window& window, RenderContext& ctx)
     : m_window(window),
       m_ctx{ctx} {
@@ -55,13 +60,16 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     m_depthImage = Image{extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat())};
 
     //--- Shaders
-    m_vertexShader          = Shader{m_ctx, "_spirv/pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_fragmentShader        = Shader{m_ctx, "_spirv/pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+
     m_cubemapVertexShader   = Shader{m_ctx, "_spirv/cubemap.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
     m_cubemapFragmentShader = Shader{m_ctx, "_spirv/cubemap.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
-    m_shadowVertexShader    = Shader{m_ctx, "_spirv/shadow.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_shadowFragmentShader  = Shader{m_ctx, "_spirv/shadow.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
-    m_shadowGeometryShader  = Shader{m_ctx, "_spirv/shadow.geom.spv", VK_SHADER_STAGE_GEOMETRY_BIT};
+
+    m_directionalShadowMapVertexShader =
+        Shader{m_ctx, "_spirv/directional_shadow_map.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_directionalShadowMapFragmentShader =
+        Shader{m_ctx, "_spirv/directional_shadow_map.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
@@ -99,28 +107,15 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(FragmentPushConstantsCubemap)}},
     };
 
-    auto attribs = Vertex::getAttributeDescriptions();
-
-    m_shadowPipeline = GraphicsPipeline{
+    m_directionalShadowMapPipeline = GraphicsPipeline{
         m_ctx,
-        {m_shadowVertexShader, m_shadowGeometryShader},
+        {m_directionalShadowMapVertexShader, m_directionalShadowMapFragmentShader},
         VK_SAMPLE_COUNT_1_BIT,
         {},
         {layout},
-        {
-            {
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(VertexPushConstantsShadow),
-            },
-            {
-                .stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(VertexPushConstantsShadow),
-                .size       = sizeof(GeometryPushConstantsShadow),
-            },
-        },
+        {{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(VertexPushConstantsShadow)}},
         {Vertex::getBindingDescription()},
-        {attribs[0]},
+        {Vertex::getAttributeDescriptions()},
     };
 
     //--- Cubemap
@@ -145,20 +140,15 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Uniform Buffers
     float aspect = static_cast<float>(m_swapchain.extent().width) / static_cast<float>(m_swapchain.extent().height);
 
-    m_viewProj = {
-        .view       = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
-        .projection = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f),
+    m_ubo = {
+        .view                = glm::lookAt(fvec3(2.0f, 2.0f, 2.0f), fvec3(0.0f, 0.0f, 0.0f), fvec3(0.0f, 0.0f, 1.0f)),
+        .projection          = glm::perspective(glm::radians(45.0f), aspect, 0.1f, 25.0f),
+        .lightViewProjection = lightSpaceMatrix,
     };
 
     m_ubos.resize(m_ctx.maxFramesInFlight());
     for (auto& ubo : m_ubos) {
         ubo = Buffer{sizeof(VertexUniformBufferObject), BufferUsage::HostUniform};
-    }
-
-    //--- Storage Buffers
-    m_shadowViews.resize(m_ctx.maxFramesInFlight());
-    for (auto& views : m_shadowViews) {
-        views = Buffer{sizeof(fmat4) * 6, BufferUsage::HostUniform};
     }
 
     //--- Storage Buffers
@@ -170,20 +160,20 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Shadow Maps
     cmd.begin();
     {
-        m_shadowMap = Texture{
+        m_directionalShadowMapTexture = Texture{
             m_ctx.graphicsCommandBuffer(0),
             nullptr,
             1024,
             1024,
-            4,
-            TextureType::DepthCubemap,
+            1,
+            TextureType::Depth,
         };
     }
     cmd.end();
     m_ctx.submitSync(m_ctx.graphicsQueue(), cmd.commandBuffer());
 
     GWorld()->camera().setActive(true);
-}
+} // namespace R3::vulkan
 
 Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
@@ -205,30 +195,20 @@ void Renderer::draw() {
     uint32 imageIndex;
     VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(currFrame), imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        handleWindowResize();
-        return;
+        m_window.setShouldResize(true);
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
 
     // update view projection matrices in ubo
-    GWorld()->camera().applyPerspective(
-        m_window.aspectRatio(), m_window.size(), m_viewProj.view, m_viewProj.projection);
-    m_ubos[currFrame].copy(&m_viewProj, 0, sizeof(m_viewProj));
+    GWorld()->camera().applyPerspective(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.projection);
+    m_ubo.lightViewProjection = lightSpaceMatrix;
+    m_ubos[currFrame].copy(&m_ubo, 0, sizeof(m_ubo));
 
     uint32 numLights = updateLights(currFrame);
 
     fvec3 lightPos;
     GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) { lightPos = light.position; });
-
-    auto shadowViews = getShadowViewMatrices(lightPos);
-    fmat4 shadowProj = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 25.0f);
-    std::array<fmat4, 6> shadowViewProj;
-    for (int i = 0; i < 6; ++i) {
-        shadowViewProj[i] = shadowProj * shadowViews[i];
-        shadowViewProj[1][1] *= -1; // Flip Y for Vulkan
-    }
-    m_shadowViews[currFrame].copy(shadowViewProj.data(), 0, sizeof(fmat4) * 6);
 
     writeDescriptorSetsHelper(currFrame, numLights);
 
@@ -237,38 +217,14 @@ void Renderer::draw() {
 
     cmd.begin();
 
-    // renderShadowMaps(cmd, currFrame);
-    // transitionShadowMapForSampling(cmd);
+    shadowPass(cmd, currFrame);
 
     transitionAttachmentsForRender(cmd, imageIndex);
-    beginRenderingHelper(cmd, imageIndex);
+    beginRenderingHelper(cmd, currFrame);
 
-    // cubemap
-    bindPipelineHelper(cmd, m_cubemapPipeline);
-    cmd.setDepthTestEnable(false); // Disable depth for skybox
+    cubemapPass(cmd, imageIndex);
 
-    // Push Constants
-    const FragmentPushConstantsCubemap fragPushConstants = {.iCubemap = m_cubemapTextureBinding};
-    cmd.pushConstants({
-        .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
-        .layout     = m_cubemapPipeline.layout(),
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-        .offset     = 0,
-        .size       = sizeof(FragmentPushConstantsCubemap),
-        .pValues    = &fragPushConstants,
-    });
-
-    // Descriptor Sets
     VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(currFrame).descriptorSet()};
-    cmd.bindDescriptorSets({
-        .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
-        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        .layout             = m_cubemapPipeline.layout(),
-        .firstSet           = 0,
-        .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
-        .pDescriptorSets    = descriptorSets,
-    });
-    cmd.draw(36, 1, 0, 0);
 
     // rest of scene
     bindPipelineHelper(cmd, m_graphicsPipeline);
@@ -332,12 +288,183 @@ void Renderer::draw() {
     cmd.end();
 
     // Submit command buffer - use per-frame acquire, per-image render finished
-    submitHelper(cmd, currFrame);
+    m_ctx.submit(m_ctx.graphicsQueue(),
+                 cmd.commandBuffer(),
+                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                 m_ctx.imageAvailableSemaphore(currFrame),
+                 m_ctx.renderFinishedSemaphore(currFrame),
+                 m_ctx.inFlightFence(currFrame));
 
     // Present - use per-image semaphore
-    presentFrameHelper(currFrame, imageIndex);
+    const VkSemaphore signalSemaphores[] = {m_ctx.renderFinishedSemaphore(currFrame)};
+    const VkSwapchainKHR swapchains[]    = {m_swapchain.swapchain()};
+    const VkPresentInfoKHR presentInfo{
+        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores    = signalSemaphores,
+        .swapchainCount     = 1,
+        .pSwapchains        = swapchains,
+        .pImageIndices      = &imageIndex,
+        .pResults           = nullptr,
+    };
+    result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        m_window.setShouldResize(true);
+    } else if (result != VK_SUCCESS) {
+        throw Exception{std::format("vkQueuePresentKHR returned: {}", static_cast<int>(result))};
+    }
 
     m_ctx.advanceFrame();
+}
+
+void Renderer::shadowPass(CommandBuffer& cmd, uint32 frameIndex) {
+    // First, transition the shadow cubemap for depth attachment use
+    const VkImageMemoryBarrier2 shadowBarrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        .srcAccessMask       = VK_ACCESS_NONE,
+        .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+        .newLayout           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = m_directionalShadowMapTexture.imageHandle(), // Your shadow cubemap
+        .subresourceRange =
+            {
+                .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+                .baseMipLevel   = 0,
+                .levelCount     = 1,
+                .baseArrayLayer = 0,
+                .layerCount     = 1,
+            },
+    };
+    const VkDependencyInfo shadowDependency = {
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers    = &shadowBarrier,
+    };
+    cmd.pipelineBarrier(shadowDependency);
+
+    // Begin rendering - ONLY depth attachment, no color
+    const VkRenderingAttachmentInfo depthAttachment = {
+        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView          = m_directionalShadowMapTexture.imageViewHandle(),
+        .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+        .resolveMode        = VK_RESOLVE_MODE_NONE,
+        .resolveImageView   = VK_NULL_HANDLE,
+        .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
+        .clearValue         = {.depthStencil = {1.0f, 0}}, // Clear to far plane
+    };
+    const VkRenderingInfo renderingInfo = {
+        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
+        .renderArea           = {{0, 0}, {1024, 1024}}, // Shadow map resolution
+        .layerCount           = 1,
+        .viewMask             = 0,
+        .colorAttachmentCount = 0, // NO color attachments
+        .pColorAttachments    = nullptr,
+        .pDepthAttachment     = &depthAttachment,
+        .pStencilAttachment   = nullptr,
+    };
+    cmd.beginRendering(renderingInfo);
+    {
+        bindPipelineHelper(cmd, m_directionalShadowMapPipeline);
+        cmd.setCullMode(VK_CULL_MODE_NONE);
+        cmd.setViewport({
+            .x        = 0.0f,
+            .y        = 0.0f,
+            .width    = 1024.0f,
+            .height   = 1024.0f,
+            .minDepth = 0.0f,
+            .maxDepth = 1.0f,
+        });
+        cmd.setScissor({{0, 0}, {1024, 1024}});
+
+        VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(frameIndex).descriptorSet()};
+        cmd.bindDescriptorSets({
+            .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
+            .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            .layout             = m_directionalShadowMapPipeline.layout(),
+            .firstSet           = 0,
+            .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
+            .pDescriptorSets    = descriptorSets,
+        });
+
+        // Render all shadow casters
+        GWorld()->registry().view<MeshComponent, TransformComponent>().each([&](const auto& mesh, const auto& trans) {
+            const VertexPushConstantsShadow vertPush = {
+                .model         = trans.transform(),
+                .lightViewProj = lightSpaceMatrix,
+            };
+            cmd.pushConstants({
+                .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
+                .layout     = m_directionalShadowMapPipeline.layout(),
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset     = 0,
+                .size       = sizeof(VertexPushConstantsShadow),
+                .pValues    = &vertPush,
+            });
+
+            // Bind mesh and draw
+            const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};
+            const VkDeviceSize offsets[] = {0};
+            const VkBuffer iboIndex      = mesh.indexBufferIndex->bufferHandle();
+            cmd.bindVertexBuffers(0, vboIndices, offsets);
+            cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
+            cmd.drawIndexed(static_cast<uint32>(mesh.indexCount));
+        });
+    }
+    cmd.endRendering();
+    const VkImageMemoryBarrier2 barrier = {
+        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+        .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+        .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+        .dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
+        .oldLayout           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+        .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image               = m_directionalShadowMapTexture.imageHandle(),
+        .subresourceRange    = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1},
+    };
+    const VkDependencyInfo dependency = {
+        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .imageMemoryBarrierCount = 1,
+        .pImageMemoryBarriers    = &barrier,
+    };
+    cmd.pipelineBarrier(dependency);
+}
+
+void Renderer::cubemapPass(CommandBuffer& cmd, uint32 frameIndex) {
+    // cubemap
+    bindPipelineHelper(cmd, m_cubemapPipeline);
+    cmd.setDepthTestEnable(false); // Disable depth for skybox
+
+    // Push Constants
+    const FragmentPushConstantsCubemap fragPushConstants = {.iCubemap = m_cubemapTextureBinding};
+    cmd.pushConstants({
+        .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
+        .layout     = m_cubemapPipeline.layout(),
+        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .offset     = 0,
+        .size       = sizeof(FragmentPushConstantsCubemap),
+        .pValues    = &fragPushConstants,
+    });
+
+    // Descriptor Sets
+    VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(frameIndex).descriptorSet()};
+    cmd.bindDescriptorSets({
+        .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
+        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+        .layout             = m_cubemapPipeline.layout(),
+        .firstSet           = 0,
+        .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
+        .pDescriptorSets    = descriptorSets,
+    });
+    cmd.draw(36, 1, 0, 0);
 }
 
 void Renderer::transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex) {
@@ -492,26 +619,6 @@ void Renderer::handleWindowResize() {
     m_depthImage = Image{extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat())};
 }
 
-void Renderer::addDescriptorMemoryBarrier(CommandBuffer& cmd) {
-    // Memory barrier to ensure host writes to UBO/SSBO are visible to GPU
-    const VkMemoryBarrier2 descriptorBarrier = {
-        .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-        .pNext         = nullptr,
-        .srcStageMask  = VK_PIPELINE_STAGE_HOST_BIT,
-        .srcAccessMask = VK_ACCESS_HOST_WRITE_BIT,
-        .dstStageMask  = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        .dstAccessMask = VK_ACCESS_UNIFORM_READ_BIT | VK_ACCESS_2_SHADER_STORAGE_READ_BIT,
-    };
-
-    const VkDependencyInfo dependencyInfo = {
-        .sType              = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .memoryBarrierCount = 1,
-        .pMemoryBarriers    = &descriptorBarrier,
-    };
-
-    cmd.pipelineBarrier(dependencyInfo);
-}
-
 void Renderer::beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex) {
     const VkRenderingAttachmentInfo colorAttachment = {
         .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -609,27 +716,10 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
         });
     }
 
-    // Shadow view matrices buffer for binding 4
-    const VkDescriptorBufferInfo shadowViewsBufferInfo = {
-        .buffer = m_shadowViews[frameIndex].bufferHandle(),
-        .offset = 0,
-        .range  = sizeof(fmat4) * 6,
-    };
-
-    descriptorWrites.push_back(VkWriteDescriptorSet{
-        .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        .dstSet          = m_ctx.descriptorSet(frameIndex).descriptorSet(),
-        .dstBinding      = 4,
-        .dstArrayElement = 0,
-        .descriptorCount = 1,
-        .descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .pBufferInfo     = &shadowViewsBufferInfo,
-    });
-
     // Shadow sampler
     const VkDescriptorImageInfo shadowImageInfo = {
-        .sampler     = m_shadowMap.samplerHandle(),
-        .imageView   = m_shadowMap.imageViewHandle(),
+        .sampler     = m_directionalShadowMapTexture.samplerHandle(),
+        .imageView   = m_directionalShadowMapTexture.imageViewHandle(),
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
     descriptorWrites.push_back(VkWriteDescriptorSet{
@@ -647,68 +737,6 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
     m_ctx.descriptorSet(frameIndex).write(descriptorWrites);
 }
 
-void Renderer::submitHelper(CommandBuffer& cmd, uint32 frameIndex) {
-    const VkSemaphoreSubmitInfo waitSemaphoreSubmitInfo = {
-        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .pNext     = nullptr,
-        .semaphore = m_ctx.imageAvailableSemaphore(frameIndex),
-        .value     = 0,
-        .stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-    };
-
-    const VkSemaphoreSubmitInfo signalSemaphoreSubmitInfo = {
-        .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-        .pNext     = nullptr,
-        .semaphore = m_ctx.renderFinishedSemaphore(frameIndex),
-        .value     = 0,
-        .stageMask = VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-    };
-
-    const VkCommandBufferSubmitInfo cmdInfo = {
-        .sType         = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-        .pNext         = nullptr,
-        .commandBuffer = cmd.commandBuffer(),
-        .deviceMask    = 0,
-    };
-
-    const VkSubmitInfo2 submitInfo = {
-        .sType                    = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-        .pNext                    = nullptr,
-        .flags                    = {},
-        .waitSemaphoreInfoCount   = 1,
-        .pWaitSemaphoreInfos      = &waitSemaphoreSubmitInfo,
-        .commandBufferInfoCount   = 1,
-        .pCommandBufferInfos      = &cmdInfo,
-        .signalSemaphoreInfoCount = 1,
-        .pSignalSemaphoreInfos    = &signalSemaphoreSubmitInfo,
-    };
-
-    VK_CHECK(vkQueueSubmit2(m_ctx.graphicsQueue(), 1, &submitInfo, m_ctx.inFlightFence(frameIndex)));
-}
-
-void Renderer::presentFrameHelper(uint32 frameIndex, uint32 imageIndex) {
-    const VkSemaphore signalSemaphores[] = {m_ctx.renderFinishedSemaphore(frameIndex)};
-    const VkSwapchainKHR swapchains[]    = {m_swapchain.swapchain()};
-
-    const VkPresentInfoKHR presentInfo{
-        .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        .waitSemaphoreCount = 1,
-        .pWaitSemaphores    = signalSemaphores,
-        .swapchainCount     = 1,
-        .pSwapchains        = swapchains,
-        .pImageIndices      = &imageIndex,
-        .pResults           = nullptr,
-    };
-
-    VkResult result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-        handleWindowResize();
-    } else if (result != VK_SUCCESS) {
-        throw Exception{std::format("vkQueuePresentKHR returned: {}", static_cast<int>(result))};
-    }
-}
-
 uint32 Renderer::updateLights(uint32 frameIndex) {
     uint32 numLights = 0;
     GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) {
@@ -724,165 +752,6 @@ uint32 Renderer::updateLights(uint32 frameIndex) {
         numLights++;
     });
     return numLights;
-}
-
-std::array<fmat4, 6> Renderer::getShadowViewMatrices(const fvec3& lightPos) {
-    return {{
-#if 1
-        glm::lookAt(lightPos, lightPos + fvec3(1, 0, 0), fvec3(0, -1, 0)),  // +X
-        glm::lookAt(lightPos, lightPos + fvec3(-1, 0, 0), fvec3(0, -1, 0)), // -X
-        glm::lookAt(lightPos, lightPos + fvec3(0, 1, 0), fvec3(0, 0, 1)),   // +Y
-        glm::lookAt(lightPos, lightPos + fvec3(0, -1, 0), fvec3(0, 0, -1)), // -Y
-        glm::lookAt(lightPos, lightPos + fvec3(0, 0, 1), fvec3(0, -1, 0)),  // +Z
-        glm::lookAt(lightPos, lightPos + fvec3(0, 0, -1), fvec3(0, -1, 0)), // -Z
-#else
-        glm::lookAt(lightPos, lightPos + fvec3(1, 0, 0), fvec3(0, 1, 0)),  // +X
-        glm::lookAt(lightPos, lightPos + fvec3(-1, 0, 0), fvec3(0, 1, 0)), // -X
-        glm::lookAt(lightPos, lightPos + fvec3(0, -1, 0), fvec3(0, 0, 1)), // +Y (flipped)
-        glm::lookAt(lightPos, lightPos + fvec3(0, 1, 0), fvec3(0, 0, -1)), // -Y (flipped)
-        glm::lookAt(lightPos, lightPos + fvec3(0, 0, 1), fvec3(0, 1, 0)),  // +Z
-        glm::lookAt(lightPos, lightPos + fvec3(0, 0, -1), fvec3(0, 1, 0)), // -Z
-#endif
-    }};
-}
-
-void Renderer::renderShadowMaps(CommandBuffer& cmd, uint32 frameIndex) {
-    // Begin shadow rendering (you'll need to implement this)
-    beginShadowRendering(cmd);
-
-    bindPipelineHelper(cmd, m_shadowPipeline);
-    cmd.setViewport({
-        .x        = 0.0f,
-        .y        = 1024.0f,
-        .width    = 1024.0f,
-        .height   = -1024.0f,
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f,
-    });
-    cmd.setScissor({{0, 0}, {1024, 1024}});
-
-    VkDescriptorSet descriptorSets[] = {m_ctx.descriptorSet(frameIndex).descriptorSet()};
-    cmd.bindDescriptorSets({
-        .sType              = VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO,
-        .stageFlags         = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-        .layout             = m_shadowPipeline.layout(),
-        .firstSet           = 0,
-        .descriptorSetCount = static_cast<uint32>(std::size(descriptorSets)),
-        .pDescriptorSets    = descriptorSets,
-    });
-
-    // Render all shadow casters
-    GWorld()->registry().view<MeshComponent, TransformComponent>().each([&](const auto& mesh, const auto& trans) {
-        VertexPushConstantsShadow vertPush   = {.model = trans.transform()};
-        GeometryPushConstantsShadow geomPush = {.position = fvec3(0.0f, 2.0f, 0.0f)};
-
-        cmd.pushConstants({
-            .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
-            .layout     = m_shadowPipeline.layout(),
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .size       = sizeof(VertexPushConstantsShadow),
-            .pValues    = &vertPush,
-        });
-
-        cmd.pushConstants({
-            .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
-            .layout     = m_shadowPipeline.layout(),
-            .stageFlags = VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            .offset     = sizeof(VertexPushConstantsShadow),
-            .size       = sizeof(GeometryPushConstantsShadow),
-            .pValues    = &geomPush,
-        });
-
-        // Bind mesh and draw
-        const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};
-        const VkDeviceSize offsets[] = {0};
-        const VkBuffer iboIndex      = mesh.indexBufferIndex->bufferHandle();
-        cmd.bindVertexBuffers(0, vboIndices, offsets);
-        cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
-        cmd.drawIndexed(static_cast<uint32>(mesh.indexCount));
-    });
-
-    cmd.endRendering();
-}
-
-void Renderer::beginShadowRendering(CommandBuffer& cmd) {
-    // First, transition the shadow cubemap for depth attachment use
-    const VkImageMemoryBarrier2 shadowBarrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-        .srcAccessMask       = VK_ACCESS_NONE,
-        .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-        .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-        .newLayout           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_shadowMap.imageHandle(), // Your shadow cubemap
-        .subresourceRange =
-            {
-                .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
-                .baseMipLevel   = 0,
-                .levelCount     = 1,
-                .baseArrayLayer = 0,
-                .layerCount     = 6, // All 6 faces
-            },
-    };
-
-    const VkDependencyInfo shadowDependency = {
-        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers    = &shadowBarrier,
-    };
-    cmd.pipelineBarrier(shadowDependency);
-
-    // Begin rendering - ONLY depth attachment, no color
-    const VkRenderingAttachmentInfo depthAttachment = {
-        .sType              = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-        .imageView          = m_shadowMap.imageViewHandle(),
-        .imageLayout        = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        .resolveMode        = VK_RESOLVE_MODE_NONE,
-        .resolveImageView   = VK_NULL_HANDLE,
-        .resolveImageLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .loadOp             = VK_ATTACHMENT_LOAD_OP_CLEAR,
-        .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
-        .clearValue         = {.depthStencil = {1.0f, 0}}, // Clear to far plane
-    };
-
-    const VkRenderingInfo renderingInfo = {
-        .sType                = VK_STRUCTURE_TYPE_RENDERING_INFO,
-        .renderArea           = {{0, 0}, {1024, 1024}}, // Shadow map resolution
-        .layerCount           = 6,
-        .viewMask             = 0,
-        .colorAttachmentCount = 0, // NO color attachments
-        .pColorAttachments    = nullptr,
-        .pDepthAttachment     = &depthAttachment,
-        .pStencilAttachment   = nullptr,
-    };
-
-    cmd.beginRendering(renderingInfo);
-}
-
-void Renderer::transitionShadowMapForSampling(CommandBuffer& cmd) {
-    const VkImageMemoryBarrier2 barrier = {
-        .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-        .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-        .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-        .dstStageMask        = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-        .dstAccessMask       = VK_ACCESS_SHADER_READ_BIT,
-        .oldLayout           = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
-        .newLayout           = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-        .image               = m_shadowMap.imageHandle(),
-        .subresourceRange    = {VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 6},
-    };
-
-    const VkDependencyInfo dependency = {
-        .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
-        .imageMemoryBarrierCount = 1,
-        .pImageMemoryBarriers    = &barrier,
-    };
-    cmd.pipelineBarrier(dependency);
 }
 
 } // namespace R3::vulkan

@@ -7,6 +7,7 @@
 layout (location = 0) in vec3 v_Position;
 layout (location = 1) in vec3 v_Normal;
 layout (location = 2) in vec2 v_TexCoords;
+layout (location = 3) in vec4 v_PositionLightSpace;
 
 layout (location = 0) out vec4 f_Color;
 
@@ -22,7 +23,7 @@ layout (binding = 3) readonly buffer LightBuffer {
     PointLight u_Lights[];
 };
 
-layout (binding = 5) uniform samplerCube u_ShadowMap;
+layout (binding = 5) uniform sampler2D u_ShadowMap;
 
 layout (push_constant, std140) uniform FragmentPushConstants {
 layout(offset = 64)
@@ -92,22 +93,42 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float calcShadow(vec3 pos) {
-/*
-    vec3 lightToPos = pos - u_Lights[0].position;
-    float shadowDepth = texture(u_ShadowMap, lightToPos).r * 25.0;  // far plane is 25.0
-    float currentDepth = length(lightToPos);
-    float bias = 0.05;
-    float shadow = currentDepth - bias > shadowDepth ? 1.0 : 0.0;
- */
+float calcShadow(vec4 posLightSpace) {
+    // perform perspective divide
+    vec3 projCoords = posLightSpace.xyz / posLightSpace.w;
 
-    vec3 lightToPos = pos - u_Lights[0].position;
-	float shadowDepth = texture(u_ShadowMap, lightToPos).r;
-	float currentDepth = length(lightToPos) / 25.0; // Normalize by far plane
-    float bias = 0.05;
-	float shadow = currentDepth <= shadowDepth + bias ? 1.0 : 0.0;
+    float currentDepth = projCoords.z;
 
-    // f_Color = vec4(vec3(shadowDepth / 25.0), 1.0);  
+    // transform to [0,1] range
+    projCoords = projCoords * 0.5 + 0.5;
+
+	float closestDepth = texture(u_ShadowMap, projCoords.xy).r;
+
+	vec3 normal = normalize(v_Normal);
+	vec3 lightDir = normalize(u_Lights[0].position - v_Position);
+	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+
+    float shadow;
+
+	shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+    vec2 texelSize = 1.0 / textureSize(u_ShadowMap, 0);
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            float pcfDepth = texture(u_ShadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
+            shadow += currentDepth - bias > pcfDepth  ? 1.0 : 0.0;        
+        }    
+    }
+    shadow /= 9.0;
+    
+    // keep the shadow at 0.0 when outside the far_plane region of the light's frustum.
+    if(projCoords.z > 1.0)
+        shadow = 0.0;
+
+	// f_Color = vec4(closestDepth, currentDepth, 0.0, 1.0);
+	// f_Color = vec4(vec3(closestDepth), 1.0);
+	// f_Color = vec4(vec3(currentDepth), 1.0);
+	// f_Color = vec4(vec3(shadow), 1.0);
 
     return shadow;
 }
@@ -179,7 +200,7 @@ void main() {
         Lo += (kD * albedo.rgb / M_PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.01) * albedo.rgb * ao;
+    vec3 ambient = vec3(0.1) * albedo.rgb * ao;
     vec3 color = ambient + Lo;
 
     // emission
@@ -191,9 +212,7 @@ void main() {
     // gamma correct
     // color = pow(color, vec3(1.0 / gamma)); // to sRGB
 
-    float shadow = calcShadow(v_Position);
-
-    // color.rgb *= shadow;
-
+    float shadow = calcShadow(v_PositionLightSpace);
+    color *= (1.0 - shadow * 0.75);
     f_Color = vec4(color, 1.0);
 }
