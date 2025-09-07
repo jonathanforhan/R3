@@ -44,14 +44,17 @@ Texture::Texture(ICommandBuffer& cmd, const std::array<std::filesystem::path, 6>
     uint32 channels{};
 
     for (auto& path : filepaths) {
-        auto imgDesc  = ImageLoader().loadImageFile(path, 4);
-        width         = imgDesc.width;
-        height        = imgDesc.height;
-        channels      = imgDesc.channels;
-        usize imgSize = width * height * channels;
+        const auto imgDesc  = ImageLoader().loadImageFile(path, 4);
+        width               = imgDesc.width;
+        height              = imgDesc.height;
+        channels            = imgDesc.channels;
+        const usize imgSize = width * height * channels;
+        const usize rawSize = raw.size();
+
         raw.resize(raw.size() + imgSize);
-        std::copy(imgDesc.data.get(), imgDesc.data.get() + imgSize, raw.begin());
+        std::copy(imgDesc.data.get(), imgDesc.data.get() + imgSize, raw.begin() + rawSize);
     }
+
     create(cmd, raw.data(), width, height, channels, type);
 }
 
@@ -72,6 +75,7 @@ void Texture::create(ICommandBuffer& cmd,
     const uint32 mipLevels        = static_cast<uint32>(std::floor(std::log2(std::max(width, height)))) + 1;
     const ImageType imageType     = isCube ? ImageType::ImageCube : ImageType::Image2D;
     ImageUsageFlags imageUsage    = ImageUsage::Texture;
+    AddressMode addressMode       = AddressMode::Repeat;
     const uint32 imgSize          = (uint32)(width * height) * texturePixelSize * (isCube ? 6U : 1U);
 
     Buffer* stagingBuffer = GResourceManager()->newFrameScopedObject<Buffer>(imgSize, BufferUsage::HostStaging);
@@ -88,12 +92,21 @@ void Texture::create(ICommandBuffer& cmd,
             break;
         case TextureType::Albedo:
         case TextureType::Emissive:
-        case TextureType::Cubemap:
             writeRGBABuffer(raw, width, height, channels, *stagingBuffer);
+            break;
+        case TextureType::Cubemap:
+            R3_ASSERT(channels == 4, "Cubemap require 4 channels on creation");
+            addressMode = AddressMode::ClampToEdge;
+            for (usize i = 0; i < 6; i++) {
+                const usize size       = width * height * channels;
+                const usize faceOffset = i * size;
+                stagingBuffer->copy(&raw[faceOffset], faceOffset, size);
+            }
             break;
         case TextureType::Depth:
         case TextureType::DepthCubemap:
-            imageUsage = ImageUsage::DepthStencilAttachment;
+            addressMode = AddressMode::ClampToEdge;
+            imageUsage  = ImageUsage::DepthStencilAttachment;
             break;
         default:
             R3_ASSERT(false, "Invalid TextureType");
@@ -107,7 +120,7 @@ void Texture::create(ICommandBuffer& cmd,
         m_image.generateMipmaps(cmd);
     }
 
-    m_sampler = Sampler{Filter::Nearest, Filter::Nearest, MipmapMode::Nearest, AddressMode::Repeat};
+    m_sampler = Sampler{Filter::Linear, Filter::Linear, MipmapMode::Linear, addressMode};
 }
 
 Format Texture::queryTextureFormat(TextureType type) noexcept {

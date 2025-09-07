@@ -331,7 +331,7 @@ void CommandBuffer::copyBufferToImage(const Buffer& src,
 
     const uint32 faceSize = (uint32)(dst.extent().x * dst.extent().y * dst.extent().z) * dst.bytesPerPixel();
 
-    for (uint32 face = 0; face < dst.layerCount(); ++face) {
+    for (uint32 face = 0; face < dst.layerCount(); face++) {
         const VkBufferImageCopy copy = {
             .bufferOffset      = srcOffset + (face * faceSize),
             .bufferRowLength   = 0,

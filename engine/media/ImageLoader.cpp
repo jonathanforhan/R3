@@ -28,7 +28,7 @@ ImageLoader::ImageDescriptor ImageLoader::loadImageFile(const std::filesystem::p
         (std::byte*)p,
         static_cast<usize>(w),
         static_cast<usize>(h),
-        static_cast<uint32>(ch),
+        static_cast<uint32>(reqChannels == 0 ? ch : reqChannels),
     };
 }
 

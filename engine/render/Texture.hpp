@@ -22,6 +22,8 @@ public:
     R3_MOVE_DEFAULT(Texture);
 
     /// @brief Initializes a texture image and sampler from raw data using a command buffer and a staging buffer.
+    /// This also works for cubemaps just have the raw* be the 6 images concatenated together in the order:
+    /// Right, Left, Top, Bottom, Front, Back
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
     /// @param raw Pointer to the raw texture data.
     /// @param width Width of the texture in bytes.
@@ -38,7 +40,7 @@ public:
 
     /// @brief Initializes a cube-map image and sampler from filesystem using a command buffer and a staging buffer.
     /// @param cmd Reference to the command buffer used for recording GPU commands (must be recording).
-    /// @param filepaths Paths to the cubemap texture files to be loaded. Right Left Top Bottom Front Back
+    /// @param filepaths Paths to the cubemap texture files to be loaded. Right, Left, Top, Bottom, Front, Back
     /// @param type Type of the texture
     Texture(ICommandBuffer& cmd, const std::array<std::filesystem::path, 6>& filepaths, TextureType type);
 
