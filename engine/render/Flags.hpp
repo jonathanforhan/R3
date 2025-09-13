@@ -29,6 +29,7 @@ struct R3_API BufferUsage {
         LazilyAllocated = 0x0010'0000,
         MapOnCreation   = 0x8000'0000,
         HostStaging     = TransferSrc | HostVisible | HostCoherent | MapOnCreation,
+        HostReadback    = TransferDst | HostVisible | HostCoherent | MapOnCreation,
         HostUniform     = Uniform | HostVisible | HostCoherent | MapOnCreation,
         HostStorage     = Storage | HostVisible | HostCoherent | MapOnCreation,
         DeviceUniform   = TransferDst | Uniform | DeviceLocal,

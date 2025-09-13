@@ -3,15 +3,12 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "api/Assert.hpp"
 #include "api/Types.hpp"
 #include "vulkan-CommandBuffer.hpp"
 
 namespace R3::vulkan {
 
 void RenderPass::execute(CommandBuffer& cmd) {
-    R3_ASSERT(m_pipeline);
-
     if (!m_barriers.empty() || !m_imageBarriers.empty()) {
         cmd.pipelineBarrier({
             .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,

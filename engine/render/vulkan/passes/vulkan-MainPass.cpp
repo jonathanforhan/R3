@@ -12,6 +12,7 @@
 #include "core/Engine.hpp"
 #include "core/Entity.hpp"
 #include "core/World.hpp"
+#include "engine/editor/Editor.hpp"
 #include "render/Buffer.hpp"
 #include "render/ShaderObjects.hpp"
 
@@ -25,6 +26,8 @@ void MainPass::render(CommandBuffer& cmd) {
 }
 
 void MainPass::renderCubemap(CommandBuffer& cmd) {
+    R3_ASSERT(m_cubemapPipeline, "Cubemap pipeline not set for MainPass");
+
     cmd.bindGraphicsPipeline(m_cubemapPipeline->pipeline());
     setDynamicPipelineStates(cmd);
     cmd.setDepthTestEnable(false); // Disable depth for skybox
@@ -39,13 +42,13 @@ void MainPass::renderCubemap(CommandBuffer& cmd) {
     });
 
     // Push Constants
-    const FragmentPushConstantsCubemap fragPushConstants = {.iCubemap = m_cubemapTextureSlot};
+    const CubemapFragmentPushConstants fragPushConstants = {.iCubemap = m_cubemapTextureSlot};
     cmd.pushConstants({
         .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
         .layout     = m_cubemapPipeline->layout(),
         .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
         .offset     = 0,
-        .size       = sizeof(FragmentPushConstantsCubemap),
+        .size       = sizeof(CubemapFragmentPushConstants),
         .pValues    = &fragPushConstants,
     });
 
@@ -53,6 +56,8 @@ void MainPass::renderCubemap(CommandBuffer& cmd) {
 }
 
 void MainPass::renderScene(CommandBuffer& cmd) {
+    R3_ASSERT(m_pipeline, "Pipeline not set for MainPass");
+
     cmd.bindGraphicsPipeline(m_pipeline->pipeline());
     setDynamicPipelineStates(cmd);
 
@@ -67,7 +72,7 @@ void MainPass::renderScene(CommandBuffer& cmd) {
 
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
-            const VertexPushConstants vertPushConstants = {
+            const PBRVertexPushConstants vertPushConstants = {
                 .model = trans.transform(),
             };
             cmd.pushConstants({
@@ -75,11 +80,11 @@ void MainPass::renderScene(CommandBuffer& cmd) {
                 .layout     = m_pipeline->layout(),
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
                 .offset     = 0,
-                .size       = sizeof(VertexPushConstants),
+                .size       = sizeof(PBRVertexPushConstants),
                 .pValues    = &vertPushConstants,
             });
 
-            const FragmentPushConstants fragPushConstants = {
+            const PBRFragmentPushConstants fragPushConstants = {
                 .viewPosition       = GWorld()->camera().position(),
                 .numLights          = m_lightCount,
                 .iAlbedo            = mat.iAlbedo,
@@ -87,14 +92,14 @@ void MainPass::renderScene(CommandBuffer& cmd) {
                 .iNormal            = mat.iNormal,
                 .iAmbientOcclusion  = mat.iAmbientOcclusion,
                 .iEmissive          = mat.iEmissive,
-                .entityID           = (uint32)entity,
+                .bSelected          = m_selectedEntityID == (uint32)entity ? 1U : 0U,
             };
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
                 .layout     = m_pipeline->layout(),
                 .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(VertexPushConstants),
-                .size       = sizeof(FragmentPushConstants),
+                .offset     = sizeof(PBRVertexPushConstants),
+                .size       = sizeof(PBRFragmentPushConstants),
                 .pValues    = &fragPushConstants,
             });
 
@@ -105,6 +110,10 @@ void MainPass::renderScene(CommandBuffer& cmd) {
             cmd.bindIndexBuffer(iboIndex, 0, VK_INDEX_TYPE_UINT32);
             cmd.drawIndexed(static_cast<uint32>(mesh.indexCount));
         });
+
+#if R3_EDITOR
+    GEditor()->draw(cmd);
+#endif
 }
 
 } // namespace R3::vulkan

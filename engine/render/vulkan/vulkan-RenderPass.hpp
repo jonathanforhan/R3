@@ -34,7 +34,7 @@ public:
 
     void setRenderArea(const VkRect2D& renderArea) noexcept { m_renderArea = renderArea; }
 
-    void setGraphicsPipeline(GraphicsPipeline* pipeline) noexcept { m_pipeline = pipeline; }
+    void setGraphicsPipeline(GraphicsPipeline& pipeline) noexcept { m_pipeline = &pipeline; }
 
     void setDescriptorSet(VkDescriptorSet descriptorSet) noexcept { m_descriptorSet = descriptorSet; }
 
@@ -52,6 +52,7 @@ protected:
     GraphicsPipeline* m_pipeline    = nullptr;
     VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
     uint32 m_imageIndex             = UINT32_MAX;
+    bool m_applyBarriers            = true;
 };
 
 } // namespace R3::vulkan

@@ -21,7 +21,7 @@ void Camera::update(double dt) {
         return;
     }
 
-    float mouseSensitivity    = 0.25f;
+    float mouseSensitivity    = 0.1f;
     float movementSensitivity = 2.5f;
 
     if (GWindow()->keyPressed(Key::LeftShift)) {

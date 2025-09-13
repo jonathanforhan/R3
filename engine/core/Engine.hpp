@@ -2,7 +2,6 @@
 
 #include "engine/api/Api.hpp"
 
-#include "editor/Editor.hpp"
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 
@@ -32,6 +31,9 @@ public:
     class R3_API ResourceManager& ResourceManager() noexcept { return *m_resourceManager; }
     /// Get Global WorldState
     class R3_API World& World() noexcept { return *m_world; }
+    /// Get Global Editor
+    /// @note May be nullptr if in distribution build
+    class R3_API IEditor* Editor() noexcept { return m_editor; }
 
     void update();
 
@@ -50,12 +52,10 @@ private:
     class R3_API EventHandler* m_eventHandler       = nullptr;
     class R3_API ResourceManager* m_resourceManager = nullptr;
     class R3_API World* m_world                     = nullptr;
+    class R3_API IEditor* m_editor                  = nullptr;
+
     // hidden
     class R3_API vulkan::Renderer* m_renderer = nullptr;
-
-#if R3_EDITOR
-    class R3_API IEditor* m_editor = nullptr;
-#endif
 
     bool m_running = false;
 
@@ -67,7 +67,6 @@ private:
     friend struct GResourceManager;
     friend struct GWorld;
     friend class Application;
-    friend void vulkan::Renderer::draw();
 };
 
 /// @brief Engine singleton instance.
@@ -95,10 +94,17 @@ struct GWorld {
     class R3_API World* operator->() noexcept { return &(GEngine()->World()); }
 };
 
+#if R3_EDITOR
+struct GEditor {
+    class R3_API IEditor* operator->() noexcept { return GEngine()->Editor(); }
+};
+#endif
+
 } // namespace R3
 
 #include "EventHandler.hpp"
 #include "engine/core/ResourceManager.hpp"
 #include "engine/core/World.hpp"
+#include "engine/editor/Editor.hpp"
 #include "engine/render/RenderContext.hpp"
 #include "engine/render/Window.hpp"

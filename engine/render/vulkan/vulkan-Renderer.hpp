@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <vector>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
@@ -11,6 +10,7 @@
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/Texture.hpp"
 #include "engine/render/Window.hpp"
+#include "passes/vulkan-EditorPass.hpp"
 #include "passes/vulkan-MainPass.hpp"
 #include "passes/vulkan-ShadowPass.hpp"
 #include "vulkan-CommandBuffer.hpp"
@@ -37,6 +37,10 @@ public:
 private:
     void setupShadowPass();
     void setupMainPasses();
+    void setupEditorPasses();
+
+    void handleMouseHover(CommandBuffer& cmd, uint32 imageIndex);
+    void handleMouseClick(CommandBuffer& cmd, uint32 imageIndex);
 
     // needed because using dynamic rendering
     void transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex);
@@ -51,20 +55,25 @@ private:
     Window& m_window;     // must out-live renderer
     RenderContext& m_ctx; // must out-live renderer
     Swapchain m_swapchain;
+
     std::vector<Image> m_colorImages;
     std::vector<Image> m_depthImages;
+    std::vector<Image> m_depthImages1Bit;
     std::vector<Image> m_idImages;
 
-    VertexUniformBufferObject m_ubo;
+    PBRVertexUniformBufferObject m_ubo;
     Shader m_vertexShader;
     Shader m_fragmentShader;
     Shader m_cubemapVertexShader;
     Shader m_cubemapFragmentShader;
     Shader m_directionalShadowMapVertexShader;
     Shader m_directionalShadowMapFragmentShader;
-    GraphicsPipeline m_graphicsPipeline;
-    GraphicsPipeline m_cubemapPipeline;
+    Shader m_editorVertexShader;
+    Shader m_editorFragmentShader;
     GraphicsPipeline m_directionalShadowMapPipeline;
+    GraphicsPipeline m_cubemapPipeline;
+    GraphicsPipeline m_graphicsPipeline;
+    GraphicsPipeline m_editorPipeline;
     Texture m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
     Texture m_directionalShadowMapTexture;
@@ -73,6 +82,11 @@ private:
 
     ShadowPass m_shadowPass;
     std::vector<MainPass> m_mainPasses;
+    std::vector<EditorPass> m_editorPasses;
+
+    std::vector<R3::Buffer> m_idReadbackBuffers;
+    std::vector<uint32> m_hoveredEntityIDs;
+    uint32 m_selectedEntityID = 0xFFFF'FFFF;
 };
 
 } // namespace R3::vulkan

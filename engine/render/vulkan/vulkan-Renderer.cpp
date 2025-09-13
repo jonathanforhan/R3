@@ -9,20 +9,16 @@
 #include <vulkan/vulkan.h>
 #include <entt/entity/registry.hpp>
 #include <entt/entity/view.hpp>
-#include <entt/resource/resource.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "components/LightComponent.hpp"
-#include "components/MaterialComponent.hpp"
-#include "components/MeshComponent.hpp"
-#include "components/TransformComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/Engine.hpp"
-#include "core/Entity.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
-#include "engine/editor/Editor.hpp"
+#include "input/InputCodes.hpp"
+#include "passes/vulkan-EditorPass.hpp"
 #include "passes/vulkan-MainPass.hpp"
 #include "passes/vulkan-ShadowPass.hpp"
 #include "render/Buffer.hpp"
@@ -31,7 +27,6 @@
 #include "render/ShaderObjects.hpp"
 #include "render/Texture.hpp"
 #include "render/Window.hpp"
-#include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
@@ -66,8 +61,9 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
         m_depthImages.emplace_back(
             extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
-        m_idImages.emplace_back(
-            extent, 1, msaaSamples, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
+        m_depthImages1Bit.emplace_back(
+            extent, 1, 1, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
+        m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
     }
 
     //--- Shaders
@@ -82,75 +78,13 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     m_directionalShadowMapFragmentShader =
         Shader{m_ctx, "_spirv/directional_shadow_map.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
 
+    m_editorVertexShader   = Shader{m_ctx, "_spirv/editor.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
+    m_editorFragmentShader = Shader{m_ctx, "_spirv/editor.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
 
     const VkFormat colorFormat = m_swapchain.format();
-
-    m_graphicsPipeline = GraphicsPipeline{
-        m_ctx,
-        {m_vertexShader, m_fragmentShader},
-        msaaSamples,
-        {colorFormat, (VkFormat)idFormat},
-        {
-            {
-                .blendEnable         = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            },
-            {
-                .blendEnable    = VK_FALSE,
-                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT,
-            },
-        },
-        {layout},
-        {
-            {
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(VertexPushConstants),
-            },
-            {
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(VertexPushConstants),
-                .size       = sizeof(FragmentPushConstants),
-            },
-        },
-        {Vertex::getBindingDescription()},
-        {Vertex::getAttributeDescriptions()},
-    };
-
-    m_cubemapPipeline = GraphicsPipeline{
-        m_ctx,
-        {m_cubemapVertexShader, m_cubemapFragmentShader},
-        msaaSamples,
-        {colorFormat, (VkFormat)idFormat},
-        {
-            {
-                .blendEnable         = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            },
-            {
-                .blendEnable    = VK_FALSE,
-                .colorWriteMask = VK_COLOR_COMPONENT_R_BIT,
-            },
-        },
-        {layout},
-        {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(FragmentPushConstantsCubemap)}},
-    };
 
     m_directionalShadowMapPipeline = GraphicsPipeline{
         m_ctx,
@@ -159,7 +93,87 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         {},
         {},
         {layout},
-        {{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(VertexPushConstantsShadow)}},
+        {{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(ShadowVertexPushConstants)}},
+        {Vertex::getBindingDescription()},
+        {Vertex::getAttributeDescriptions()},
+    };
+
+    m_cubemapPipeline = GraphicsPipeline{
+        m_ctx,
+        {m_cubemapVertexShader, m_cubemapFragmentShader},
+        msaaSamples,
+        {colorFormat},
+        {
+            {
+                .blendEnable         = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp        = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp        = VK_BLEND_OP_ADD,
+                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                  VK_COLOR_COMPONENT_A_BIT,
+            },
+        },
+        {layout},
+        {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(CubemapFragmentPushConstants)}},
+    };
+
+    m_graphicsPipeline = GraphicsPipeline{
+        m_ctx,
+        {m_vertexShader, m_fragmentShader},
+        msaaSamples,
+        {colorFormat},
+        {
+            {
+                .blendEnable         = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp        = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp        = VK_BLEND_OP_ADD,
+                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                  VK_COLOR_COMPONENT_A_BIT,
+            },
+        },
+        {layout},
+        {
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset     = 0,
+                .size       = sizeof(PBRVertexPushConstants),
+            },
+            {
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = sizeof(PBRVertexPushConstants),
+                .size       = sizeof(PBRFragmentPushConstants),
+            },
+        },
+        {Vertex::getBindingDescription()},
+        {Vertex::getAttributeDescriptions()},
+    };
+
+    m_editorPipeline = GraphicsPipeline{
+        m_ctx,
+        {m_editorVertexShader, m_editorFragmentShader},
+        1,
+        {(VkFormat)idFormat},
+        {{.blendEnable = VK_FALSE, .colorWriteMask = VK_COLOR_COMPONENT_R_BIT}},
+        {layout},
+        {
+            {
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .offset     = 0,
+                .size       = sizeof(EditorVertexPushConstants),
+            },
+            {
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = sizeof(EditorVertexPushConstants),
+                .size       = sizeof(EditorFragmentPushConstants),
+            },
+        },
         {Vertex::getBindingDescription()},
         {Vertex::getAttributeDescriptions()},
     };
@@ -194,7 +208,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     m_ubos.resize(m_ctx.maxFramesInFlight());
     for (auto& ubo : m_ubos) {
-        ubo = Buffer{sizeof(VertexUniformBufferObject), BufferUsage::HostUniform};
+        ubo = Buffer{sizeof(PBRVertexUniformBufferObject), BufferUsage::HostUniform};
     }
 
     //--- Storage Buffers
@@ -220,6 +234,12 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     setupShadowPass();
     setupMainPasses();
+    setupEditorPasses();
+
+    for (uint32 i = 0; i < maxFrames; i++) {
+        m_idReadbackBuffers.emplace_back(sizeof(uint32), BufferUsage::HostReadback);
+        m_hoveredEntityIDs.push_back(0xFFFF'FFFF);
+    }
 
     GWorld()->camera().setActive(true);
 }
@@ -233,7 +253,6 @@ void Renderer::draw() {
     if (m_window.shouldResize()) {
         handleWindowResize();
         m_window.setShouldResize(false);
-        return;
     }
 
     // Get current frame index
@@ -245,6 +264,7 @@ void Renderer::draw() {
     VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(currFrame), imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         m_window.setShouldResize(true);
+        return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
@@ -265,19 +285,28 @@ void Renderer::draw() {
     cmd.reset();
     cmd.begin();
 
+    VkDescriptorSet descriptorSet = m_ctx.descriptorSet(currFrame).descriptorSet();
+
     // shadow pass
-    m_shadowPass.setDescriptorSet(m_ctx.descriptorSet(currFrame).descriptorSet());
+    m_shadowPass.setDescriptorSet(descriptorSet);
     m_shadowPass.setLightSpaceMatrix(lightSpaceMatrix);
     m_shadowPass.execute(cmd);
 
     // main pass
-    m_mainPasses[imageIndex].setDescriptorSet(m_ctx.descriptorSet(currFrame).descriptorSet());
+    m_mainPasses[imageIndex].setDescriptorSet(descriptorSet);
     m_mainPasses[imageIndex].setLightCount(numLights);
+    m_mainPasses[imageIndex].setSelectedEntityID(m_selectedEntityID);
     m_mainPasses[imageIndex].execute(cmd);
 
-#if false && R3_EDITOR
-    cmd.setDepthTestEnable(false); // Disable depth for UI
-    GEngine()->m_editor->draw(cmd);
+    handleMouseHover(cmd, imageIndex);
+    if (GWindow()->mouseButtonPressed(MouseButton::Left)) {
+        handleMouseClick(cmd, imageIndex);
+    }
+
+#if R3_EDITOR
+    // editor pass
+    m_editorPasses[imageIndex].setDescriptorSet(descriptorSet);
+    m_editorPasses[imageIndex].execute(cmd);
 #endif
 
     transitionAttachmentsForPresent(cmd, imageIndex);
@@ -315,7 +344,7 @@ void Renderer::draw() {
 
 void Renderer::setupShadowPass() {
     // setup pipeline
-    m_shadowPass.setGraphicsPipeline(&m_directionalShadowMapPipeline);
+    m_shadowPass.setGraphicsPipeline(m_directionalShadowMapPipeline);
     // setup sync
     m_shadowPass.addImageMemoryBarrier({
         .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -385,17 +414,10 @@ void Renderer::setupMainPasses() {
 
     for (uint32 i = 0; i < maxFrames; i++) {
         // setup pipeline
-        m_mainPasses[i].setGraphicsPipeline(&m_graphicsPipeline);
-        m_mainPasses[i].setCubemapPipeline(&m_cubemapPipeline);
+        m_mainPasses[i].setGraphicsPipeline(m_graphicsPipeline);
+        m_mainPasses[i].setCubemapPipeline(m_cubemapPipeline);
         m_mainPasses[i].setCubemapTextureSlot(m_cubemapTextureBinding);
         // setup sync
-        m_mainPasses[i].addMemoryBarrier({
-            .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
-            .srcStageMask  = VK_PIPELINE_STAGE_NONE,
-            .srcAccessMask = VK_ACCESS_NONE,
-            .dstStageMask  = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        });
         m_mainPasses[i].addImageMemoryBarrier({
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .srcStageMask        = VK_PIPELINE_STAGE_NONE,
@@ -446,30 +468,10 @@ void Renderer::setupMainPasses() {
             .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_depthImages[i].imageHandle(), // Your depth image
+            .image               = m_depthImages[i].imageHandle(),
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1,
-                },
-        });
-        m_mainPasses[i].addImageMemoryBarrier({
-            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .srcStageMask        = VK_PIPELINE_STAGE_NONE,
-            .srcAccessMask       = VK_ACCESS_NONE,
-            .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-            .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_idImages[i].imageHandle(),
-            .subresourceRange =
-                {
-                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
                     .baseMipLevel   = 0,
                     .levelCount     = 1,
                     .baseArrayLayer = 0,
@@ -489,15 +491,6 @@ void Renderer::setupMainPasses() {
             .storeOp            = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue         = {{0.0f, 0.0f, 0.0f, 1.0f}},
         });
-        m_mainPasses[i].addColorAttachment({
-            // ID attachment
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = m_idImages[i].imageViewHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
-            .clearValue  = {.color = {.uint32 = {0xFFFFFFFF, 0, 0, 0}}}, // clear to id -1
-        });
         // setup depth attachment
         m_mainPasses[i].setDepthAttachment({
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -513,6 +506,144 @@ void Renderer::setupMainPasses() {
             .extent = m_swapchain.extent(),
         });
     }
+}
+
+void Renderer::setupEditorPasses() {
+    uint32 maxFrames = m_ctx.maxFramesInFlight();
+
+    m_editorPasses.resize(maxFrames);
+
+    for (uint32 i = 0; i < maxFrames; i++) {
+        // setup pipeline
+        m_editorPasses[i].setGraphicsPipeline(m_editorPipeline);
+        // setup sync
+        m_editorPasses[i].addImageMemoryBarrier({
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = VK_PIPELINE_STAGE_NONE,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_idImages[i].imageHandle(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        });
+        m_editorPasses[i].addImageMemoryBarrier({
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_depthImages1Bit[i].imageHandle(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        });
+        // setup color attachment
+        m_editorPasses[i].addColorAttachment({
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = m_idImages[i].imageViewHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
+            .clearValue  = {.color = {.uint32 = {0xFFFFFFFF, 0, 0, 0}}}, // clear to id -1
+        });
+        m_editorPasses[i].setDepthAttachment({
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = m_depthImages1Bit[i].imageViewHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue  = {1.0f, 0},
+        });
+        m_editorPasses[i].setRenderArea({
+            .offset = {0, 0},
+            .extent = m_swapchain.extent(),
+        });
+    }
+}
+
+void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex) {
+    ivec2 cursorPos = static_cast<ivec2>(GWindow()->cursorPosition());
+
+    bool outOfBounds = cursorPos.x < 0 || cursorPos.y < 0 ||
+                       cursorPos.x >= static_cast<int32>(m_swapchain.extent().width) ||
+                       cursorPos.y >= static_cast<int32>(m_swapchain.extent().height);
+
+    if (!outOfBounds) {
+        m_hoveredEntityIDs[imageIndex] = *((uint32*)m_idReadbackBuffers[imageIndex].data());
+
+        const VkImageMemoryBarrier2 barrier = {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            .srcAccessMask       = VK_ACCESS_NONE,
+            .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .dstAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_idImages[imageIndex].imageHandle(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        };
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &barrier,
+        });
+
+        const VkBufferImageCopy2 bufferImageRegion = {
+            .sType             = VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2,
+            .bufferOffset      = 0,
+            .bufferRowLength   = 0,
+            .bufferImageHeight = 0,
+            .imageSubresource  = {.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                                  .mipLevel       = 0,
+                                  .baseArrayLayer = 0,
+                                  .layerCount     = 1},
+            .imageOffset       = {.x = int32(cursorPos.x), .y = int32(cursorPos.y), .z = 0},
+            .imageExtent       = {.width = 1, .height = 1, .depth = 1},
+        };
+        cmd.copyImageToBuffer({
+            .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
+            .srcImage       = m_idImages[imageIndex].imageHandle(),
+            .srcImageLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .dstBuffer      = m_idReadbackBuffers[imageIndex].bufferHandle(),
+            .regionCount    = 1,
+            .pRegions       = &bufferImageRegion,
+        });
+    } else {
+        m_hoveredEntityIDs[imageIndex] = 0xFFFF'FFFF;
+    }
+}
+
+void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
+    m_selectedEntityID = m_hoveredEntityIDs[imageIndex];
 }
 
 void Renderer::transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex) {
@@ -584,6 +715,7 @@ void Renderer::handleWindowResize() {
 
     m_colorImages.clear();
     m_depthImages.clear();
+    m_depthImages1Bit.clear();
     m_idImages.clear();
 
     uint32 maxFrames = m_ctx.maxFramesInFlight();
@@ -591,9 +723,18 @@ void Renderer::handleWindowResize() {
         m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
         m_depthImages.emplace_back(
             extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
-        m_idImages.emplace_back(
-            extent, 1, msaaSamples, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, Format::R32_UINT);
+        m_depthImages1Bit.emplace_back(
+            extent, 1, 1, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
+        m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, Format::R32_UINT);
     }
+
+    m_shadowPass = {};
+    m_mainPasses.clear();
+    m_editorPasses.clear();
+
+    setupShadowPass();
+    setupMainPasses();
+    setupEditorPasses();
 }
 
 void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
@@ -602,7 +743,7 @@ void Renderer::writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights) {
     const VkDescriptorBufferInfo uboBufferInfo = {
         .buffer = m_ubos[frameIndex].bufferHandle(),
         .offset = 0,
-        .range  = sizeof(VertexUniformBufferObject),
+        .range  = sizeof(PBRVertexUniformBufferObject),
     };
     descriptorWrites.push_back(VkWriteDescriptorSet{
         .sType            = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

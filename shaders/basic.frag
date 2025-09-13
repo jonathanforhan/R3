@@ -22,7 +22,7 @@ layout (binding = 3) readonly buffer LightBuffer {
     PointLight u_Lights[];
 };
 
-layout (push_constant) uniform FragmentPushConstants {
+layout (push_constant, std140) uniform FragmentPushConstants {
 layout(offset = 64)
     vec3 c_ViewPosition;
     uint c_NumLights;

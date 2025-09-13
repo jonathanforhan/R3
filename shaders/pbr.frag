@@ -10,7 +10,6 @@ layout (location = 2) in vec2 v_TexCoords;
 layout (location = 3) in vec4 v_PositionLightSpace;
 
 layout (location = 0) out vec4 f_Color;
-layout (location = 1) out uint f_EntityID;
 
 layout (binding = 2) uniform sampler2D u_Samplers[];
 
@@ -36,7 +35,7 @@ layout(offset = 64)
     uint c_iNormal;
     uint c_iAmbientOcclusion;
     uint c_iEmissive;
-    uint c_EntityID;
+    uint c_bSelected;
 };
 
 vec3 calcTangentNormal(sampler2D normal, vec2 texCoords) {
@@ -218,5 +217,8 @@ void main() {
     color *= (1.0 - shadow * 0.75);
     f_Color = vec4(color, 1.0);
 
-    f_EntityID = c_EntityID;
+    if (c_bSelected == 1) {
+        f_Color += vec4(0.3, 0.3, 0.0, 0.0);
+        f_Color.a = 1.0;
+    }
 }

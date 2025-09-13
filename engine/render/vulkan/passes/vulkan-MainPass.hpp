@@ -1,6 +1,5 @@
 #pragma once
 
-#include <span>
 #include "../vulkan-Fwd.hpp"
 #include "../vulkan-RenderPass.hpp"
 #include "engine/api/Class.hpp"
@@ -16,11 +15,13 @@ public:
 
     virtual ~MainPass() noexcept = default;
 
-    void setCubemapPipeline(GraphicsPipeline* pipeline) noexcept { m_cubemapPipeline = pipeline; }
+    void setCubemapPipeline(GraphicsPipeline& pipeline) noexcept { m_cubemapPipeline = &pipeline; }
 
     void setCubemapTextureSlot(uint32 slot) noexcept { m_cubemapTextureSlot = slot; }
 
     void setLightCount(uint32 count) noexcept { m_lightCount = count; }
+
+    void setSelectedEntityID(uint32 entityID) noexcept { m_selectedEntityID = entityID; }
 
 protected:
     virtual void render(CommandBuffer& cmd) override;
@@ -31,8 +32,9 @@ protected:
 
 protected:
     GraphicsPipeline* m_cubemapPipeline = nullptr;
-    uint32 m_cubemapTextureSlot         = 0xFFFFFFFF;
+    uint32 m_cubemapTextureSlot         = 0xFFFF'FFFF;
     uint32 m_lightCount                 = 0;
+    uint32 m_selectedEntityID           = 0xFFFF'FFFF;
 };
 
 } // namespace R3::vulkan

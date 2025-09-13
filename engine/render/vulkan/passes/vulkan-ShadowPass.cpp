@@ -3,6 +3,7 @@
 #include "../vulkan-CommandBuffer.hpp"
 #include "../vulkan-GraphicsPipeline.hpp"
 #include "../vulkan-RenderPass.hpp"
+#include "api/Assert.hpp"
 #include "api/Types.hpp"
 #include "components/MeshComponent.hpp"
 #include "components/TransformComponent.hpp"
@@ -27,6 +28,8 @@ void ShadowPass::setDynamicPipelineStates(CommandBuffer& cmd) {
 }
 
 void ShadowPass::render(CommandBuffer& cmd) {
+    R3_ASSERT(m_pipeline, "Pipeline not set for ShadowPass");
+
     cmd.bindGraphicsPipeline(m_pipeline->pipeline());
     setDynamicPipelineStates(cmd);
 
@@ -41,7 +44,7 @@ void ShadowPass::render(CommandBuffer& cmd) {
 
     GWorld()->registry().view<MeshComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const TransformComponent& trans) {
-            const VertexPushConstantsShadow vertPush = {
+            const ShadowVertexPushConstants vertPush = {
                 .model         = trans.transform(),
                 .lightViewProj = m_lightSpaceMatrix,
             };
@@ -50,7 +53,7 @@ void ShadowPass::render(CommandBuffer& cmd) {
                 .layout     = m_pipeline->layout(),
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
                 .offset     = 0,
-                .size       = sizeof(VertexPushConstantsShadow),
+                .size       = sizeof(ShadowVertexPushConstants),
                 .pValues    = &vertPush,
             });
 
