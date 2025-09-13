@@ -1,6 +1,7 @@
 #pragma once
 
 #include <functional>
+#include <initializer_list>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
@@ -18,13 +19,14 @@ public:
     R3_MOVE_DEFAULT(GraphicsPipeline);
 
     GraphicsPipeline(RenderContext& ctx,
-                     std::vector<std::reference_wrapper<Shader>> shaders,
+                     std::initializer_list<std::reference_wrapper<Shader>> shaders,
                      uint32 msaaSamples,
-                     std::vector<VkFormat> colorFormats,
-                     std::vector<VkDescriptorSetLayout> layouts,
-                     std::vector<VkPushConstantRange> pushConstantRanges,
-                     std::vector<VkVertexInputBindingDescription> vertexBindingDescription      = {},
-                     std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions = {});
+                     std::initializer_list<VkFormat> colorFormats,
+                     std::initializer_list<VkPipelineColorBlendAttachmentState> colorBlends,
+                     std::initializer_list<VkDescriptorSetLayout> layouts,
+                     std::initializer_list<VkPushConstantRange> pushConstantRanges,
+                     std::initializer_list<VkVertexInputBindingDescription> vertexBindingDescription   = {},
+                     const std::vector<VkVertexInputAttributeDescription>& vertexAttributeDescriptions = {});
 
     ~GraphicsPipeline() noexcept;
 

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <initializer_list>
 #include <iterator>
 #include <type_traits>
 #include <vector>
@@ -17,21 +18,20 @@
 namespace R3::vulkan {
 
 GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
-                                   std::vector<std::reference_wrapper<Shader>> shaders,
+                                   std::initializer_list<std::reference_wrapper<Shader>> shaders,
                                    uint32 msaaSamples,
-                                   std::vector<VkFormat> colorFormats,
-                                   std::vector<VkDescriptorSetLayout> layouts,
-                                   std::vector<VkPushConstantRange> pushConstantRanges,
-                                   std::vector<VkVertexInputBindingDescription> vertexBindingDescription,
-                                   std::vector<VkVertexInputAttributeDescription> vertexAttributeDescriptions) {
+                                   std::initializer_list<VkFormat> colorFormats,
+                                   std::initializer_list<VkPipelineColorBlendAttachmentState> colorBlends,
+                                   std::initializer_list<VkDescriptorSetLayout> layouts,
+                                   std::initializer_list<VkPushConstantRange> pushConstantRanges,
+                                   std::initializer_list<VkVertexInputBindingDescription> vertexBindingDescription,
+                                   const std::vector<VkVertexInputAttributeDescription>& vertexAttributeDescriptions) {
     m_device = ctx.device();
 
     std::vector<VkPipelineShaderStageCreateInfo> shaderStagesInfo;
     for (auto& shader : shaders) {
         shaderStagesInfo.push_back({
             .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .pNext               = nullptr,
-            .flags               = 0,
             .stage               = shader.get().stage(),
             .module              = shader.get().shader(),
             .pName               = "main",
@@ -41,18 +41,14 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .pNext                           = nullptr,
-        .flags                           = {},
         .vertexBindingDescriptionCount   = static_cast<uint32_t>(vertexBindingDescription.size()),
-        .pVertexBindingDescriptions      = vertexBindingDescription.data(),
+        .pVertexBindingDescriptions      = vertexBindingDescription.begin(),
         .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size()),
         .pVertexAttributeDescriptions    = vertexAttributeDescriptions.data(),
     };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        .pNext                  = nullptr,
-        .flags                  = {},
         .topology               = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         .primitiveRestartEnable = VK_FALSE,
     };
@@ -87,16 +83,12 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
         .sType             = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        .pNext             = nullptr,
-        .flags             = {},
         .dynamicStateCount = static_cast<uint32_t>(std::size(dynamicStates)),
         .pDynamicStates    = dynamicStates,
     };
 
     const VkPipelineViewportStateCreateInfo viewportStateInfo = {
         .sType         = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        .pNext         = nullptr,
-        .flags         = {},
         .viewportCount = 1,
         .pViewports    = nullptr, // dynamic
         .scissorCount  = 1,
@@ -105,8 +97,6 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineRasterizationStateCreateInfo rasterizationStateInfo = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        .pNext                   = nullptr,
-        .flags                   = {},
         .depthClampEnable        = VK_FALSE,
         .rasterizerDiscardEnable = VK_FALSE,
         .polygonMode             = VK_POLYGON_MODE_FILL,
@@ -121,8 +111,6 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineMultisampleStateCreateInfo multisampeStateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        .pNext                 = nullptr,
-        .flags                 = 0,
         .rasterizationSamples  = (VkSampleCountFlagBits)msaaSamples,
         .sampleShadingEnable   = VK_FALSE,
         .minSampleShading      = 0.0f,
@@ -133,8 +121,6 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     const VkPipelineDepthStencilStateCreateInfo depthStencilStateInfo = {
         .sType                 = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        .pNext                 = nullptr,
-        .flags                 = 0,
         .depthTestEnable       = VK_TRUE,
         .depthWriteEnable      = VK_TRUE,
         .depthCompareOp        = VK_COMPARE_OP_LESS_OR_EQUAL,
@@ -146,46 +132,29 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .maxDepthBounds        = 1.0f,
     };
 
-    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
-        .blendEnable         = VK_FALSE,
-        .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .colorBlendOp        = VK_BLEND_OP_ADD,
-        .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-        .alphaBlendOp        = VK_BLEND_OP_ADD,
-        .colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
-    };
-
     const VkPipelineColorBlendStateCreateInfo colorBlendStateInfo = {
         .sType           = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        .pNext           = nullptr,
-        .flags           = 0,
         .logicOpEnable   = VK_FALSE,
         .logicOp         = VK_LOGIC_OP_COPY,
-        .attachmentCount = 1,
-        .pAttachments    = &colorBlendAttachmentState,
+        .attachmentCount = static_cast<uint32>(colorBlends.size()),
+        .pAttachments    = colorBlends.begin(),
         .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .pNext                  = nullptr,
-        .flags                  = {},
         .setLayoutCount         = static_cast<uint32>(layouts.size()),
-        .pSetLayouts            = layouts.data(),
+        .pSetLayouts            = layouts.begin(),
         .pushConstantRangeCount = static_cast<uint32>(pushConstantRanges.size()),
-        .pPushConstantRanges    = pushConstantRanges.data(),
+        .pPushConstantRanges    = pushConstantRanges.begin(),
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 
     const VkPipelineRenderingCreateInfo renderingInfo = {
         .sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-        .pNext                   = nullptr,
         .viewMask                = 0,
         .colorAttachmentCount    = static_cast<uint32>(colorFormats.size()),
-        .pColorAttachmentFormats = colorFormats.data(),
+        .pColorAttachmentFormats = colorFormats.begin(),
         .depthAttachmentFormat   = ctx.queryDepthFormat(),
         .stencilAttachmentFormat = VK_FORMAT_UNDEFINED,
     };
@@ -193,7 +162,6 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
     const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = &renderingInfo,
-        .flags               = 0,
         .stageCount          = static_cast<uint32>(shaderStagesInfo.size()),
         .pStages             = shaderStagesInfo.data(),
         .pVertexInputState   = &vertexInputStateInfo,

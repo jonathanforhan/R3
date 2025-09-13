@@ -77,6 +77,7 @@ enum class R3_API Format {
     R16_SFLOAT          = 76,
     R16G16_SFLOAT       = 83,
     R16G16B16A16_SFLOAT = 97,
+    R32_UINT            = 98,
     R32_SFLOAT          = 100,
     R32G32_SFLOAT       = 103,
     R32G32B32_SFLOAT    = 106,
@@ -87,6 +88,7 @@ enum class R3_API Format {
     D24_UNORM_S8_UINT   = 129,
 };
 
+/// @return Size in bytes of a single pixel of the given format, or 0 if unsupported
 constexpr uint32 R3_API formatPixelSize(Format format) {
     switch (format) {
         case Format::R8_UNORM:
@@ -94,9 +96,7 @@ constexpr uint32 R3_API formatPixelSize(Format format) {
         case Format::R8G8_UNORM:
             return 2;
         case Format::R8G8B8A8_UNORM:
-            return 4;
         case Format::R8G8B8A8_SRGB:
-            return 4;
         case Format::B8G8R8A8_SRGB:
             return 4;
         case Format::R16_SFLOAT:
@@ -105,6 +105,7 @@ constexpr uint32 R3_API formatPixelSize(Format format) {
             return 4;
         case Format::R16G16B16A16_SFLOAT:
             return 8;
+        case Format::R32_UINT:
         case Format::R32_SFLOAT:
             return 4;
         case Format::R32G32_SFLOAT:

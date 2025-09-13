@@ -284,6 +284,7 @@ vkb::PhysicalDevice RenderContext::selectPhysicalDevice(const vkb::Instance& ins
     auto result = vkb::PhysicalDeviceSelector(instance, surface)
                       .set_minimum_version(R3_VULKAN_VERSION_MAJOR, R3_VULKAN_VERSION_MINOR)
                       .set_required_features({
+                          .independentBlend   = VK_TRUE,
                           .geometryShader     = VK_TRUE,
                           .tessellationShader = VK_TRUE,
                           .sampleRateShading  = VK_TRUE,

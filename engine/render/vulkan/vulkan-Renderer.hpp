@@ -11,6 +11,8 @@
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/Texture.hpp"
 #include "engine/render/Window.hpp"
+#include "passes/vulkan-MainPass.hpp"
+#include "passes/vulkan-ShadowPass.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-RenderContext.hpp"
@@ -33,21 +35,13 @@ public:
     IRenderContext* context() noexcept { return &m_ctx; }
 
 private:
-    void shadowPass(CommandBuffer& cmd, uint32 frameIndex);
-
-    void cubemapPass(CommandBuffer& cmd, uint32 frameIndex);
-
-    // needed because using dynamic rendering
-    void transitionAttachmentsForRender(CommandBuffer& cmd, uint32 imageIndex);
+    void setupShadowPass();
+    void setupMainPasses();
 
     // needed because using dynamic rendering
     void transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex);
 
     void handleWindowResize();
-
-    void beginRenderingHelper(CommandBuffer& cmd, uint32 imageIndex);
-
-    void bindPipelineHelper(CommandBuffer& cmd, const GraphicsPipeline& pipeline);
 
     void writeDescriptorSetsHelper(uint32 frameIndex, uint32 numLights);
 
@@ -57,8 +51,10 @@ private:
     Window& m_window;     // must out-live renderer
     RenderContext& m_ctx; // must out-live renderer
     Swapchain m_swapchain;
-    Image m_colorImage;
-    Image m_depthImage;
+    std::vector<Image> m_colorImages;
+    std::vector<Image> m_depthImages;
+    std::vector<Image> m_idImages;
+
     VertexUniformBufferObject m_ubo;
     Shader m_vertexShader;
     Shader m_fragmentShader;
@@ -74,6 +70,9 @@ private:
     Texture m_directionalShadowMapTexture;
     std::vector<R3::Buffer> m_ubos;
     std::vector<R3::Buffer> m_lights;
+
+    ShadowPass m_shadowPass;
+    std::vector<MainPass> m_mainPasses;
 };
 
 } // namespace R3::vulkan

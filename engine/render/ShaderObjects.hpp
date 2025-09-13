@@ -25,6 +25,7 @@ struct R3_API FragmentPushConstants {
     alignas(4) uint32 iNormal;
     alignas(4) uint32 iAmbientOcclusion;
     alignas(4) uint32 iEmissive;
+    alignas(4) uint32 entityID;
 };
 
 struct R3_API FragmentPushConstantsCubemap {

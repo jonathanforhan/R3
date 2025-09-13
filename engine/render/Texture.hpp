@@ -71,10 +71,10 @@ private:
     static Format queryTextureFormat(TextureType type) noexcept;
 
     // used for Albedo, Emissive, etc.
-    void writeRGBABuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer);
-    void writeMRBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer);
-    void writeAOBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer);
-    void writeNormalBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer);
+    static void writeRGBABuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf);
+    static void writeMRBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf);
+    static void writeAOBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf);
+    static void writeNormalBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf);
 
 private:
     Image m_image;

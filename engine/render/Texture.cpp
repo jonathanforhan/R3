@@ -146,57 +146,53 @@ Format Texture::queryTextureFormat(TextureType type) noexcept {
     }
 }
 
-void Texture::writeRGBABuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer) {
+void Texture::writeRGBABuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf) {
     const usize imgSize = width * height * 4;
     const usize rawSize = width * height * channels;
 
     if (channels == 4) {
         R3_ASSERT(imgSize == rawSize);
-        stagingBuffer.copy(raw, 0, rawSize);
+        stagingBuf.copy(raw, 0, rawSize);
     } else {
         uint8 color[4] = {0, 0, 0, 255};
         for (usize rgba = 0, ch = 0; rgba < imgSize; rgba += 4, ch += channels) {
             R3_ASSERT(ch < rawSize);
             std::memcpy(color, &raw[ch], channels);
-            stagingBuffer.copy(color, rgba, 4);
+            stagingBuf.copy(color, rgba, 4);
         }
     }
 }
 
-void Texture::writeMRBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer) {
+void Texture::writeMRBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf) {
     const usize imgSize = width * height * 2;
     const usize rawSize = width * height * channels;
 
     // copy the GB channels from raw to staging buffer's RG channels
     for (usize rg = 0, ch = 0; rg < imgSize; rg += 2, ch += channels) {
         R3_ASSERT(ch < rawSize);
-        stagingBuffer.copy(&raw[ch + 1], rg, 2);
+        stagingBuf.copy(&raw[ch + 1], rg, 2);
     }
 }
 
-void Texture::writeAOBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuffer) {
+void Texture::writeAOBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf) {
     const usize imgSize = width * height * 1;
     const usize rawSize = width * height * channels;
 
     // copy the R channel from raw to staging buffer's R channel
     for (usize r = 0, ch = 0; r < imgSize; r += 1, ch += channels) {
         R3_ASSERT(ch < rawSize);
-        stagingBuffer.copy(&raw[ch], r, 1);
+        stagingBuf.copy(&raw[ch], r, 1);
     }
 }
 
-void Texture::writeNormalBuffer(const std::byte* raw,
-                                usize width,
-                                usize height,
-                                uint32 channels,
-                                Buffer& stagingBuffer) {
+void Texture::writeNormalBuffer(const std::byte* raw, usize width, usize height, uint32 channels, Buffer& stagingBuf) {
     const usize imgSize = width * height * 2;
     const usize rawSize = width * height * channels;
 
     // copy the RG channels from raw to staging buffer's RG channels
     for (usize rg = 0, ch = 0; rg < imgSize; rg += 2, ch += channels) {
         R3_ASSERT(ch < rawSize);
-        stagingBuffer.copy(&raw[ch], rg, 2);
+        stagingBuf.copy(&raw[ch], rg, 2);
     }
 }
 
