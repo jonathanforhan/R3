@@ -238,7 +238,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     for (uint32 i = 0; i < maxFrames; i++) {
         m_idReadbackBuffers.emplace_back(sizeof(uint32), BufferUsage::HostReadback);
-        m_hoveredEntityIDs.push_back(0xFFFF'FFFF);
     }
 
     GWorld()->camera().setActive(true);
@@ -298,7 +297,6 @@ void Renderer::draw() {
     m_mainPasses[imageIndex].setSelectedEntityID(m_selectedEntityID);
     m_mainPasses[imageIndex].execute(cmd);
 
-    handleMouseHover(cmd, imageIndex);
     if (GWindow()->mouseButtonPressed(MouseButton::Left)) {
         handleMouseClick(cmd, imageIndex);
     }
@@ -581,7 +579,7 @@ void Renderer::setupEditorPasses() {
     }
 }
 
-void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex) {
+void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
     ivec2 cursorPos = static_cast<ivec2>(GWindow()->cursorPosition());
 
     bool outOfBounds = cursorPos.x < 0 || cursorPos.y < 0 ||
@@ -589,13 +587,13 @@ void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex) {
                        cursorPos.y >= static_cast<int32>(m_swapchain.extent().height);
 
     if (!outOfBounds) {
-        m_hoveredEntityIDs[imageIndex] = *((uint32*)m_idReadbackBuffers[imageIndex].data());
+        m_selectedEntityID = *((uint32*)m_idReadbackBuffers[imageIndex].data());
 
         const VkImageMemoryBarrier2 barrier = {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
             .srcAccessMask       = VK_ACCESS_NONE,
-            .dstStageMask        = VK_PIPELINE_STAGE_TRANSFER_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
             .dstAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
             .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
@@ -637,13 +635,36 @@ void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex) {
             .regionCount    = 1,
             .pRegions       = &bufferImageRegion,
         });
-    } else {
-        m_hoveredEntityIDs[imageIndex] = 0xFFFF'FFFF;
-    }
-}
 
-void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
-    m_selectedEntityID = m_hoveredEntityIDs[imageIndex];
+        // transition back to color attachment optimal
+        const VkImageMemoryBarrier2 postBarrier = {
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = VK_PIPELINE_STAGE_2_COPY_BIT,
+            .srcAccessMask       = VK_ACCESS_TRANSFER_READ_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstAccessMask       = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            .newLayout           = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_idImages[imageIndex].imageHandle(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        };
+        cmd.pipelineBarrier({
+            .sType                   = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+            .imageMemoryBarrierCount = 1,
+            .pImageMemoryBarriers    = &postBarrier,
+        });
+    } else {
+        m_selectedEntityID = 0xFFFF'FFFF;
+    }
 }
 
 void Renderer::transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex) {

@@ -39,7 +39,6 @@ private:
     void setupMainPasses();
     void setupEditorPasses();
 
-    void handleMouseHover(CommandBuffer& cmd, uint32 imageIndex);
     void handleMouseClick(CommandBuffer& cmd, uint32 imageIndex);
 
     // needed because using dynamic rendering
@@ -85,7 +84,6 @@ private:
     std::vector<EditorPass> m_editorPasses;
 
     std::vector<R3::Buffer> m_idReadbackBuffers;
-    std::vector<uint32> m_hoveredEntityIDs;
     uint32 m_selectedEntityID = 0xFFFF'FFFF;
 };
 
