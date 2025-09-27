@@ -4,47 +4,53 @@
 #include <functional>
 #include <initializer_list>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_core.h>
-#include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "render/Shader.hpp"
 #include "vulkan-Check.hpp"
 #include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
-#include "vulkan-Shader.hpp"
+#include "vulkan-ShaderMetadata.hpp"
+#include "vulkan-Translation.hpp"
+
+#include "core/Log.hpp"
 
 namespace R3::vulkan {
 
 GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
-                                   std::initializer_list<std::reference_wrapper<Shader>> shaders,
+                                   Shader& vertexShader,
+                                   Shader& fragmentShader,
                                    uint32 msaaSamples,
                                    std::initializer_list<VkFormat> colorFormats,
                                    std::initializer_list<VkPipelineColorBlendAttachmentState> colorBlends,
-                                   std::initializer_list<VkDescriptorSetLayout> layouts,
-                                   std::initializer_list<VkPushConstantRange> pushConstantRanges,
-                                   std::initializer_list<VkVertexInputBindingDescription> vertexBindingDescription,
-                                   const std::vector<VkVertexInputAttributeDescription>& vertexAttributeDescriptions) {
+                                   std::initializer_list<VkDescriptorSetLayout> layouts) {
     m_device = ctx.device();
 
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStagesInfo;
-    for (auto& shader : shaders) {
-        shaderStagesInfo.push_back({
-            .sType               = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            .stage               = shader.get().stage(),
-            .module              = shader.get().shader(),
-            .pName               = "main",
-            .pSpecializationInfo = nullptr,
-        });
-    }
+    const VkPipelineShaderStageCreateInfo shaderStagesInfo[2] = {
+        {
+            .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage  = TO_VK_SHADER_STAGE(vertexShader.stage()),
+            .module = vertexShader.shaderHandle(),
+            .pName  = "main",
+        },
+        {
+            .sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .stage  = TO_VK_SHADER_STAGE(fragmentShader.stage()),
+            .module = fragmentShader.shaderHandle(),
+            .pName  = "main",
+        },
+    };
 
     const VkPipelineVertexInputStateCreateInfo vertexInputStateInfo = {
         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        .vertexBindingDescriptionCount   = static_cast<uint32_t>(vertexBindingDescription.size()),
-        .pVertexBindingDescriptions      = vertexBindingDescription.begin(),
-        .vertexAttributeDescriptionCount = static_cast<uint32_t>(vertexAttributeDescriptions.size()),
-        .pVertexAttributeDescriptions    = vertexAttributeDescriptions.data(),
+        .vertexBindingDescriptionCount   = (uint32_t)vertexShader.metadata().vertexInputBindingDescriptions.size(),
+        .pVertexBindingDescriptions      = vertexShader.metadata().vertexInputBindingDescriptions.data(),
+        .vertexAttributeDescriptionCount = (uint32_t)vertexShader.metadata().vertexInputAttributeDescriptions.size(),
+        .pVertexAttributeDescriptions    = vertexShader.metadata().vertexInputAttributeDescriptions.data(),
     };
 
     const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateInfo = {
@@ -141,12 +147,28 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
         .blendConstants  = {0.0f, 0.0f, 0.0f, 0.0f},
     };
 
+    std::vector<VkPushConstantRange> pushConstantRanges;
+
+    if (vertexShader.metadata().pushConstantRanges.size() != fragmentShader.metadata().pushConstantRanges.size()) {
+        LOG_ERROR("mismatched push constant ranges between vertex and fragment shaders, should be identical");
+    } else {
+        for (usize i = 0; i < vertexShader.metadata().pushConstantRanges.size(); i++) {
+            if (vertexShader.metadata().pushConstantRanges[i].size !=
+                fragmentShader.metadata().pushConstantRanges[i].size) {
+                LOG_ERROR("mismatched push constant ranges between vertex and fragment shaders, should be identical");
+            } else {
+                pushConstantRanges.push_back(vertexShader.metadata().pushConstantRanges[i]);
+                pushConstantRanges.back().stageFlags |= fragmentShader.metadata().pushConstantRanges[i].stageFlags;
+            }
+        }
+    }
+
     const VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
         .sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         .setLayoutCount         = static_cast<uint32>(layouts.size()),
         .pSetLayouts            = layouts.begin(),
         .pushConstantRangeCount = static_cast<uint32>(pushConstantRanges.size()),
-        .pPushConstantRanges    = pushConstantRanges.begin(),
+        .pPushConstantRanges    = pushConstantRanges.data(),
     };
     VK_CHECK(vkCreatePipelineLayout(m_device, &pipelineLayoutInfo, nullptr, &*m_pipelineLayout));
 
@@ -162,8 +184,8 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
     const VkGraphicsPipelineCreateInfo graphicsPipelineInfo = {
         .sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         .pNext               = &renderingInfo,
-        .stageCount          = static_cast<uint32>(shaderStagesInfo.size()),
-        .pStages             = shaderStagesInfo.data(),
+        .stageCount          = static_cast<uint32>(std::size(shaderStagesInfo)),
+        .pStages             = shaderStagesInfo,
         .pVertexInputState   = &vertexInputStateInfo,
         .pInputAssemblyState = &inputAssemblyStateInfo,
         .pTessellationState  = nullptr,
@@ -182,9 +204,9 @@ GraphicsPipeline::GraphicsPipeline(RenderContext& ctx,
 
     try {
         VK_CHECK(vkCreateGraphicsPipelines(m_device, VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &*m_pipeline));
-    } catch (const Exception& ex) {
+    } catch (...) {
         vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
-        throw ex;
+        throw;
     }
 }
 

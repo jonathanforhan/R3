@@ -44,17 +44,17 @@ void ShadowPass::render(CommandBuffer& cmd) {
 
     GWorld()->registry().view<MeshComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const TransformComponent& trans) {
-            const ShadowVertexPushConstants vertPush = {
+            const ShadowPushConstants pc = {
                 .model         = trans.transform(),
                 .lightViewProj = m_lightSpaceMatrix,
             };
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
                 .layout     = m_pipeline->layout(),
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
                 .offset     = 0,
-                .size       = sizeof(ShadowVertexPushConstants),
-                .pValues    = &vertPush,
+                .size       = sizeof(pc),
+                .pValues    = &pc,
             });
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};

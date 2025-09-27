@@ -11,8 +11,9 @@ layout(binding = 0) uniform ModelViewProjection {
     mat4 u_Proj;
 };
 
-layout (push_constant) uniform VertexPushConstants {
+layout (push_constant) uniform PushConstants {
     mat4 c_Model;
+    uint c_EntityID;
 };
 
 void main() {

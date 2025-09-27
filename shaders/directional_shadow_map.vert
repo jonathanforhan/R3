@@ -6,7 +6,7 @@ layout (location = 2) in vec2 a_TexCoords;
 layout (location = 3) in ivec4 a_JointIDs;
 layout (location = 4) in vec4 a_Weights;
 
-layout (push_constant) uniform DirectionalShadowPushConstants {
+layout (push_constant) uniform PushConstants {
 	mat4 u_Model;
 	mat4 u_LightViewProj;
 };

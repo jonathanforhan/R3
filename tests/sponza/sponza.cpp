@@ -52,12 +52,12 @@ static void moduleMain() {
     // Entity lamp = loader.glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
 
     light = GWorld()->registry().create();
-    GWorld()->registry().emplace<LightComponent>(light,
-                                                 LightComponent{
-                                                     .position  = fvec3(-2.0f, 4.0f, -4.0f),
-                                                     .color     = fvec3(1.0f),
-                                                     .intensity = 25.0f,
-                                                 });
+
+    GWorld()->registry().emplace<LightComponent>(light) = {
+        .position  = fvec3(-2.0f, 4.0f, -4.0f),
+        .color     = fvec3(1.0f),
+        .intensity = 25.0f,
+    };
 }
 
 R3_MODULE void* Entry() {

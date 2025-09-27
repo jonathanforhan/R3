@@ -23,8 +23,17 @@ layout(binding = 1) readonly buffer JointTransforms {
     mat4 u_JointTransforms[];
 };
 
-layout (push_constant) uniform VertexPushConstants {
+layout (push_constant) uniform PushConstants {
     mat4 c_Model;
+    vec3 c_ViewPosition;
+    uint c_NumLights;
+    /* indices for textures in the u_Samplers array */
+    uint c_iAlbedo;
+    uint c_iMetallicRoughness; /* metalness B channel, roughness G channel */
+    uint c_iNormal;
+    uint c_iAmbientOcclusion;
+    uint c_iEmissive;
+    uint c_bSelected;
 };
 
 void main() {

@@ -24,6 +24,7 @@
 #include "render/Buffer.hpp"
 #include "render/Flags.hpp"
 #include "render/Image.hpp"
+#include "render/Shader.hpp"
 #include "render/ShaderObjects.hpp"
 #include "render/Texture.hpp"
 #include "render/Window.hpp"
@@ -32,7 +33,6 @@
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-RenderPass.hpp"
-#include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
 
 namespace R3::vulkan {
@@ -67,19 +67,17 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     }
 
     //--- Shaders
-    m_vertexShader   = Shader{m_ctx, "_spirv/pbr.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_fragmentShader = Shader{m_ctx, "_spirv/pbr.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_vertexShader   = Shader{"_spirv/pbr.vert.spv", ShaderStage::Vertex};
+    m_fragmentShader = Shader{"_spirv/pbr.frag.spv", ShaderStage::Fragment};
 
-    m_cubemapVertexShader   = Shader{m_ctx, "_spirv/cubemap.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_cubemapFragmentShader = Shader{m_ctx, "_spirv/cubemap.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_cubemapVertexShader   = Shader{"_spirv/cubemap.vert.spv", ShaderStage::Vertex};
+    m_cubemapFragmentShader = Shader{"_spirv/cubemap.frag.spv", ShaderStage::Fragment};
 
-    m_directionalShadowMapVertexShader =
-        Shader{m_ctx, "_spirv/directional_shadow_map.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_directionalShadowMapFragmentShader =
-        Shader{m_ctx, "_spirv/directional_shadow_map.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_directionalShadowMapVertexShader   = Shader{"_spirv/directional_shadow_map.vert.spv", ShaderStage::Vertex};
+    m_directionalShadowMapFragmentShader = Shader{"_spirv/directional_shadow_map.frag.spv", ShaderStage::Fragment};
 
-    m_editorVertexShader   = Shader{m_ctx, "_spirv/editor.vert.spv", VK_SHADER_STAGE_VERTEX_BIT};
-    m_editorFragmentShader = Shader{m_ctx, "_spirv/editor.frag.spv", VK_SHADER_STAGE_FRAGMENT_BIT};
+    m_editorVertexShader   = Shader{"_spirv/editor.vert.spv", ShaderStage::Vertex};
+    m_editorFragmentShader = Shader{"_spirv/editor.frag.spv", ShaderStage::Fragment};
 
     //--- Graphics Pipeline
     const VkDescriptorSetLayout layout = ctx.descriptorLayout();
@@ -88,19 +86,18 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     m_directionalShadowMapPipeline = GraphicsPipeline{
         m_ctx,
-        {m_directionalShadowMapVertexShader, m_directionalShadowMapFragmentShader},
+        m_directionalShadowMapVertexShader,
+        m_directionalShadowMapFragmentShader,
         VK_SAMPLE_COUNT_1_BIT,
         {},
         {},
         {layout},
-        {{.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(ShadowVertexPushConstants)}},
-        {Vertex::getBindingDescription()},
-        {Vertex::getAttributeDescriptions()},
     };
 
     m_cubemapPipeline = GraphicsPipeline{
         m_ctx,
-        {m_cubemapVertexShader, m_cubemapFragmentShader},
+        m_cubemapVertexShader,
+        m_cubemapFragmentShader,
         msaaSamples,
         {colorFormat},
         {
@@ -117,12 +114,12 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
             },
         },
         {layout},
-        {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .size = sizeof(CubemapFragmentPushConstants)}},
     };
 
     m_graphicsPipeline = GraphicsPipeline{
         m_ctx,
-        {m_vertexShader, m_fragmentShader},
+        m_vertexShader,
+        m_fragmentShader,
         msaaSamples,
         {colorFormat},
         {
@@ -139,43 +136,16 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
             },
         },
         {layout},
-        {
-            {
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(PBRVertexPushConstants),
-            },
-            {
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(PBRVertexPushConstants),
-                .size       = sizeof(PBRFragmentPushConstants),
-            },
-        },
-        {Vertex::getBindingDescription()},
-        {Vertex::getAttributeDescriptions()},
     };
 
     m_editorPipeline = GraphicsPipeline{
         m_ctx,
-        {m_editorVertexShader, m_editorFragmentShader},
+        m_editorVertexShader,
+        m_editorFragmentShader,
         1,
         {(VkFormat)idFormat},
         {{.blendEnable = VK_FALSE, .colorWriteMask = VK_COLOR_COMPONENT_R_BIT}},
         {layout},
-        {
-            {
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(EditorVertexPushConstants),
-            },
-            {
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(EditorVertexPushConstants),
-                .size       = sizeof(EditorFragmentPushConstants),
-            },
-        },
-        {Vertex::getBindingDescription()},
-        {Vertex::getAttributeDescriptions()},
     };
 
     //--- Cubemap
@@ -247,79 +217,83 @@ Renderer::~Renderer() noexcept {
     m_ctx.waitIdle();
 }
 
-void Renderer::draw() {
-    // Handle m_window resize
+void Renderer::acquire() {
     if (m_window.shouldResize()) {
         handleWindowResize();
         m_window.setShouldResize(false);
     }
 
-    // Get current frame index
-    uint32 currFrame = m_ctx.currentFrameIndex();
-    m_ctx.waitForFrame(currFrame);
+    m_currentFrame = m_ctx.currentFrameIndex();
+    m_ctx.waitForFrame(m_currentFrame);
 
-    // Acquire next image
-    uint32 imageIndex;
-    VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(currFrame), imageIndex);
+    VkResult result = m_swapchain.acquireNextImage(m_ctx.imageAvailableSemaphore(m_currentFrame), m_imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        m_window.setShouldResize(true);
-        return;
+        handleWindowResize();
+        m_window.setShouldResize(false);
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw Exception{std::format("Failed to acquire swap chain image: {}", static_cast<int>(result))};
     }
+}
+
+void Renderer::update() {
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(m_currentFrame);
 
     // update view projection matrices in ubo
-    GWorld()->camera().applyPerspective(m_window.aspectRatio(), m_window.size(), m_ubo.view, m_ubo.projection);
+    GWorld()->camera().applyPerspective(m_window.aspectRatio(), m_ubo.view, m_ubo.projection);
     m_ubo.lightViewProjection = lightSpaceMatrix;
-    m_ubos[currFrame].copy(&m_ubo, 0, sizeof(m_ubo));
+    m_ubos[m_currentFrame].copy(&m_ubo, 0, sizeof(m_ubo));
 
     // update lights
-    uint32 numLights = updateLights(currFrame);
+    uint32 numLights = updateLights(m_currentFrame);
     fvec3 lightPos;
     GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) { lightPos = light.position; });
 
-    writeDescriptorSetsHelper(currFrame, numLights);
+    writeDescriptorSetsHelper(m_currentFrame, numLights);
 
-    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(currFrame);
     cmd.reset();
     cmd.begin();
 
-    VkDescriptorSet descriptorSet = m_ctx.descriptorSet(currFrame).descriptorSet();
+    VkDescriptorSet descriptorSet = m_ctx.descriptorSet(m_currentFrame).descriptorSet();
 
     // shadow pass
     m_shadowPass.setDescriptorSet(descriptorSet);
     m_shadowPass.setLightSpaceMatrix(lightSpaceMatrix);
-    m_shadowPass.execute(cmd);
 
     // main pass
-    m_mainPasses[imageIndex].setDescriptorSet(descriptorSet);
-    m_mainPasses[imageIndex].setLightCount(numLights);
-    m_mainPasses[imageIndex].setSelectedEntityID(m_selectedEntityID);
-    m_mainPasses[imageIndex].execute(cmd);
+    m_mainPasses[m_imageIndex].setDescriptorSet(descriptorSet);
+    m_mainPasses[m_imageIndex].setLightCount(numLights);
+    m_mainPasses[m_imageIndex].setSelectedEntityID(m_selectedEntityID);
 
     if (GWindow()->mouseButtonPressed(MouseButton::Left)) {
-        handleMouseClick(cmd, imageIndex);
+        handleMouseClick(cmd, m_imageIndex);
     }
 
 #if R3_EDITOR
     // editor pass
-    m_editorPasses[imageIndex].setDescriptorSet(descriptorSet);
-    m_editorPasses[imageIndex].execute(cmd);
+    m_editorPasses[m_imageIndex].setDescriptorSet(descriptorSet);
 #endif
+}
 
-    transitionAttachmentsForPresent(cmd, imageIndex);
+void Renderer::render() {
+    CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(m_currentFrame);
+    m_shadowPass.execute(cmd);
+    m_mainPasses[m_imageIndex].execute(cmd);
+    m_editorPasses[m_imageIndex].execute(cmd);
+    transitionAttachmentsForPresent(cmd, m_imageIndex);
     cmd.end();
 
     // Submit command buffer - use per-frame acquire, per-image render finished
     m_ctx.submit(m_ctx.graphicsQueue(),
                  cmd.commandBuffer(),
                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                 m_ctx.imageAvailableSemaphore(currFrame),
-                 m_ctx.renderFinishedSemaphore(currFrame),
-                 m_ctx.inFlightFence(currFrame));
+                 m_ctx.imageAvailableSemaphore(m_currentFrame),
+                 m_ctx.renderFinishedSemaphore(m_currentFrame),
+                 m_ctx.inFlightFence(m_currentFrame));
+}
 
+void Renderer::present() {
     // Present - use per-image semaphore
-    const VkSemaphore signalSemaphores[] = {m_ctx.renderFinishedSemaphore(currFrame)};
+    const VkSemaphore signalSemaphores[] = {m_ctx.renderFinishedSemaphore(m_currentFrame)};
     const VkSwapchainKHR swapchains[]    = {m_swapchain.swapchain()};
     const VkPresentInfoKHR presentInfo{
         .sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -327,10 +301,10 @@ void Renderer::draw() {
         .pWaitSemaphores    = signalSemaphores,
         .swapchainCount     = 1,
         .pSwapchains        = swapchains,
-        .pImageIndices      = &imageIndex,
+        .pImageIndices      = &m_imageIndex,
         .pResults           = nullptr,
     };
-    result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
+    VkResult result = vkQueuePresentKHR(m_ctx.graphicsQueue(), &presentInfo);
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         m_window.setShouldResize(true);
     } else if (result != VK_SUCCESS) {

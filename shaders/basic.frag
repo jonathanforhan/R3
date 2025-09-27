@@ -22,8 +22,8 @@ layout (binding = 3) readonly buffer LightBuffer {
     PointLight u_Lights[];
 };
 
-layout (push_constant, std140) uniform FragmentPushConstants {
-layout(offset = 64)
+layout (push_constant) uniform PushConstants {
+    mat4 c_Model;
     vec3 c_ViewPosition;
     uint c_NumLights;
     /* indices for textures in the u_Samplers array */
@@ -32,6 +32,7 @@ layout(offset = 64)
     uint c_iNormal;
     uint c_iAmbientOcclusion;
     uint c_iEmissive;
+    uint c_bSelected;
 };
 
 vec3 calcTangentNormal(sampler2D normal, vec2 texCoords) {

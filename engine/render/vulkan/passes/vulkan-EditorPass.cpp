@@ -32,28 +32,17 @@ void EditorPass::render(CommandBuffer& cmd) {
 
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
-            const EditorVertexPushConstants vertPushConstants = {
-                .model = trans.transform(),
-            };
-            cmd.pushConstants({
-                .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
-                .layout     = m_pipeline->layout(),
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(EditorVertexPushConstants),
-                .pValues    = &vertPushConstants,
-            });
-
-            const EditorFragmentPushConstants fragPushConstants = {
+            const EditorPushConstants pc = {
+                .model    = trans.transform(),
                 .entityID = (uint32)entity,
             };
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
                 .layout     = m_pipeline->layout(),
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(EditorVertexPushConstants),
-                .size       = sizeof(EditorFragmentPushConstants),
-                .pValues    = &fragPushConstants,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = 0,
+                .size       = sizeof(pc),
+                .pValues    = &pc,
             });
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};

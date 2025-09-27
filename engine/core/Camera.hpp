@@ -27,7 +27,7 @@ public:
     bool active() const noexcept { return m_active; }
     void setActive(bool active = true) noexcept { m_active = active; }
 
-    void applyPerspective(float aspectRatio, ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
+    void applyPerspective(float aspectRatio, fmat4& view, fmat4& projection) const noexcept;
     void applyOrthographic(ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept;
 
 private:

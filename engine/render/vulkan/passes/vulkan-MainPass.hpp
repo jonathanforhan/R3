@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "../vulkan-Fwd.hpp"
 #include "../vulkan-RenderPass.hpp"
 #include "engine/api/Class.hpp"
@@ -32,9 +33,9 @@ protected:
 
 protected:
     GraphicsPipeline* m_cubemapPipeline = nullptr;
-    uint32 m_cubemapTextureSlot         = 0xFFFF'FFFF;
+    uint32 m_cubemapTextureSlot         = UINT32_MAX;
     uint32 m_lightCount                 = 0;
-    uint32 m_selectedEntityID           = 0xFFFF'FFFF;
+    uint32 m_selectedEntityID           = UINT32_MAX;
 };
 
 } // namespace R3::vulkan

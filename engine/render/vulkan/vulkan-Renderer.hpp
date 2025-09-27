@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
@@ -7,6 +8,7 @@
 #include "engine/render/Buffer.hpp"
 #include "engine/render/Image.hpp"
 #include "engine/render/RenderContext.hpp"
+#include "engine/render/Shader.hpp"
 #include "engine/render/ShaderObjects.hpp"
 #include "engine/render/Texture.hpp"
 #include "engine/render/Window.hpp"
@@ -16,7 +18,6 @@
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-GraphicsPipeline.hpp"
 #include "vulkan-RenderContext.hpp"
-#include "vulkan-Shader.hpp"
 #include "vulkan-Swapchain.hpp"
 
 namespace R3::vulkan {
@@ -30,9 +31,13 @@ public:
 
     ~Renderer() noexcept;
 
-    void draw();
+    void acquire();
 
-    IRenderContext* context() noexcept { return &m_ctx; }
+    void update();
+
+    void render();
+
+    void present();
 
 private:
     void setupShadowPass();
@@ -55,6 +60,9 @@ private:
     RenderContext& m_ctx; // must out-live renderer
     Swapchain m_swapchain;
 
+    uint32 m_imageIndex   = UINT32_MAX;
+    uint32 m_currentFrame = 0;
+
     std::vector<Image> m_colorImages;
     std::vector<Image> m_depthImages;
     std::vector<Image> m_depthImages1Bit;
@@ -76,14 +84,14 @@ private:
     Texture m_cubemapTexture;
     uint32 m_cubemapTextureBinding = 0;
     Texture m_directionalShadowMapTexture;
-    std::vector<R3::Buffer> m_ubos;
-    std::vector<R3::Buffer> m_lights;
+    std::vector<Buffer> m_ubos;
+    std::vector<Buffer> m_lights;
 
     ShadowPass m_shadowPass;
     std::vector<MainPass> m_mainPasses;
     std::vector<EditorPass> m_editorPasses;
 
-    std::vector<R3::Buffer> m_idReadbackBuffers;
+    std::vector<Buffer> m_idReadbackBuffers;
     uint32 m_selectedEntityID = 0xFFFF'FFFF;
 };
 

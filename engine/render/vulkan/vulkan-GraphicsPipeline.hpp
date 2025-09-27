@@ -2,11 +2,11 @@
 
 #include <functional>
 #include <initializer_list>
-#include <vector>
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/render/RenderFwd.hpp"
 #include "vulkan-Fwd.hpp"
 #include "vulkan-Handle.hpp"
 
@@ -19,14 +19,12 @@ public:
     R3_MOVE_DEFAULT(GraphicsPipeline);
 
     GraphicsPipeline(RenderContext& ctx,
-                     std::initializer_list<std::reference_wrapper<Shader>> shaders,
+                     Shader& vertexShader,
+                     Shader& fragmentShader,
                      uint32 msaaSamples,
                      std::initializer_list<VkFormat> colorFormats,
                      std::initializer_list<VkPipelineColorBlendAttachmentState> colorBlends,
-                     std::initializer_list<VkDescriptorSetLayout> layouts,
-                     std::initializer_list<VkPushConstantRange> pushConstantRanges,
-                     std::initializer_list<VkVertexInputBindingDescription> vertexBindingDescription   = {},
-                     const std::vector<VkVertexInputAttributeDescription>& vertexAttributeDescriptions = {});
+                     std::initializer_list<VkDescriptorSetLayout> layouts);
 
     ~GraphicsPipeline() noexcept;
 

@@ -1,5 +1,6 @@
 #include "vulkan-MainPass.hpp"
 
+#include <cstdint>
 #include "../vulkan-CommandBuffer.hpp"
 #include "../vulkan-GraphicsPipeline.hpp"
 #include "../vulkan-RenderPass.hpp"
@@ -19,7 +20,7 @@
 namespace R3::vulkan {
 
 void MainPass::render(CommandBuffer& cmd) {
-    if (m_cubemapPipeline && m_cubemapTextureSlot != 0xFFFFFFFF) {
+    if (m_cubemapPipeline && m_cubemapTextureSlot != UINT32_MAX) {
         renderCubemap(cmd);
     }
     renderScene(cmd);
@@ -42,14 +43,14 @@ void MainPass::renderCubemap(CommandBuffer& cmd) {
     });
 
     // Push Constants
-    const CubemapFragmentPushConstants fragPushConstants = {.iCubemap = m_cubemapTextureSlot};
+    const CubemapPushConstants pc = {.iCubemap = m_cubemapTextureSlot};
     cmd.pushConstants({
         .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
         .layout     = m_cubemapPipeline->layout(),
-        .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
         .offset     = 0,
-        .size       = sizeof(CubemapFragmentPushConstants),
-        .pValues    = &fragPushConstants,
+        .size       = sizeof(pc),
+        .pValues    = &pc,
     });
 
     cmd.draw(36, 1, 0, 0);
@@ -72,19 +73,8 @@ void MainPass::renderScene(CommandBuffer& cmd) {
 
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
-            const PBRVertexPushConstants vertPushConstants = {
-                .model = trans.transform(),
-            };
-            cmd.pushConstants({
-                .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
-                .layout     = m_pipeline->layout(),
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-                .offset     = 0,
-                .size       = sizeof(PBRVertexPushConstants),
-                .pValues    = &vertPushConstants,
-            });
-
-            const PBRFragmentPushConstants fragPushConstants = {
+            const PBRPushConstants pc = {
+                .model              = trans.transform(),
                 .viewPosition       = GWorld()->camera().position(),
                 .numLights          = m_lightCount,
                 .iAlbedo            = mat.iAlbedo,
@@ -97,10 +87,10 @@ void MainPass::renderScene(CommandBuffer& cmd) {
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,
                 .layout     = m_pipeline->layout(),
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-                .offset     = sizeof(PBRVertexPushConstants),
-                .size       = sizeof(PBRFragmentPushConstants),
-                .pValues    = &fragPushConstants,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+                .offset     = 0,
+                .size       = sizeof(pc),
+                .pValues    = &pc,
             });
 
             const VkBuffer vboIndices[]  = {mesh.vertexBufferIndex->bufferHandle()};

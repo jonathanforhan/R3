@@ -22,3 +22,6 @@
 #define TO_VK_FILTER(filter)             ((VkFilter)(filter))
 #define TO_VK_SAMPLER_MIPMAP_MODE(mode)  ((VkSamplerMipmapMode)(mode))
 #define TO_VK_SAMPLER_ADDRESS_MODE(mode) ((VkSamplerAddressMode)(mode))
+
+// Shader
+#define TO_VK_SHADER_STAGE(stage) ((VkShaderStageFlagBits)(stage))

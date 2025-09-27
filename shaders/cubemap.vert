@@ -7,6 +7,10 @@ layout(binding = 0) uniform ModelViewProjection {
     mat4 u_Proj;
 };
 
+layout (push_constant) uniform PushConstants {
+    uint c_iCubemap;
+};
+
 const vec3 k_CubeVertices[36] = vec3[36](
     vec3(-1.0,  1.0, -1.0), vec3(-1.0, -1.0, -1.0), vec3( 1.0, -1.0, -1.0),
     vec3( 1.0, -1.0, -1.0), vec3( 1.0,  1.0, -1.0), vec3(-1.0,  1.0, -1.0),

@@ -2,8 +2,8 @@
 
 layout (location = 0) out uint f_EntityID;
 
-layout (push_constant, std140) uniform FragmentPushConstants {
-layout(offset = 64)
+layout (push_constant) uniform PushConstants {
+    mat4 c_Model;
     uint c_EntityID;
 };
 

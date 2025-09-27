@@ -25,8 +25,8 @@ layout (binding = 3) readonly buffer LightBuffer {
 
 layout (binding = 5) uniform sampler2D u_ShadowMap;
 
-layout (push_constant, std140) uniform FragmentPushConstants {
-layout(offset = 64)
+layout (push_constant) uniform PushConstants {
+    mat4 c_Model;
     vec3 c_ViewPosition;
     uint c_NumLights;
     /* indices for textures in the u_Samplers array */

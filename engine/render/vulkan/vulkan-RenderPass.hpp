@@ -1,11 +1,9 @@
 #pragma once
 
-#include <cstdint>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
 #include "engine/api/Class.hpp"
-#include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
 
 namespace R3::vulkan {
@@ -51,8 +49,6 @@ protected:
     VkRect2D m_renderArea           = {};
     GraphicsPipeline* m_pipeline    = nullptr;
     VkDescriptorSet m_descriptorSet = VK_NULL_HANDLE;
-    uint32 m_imageIndex             = UINT32_MAX;
-    bool m_applyBarriers            = true;
 };
 
 } // namespace R3::vulkan

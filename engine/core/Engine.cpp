@@ -22,7 +22,10 @@ void Engine::update() {
         m_editor->recordFrame(dt);
         uiFocused = m_editor->uiFocused();
 #endif
-        m_renderer->draw();
+        m_renderer->acquire();
+        m_renderer->update();
+        m_renderer->render();
+        m_renderer->present();
     }
 
     GEventHandler()->dispatchEvents();

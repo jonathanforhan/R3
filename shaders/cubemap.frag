@@ -7,7 +7,7 @@ layout (location = 0) out vec4 f_Color;
 
 layout (binding = 2) uniform samplerCube u_Samplers[];
 
-layout (push_constant) uniform FragmentPushConstants {
+layout (push_constant) uniform PushConstants {
     uint c_iCubemap;
 };
 

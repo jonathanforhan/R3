@@ -53,7 +53,7 @@ public:
     template <typename T, typename... Args>
     T* newFrameScopedObject(Args&&... args) {
         T* obj = new T(std::forward<Args>(args)...);
-        GEngine()->EventHandler().bindEventListener("frame-done", [obj] noexcept {
+        GEventHandler()->bindEventListener("frame-done", [obj] noexcept {
             delete obj;
             return true; // remove listener after called once
         });
