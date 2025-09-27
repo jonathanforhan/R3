@@ -15,9 +15,11 @@
 #include "components/LightComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/Engine.hpp"
+#include "core/EventHandler.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
 #include "input/InputCodes.hpp"
+#include "input/InputEvents.hpp"
 #include "passes/vulkan-EditorPass.hpp"
 #include "passes/vulkan-MainPass.hpp"
 #include "passes/vulkan-ShadowPass.hpp"
@@ -48,14 +50,14 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Swapchain
     //    - images
     //    - image views
-    m_swapchain      = Swapchain{m_ctx, m_window.framebufferSize()};
-    uint32 maxFrames = m_ctx.maxFramesInFlight();
+    m_swapchain            = Swapchain{m_ctx, m_window.framebufferSize()};
+    const uint32 maxFrames = m_ctx.maxFramesInFlight();
 
     //--- Color/Depth Image
-    uint32 msaaSamples = m_ctx.queryMaxUsableSampleCount();
+    const uint32 msaaSamples = m_ctx.queryMaxUsableSampleCount();
 
-    usize3 extent   = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
-    Format idFormat = Format::R32_UINT;
+    const usize3 extent   = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
+    const Format idFormat = Format::R32_UINT;
 
     for (uint32 i = 0; i < maxFrames; i++) {
         m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
@@ -66,87 +68,7 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
     }
 
-    //--- Shaders
-    m_vertexShader   = Shader{"_spirv/pbr.vert.spv", ShaderStage::Vertex};
-    m_fragmentShader = Shader{"_spirv/pbr.frag.spv", ShaderStage::Fragment};
-
-    m_cubemapVertexShader   = Shader{"_spirv/cubemap.vert.spv", ShaderStage::Vertex};
-    m_cubemapFragmentShader = Shader{"_spirv/cubemap.frag.spv", ShaderStage::Fragment};
-
-    m_directionalShadowMapVertexShader   = Shader{"_spirv/directional_shadow_map.vert.spv", ShaderStage::Vertex};
-    m_directionalShadowMapFragmentShader = Shader{"_spirv/directional_shadow_map.frag.spv", ShaderStage::Fragment};
-
-    m_editorVertexShader   = Shader{"_spirv/editor.vert.spv", ShaderStage::Vertex};
-    m_editorFragmentShader = Shader{"_spirv/editor.frag.spv", ShaderStage::Fragment};
-
-    //--- Graphics Pipeline
-    const VkDescriptorSetLayout layout = ctx.descriptorLayout();
-
-    const VkFormat colorFormat = m_swapchain.format();
-
-    m_directionalShadowMapPipeline = GraphicsPipeline{
-        m_ctx,
-        m_directionalShadowMapVertexShader,
-        m_directionalShadowMapFragmentShader,
-        VK_SAMPLE_COUNT_1_BIT,
-        {},
-        {},
-        {layout},
-    };
-
-    m_cubemapPipeline = GraphicsPipeline{
-        m_ctx,
-        m_cubemapVertexShader,
-        m_cubemapFragmentShader,
-        msaaSamples,
-        {colorFormat},
-        {
-            {
-                .blendEnable         = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            },
-        },
-        {layout},
-    };
-
-    m_graphicsPipeline = GraphicsPipeline{
-        m_ctx,
-        m_vertexShader,
-        m_fragmentShader,
-        msaaSamples,
-        {colorFormat},
-        {
-            {
-                .blendEnable         = VK_FALSE,
-                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .colorBlendOp        = VK_BLEND_OP_ADD,
-                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
-                .alphaBlendOp        = VK_BLEND_OP_ADD,
-                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                                  VK_COLOR_COMPONENT_A_BIT,
-            },
-        },
-        {layout},
-    };
-
-    m_editorPipeline = GraphicsPipeline{
-        m_ctx,
-        m_editorVertexShader,
-        m_editorFragmentShader,
-        1,
-        {(VkFormat)idFormat},
-        {{.blendEnable = VK_FALSE, .colorWriteMask = VK_COLOR_COMPONENT_R_BIT}},
-        {layout},
-    };
+    buildPipelines();
 
     //--- Cubemap
     CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(0);
@@ -211,6 +133,12 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     }
 
     GWorld()->camera().setActive(true);
+
+    GEventHandler()->bindEventListener("key-press", [this](const Event<KeyboardEvent>& e) noexcept {
+        if (e.data.key == Key::R && (e.data.modifiers & InputModifierFlags::Control)) {
+            m_shouldReloadShaders = true;
+        }
+    });
 }
 
 Renderer::~Renderer() noexcept {
@@ -218,6 +146,22 @@ Renderer::~Renderer() noexcept {
 }
 
 void Renderer::acquire() {
+    if (m_shouldReloadShaders) {
+        m_ctx.waitIdle();
+
+        try {
+            buildPipelines();
+
+            setupShadowPass();
+            setupMainPasses();
+            setupEditorPasses();
+
+            m_shouldReloadShaders = false;
+        } catch (...) {
+            m_shouldReloadShaders = true;
+        }
+    }
+
     if (m_window.shouldResize()) {
         handleWindowResize();
         m_window.setShouldResize(false);
@@ -314,7 +258,94 @@ void Renderer::present() {
     m_ctx.advanceFrame();
 }
 
+void Renderer::buildPipelines() {
+    //--- Shaders
+    m_vertexShader   = Shader{"shaders/pbr.vert", ShaderStage::Vertex};
+    m_fragmentShader = Shader{"shaders/pbr.frag", ShaderStage::Fragment};
+
+    m_cubemapVertexShader   = Shader{"shaders/cubemap.vert", ShaderStage::Vertex};
+    m_cubemapFragmentShader = Shader{"shaders/cubemap.frag", ShaderStage::Fragment};
+
+    m_directionalShadowMapVertexShader   = Shader{"shaders/directional_shadow_map.vert", ShaderStage::Vertex};
+    m_directionalShadowMapFragmentShader = Shader{"shaders/directional_shadow_map.frag", ShaderStage::Fragment};
+
+    m_editorVertexShader   = Shader{"shaders/editor.vert", ShaderStage::Vertex};
+    m_editorFragmentShader = Shader{"shaders/editor.frag", ShaderStage::Fragment};
+
+    //--- Graphics Pipeline
+    const VkDescriptorSetLayout layout = m_ctx.descriptorLayout();
+    const VkFormat colorFormat         = m_swapchain.format();
+    const uint32 msaaSamples           = m_ctx.queryMaxUsableSampleCount();
+    const Format idFormat              = Format::R32_UINT;
+
+    m_directionalShadowMapPipeline = GraphicsPipeline{
+        m_ctx,
+        m_directionalShadowMapVertexShader,
+        m_directionalShadowMapFragmentShader,
+        VK_SAMPLE_COUNT_1_BIT,
+        {},
+        {},
+        {layout},
+    };
+
+    m_cubemapPipeline = GraphicsPipeline{
+        m_ctx,
+        m_cubemapVertexShader,
+        m_cubemapFragmentShader,
+        msaaSamples,
+        {colorFormat},
+        {
+            {
+                .blendEnable         = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp        = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp        = VK_BLEND_OP_ADD,
+                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                  VK_COLOR_COMPONENT_A_BIT,
+            },
+        },
+        {layout},
+    };
+
+    m_graphicsPipeline = GraphicsPipeline{
+        m_ctx,
+        m_vertexShader,
+        m_fragmentShader,
+        msaaSamples,
+        {colorFormat},
+        {
+            {
+                .blendEnable         = VK_FALSE,
+                .srcColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstColorBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .colorBlendOp        = VK_BLEND_OP_ADD,
+                .srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO,
+                .alphaBlendOp        = VK_BLEND_OP_ADD,
+                .colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                                  VK_COLOR_COMPONENT_A_BIT,
+            },
+        },
+        {layout},
+    };
+
+    m_editorPipeline = GraphicsPipeline{
+        m_ctx,
+        m_editorVertexShader,
+        m_editorFragmentShader,
+        1,
+        {(VkFormat)idFormat},
+        {{.blendEnable = VK_FALSE, .colorWriteMask = VK_COLOR_COMPONENT_R_BIT}},
+        {layout},
+    };
+}
+
 void Renderer::setupShadowPass() {
+    m_shadowPass = {};
+
     // setup pipeline
     m_shadowPass.setGraphicsPipeline(m_directionalShadowMapPipeline);
     // setup sync
@@ -380,6 +411,8 @@ void Renderer::setupShadowPass() {
 }
 
 void Renderer::setupMainPasses() {
+    m_mainPasses.clear();
+
     uint32 maxFrames = m_ctx.maxFramesInFlight();
 
     m_mainPasses.resize(maxFrames);
@@ -481,6 +514,8 @@ void Renderer::setupMainPasses() {
 }
 
 void Renderer::setupEditorPasses() {
+    m_editorPasses.clear();
+
     uint32 maxFrames = m_ctx.maxFramesInFlight();
 
     m_editorPasses.resize(maxFrames);
@@ -722,10 +757,6 @@ void Renderer::handleWindowResize() {
             extent, 1, 1, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
         m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, Format::R32_UINT);
     }
-
-    m_shadowPass = {};
-    m_mainPasses.clear();
-    m_editorPasses.clear();
 
     setupShadowPass();
     setupMainPasses();

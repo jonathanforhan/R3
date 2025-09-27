@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <filesystem>
 #include <format>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <istream>
 #include <memory>
 #include <span>
+#include <string>
 #include <utility>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -18,6 +20,7 @@
 #include <spirv_cross.hpp>
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
+#include "api/Version.hpp"
 #include "engine/api/MovableHandle.hpp"
 #include "engine/render/Flags.hpp"
 #include "render/ShaderObjects.hpp"
@@ -31,7 +34,17 @@ namespace R3 {
 Shader::Shader(const std::filesystem::path& filename, ShaderStageFlags stage)
     : m_stage{stage},
       m_metadata{std::make_unique<ShaderMetadata>()} {
-    auto spirvCode = readFile(filename);
+    std::filesystem::path glsl = filename;
+    std::filesystem::path spirv{std::format("_spirv/{}.spv", filename.string())};
+
+    std::filesystem::create_directories(spirv.parent_path());
+
+    std::string cmd = std::format("glslc --target-spv={} {} -o {}", R3_SPV_VERSION, glsl.string(), spirv.string());
+    if (std::system(cmd.c_str()) != 0) {
+        throw Exception{std::format("Failed to create shader module {}", filename.string())};
+    }
+
+    const auto spirvCode = readFile(spirv);
     createFromSource(spirvCode);
     populateShaderMetadata(spirvCode);
 }

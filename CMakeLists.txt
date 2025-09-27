@@ -152,26 +152,18 @@ execute_process(
     	${R3_RUNTIME_OUTPUT_DIRECTORY}/assets
 )
 
-find_package(Python3 COMPONENTS Interpreter)
-
 # compile shaders on configure
 execute_process(
     COMMAND
-    	${Python3_EXECUTABLE}
-    		${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
-    		${glslc_executable}
-    		spirv-cross
-    		${CMAKE_CURRENT_SOURCE_DIR}
-    		${R3_RUNTIME_OUTPUT_DIRECTORY}
+    	${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+    	${R3_RUNTIME_OUTPUT_DIRECTORY}/shaders
 )
 
 # compile shaders on build
-add_custom_target(COMPILE_SHADERS
+add_custom_target(COPY_SHADERS
     ALL COMMAND
-    	${Python3_EXECUTABLE}
-    		${CMAKE_CURRENT_SOURCE_DIR}/scripts/compile_shaders.py
-    		${glslc_executable}
-    		spirv-cross
-    		${CMAKE_CURRENT_SOURCE_DIR}
-    		${R3_RUNTIME_OUTPUT_DIRECTORY}
+    	${CMAKE_COMMAND} -E create_symlink
+        ${CMAKE_CURRENT_SOURCE_DIR}/shaders
+    	${R3_RUNTIME_OUTPUT_DIRECTORY}/shaders
 )

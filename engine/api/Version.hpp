@@ -8,6 +8,8 @@
 #define R3_VULKAN_VERSION_MINOR 4
 #define R3_VULKAN_VERSION_PATCH 0
 
+#define R3_SPV_VERSION "spv1.6"
+
 #define R3_GLTF_VERSION_MAJOR 2
 #define R3_GLTF_VERSION_MINOR 0
 #define R3_GLB_VERSION        2

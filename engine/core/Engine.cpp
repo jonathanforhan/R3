@@ -6,6 +6,8 @@
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
 #include "engine/editor/Editor.hpp"
+#include "input/InputCodes.hpp"
+#include "input/InputEvents.hpp"
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"

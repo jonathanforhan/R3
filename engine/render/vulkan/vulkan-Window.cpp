@@ -41,6 +41,8 @@ Window::Window() {
     const int centerX = monitorX + (vidmode->width - width) / 2;
     const int centerY = monitorY + (vidmode->height - height) / 2;
     glfwSetWindowPos(m_window, centerX, centerY);
+
+    setupCallbacks();
 }
 
 Window::~Window() noexcept {

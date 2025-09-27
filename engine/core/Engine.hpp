@@ -102,7 +102,7 @@ struct GEditor {
 
 } // namespace R3
 
-#include "EventHandler.hpp"
+#include "engine/core/EventHandler.hpp"
 #include "engine/core/ResourceManager.hpp"
 #include "engine/core/World.hpp"
 #include "engine/editor/Editor.hpp"

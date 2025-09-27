@@ -40,6 +40,8 @@ public:
     void present();
 
 private:
+    void buildPipelines();
+
     void setupShadowPass();
     void setupMainPasses();
     void setupEditorPasses();
@@ -93,6 +95,8 @@ private:
 
     std::vector<Buffer> m_idReadbackBuffers;
     uint32 m_selectedEntityID = 0xFFFF'FFFF;
+
+    bool m_shouldReloadShaders = false;
 };
 
 } // namespace R3::vulkan
