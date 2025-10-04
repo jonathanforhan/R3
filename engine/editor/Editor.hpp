@@ -3,8 +3,7 @@
 #pragma once
 
 #include "engine/api/Api.hpp"
-
-#include "engine/render/vulkan/vulkan-CommandBuffer.hpp"
+#include "engine/render/CommandBuffer.hpp"
 
 namespace R3 {
 
@@ -18,7 +17,7 @@ public:
     virtual void recordFrame(double dt) = 0;
 
     /// @brief Renderer specific draw call for the editor
-    virtual void draw(vulkan::CommandBuffer& cmd) = 0;
+    virtual void draw(ICommandBuffer& cmd) = 0;
 
     /// @brief True if the UI is currently focused (e.g. mouse over an UI element)
     virtual bool uiFocused() const = 0;

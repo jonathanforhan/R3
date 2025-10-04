@@ -63,8 +63,6 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
         m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
         m_depthImages.emplace_back(
             extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
-        m_depthImages1Bit.emplace_back(
-            extent, 1, 1, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
         m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
     }
 
@@ -544,26 +542,6 @@ void Renderer::setupEditorPasses() {
                     .layerCount     = 1,
                 },
         });
-        m_editorPasses[i].addImageMemoryBarrier({
-            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-            .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-            .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-            .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
-            .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_depthImages1Bit[i].imageHandle(),
-            .subresourceRange =
-                {
-                    .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
-                    .baseMipLevel   = 0,
-                    .levelCount     = 1,
-                    .baseArrayLayer = 0,
-                    .layerCount     = 1,
-                },
-        });
         // setup color attachment
         m_editorPasses[i].addColorAttachment({
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -572,14 +550,6 @@ void Renderer::setupEditorPasses() {
             .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue  = {.color = {.uint32 = {0xFFFFFFFF, 0, 0, 0}}}, // clear to id -1
-        });
-        m_editorPasses[i].setDepthAttachment({
-            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = m_depthImages1Bit[i].imageViewHandle(),
-            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
-            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-            .clearValue  = {1.0f, 0},
         });
         m_editorPasses[i].setRenderArea({
             .offset = {0, 0},
@@ -745,7 +715,6 @@ void Renderer::handleWindowResize() {
 
     m_colorImages.clear();
     m_depthImages.clear();
-    m_depthImages1Bit.clear();
     m_idImages.clear();
 
     uint32 maxFrames = m_ctx.maxFramesInFlight();
@@ -753,8 +722,6 @@ void Renderer::handleWindowResize() {
         m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
         m_depthImages.emplace_back(
             extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
-        m_depthImages1Bit.emplace_back(
-            extent, 1, 1, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
         m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, Format::R32_UINT);
     }
 

@@ -19,6 +19,7 @@
 #include <engine/core/Entity.hpp>
 #include <engine/core/EventHandler.hpp>
 #include <engine/core/World.hpp>
+#include <engine/render/CommandBuffer.hpp>
 #include <engine/render/RenderContext.hpp>
 #include <engine/render/Window.hpp>
 #include <engine/render/WindowEvents.hpp>
@@ -145,8 +146,8 @@ void Editor::recordFrame(double dt) {
     endFrame();
 }
 
-void Editor::draw(vulkan::CommandBuffer& cmd) {
-    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd.commandBuffer());
+void Editor::draw(ICommandBuffer& cmd) {
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), ((vulkan::CommandBuffer&)cmd).commandBuffer());
 }
 
 bool Editor::uiFocused() const {

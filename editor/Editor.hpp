@@ -4,9 +4,9 @@
 #include <engine/api/Class.hpp>
 #include <engine/core/Entity.hpp>
 #include <engine/editor/Editor.hpp>
+#include <engine/render/CommandBuffer.hpp>
 #include <engine/render/RenderContext.hpp>
 #include <engine/render/Window.hpp>
-#include <engine/render/vulkan/vulkan-CommandBuffer.hpp>
 
 namespace R3 {
 
@@ -21,7 +21,7 @@ public:
 
     virtual void recordFrame(double dt) override;
 
-    virtual void draw(vulkan::CommandBuffer& cmd) override;
+    virtual void draw(ICommandBuffer& cmd) override;
 
     virtual bool uiFocused() const override;
 

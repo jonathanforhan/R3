@@ -67,7 +67,6 @@ private:
 
     std::vector<Image> m_colorImages;
     std::vector<Image> m_depthImages;
-    std::vector<Image> m_depthImages1Bit;
     std::vector<Image> m_idImages;
 
     PBRVertexUniformBufferObject m_ubo;
