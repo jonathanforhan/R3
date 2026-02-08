@@ -10,6 +10,7 @@ namespace R3 {
 
 class ImageLoader {
 public:
+    /// @brief Custom deleter for image data loaded by stb_image
     using UniqueImageData = std::unique_ptr<std::byte, void (*)(void*)>;
 
     struct ImageDescriptor {
@@ -31,12 +32,12 @@ public:
     /// @return Image descriptor
     static ImageDescriptor loadImageFile(const std::filesystem::path& path, uint32 reqChannels = 0);
 
-    /// @brief Load an image from compressed data
-    /// @param compressed Pointer to compressed image data in memory
+    /// @brief Load an image from compressed or raw data (PNG, JPEG, BMP, etc.)
+    /// @param data Pointer to image data in memory
     /// @param size Size of image in bytes
     /// @param reqChannels Desired channels (e.g. 3 = RGB, 4 = RGBA), 0 to load as-is
     /// @return Image descriptor
-    static ImageDescriptor loadImageCompressed(const std::byte* compressed, usize size, uint32 reqChannels = 0);
+    static ImageDescriptor loadImageMemory(const std::byte* data, usize size, uint32 reqChannels = 0);
 };
 
 } // namespace R3

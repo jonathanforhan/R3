@@ -32,11 +32,9 @@ ImageLoader::ImageDescriptor ImageLoader::loadImageFile(const std::filesystem::p
     };
 }
 
-ImageLoader::ImageDescriptor ImageLoader::loadImageCompressed(const std::byte* compressed,
-                                                              usize size,
-                                                              uint32 reqChannels) {
+ImageLoader::ImageDescriptor ImageLoader::loadImageMemory(const std::byte* data, usize size, uint32 reqChannels) {
     int w, h, ch;
-    auto* p = stbi_load_from_memory((const uint8*)compressed, (int)size, &w, &h, &ch, (int)reqChannels);
+    auto* p = stbi_load_from_memory((const uint8*)data, (int)size, &w, &h, &ch, (int)reqChannels);
     R3_ASSERT(p, "failed to load image");
 
     return ImageDescriptor{

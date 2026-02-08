@@ -103,15 +103,15 @@ float calcShadow(vec4 posLightSpace) {
     // transform to [0,1] range
     projCoords = projCoords * 0.5 + 0.5;
 
-	float closestDepth = texture(u_ShadowMap, projCoords.xy).r;
+    float closestDepth = texture(u_ShadowMap, projCoords.xy).r;
 
-	vec3 normal = normalize(v_Normal);
-	vec3 lightDir = normalize(u_Lights[0].position - v_Position);
-	float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
+    vec3 normal = normalize(v_Normal);
+    vec3 lightDir = normalize(u_Lights[0].position - v_Position);
+    float bias = max(0.05 * (1.0 - dot(normal, lightDir)), 0.005);
 
     float shadow;
 
-	shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+    shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
 
     vec2 texelSize = 1.0 / textureSize(u_ShadowMap, 0);
     for(int x = -1; x <= 1; ++x) {
@@ -126,10 +126,10 @@ float calcShadow(vec4 posLightSpace) {
     if(projCoords.z > 1.0)
         shadow = 0.0;
 
-	// f_Color = vec4(closestDepth, currentDepth, 0.0, 1.0);
-	// f_Color = vec4(vec3(closestDepth), 1.0);
-	// f_Color = vec4(vec3(currentDepth), 1.0);
-	// f_Color = vec4(vec3(shadow), 1.0);
+    // f_Color = vec4(closestDepth, currentDepth, 0.0, 1.0);
+    // f_Color = vec4(vec3(closestDepth), 1.0);
+    // f_Color = vec4(vec3(currentDepth), 1.0);
+    // f_Color = vec4(vec3(shadow), 1.0);
 
     return shadow;
 }
@@ -140,12 +140,12 @@ void main() {
         albedo = texture(u_Samplers[c_iAlbedo], v_TexCoords);
     }
 
-    vec2 mr     = vec2(0.0);
+    vec2 mr = vec2(0.0);
     if (c_iMetallicRoughness < SAMPLER_MAX) {
         mr = texture(u_Samplers[c_iMetallicRoughness], v_TexCoords).rg;
     }
 
-    vec3 N      = vec3(0.0);
+    vec3 N = vec3(0.0);
     if (c_iNormal < SAMPLER_MAX) {
         N = calcTangentNormal(u_Samplers[c_iNormal], v_TexCoords);
     }

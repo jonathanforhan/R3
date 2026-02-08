@@ -56,14 +56,18 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
     //--- Color/Depth Image
     const uint32 msaaSamples = m_ctx.queryMaxUsableSampleCount();
 
-    const usize3 extent   = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
-    const Format idFormat = Format::R32_UINT;
+    const usize3 extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
+    const Format colorFormat = Format(m_ctx.swapchainFormat());
+    const Format depthFormat = Format(m_ctx.queryDepthFormat());
+    const Format idFormat    = Format::R32_UINT;
 
     for (uint32 i = 0; i < maxFrames; i++) {
-        m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
-        m_depthImages.emplace_back(
-            extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
+        // main pass
+        m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, colorFormat);
+        m_depthImagesMSAA.emplace_back(extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, depthFormat);
+        // editor pass
         m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
+        m_depthImages.emplace_back(extent, 1, 1, ImageUsage::DepthStencilAttachment, depthFormat);
     }
 
     buildPipelines();
@@ -471,7 +475,7 @@ void Renderer::setupMainPasses() {
             .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image               = m_depthImages[i].imageHandle(),
+            .image               = m_depthImagesMSAA[i].imageHandle(),
             .subresourceRange =
                 {
                     .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -497,7 +501,7 @@ void Renderer::setupMainPasses() {
         // setup depth attachment
         m_mainPasses[i].setDepthAttachment({
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-            .imageView   = m_depthImages[i].imageViewHandle(),
+            .imageView   = m_depthImagesMSAA[i].imageViewHandle(),
             .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
             .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -542,6 +546,26 @@ void Renderer::setupEditorPasses() {
                     .layerCount     = 1,
                 },
         });
+        m_editorPasses[i].addImageMemoryBarrier({
+            .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask        = VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+            .srcAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .dstStageMask        = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+            .dstAccessMask       = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            .oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED,
+            .newLayout           = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image               = m_depthImages[i].imageHandle(),
+            .subresourceRange =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_DEPTH_BIT,
+                    .baseMipLevel   = 0,
+                    .levelCount     = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+        });
         // setup color attachment
         m_editorPasses[i].addColorAttachment({
             .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -550,6 +574,15 @@ void Renderer::setupEditorPasses() {
             .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
             .storeOp     = VK_ATTACHMENT_STORE_OP_STORE,
             .clearValue  = {.color = {.uint32 = {0xFFFFFFFF, 0, 0, 0}}}, // clear to id -1
+        });
+        // setup depth attachment
+        m_editorPasses[i].setDepthAttachment({
+            .sType       = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            .imageView   = m_depthImages[i].imageViewHandle(),
+            .imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            .loadOp      = VK_ATTACHMENT_LOAD_OP_CLEAR,
+            .storeOp     = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            .clearValue  = {1.0f, 0},
         });
         m_editorPasses[i].setRenderArea({
             .offset = {0, 0},
@@ -714,15 +747,22 @@ void Renderer::handleWindowResize() {
     usize3 extent      = {m_swapchain.extent().width, m_swapchain.extent().height, 1};
 
     m_colorImages.clear();
+    m_depthImagesMSAA.clear();
     m_depthImages.clear();
     m_idImages.clear();
 
+    const Format colorFormat = Format(m_ctx.swapchainFormat());
+    const Format depthFormat = Format(m_ctx.queryDepthFormat());
+    const Format idFormat    = Format::R32_UINT;
+
     uint32 maxFrames = m_ctx.maxFramesInFlight();
     for (uint32 i = 0; i < maxFrames; i++) {
-        m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, Format(m_swapchain.format()));
-        m_depthImages.emplace_back(
-            extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, Format(m_ctx.queryDepthFormat()));
-        m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, Format::R32_UINT);
+        // main pass
+        m_colorImages.emplace_back(extent, 1, msaaSamples, ImageUsage::ColorAttachment, colorFormat);
+        m_depthImagesMSAA.emplace_back(extent, 1, msaaSamples, ImageUsage::DepthStencilAttachment, depthFormat);
+        // editor pass
+        m_idImages.emplace_back(extent, 1, 1, ImageUsage::ColorAttachment | ImageUsage::TransferSrc, idFormat);
+        m_depthImages.emplace_back(extent, 1, 1, ImageUsage::DepthStencilAttachment, depthFormat);
     }
 
     setupShadowPass();

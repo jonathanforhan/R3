@@ -73,7 +73,7 @@ private:
     std::string glTF_vertexBufferKey(uint32 index);
     std::string glTF_indexBufferKey(uint32 index);
 
-    // const to make sure no (undesired) mutation
+    // const to ensure no (undesired) mutation
     const std::filesystem::path& path() const noexcept { return m_path; };
 
 private:

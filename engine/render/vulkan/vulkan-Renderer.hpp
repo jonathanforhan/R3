@@ -66,6 +66,7 @@ private:
     uint32 m_currentFrame = 0;
 
     std::vector<Image> m_colorImages;
+    std::vector<Image> m_depthImagesMSAA;
     std::vector<Image> m_depthImages;
     std::vector<Image> m_idImages;
 

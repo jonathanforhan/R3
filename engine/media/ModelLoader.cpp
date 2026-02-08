@@ -68,10 +68,12 @@ Entity ModelLoader::glTFLoad(const std::filesystem::path& path) {
             // TODO handle multiple scenes?
 
 #if R3_EDITOR
-            std::string name =
-                scene.name.empty()
-                    ? std::format("{}_scene_{}", m_path.stem().string(), (usize)(&scene - &model.root.scenes[0]))
-                    : scene.name;
+            std::string name = scene.name;
+            if (name.empty()) {
+                const usize sceneIndex = static_cast<usize>(&scene - &model.root.scenes[0]);
+                name                   = std::format("{}/scene/{}", m_path.stem().string(), sceneIndex);
+            }
+
             GWorld()->registry().emplace_or_replace<MetadataComponent>(root, root, std::move(name));
 #endif
 
@@ -497,7 +499,7 @@ void ModelLoader::glTF_preprocessImageFiles(const glTF::Model& model) {
             const std::byte* data              = &(model.bin[bufferView.buffer][bufferView.byteOffset]);
 
             imageKey  = std::move(glTF_embeddedImageKey(textureSource, *image.bufferView));
-            imageDesc = ImageLoader::loadImageCompressed(data, bufferView.byteLength);
+            imageDesc = ImageLoader::loadImageMemory(data, bufferView.byteLength);
         } else {
             std::filesystem::path imagePath = path();
             imagePath.replace_filename(image.uri);
