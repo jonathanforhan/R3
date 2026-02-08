@@ -138,7 +138,7 @@ bool Window::keyPressed(Key key) const {
     return pressed == GLFW_PRESS;
 }
 
-bool Window::mouseButtonPressed(MouseButton button) const {
+bool Window::isMouseButtonPressed(MouseButton button) const {
     int pressed = glfwGetMouseButton(m_window, (int)button);
     return pressed == GLFW_PRESS;
 }
@@ -191,13 +191,13 @@ void Window::setupCallbacks() {
 
         switch (action) {
             case GLFW_PRESS:
-                GEventHandler()->emplace<KeyboardEvent>("key-press", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>(event::KeyPress, Key(key), InputModifiers(mods));
                 break;
             case GLFW_REPEAT:
-                GEventHandler()->emplace<KeyboardEvent>("key-repeat", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>(event::KeyRepeat, Key(key), InputModifiers(mods));
                 break;
             case GLFW_RELEASE:
-                GEventHandler()->emplace<KeyboardEvent>("key-release", Key(key), InputModifiers(mods));
+                GEventHandler()->emplace<KeyboardEvent>(event::KeyRelease, Key(key), InputModifiers(mods));
                 break;
             default:
                 return;
@@ -208,26 +208,33 @@ void Window::setupCallbacks() {
     //--- Mouse Button Callback
     auto mouseCallback = [](GLFWwindow* window, int button, int action, int mods) {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
+
         if (_this->m_uiFocused) {
             // release all previously pressed keys
-            for (Key key = Key::Space; bool state : _this->m_keyStates) {
-                if (state) {
-                    GEventHandler()->emplace<KeyboardEvent>("key-release", key, InputModifiers(mods));
+            Key key = Key::Space;
+            for (bool activation : _this->m_keyStates) {
+                if (activation) {
+                    GEventHandler()->emplace<KeyboardEvent>(event::KeyRelease, key, InputModifiers(mods));
                 }
                 key = Key((uint16)key + 1);
             }
-            return;
+            return; // early exit if UI is focused, don't want to send mouse events to the game
         }
+
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
 
         switch (action) {
             case GLFW_PRESS:
-                GEventHandler()->emplace<MouseButtonEvent>("mouse-press", MouseButton(button), InputModifiers(mods));
+                GEventHandler()->emplace<MouseButtonEvent>(
+                    event::MousePress, MouseButton(button), InputModifiers(mods), xpos, ypos);
                 break;
             case GLFW_RELEASE:
-                GEventHandler()->emplace<MouseButtonEvent>("mouse-release", MouseButton(button), InputModifiers(mods));
+                GEventHandler()->emplace<MouseButtonEvent>(
+                    event::MouseRelease, MouseButton(button), InputModifiers(mods), xpos, ypos);
                 break;
             default:
-                return;
+                break;
         }
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
@@ -240,13 +247,13 @@ void Window::setupCallbacks() {
         if (_this->m_uiFocused) {
             return;
         }
-        GEventHandler()->emplace<MouseScrollEvent>("mouse-scroll", xoffset, yoffset);
+        GEventHandler()->emplace<MouseScrollEvent>(event::MouseScroll, xoffset, yoffset);
     };
     glfwSetMouseButtonCallback(m_window, mouseCallback);
 
     //--- Cursor Input Callback
     auto cursorCallback = [](GLFWwindow*, double x, double y) {
-        GEventHandler()->emplace<MouseCursorEvent>("cursor-move", x, y);
+        GEventHandler()->emplace<MouseCursorEvent>(event::CursorMove, x, y);
     };
     glfwSetCursorPosCallback(m_window, cursorCallback);
 
@@ -254,26 +261,27 @@ void Window::setupCallbacks() {
     auto resizeCallback = [](GLFWwindow* window, int width, int height) {
         auto* _this = reinterpret_cast<decltype(this)>(glfwGetWindowUserPointer(window));
         _this->setShouldResize(true);
-        GEventHandler()->emplace<WindowResizeEvent>("window-resize", (int32)width, (int32)height);
+        const int32 width32  = static_cast<int32>(width);
+        const int32 height32 = static_cast<int32>(height);
+        GEventHandler()->emplace<WindowResizeEvent>(event::WindowResize, width32, height32);
     };
     glfwSetFramebufferSizeCallback(m_window, resizeCallback);
 
     //--- Window Focus Callback
     auto focusCallback = [](GLFWwindow*, int focused) {
-        if (focused) {
-            GEventHandler()->emplace<WindowFocusEvent>("window-focus", (bool)focused);
-        }
+        const bool isFocused = static_cast<bool>(focused);
+        GEventHandler()->emplace<WindowFocusEvent>(event::WindowFocus, isFocused);
     };
     glfwSetWindowFocusCallback(m_window, focusCallback);
 
     //--- Window Content Scale Callback
     auto contentScaleCallback = [](GLFWwindow*, float xscale, float yscale) {
-        GEventHandler()->emplace<WindowContentScaleEvent>("window-content-scale", xscale, yscale);
+        GEventHandler()->emplace<WindowContentScaleEvent>(event::WindowContentScale, xscale, yscale);
     };
     glfwSetWindowContentScaleCallback(m_window, contentScaleCallback);
 
     //--- Window Close Callback
-    auto windowCloseCallback = [](GLFWwindow*) { GEventHandler()->emplace<WindowCloseEvent>("window-close"); };
+    auto windowCloseCallback = [](GLFWwindow*) { GEventHandler()->emplace<WindowCloseEvent>(event::WindowClose); };
     glfwSetWindowCloseCallback(m_window, windowCloseCallback);
 }
 

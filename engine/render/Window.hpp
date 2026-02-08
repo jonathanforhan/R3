@@ -67,7 +67,7 @@ public:
 
     bool keyPressed(Key key) const;
 
-    bool mouseButtonPressed(MouseButton button) const;
+    bool isMouseButtonPressed(MouseButton button) const;
 
     dvec2 cursorPosition() const;
 

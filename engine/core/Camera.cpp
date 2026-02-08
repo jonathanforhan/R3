@@ -28,7 +28,7 @@ void Camera::update(double dt) {
         movementSensitivity *= 2.0f;
     }
 
-    const bool mouseDown  = GWindow()->mouseButtonPressed(MouseButton::Left);
+    const bool mouseDown  = GWindow()->isMouseButtonPressed(MouseButton::Left);
     const fvec2 cursorPos = GWindow()->cursorPosition();
 
     const float deltaX        = mouseDown ? (cursorPos.x - m_prevCursorPosition.x) : 0.0f;
@@ -51,7 +51,7 @@ void Camera::update(double dt) {
     }
 
     if ((m_activeKeys.w || m_activeKeys.s) && (m_activeKeys.a || m_activeKeys.d)) {
-        movementSensitivity *= 0.7071f; // divide by sqrt(2) to prevent faster diagonal movement
+        movementSensitivity /= std::sqrt(2.0f); // prevent faster diagonal movement
     }
 
     if (m_activeKeys.w && (m_activeKeys.w > m_activeKeys.s)) {

@@ -196,12 +196,12 @@ public:
                 // remove if listener returned true
                 it = removeListener ? m_eventRegistry.erase(it) : std::next(it);
             }
-            // manually destruct R3_APIor because EventHandler owns the lifetime
+            // manually destructor because EventHandler owns the lifetime
             if (deleter != nullptr) {
                 deleter(event);
             }
         }
-        // all events are handled and all destruct R3_APIors called
+        // all events are handled and all destructors called
         // can now safely overwrite memory
         m_eventQueue.clear();
         m_eventArena.clear();

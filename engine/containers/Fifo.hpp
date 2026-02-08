@@ -1,7 +1,7 @@
 #pragma once
 
-#include "engine/api/Api.hpp"
 #include <array>
+#include "engine/api/Api.hpp"
 #include "engine/api/Types.hpp"
 
 namespace R3 {
@@ -186,7 +186,7 @@ public:
 
     /**
      * @brief Emplace an element on Fifo
-     * @param args Arguements to element construct R3_APIor
+     * @param args Arguements to element constructor
      */
     template <typename... Args>
     constexpr void emplace(Args&&... args) {

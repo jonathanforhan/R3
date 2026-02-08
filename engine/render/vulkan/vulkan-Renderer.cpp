@@ -136,9 +136,23 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     GWorld()->camera().setActive(true);
 
-    GEventHandler()->bindEventListener("key-press", [this](const Event<KeyboardEvent>& e) noexcept {
+    GEventHandler()->bindEventListener(event::KeyPress, [this](const Event<KeyboardEvent>& e) noexcept {
         if (e.data.key == Key::R && (e.data.modifiers & InputModifierFlags::Control)) {
             m_shouldReloadShaders = true;
+        }
+    });
+
+    GEventHandler()->bindEventListener(event::MousePress, [this](const Event<MouseButtonEvent>& event) noexcept {
+        m_queuedMouseClickX = static_cast<int32>(event.data.xpos);
+        m_queuedMouseClickY = static_cast<int32>(event.data.ypos);
+    });
+
+    GEventHandler()->bindEventListener(event::MouseRelease, [this](const Event<MouseButtonEvent>& event) noexcept {
+        const int32 xpos = static_cast<int32>(event.data.xpos);
+        const int32 ypos = static_cast<int32>(event.data.ypos);
+
+        if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
+            m_isMouseClickedQueued = true;
         }
     });
 }
@@ -194,6 +208,12 @@ void Renderer::update() {
     fvec3 lightPos;
     GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) { lightPos = light.position; });
 
+    // readback selected entity ID if pending and the readback corresponds to the current image
+    if (m_pendingReadback && m_imageIndex == m_pendingReadbackImageIndex) {
+        m_selectedEntityID = *((uint32*)m_idReadbackBuffers[m_pendingReadbackImageIndex].data());
+        m_pendingReadback  = false;
+    }
+
     writeDescriptorSetsHelper(m_currentFrame, numLights);
 
     cmd.reset();
@@ -210,8 +230,9 @@ void Renderer::update() {
     m_mainPasses[m_imageIndex].setLightCount(numLights);
     m_mainPasses[m_imageIndex].setSelectedEntityID(m_selectedEntityID);
 
-    if (GWindow()->mouseButtonPressed(MouseButton::Left)) {
-        handleMouseClick(cmd, m_imageIndex);
+    if (m_isMouseClickedQueued) {
+        handleMouseClick(cmd, m_imageIndex, m_queuedMouseClickX, m_queuedMouseClickY);
+        m_isMouseClickedQueued = false;
     }
 
 #if R3_EDITOR
@@ -591,16 +612,12 @@ void Renderer::setupEditorPasses() {
     }
 }
 
-void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
-    ivec2 cursorPos = static_cast<ivec2>(GWindow()->cursorPosition());
-
-    bool outOfBounds = cursorPos.x < 0 || cursorPos.y < 0 ||
-                       cursorPos.x >= static_cast<int32>(m_swapchain.extent().width) ||
-                       cursorPos.y >= static_cast<int32>(m_swapchain.extent().height);
+void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY) {
+    bool outOfBounds = posX < 0 || posY < 0 || //
+                       posX >= static_cast<int32>(m_swapchain.extent().width) ||
+                       posY >= static_cast<int32>(m_swapchain.extent().height);
 
     if (!outOfBounds) {
-        m_selectedEntityID = *((uint32*)m_idReadbackBuffers[imageIndex].data());
-
         const VkImageMemoryBarrier2 barrier = {
             .sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
             .srcStageMask        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
@@ -636,7 +653,7 @@ void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
                                   .mipLevel       = 0,
                                   .baseArrayLayer = 0,
                                   .layerCount     = 1},
-            .imageOffset       = {.x = int32(cursorPos.x), .y = int32(cursorPos.y), .z = 0},
+            .imageOffset       = {.x = posX, .y = posY, .z = 0},
             .imageExtent       = {.width = 1, .height = 1, .depth = 1},
         };
         cmd.copyImageToBuffer({
@@ -674,6 +691,10 @@ void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex) {
             .imageMemoryBarrierCount = 1,
             .pImageMemoryBarriers    = &postBarrier,
         });
+
+        // indicate that there is a pending id readback
+        m_pendingReadback           = true;
+        m_pendingReadbackImageIndex = imageIndex;
     } else {
         m_selectedEntityID = 0xFFFF'FFFF;
     }

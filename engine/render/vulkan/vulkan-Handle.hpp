@@ -15,11 +15,11 @@ class R3_API Handle {
 public:
     R3_COPY_DELETE(Handle);
 
-    /// Construct R3_APIor with handle value, defaults to nullptr
+    /// Constructor with handle value, defaults to nullptr
     Handle(T handle = nullptr) noexcept
         : m_handle(handle) {}
 
-    /// Move construct R3_APIor - transfers ownership, leaves source as nullptr
+    /// Move constructor - transfers ownership, leaves source as nullptr
     Handle(Handle&& other) noexcept
         : m_handle(std::exchange(other.m_handle, nullptr)) {}
 

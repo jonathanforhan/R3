@@ -47,16 +47,17 @@ constexpr uint64 djb2(std::string_view str) noexcept {
 /// @brief Container for 64-bit uint uuid
 class R3_API uuid {
 public:
-    /// @brief uuid construct R3_APIor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+    /// @brief uuid constructor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
     /// @param str string view to hash
     constexpr uuid(std::string_view str) noexcept
         : m_id{fnv1a(str)} {}
 
-    /// @brief uuid construct R3_APIor is NOT explicit making it useful as a parameter when costexpr hashing is needed.
+    /// @brief uuid constructor is NOT explicit making it useful as a parameter when costeval literal hashing is needed.
     /// @tparam N  implicit
     /// @param str static cstring to hash
     template <usize N>
-    constexpr uuid(const char (&str)[N]) noexcept
+    requires(N > 1)
+    consteval uuid(const char (&str)[N]) noexcept
         : m_id{fnv1a(std::string_view{str, N - 1})} {}
 
     /// @brief Implicit conversion to uint64

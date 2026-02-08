@@ -19,7 +19,7 @@ public:
     R3_CTOR_DEFAULT(CommandBuffer);
 
 private:
-    /// Private construct R3_APIor - use allocate() instead
+    /// Private constructor - use allocate() instead
     CommandBuffer(VkCommandBuffer commandBuffer, std::shared_ptr<VkCommandPool> pool);
 
 public:

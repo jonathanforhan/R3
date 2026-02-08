@@ -10,7 +10,7 @@ namespace R3 {
 /// The virtual overhead doesn't matter as there will be few systems compared to Entities.
 class R3_API ISystem {
 public:
-    /// @brief Base class R3_API virtual destruct R3_APIor
+    /// @brief Base class R3_API virtual destructor
     virtual ~ISystem() noexcept {}
 
     /// @brief Initializes the object (optional)

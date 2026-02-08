@@ -46,7 +46,7 @@ private:
     void setupMainPasses();
     void setupEditorPasses();
 
-    void handleMouseClick(CommandBuffer& cmd, uint32 imageIndex);
+    void handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY);
 
     // needed because using dynamic rendering
     void transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex);
@@ -97,6 +97,12 @@ private:
     uint32 m_selectedEntityID = 0xFFFF'FFFF;
 
     bool m_shouldReloadShaders = false;
+
+    bool m_isMouseClickedQueued        = false;
+    int32 m_queuedMouseClickX          = 0;
+    int32 m_queuedMouseClickY          = 0;
+    bool m_pendingReadback             = false;
+    uint32 m_pendingReadbackImageIndex = 0;
 };
 
 } // namespace R3::vulkan

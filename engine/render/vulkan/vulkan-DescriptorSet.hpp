@@ -16,7 +16,7 @@ public:
     R3_CTOR_DEFAULT(DescriptorSet);
 
 private:
-    /// Private construct R3_APIor - use allocate() instead
+    /// Private constructor - use allocate() instead
     DescriptorSet(RenderContext& ctx, VkDescriptorSet descriptorSet, std::shared_ptr<VkDescriptorPool> pool);
 
 public:
