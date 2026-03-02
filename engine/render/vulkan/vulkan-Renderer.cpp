@@ -136,23 +136,9 @@ Renderer::Renderer(Window& window, RenderContext& ctx)
 
     GWorld()->camera().setActive(true);
 
-    GEventHandler()->bindEventListener(event::KeyPress, [this](const Event<KeyboardEvent>& e) noexcept {
-        if (e.data.key == Key::R && (e.data.modifiers & InputModifierFlags::Control)) {
+    GEventHandler()->bindEventListener(event::KeyPress, [this](const KeyboardEvent& e) noexcept {
+        if (e.key == Key::R && (e.modifiers & InputModifierFlags::Control)) {
             m_shouldReloadShaders = true;
-        }
-    });
-
-    GEventHandler()->bindEventListener(event::MousePress, [this](const Event<MouseButtonEvent>& event) noexcept {
-        m_queuedMouseClickX = static_cast<int32>(event.data.xpos);
-        m_queuedMouseClickY = static_cast<int32>(event.data.ypos);
-    });
-
-    GEventHandler()->bindEventListener(event::MouseRelease, [this](const Event<MouseButtonEvent>& event) noexcept {
-        const int32 xpos = static_cast<int32>(event.data.xpos);
-        const int32 ypos = static_cast<int32>(event.data.ypos);
-
-        if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
-            m_isMouseClickedQueued = true;
         }
     });
 }
@@ -199,7 +185,9 @@ void Renderer::update() {
     CommandBuffer& cmd = m_ctx.graphicsCommandBuffer(m_currentFrame);
 
     // update view projection matrices in ubo
-    GWorld()->camera().applyPerspective(m_window.aspectRatio(), m_ubo.view, m_ubo.projection);
+    m_ubo.view       = GWorld()->camera().view();
+    m_ubo.projection = GWorld()->camera().projection();
+
     m_ubo.lightViewProjection = lightSpaceMatrix;
     m_ubos[m_currentFrame].copy(&m_ubo, 0, sizeof(m_ubo));
 
@@ -209,9 +197,13 @@ void Renderer::update() {
     GWorld()->registry().view<LightComponent>().each([&](const LightComponent& light) { lightPos = light.position; });
 
     // readback selected entity ID if pending and the readback corresponds to the current image
-    if (m_pendingReadback && m_imageIndex == m_pendingReadbackImageIndex) {
-        m_selectedEntityID = *((uint32*)m_idReadbackBuffers[m_pendingReadbackImageIndex].data());
-        m_pendingReadback  = false;
+    if (m_pendingReadback) {
+        uint32 hoveredEntityID = *((uint32*)m_idReadbackBuffers[m_imageIndex].data());
+        if (hoveredEntityID != m_hoveredEntityID) {
+            m_hoveredEntityID = hoveredEntityID;
+            GEventHandler()->emplace<HoveredEntityEvent>(event::HoveredEntity, m_hoveredEntityID);
+        }
+        m_pendingReadback = false;
     }
 
     writeDescriptorSetsHelper(m_currentFrame, numLights);
@@ -228,12 +220,10 @@ void Renderer::update() {
     // main pass
     m_mainPasses[m_imageIndex].setDescriptorSet(descriptorSet);
     m_mainPasses[m_imageIndex].setLightCount(numLights);
-    m_mainPasses[m_imageIndex].setSelectedEntityID(m_selectedEntityID);
+    m_mainPasses[m_imageIndex].setSelectedEntityID(GEditor()->selectedEntityID());
 
-    if (m_isMouseClickedQueued) {
-        handleMouseClick(cmd, m_imageIndex, m_queuedMouseClickX, m_queuedMouseClickY);
-        m_isMouseClickedQueued = false;
-    }
+    const ivec2 cursorPosition = static_cast<ivec2>(GWindow()->cursorPosition());
+    handleMouseHover(cmd, m_imageIndex, cursorPosition.x, cursorPosition.y);
 
 #if R3_EDITOR
     // editor pass
@@ -612,7 +602,7 @@ void Renderer::setupEditorPasses() {
     }
 }
 
-void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY) {
+void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY) {
     bool outOfBounds = posX < 0 || posY < 0 || //
                        posX >= static_cast<int32>(m_swapchain.extent().width) ||
                        posY >= static_cast<int32>(m_swapchain.extent().height);
@@ -649,12 +639,15 @@ void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 pos
             .bufferOffset      = 0,
             .bufferRowLength   = 0,
             .bufferImageHeight = 0,
-            .imageSubresource  = {.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
-                                  .mipLevel       = 0,
-                                  .baseArrayLayer = 0,
-                                  .layerCount     = 1},
-            .imageOffset       = {.x = posX, .y = posY, .z = 0},
-            .imageExtent       = {.width = 1, .height = 1, .depth = 1},
+            .imageSubresource =
+                {
+                    .aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .mipLevel       = 0,
+                    .baseArrayLayer = 0,
+                    .layerCount     = 1,
+                },
+            .imageOffset = {.x = posX, .y = posY, .z = 0},
+            .imageExtent = {.width = 1, .height = 1, .depth = 1},
         };
         cmd.copyImageToBuffer({
             .sType          = VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
@@ -692,11 +685,9 @@ void Renderer::handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 pos
             .pImageMemoryBarriers    = &postBarrier,
         });
 
-        // indicate that there is a pending id readback
-        m_pendingReadback           = true;
-        m_pendingReadbackImageIndex = imageIndex;
+        m_pendingReadback = true;
     } else {
-        m_selectedEntityID = 0xFFFF'FFFF;
+        m_hoveredEntityID = 0xFFFF'FFFF;
     }
 }
 

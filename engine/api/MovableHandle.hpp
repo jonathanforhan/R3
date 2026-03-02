@@ -17,7 +17,7 @@ public:
     R3_COPY_DELETE(MovableHandle);
 
     /// Constructor with default handle value
-    MovableHandle(T handle = {}) noexcept
+    MovableHandle(T handle = T{}) noexcept
         : m_handle(handle) {}
 
     /// @brief Takes ownership of the handle from another MovableHandle instance.

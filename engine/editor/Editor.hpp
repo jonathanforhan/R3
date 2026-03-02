@@ -21,6 +21,9 @@ public:
 
     /// @brief True if the UI is currently focused (e.g. mouse over an UI element)
     virtual bool uiFocused() const = 0;
+
+    /// @brief Get the currently selected entity ID in the editor, or 0xFFFF'FFFF if no entity is selected
+    virtual uint32 selectedEntityID() const = 0;
 };
 
 } // namespace R3

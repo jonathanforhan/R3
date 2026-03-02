@@ -15,10 +15,12 @@
 #include <engine/api/Types.hpp>
 #include <engine/components/HierarchyComponent.hpp>
 #include <engine/components/MetadataComponent.hpp>
+#include <engine/components/TransformComponent.hpp>
 #include <engine/core/Engine.hpp>
 #include <engine/core/Entity.hpp>
 #include <engine/core/EventHandler.hpp>
 #include <engine/core/World.hpp>
+#include <engine/input/InputEvents.hpp>
 #include <engine/render/CommandBuffer.hpp>
 #include <engine/render/RenderContext.hpp>
 #include <engine/render/Window.hpp>
@@ -107,8 +109,26 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
     io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto/Roboto-Medium.ttf", 16.5f * 1.5f);
     io.Fonts->Build();
 
-    GEventHandler()->bindEventListener("window-content-scale", [this](const Event<WindowResizeEvent>& e) noexcept {
-        setContentScale((e.data.width + e.data.height) / 2.0f);
+    GEventHandler()->bindEventListener(event::WindowContentScale, [this](const WindowResizeEvent& e) noexcept {
+        setContentScale((e.width + e.height) / 2.0f);
+    });
+
+    GEventHandler()->bindEventListener(event::MousePress, [this](const MouseButtonEvent& event) noexcept {
+        m_queuedMouseClickX = static_cast<int32>(event.xpos);
+        m_queuedMouseClickY = static_cast<int32>(event.ypos);
+    });
+
+    GEventHandler()->bindEventListener(event::MouseRelease, [this](const MouseButtonEvent& event) noexcept {
+        const int32 xpos = static_cast<int32>(event.xpos);
+        const int32 ypos = static_cast<int32>(event.ypos);
+
+        if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
+            m_selectedEntityID = m_hoveredEntityID;
+        }
+    });
+
+    GEventHandler()->bindEventListener(event::HoveredEntity, [this](HoveredEntityEvent hovered) noexcept {
+        m_hoveredEntityID = hovered.entityID; //
     });
 }
 
@@ -137,7 +157,7 @@ void Editor::recordFrame(double dt) {
     // ImGui::ShowDemoWindow();
     initializeDocking();
 
-    // testImGuizmo();
+    testImGuizmo();
 
     displayHierarchy();
     // displayProperties();
@@ -362,83 +382,28 @@ void Editor::hierarchyHelper(Entity entity) {
 }
 
 void Editor::testImGuizmo() {
-    static glm::mat4 testMatrix                      = glm::mat4(1.0f); // Identity matrix
-    static ImGuizmo::OPERATION currentGizmoOperation = ImGuizmo::TRANSLATE;
-    static ImGuizmo::MODE currentGizmoMode           = ImGuizmo::WORLD;
-
-    // Create a test window
-    if (ImGui::Begin("ImGuizmo Test")) {
-        // Gizmo operation buttons
-        if (ImGui::RadioButton("Translate", currentGizmoOperation == ImGuizmo::TRANSLATE))
-            currentGizmoOperation = ImGuizmo::TRANSLATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Rotate", currentGizmoOperation == ImGuizmo::ROTATE))
-            currentGizmoOperation = ImGuizmo::ROTATE;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("Scale", currentGizmoOperation == ImGuizmo::SCALE))
-            currentGizmoOperation = ImGuizmo::SCALE;
-
-        // Mode toggle
-        if (ImGui::RadioButton("Local", currentGizmoMode == ImGuizmo::LOCAL))
-            currentGizmoMode = ImGuizmo::LOCAL;
-        ImGui::SameLine();
-        if (ImGui::RadioButton("World", currentGizmoMode == ImGuizmo::WORLD))
-            currentGizmoMode = ImGuizmo::WORLD;
-
-        ImGui::Separator();
-
-        // Display current matrix values
-        ImGui::Text("Matrix values:");
-        for (int i = 0; i < 4; i++) {
-            ImGui::Text("Row %d: %.2f, %.2f, %.2f, %.2f",
-                        i,
-                        testMatrix[i][0],
-                        testMatrix[i][1],
-                        testMatrix[i][2],
-                        testMatrix[i][3]);
-        }
-
-        // Reset button
-        if (ImGui::Button("Reset Matrix")) {
-            testMatrix = glm::mat4(1.0f);
-        }
-
-        ImGui::Separator();
-
-        // Set up ImGuizmo for this frame
-        ImGuiIO& io = ImGui::GetIO();
-        ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
-
-        // Create simple view and projection matrices for testing
-        glm::mat4 view = glm::lookAt(glm::vec3(5.0f, 5.0f, 5.0f), // Camera position
-                                     glm::vec3(0.0f, 0.0f, 0.0f), // Look at origin
-                                     glm::vec3(0.0f, 1.0f, 0.0f)  // Up vector
-        );
-
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),                 // FOV
-                                                io.DisplaySize.x / io.DisplaySize.y, // Aspect ratio
-                                                0.1f,                                // Near plane
-                                                100.0f                               // Far plane
-        );
-
-        // Draw the gizmo
-        ImGuizmo::Manipulate(glm::value_ptr(view),
-                             glm::value_ptr(projection),
-                             currentGizmoOperation,
-                             currentGizmoMode,
-                             glm::value_ptr(testMatrix));
-
-        // Show if gizmo is being used
-        if (ImGuizmo::IsUsing()) {
-            ImGui::Text("Gizmo is being manipulated!");
-        }
-
-        // Show if gizmo is hovered
-        if (ImGuizmo::IsOver()) {
-            ImGui::Text("Mouse is over gizmo");
-        }
+    if (m_selectedEntityID == 0xFFFF'FFFF) {
+        return;
     }
-    ImGui::End();
+
+    ImGuiIO& io = ImGui::GetIO();
+    ImGuizmo::SetOrthographic(false);
+    ImGuizmo::SetDrawlist(ImGui::GetForegroundDrawList());
+    ImGuizmo::SetRect(0, 0, io.DisplaySize.x, io.DisplaySize.y);
+
+    fmat4 view       = GWorld()->camera().view();
+    fmat4 projection = GWorld()->camera().projection();
+
+    dmat4& dmodel = GWorld()->registry().get<TransformComponent>((entt::entity)m_selectedEntityID).transform();
+    fmat4 model   = static_cast<fmat4>(dmodel);
+
+    if (ImGuizmo::Manipulate(glm::value_ptr(view),
+                             glm::value_ptr(projection),
+                             ImGuizmo::OPERATION::TRANSLATE,
+                             ImGuizmo::MODE::WORLD,
+                             glm::value_ptr(model))) {
+        dmodel = static_cast<dmat4>(model);
+    }
 }
 
 } // namespace R3

@@ -7,12 +7,12 @@
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
+#include "engine/api/MovableHandle.hpp"
 #include "engine/api/Types.hpp"
 #include "engine/render/RenderContext.hpp"
 #include "engine/render/Window.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
-#include "vulkan-Handle.hpp"
 
 #ifdef R3_DEBUG
 #define R3_VALIDATION_LAYERS_ENABLED 1
@@ -74,6 +74,8 @@ public:
                                   VkFormatFeatureFlags features) const noexcept;
     VkFormat swapchainFormat() const noexcept { return m_swapchainFormat; }
     void setSwapchainFormat(VkFormat format) noexcept { m_swapchainFormat = format; }
+    VkExtent2D swapchainExtent() const noexcept { return m_swapchainExtent; }
+    void setSwapchainExtent(VkExtent2D extent) noexcept { m_swapchainExtent = extent; }
 
     /// VkInstance getter
     VkInstance instance() const noexcept { return m_instance; }
@@ -137,15 +139,15 @@ private:
 private:
     static constexpr uint32 MAX_FRAMES_IN_FLIGHT = 3;
 
-    Handle<VkInstance> m_instance;
-    Handle<VkDebugUtilsMessengerEXT> m_debug;
-    Handle<VkSurfaceKHR> m_surface;
-    Handle<VkPhysicalDevice> m_physicalDevice;
-    Handle<VkDevice> m_device;
-    Handle<VkQueue> m_graphicsQueue;
-    Handle<VkQueue> m_presentQueue;
-    Handle<VkQueue> m_computeQueue;
-    Handle<VkQueue> m_transferQueue;
+    MovableHandle<VkInstance> m_instance;
+    MovableHandle<VkDebugUtilsMessengerEXT> m_debug;
+    MovableHandle<VkSurfaceKHR> m_surface;
+    MovableHandle<VkPhysicalDevice> m_physicalDevice;
+    MovableHandle<VkDevice> m_device;
+    MovableHandle<VkQueue> m_graphicsQueue;
+    MovableHandle<VkQueue> m_presentQueue;
+    MovableHandle<VkQueue> m_computeQueue;
+    MovableHandle<VkQueue> m_transferQueue;
     uint32 m_graphicsQueueIndex = UINT32_MAX;
     uint32 m_presentQueueIndex  = UINT32_MAX;
     uint32 m_computeQueueIndex  = UINT32_MAX;
@@ -157,9 +159,10 @@ private:
     std::array<VkFence, MAX_FRAMES_IN_FLIGHT> m_inFlightFences;               // one per frame in flight
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> m_renderFinishedSemaphores; // one per swapchain image
     uint32 m_currentFrame = 0;
-    Handle<VkDescriptorSetLayout> m_descriptorSetLayout;
+    MovableHandle<VkDescriptorSetLayout> m_descriptorSetLayout;
     std::vector<DescriptorSet> m_descriptorSets;
-    VkFormat m_swapchainFormat = {};
+    VkFormat m_swapchainFormat   = {};
+    VkExtent2D m_swapchainExtent = {};
 };
 
 } // namespace R3::vulkan

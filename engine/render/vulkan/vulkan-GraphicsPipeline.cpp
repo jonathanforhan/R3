@@ -12,7 +12,6 @@
 #include "api/Types.hpp"
 #include "render/Shader.hpp"
 #include "vulkan-Check.hpp"
-#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
 #include "vulkan-ShaderMetadata.hpp"
 #include "vulkan-Translation.hpp"

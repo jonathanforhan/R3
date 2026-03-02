@@ -8,5 +8,3 @@ out/
 .shader.lock.json
 compile_commands.json
 vcpkg_installed
-
-assets/*/*

@@ -6,9 +6,9 @@
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
+#include "engine/api/MovableHandle.hpp"
 #include "engine/api/Types.hpp"
 #include "vulkan-Fwd.hpp"
-#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
@@ -48,8 +48,7 @@ private:
     void create(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight);
 
 private:
-    Handle<VkDevice> m_device;
-    Handle<VkSwapchainKHR> m_swapchain;
+    MovableHandle<VkSwapchainKHR> m_swapchain;
     VkFormat m_format              = VK_FORMAT_B8G8R8A8_SRGB;
     VkPresentModeKHR m_presentMode = VK_PRESENT_MODE_FIFO_KHR;
     VkExtent2D m_extent            = {};

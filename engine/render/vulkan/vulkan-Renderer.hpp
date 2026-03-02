@@ -46,7 +46,7 @@ private:
     void setupMainPasses();
     void setupEditorPasses();
 
-    void handleMouseClick(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY);
+    void handleMouseHover(CommandBuffer& cmd, uint32 imageIndex, int32 posX, int32 posY);
 
     // needed because using dynamic rendering
     void transitionAttachmentsForPresent(CommandBuffer& cmd, uint32 imageIndex);
@@ -94,15 +94,10 @@ private:
     std::vector<EditorPass> m_editorPasses;
 
     std::vector<Buffer> m_idReadbackBuffers;
-    uint32 m_selectedEntityID = 0xFFFF'FFFF;
+    uint32 m_hoveredEntityID = 0xFFFF'FFFF;
 
     bool m_shouldReloadShaders = false;
-
-    bool m_isMouseClickedQueued        = false;
-    int32 m_queuedMouseClickX          = 0;
-    int32 m_queuedMouseClickY          = 0;
-    bool m_pendingReadback             = false;
-    uint32 m_pendingReadbackImageIndex = 0;
+    bool m_pendingReadback     = false;
 };
 
 } // namespace R3::vulkan

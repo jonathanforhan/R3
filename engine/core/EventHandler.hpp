@@ -16,9 +16,9 @@
 /// @endcode
 ///
 /// 2. Create Event Listeners
-/// Event listeners must be noexcept lambdas that take a const Event<DataType>& parameter:
+/// Event listeners must be noexcept lambdas that take a const DataType& parameter:
 /// @code
-/// auto moveListener = [](const Event<PlayerMoveData>& e) noexcept {
+/// auto moveListener = [](const PlayerMoveData& e) noexcept {
 ///     std::cout << "Player " << e.data.playerId
 ///               << " moved to (" << e.data.x << ", " << e.data.y << ")\n";
 /// };
@@ -115,24 +115,25 @@ struct R3_API Event<void> : public EventBase {
 };
 
 template <typename F>
-using EventTypeDeduced = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<0>>;
-
-template <typename F>
 concept VoidEventListener = std::invocable<F> && noexcept(std::declval<F>()());
 
 template <typename F>
 concept DataEventListener = !VoidEventListener<F> && requires {
-    std::is_base_of_v<EventBase, EventTypeDeduced<F>>;
-    { std::declval<F>()(std::declval<EventTypeDeduced<F>>()) };
+    { std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>()) };
 };
 
 template <typename F>
-concept EventListener = VoidEventListener<F> || DataEventListener<F>;
+concept DataIdEventListener = !VoidEventListener<F> && requires {
+    { std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>(), std::declval<hash::uuid>()) };
+};
+
+template <typename F>
+concept EventListener = VoidEventListener<F> || DataEventListener<F> || DataIdEventListener<F>;
 
 /// @brief event handler which you can push event to and bind listeners to
 ///
 /// @code
-/// EventHandler().bindEventListener("key-press", [](const Event<KeyboardEventData>& e){
+/// EventHandler().bindEventListener("key-press", [](const KeyboardEventData& e) noexcept {
 ///     LOG_INFO("key pressed: {}", (int)e.data.key);
 /// });
 /// @endcode
@@ -185,26 +186,34 @@ public:
 
     /// @brief Dispatch all event by calling every listener and then destruct R3_APIing the event objects
     void dispatchEvents() {
+        // swap queues and arenas to allow pushing events while dispatching
+        std::swap(m_dispatchQueue, m_eventQueue);
+        std::swap(m_dispatchArena, m_eventArena);
+        // merge any listeners bound since last dispatch into the permanent registry
+        for (auto& [k, v] : m_eventRegistry) {
+            m_dispatchRegistry.insert({k, std::move(v)});
+        }
+        // clear the main queue and arena for new events
+        m_eventQueue.clear();
+        m_eventArena.clear();
+        m_eventRegistry.clear();
+
         // iterate queued event offsets
-        for (auto&& [offset, deleter] : m_eventQueue) {
+        for (auto&& [offset, deleter] : m_dispatchQueue) {
             // interpret event from bytes
-            EventBase* event = reinterpret_cast<EventBase*>(&m_eventArena[offset]);
+            EventBase* event = reinterpret_cast<EventBase*>(&m_dispatchArena[offset]);
             // make callback calls
-            auto range = m_eventRegistry.equal_range(event->id);
+            auto range = m_dispatchRegistry.equal_range(event->id);
             for (auto& it = range.first; it != range.second;) {
                 bool removeListener = it->second(*event);
                 // remove if listener returned true
-                it = removeListener ? m_eventRegistry.erase(it) : std::next(it);
+                it = removeListener ? m_dispatchRegistry.erase(it) : std::next(it);
             }
             // manually destructor because EventHandler owns the lifetime
             if (deleter != nullptr) {
                 deleter(event);
             }
         }
-        // all events are handled and all destructors called
-        // can now safely overwrite memory
-        m_eventQueue.clear();
-        m_eventArena.clear();
     }
 
     /// @brief Bind a data event listener to listen for events that have the same id
@@ -214,19 +223,58 @@ public:
     template <typename F>
     requires DataEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
-        static_assert(noexcept(std::declval<F>()(std::declval<EventTypeDeduced<F>>())),
+        using ResultType = typename FunctionTraits<F>::template ResultType;
+        using Arity      = typename FunctionTraits<F>::template Arity;
+
+        static_assert(noexcept(std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>())),
                       __FUNCTION__ ": Event listener must be noexcept");
 
-        using ResultType = typename FunctionTraits<F>::template ResultType;
+        static_assert(std::is_same_v<Arity, std::integral_constant<size_t, 1>>,
+                      __FUNCTION__ ": Event listener must take either one argument (event)");
 
         if constexpr (std::is_same_v<ResultType, bool>) {
             EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                return callback(static_cast<const EventTypeDeduced<F>&>(base));
+                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+                return callback(event.data);
             };
             m_eventRegistry.insert(std::make_pair(id, wrapper));
         } else if constexpr (std::is_same_v<ResultType, void>) {
             EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                callback(static_cast<const EventTypeDeduced<F>&>(base));
+                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+                callback(event.data);
+                return false;
+            };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        }
+    }
+
+    /// @brief Bind a data id event listener to listen for events that have the same id
+    /// @tparam F       Functor
+    /// @param id       event id to listen to
+    /// @param callback event callback triggered when id is emitted
+    template <typename F>
+    requires DataIdEventListener<F>
+    void bindEventListener(hash::uuid id, F callback) {
+        using ResultType = typename FunctionTraits<F>::template ResultType;
+        using Arity      = typename FunctionTraits<F>::template Arity;
+
+        static_assert(
+            noexcept(std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>(), std::declval<hash::uuid>())),
+            __FUNCTION__ ": Event listener must be noexcept");
+
+        static_assert(std::is_same_v<Arity, std::integral_constant<size_t, 2>>,
+                      __FUNCTION__ ": Event listener must take two arguments (event and event id)");
+
+        if constexpr (std::is_same_v<ResultType, bool>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+                return callback(event.data, event.id);
+            };
+            m_eventRegistry.insert(std::make_pair(id, wrapper));
+        } else if constexpr (std::is_same_v<ResultType, void>) {
+            EventCallback wrapper = [callback](const EventBase& base) -> bool {
+                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+                callback(event.data, event.id);
                 return false;
             };
             m_eventRegistry.insert(std::make_pair(id, wrapper));
@@ -240,9 +288,9 @@ public:
     template <typename F>
     requires VoidEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
-        static_assert(noexcept(std::declval<F>()()), __FUNCTION__ ": Event listener must be noexcept");
-
         using ResultType = typename FunctionTraits<F>::template ResultType;
+
+        static_assert(noexcept(std::declval<F>()()), __FUNCTION__ ": Event listener must be noexcept");
 
         if constexpr (std::is_same_v<ResultType, bool>) {
             EventCallback wrapper = [callback](const EventBase&) -> bool { return callback(); };
@@ -296,6 +344,11 @@ private:
     std::vector<std::pair<usize, void (*)(void*)>> m_eventQueue;    // tracks event indices and event destructors
     std::vector<std::byte> m_eventArena;                            // memory pool for allocations when pushing events
     std::unordered_multimap<uint64, EventCallback> m_eventRegistry; // mapping id to callback
+
+    // used dispatching to prevent modifying the queue while iterating
+    decltype(m_eventQueue) m_dispatchQueue;
+    decltype(m_eventArena) m_dispatchArena;
+    decltype(m_eventRegistry) m_dispatchRegistry;
 
 private:
     friend class R3_API Engine;

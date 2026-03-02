@@ -9,8 +9,9 @@
 #include "api/Exception.hpp"
 #include "api/Types.hpp"
 #include "core/Log.hpp"
-#include "vulkan-Handle.hpp"
 #include "vulkan-RenderContext.hpp"
+
+extern VkDevice g_device;
 
 namespace R3::vulkan {
 
@@ -23,14 +24,14 @@ Swapchain::Swapchain(RenderContext& ctx, int32 framebufferWidth, int32 framebuff
 }
 
 Swapchain::~Swapchain() noexcept {
-    if (m_device) {
+    if (g_device) {
         for (VkImageView imageView : m_imageViews) {
-            vkDestroyImageView(m_device, imageView, nullptr);
+            vkDestroyImageView(g_device, imageView, nullptr);
         }
         m_images.clear();
         m_imageViews.clear();
 
-        vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+        vkDestroySwapchainKHR(g_device, m_swapchain, nullptr);
     }
 }
 
@@ -45,7 +46,7 @@ void Swapchain::recreate(RenderContext& ctx, int32 framebufferWidth, int32 frame
 }
 
 VkResult Swapchain::acquireNextImage(VkSemaphore semaphore, uint32& imageIndex, uint64 timeout) const noexcept {
-    return vkAcquireNextImageKHR(m_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
+    return vkAcquireNextImageKHR(g_device, m_swapchain, timeout, semaphore, VK_NULL_HANDLE, &imageIndex);
 }
 
 VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uint32 imageIndex) const noexcept {
@@ -63,8 +64,6 @@ VkResult Swapchain::present(VkQueue presentQueue, VkSemaphore waitSemaphore, uin
 }
 
 void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebufferHeight) {
-    m_device = ctx.device();
-
     uint32 iGraphics = ctx.graphicsQueueIndex();
     uint32 iPresent  = ctx.presentQueueIndex();
 
@@ -95,6 +94,7 @@ void Swapchain::create(RenderContext& ctx, int32 framebufferWidth, int32 framebu
     LOG_VERBOSE("Swapchain created: {}x{}, {} images", m_extent.width, m_extent.height, m_images.size());
 
     ctx.setSwapchainFormat(m_format);
+    ctx.setSwapchainExtent(m_extent);
 }
 
 } // namespace R3::vulkan

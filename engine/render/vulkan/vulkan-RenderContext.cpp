@@ -22,7 +22,6 @@
 #include "vulkan-Check.hpp"
 #include "vulkan-CommandBuffer.hpp"
 #include "vulkan-DescriptorSet.hpp"
-#include "vulkan-Handle.hpp"
 
 VkDevice g_device                 = VK_NULL_HANDLE;
 VkPhysicalDevice g_physicalDevice = VK_NULL_HANDLE;

@@ -7,15 +7,15 @@ namespace R3 {
 
 class R3_API TransformComponent {
 public:
-    fmat4& transform() noexcept {
+    dmat4& transform() noexcept {
         m_dirty = true;
         return m_transform;
     }
 
-    const fmat4& transform() const noexcept { return m_transform; }
+    const dmat4& transform() const noexcept { return m_transform; }
 
 private:
-    fmat4 m_transform = fmat4(1.0f);
+    dmat4 m_transform = dmat4(1.0);
     bool m_dirty      = true;
 
 private:

@@ -24,20 +24,20 @@ static void moduleMain() {
 
 #if 1
     // auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    auto futchess  = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
-    auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
+    auto futchess = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    // auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
 
     // auto helmet = futhelmet.get();
-    auto chess  = futchess.get();
-    auto sponza = futsponza.get();
+    auto chess = futchess.get();
+    // auto sponza = futsponza.get();
 
     {
         auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
-        t       = glm::translate(t, fvec3(0.0f, 1.0f, 0.0f));
-        t       = glm::scale(t, fvec3(3.0f));
+        t       = glm::translate(t, dvec3(0.0, 1.0, 0.0));
+        t       = glm::scale(t, dvec3(3.0));
     }
     {
-        auto& t = GWorld()->registry().get<TransformComponent>(sponza).transform();
+        // auto& t = GWorld()->registry().get<TransformComponent>(sponza).transform();
         // t       = glm::translate(t, fvec3(2.0f, 1.0f, 0.0f));
         // t       = glm::scale(t, fvec3(0.25));
     }

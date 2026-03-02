@@ -1,8 +1,8 @@
 #pragma once
 
-#include "engine/api/Api.hpp"
 #include <entt/resource/resource.hpp>
 #include "System.hpp"
+#include "engine/api/Api.hpp"
 #include "engine/api/Assert.hpp"
 #include "engine/api/Exception.hpp"
 #include "engine/api/Types.hpp"
@@ -35,7 +35,7 @@ public:
     }
 
 private:
-    void updateTransformHierarchy(Entity ent, const fmat4& parentTransform) {
+    void updateTransformHierarchy(Entity ent, const dmat4& parentTransform) {
         TransformComponent& t = GWorld()->registry().get<TransformComponent>(ent);
         t.transform()         = parentTransform * t.transform();
         t.m_dirty             = false;

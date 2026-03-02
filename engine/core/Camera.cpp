@@ -21,22 +21,22 @@ void Camera::update(double dt) {
         return;
     }
 
-    float mouseSensitivity    = 0.1f;
-    float movementSensitivity = 2.5f;
+    double mouseSensitivity    = 0.1;
+    double movementSensitivity = 2.5;
 
     if (GWindow()->keyPressed(Key::LeftShift)) {
-        movementSensitivity *= 2.0f;
+        movementSensitivity *= 2.0;
     }
 
     const bool mouseDown  = GWindow()->isMouseButtonPressed(MouseButton::Left);
-    const fvec2 cursorPos = GWindow()->cursorPosition();
+    const dvec2 cursorPos = GWindow()->cursorPosition();
 
-    const float deltaX        = mouseDown ? (cursorPos.x - m_prevCursorPosition.x) : 0.0f;
-    const float deltaY        = -(mouseDown ? (cursorPos.y - m_prevCursorPosition.y) : 0.0f);
-    const fvec2 deltaPosition = fvec2(deltaX, deltaY);
+    const double deltaX       = mouseDown ? (cursorPos.x - m_prevCursorPosition.x) : 0.0;
+    const double deltaY       = -(mouseDown ? (cursorPos.y - m_prevCursorPosition.y) : 0.0);
+    const dvec2 deltaPosition = dvec2(deltaX, deltaY);
     m_prevCursorPosition      = cursorPos;
 
-    const float deltaMovement = (float)dt * movementSensitivity;
+    const double deltaMovement = dt * movementSensitivity;
 
     m_activeKeys.w = GWindow()->keyPressed(Key::W) ? (m_activeKeys.s + 1) : 0;
     m_activeKeys.a = GWindow()->keyPressed(Key::A) ? (m_activeKeys.d + 1) : 0;
@@ -51,7 +51,7 @@ void Camera::update(double dt) {
     }
 
     if ((m_activeKeys.w || m_activeKeys.s) && (m_activeKeys.a || m_activeKeys.d)) {
-        movementSensitivity /= std::sqrt(2.0f); // prevent faster diagonal movement
+        movementSensitivity /= std::sqrt(2.0); // prevent faster diagonal movement
     }
 
     if (m_activeKeys.w && (m_activeKeys.w > m_activeKeys.s)) {
@@ -73,40 +73,49 @@ void Camera::update(double dt) {
     }
 
     if (mouseDown) {
-        fvec2 dpos = deltaPosition * mouseSensitivity;
+        dvec2 dpos = deltaPosition * mouseSensitivity;
         lookAround(dpos.x, dpos.y);
+    }
+
+    switch (m_projectionMode) {
+        case CameraProjectionMode::Perspective:
+            applyPerspective(GWindow()->aspectRatio());
+            break;
+        case CameraProjectionMode::Orthographic:
+            applyOrthographic(GWindow()->size());
+            break;
     }
 }
 
-void Camera::translateForward(float magnitude) noexcept {
-    m_position += magnitude * glm::normalize(fvec3(m_front.x, 0, m_front.z));
+void Camera::translateForward(double magnitude) noexcept {
+    m_position += magnitude * glm::normalize(dvec3(m_front.x, 0, m_front.z));
 }
 
-void Camera::translateBackward(float magnitude) noexcept {
+void Camera::translateBackward(double magnitude) noexcept {
     translateForward(-magnitude);
 }
 
-void Camera::translateRight(float magnitude) noexcept {
+void Camera::translateRight(double magnitude) noexcept {
     m_position += magnitude * glm::normalize(glm::cross(m_front, m_up));
 }
 
-void Camera::translateLeft(float magnitude) noexcept {
+void Camera::translateLeft(double magnitude) noexcept {
     translateRight(-magnitude);
 }
 
-void Camera::translateUp(float magnitude) noexcept {
+void Camera::translateUp(double magnitude) noexcept {
     m_position += m_up * magnitude;
 }
 
-void Camera::translateDown(float magnitude) noexcept {
+void Camera::translateDown(double magnitude) noexcept {
     translateUp(-magnitude);
 }
 
-void Camera::lookAround(float dx, float dy) noexcept {
+void Camera::lookAround(double dx, double dy) noexcept {
     m_yaw += dx;
     m_pitch += dy;
 
-    m_pitch = std::clamp(m_pitch, -89.0f, 89.0f);
+    m_pitch = std::clamp(m_pitch, -89.0, 89.0);
 
     m_front.x = std::cos(glm::radians(m_yaw)) * std::cos(glm::radians(m_pitch));
     m_front.y = std::sin(glm::radians(m_pitch));
@@ -114,17 +123,17 @@ void Camera::lookAround(float dx, float dy) noexcept {
     m_front   = glm::normalize(m_front);
 }
 
-void Camera::applyPerspective(float aspectRatio, fmat4& view, fmat4& projection) const noexcept {
-    projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
-    view       = glm::lookAt(m_position, m_position + m_front, m_up);
+void Camera::applyPerspective(float aspectRatio) noexcept {
+    m_projection = glm::perspective(glm::radians(m_fov), aspectRatio, 0.1f, 500.0f);
+    m_view       = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
-void Camera::applyOrthographic(ivec2 windowSize, fmat4& view, fmat4& projection) const noexcept {
-    float denom = std::max(windowSize.x, windowSize.y) / 2.0f;
-    float w     = windowSize.x / denom;
-    float h     = windowSize.y / denom;
-    projection  = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
-    view        = glm::lookAt(m_position, m_position + m_front, m_up);
+void Camera::applyOrthographic(usize2 windowSize) noexcept {
+    float denom  = std::max(windowSize.x, windowSize.y) / 2.0f;
+    float w      = windowSize.x / denom;
+    float h      = windowSize.y / denom;
+    m_projection = glm::ortho(-w, w, -h, h, -10.0f, 500.0f);
+    m_view       = glm::lookAt(m_position, m_position + m_front, m_up);
 }
 
 } // namespace R3

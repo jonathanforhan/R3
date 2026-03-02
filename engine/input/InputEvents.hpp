@@ -43,4 +43,11 @@ struct R3_API MouseCursorEvent {
     double ypos; /**< Mouse cursor position in pixels, double to support subpixel precision */
 };
 
+namespace event {
+static constexpr hash::uuid HoveredEntity = "hovered-entity";
+} // namespace event
+struct R3_API HoveredEntityEvent {
+    uint32 entityID; /**< ID of the currently hovered entity, 0xFFFF'FFFF if no entity hovered */
+};
+
 } // namespace R3

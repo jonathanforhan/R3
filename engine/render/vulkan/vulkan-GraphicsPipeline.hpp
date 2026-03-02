@@ -5,10 +5,10 @@
 #include <vulkan/vulkan.h>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
+#include "engine/api/MovableHandle.hpp"
 #include "engine/api/Types.hpp"
 #include "engine/render/RenderFwd.hpp"
 #include "vulkan-Fwd.hpp"
-#include "vulkan-Handle.hpp"
 
 namespace R3::vulkan {
 
@@ -33,9 +33,9 @@ public:
     VkPipelineLayout layout() const noexcept { return m_pipelineLayout; }
 
 private:
-    Handle<VkDevice> m_device;
-    Handle<VkPipeline> m_pipeline;
-    Handle<VkPipelineLayout> m_pipelineLayout;
+    MovableHandle<VkDevice> m_device;
+    MovableHandle<VkPipeline> m_pipeline;
+    MovableHandle<VkPipelineLayout> m_pipelineLayout;
 };
 
 } // namespace R3::vulkan

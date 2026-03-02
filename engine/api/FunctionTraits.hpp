@@ -66,4 +66,7 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const noexcept> 
     using ResultType = ReturnType;
 };
 
+template <typename F, size_t N>
+using FunctionTypeDeduced = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<N>>;
+
 } // namespace R3
