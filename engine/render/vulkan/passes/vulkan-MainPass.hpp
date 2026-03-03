@@ -22,8 +22,6 @@ public:
 
     void setLightCount(uint32 count) noexcept { m_lightCount = count; }
 
-    void setSelectedEntityID(uint32 entityID) noexcept { m_selectedEntityID = entityID; }
-
 protected:
     virtual void render(CommandBuffer& cmd) override;
 
@@ -35,7 +33,6 @@ protected:
     GraphicsPipeline* m_cubemapPipeline = nullptr;
     uint32 m_cubemapTextureSlot         = UINT32_MAX;
     uint32 m_lightCount                 = 0;
-    uint32 m_selectedEntityID           = UINT32_MAX;
 };
 
 } // namespace R3::vulkan

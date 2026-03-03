@@ -24,7 +24,8 @@ struct R3_API FunctionTraits : public FunctionTraits<decltype(&T::operator())> {
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
 struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...)> {
-    using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+    using FunctionType = ReturnType(Args...);
+    using Arity        = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
     using ResultType = ReturnType;
@@ -36,7 +37,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...)> {
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
 struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
-    using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+    using FunctionType = ReturnType(Args...) const;
+    using Arity        = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
     using ResultType = ReturnType;
@@ -48,7 +50,8 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const> {
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
 struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) noexcept> {
-    using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+    using FunctionType = ReturnType(Args...) noexcept;
+    using Arity        = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
     using ResultType = ReturnType;
@@ -60,13 +63,33 @@ struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) noexcept> {
 /// @tparam ...Args    Lambda arguments.
 template <typename ReturnType, typename ClassType, typename... Args>
 struct R3_API FunctionTraits<ReturnType (ClassType::*)(Args...) const noexcept> {
-    using Arity = std::integral_constant<std::size_t, sizeof...(Args)>;
+    using FunctionType = ReturnType(Args...) const noexcept;
+    using Arity        = std::integral_constant<std::size_t, sizeof...(Args)>;
     template <std::size_t i>
     using ArgType    = typename std::tuple_element_t<i, std::tuple<Args...>>;
     using ResultType = ReturnType;
 };
 
+/// @brief Helper type aliases for easier access to function traits.
+/// @tparam F The callable type from which to extract function traits.
+/// @tparam N The index of the argument type to extract.
 template <typename F, size_t N>
-using FunctionTypeDeduced = std::remove_reference_t<typename FunctionTraits<F>::template ArgType<N>>;
+using FunctionDeducedParamType = typename FunctionTraits<F>::template ArgType<N>;
+
+/// @brief Helper type alias for easier access to function traits.
+/// @tparam F The callable type from which to extract function traits.
+template <typename F>
+using FunctionDeducedResultType = typename FunctionTraits<F>::template ResultType;
+
+/// @brief Helper type alias for easier access to function traits.
+/// @tparam F The callable type from which to extract function traits.
+template <typename F>
+using FunctionDeducedArity = typename FunctionTraits<F>::template Arity;
+
+/// @brief Helper type alias for easier access to function traits, this is the actual function type of the callable
+/// (e.g., void(int, float)) without the class type or qualifiers.
+/// @tparam F The callable type from which to extract function traits.
+template <typename F>
+using FunctionDeducedType = typename FunctionTraits<F>::template FunctionType;
 
 } // namespace R3

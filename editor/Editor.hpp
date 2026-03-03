@@ -1,5 +1,6 @@
 #pragma once
 
+#include <span>
 #include <vulkan/vulkan.h>
 #include <engine/api/Class.hpp>
 #include <engine/core/Entity.hpp>
@@ -25,7 +26,7 @@ public:
 
     virtual bool uiFocused() const override;
 
-    uint32 selectedEntityID() const override { return m_selectedEntityID; }
+    std::span<const uint32> selectedEntityIDs() const override { return m_selectedEntityIDs; }
 
     void beginFrame();
 
@@ -44,19 +45,22 @@ public:
     void displaySceneManager();
 
 private:
+    void setupEventListeners();
+
     void hierarchyHelper(Entity entity);
 
     void testImGuizmo();
 
 private:
     IRenderContext& m_ctx;
-    VkDescriptorPool m_descriptorPool = VK_NULL_HANDLE;
-    bool m_uiFocused                  = false;
-    bool m_isMouseClickedQueued       = false;
-    int32 m_queuedMouseClickX         = 0;
-    int32 m_queuedMouseClickY         = 0;
-    uint32 m_hoveredEntityID          = 0xFFFF'FFFF;
-    uint32 m_selectedEntityID         = 0xFFFF'FFFF;
+    VkDescriptorPool m_descriptorPool       = VK_NULL_HANDLE;
+    bool m_uiFocused                        = false;
+    bool m_isMouseClickedQueued             = false;
+    int32 m_queuedMouseClickX               = 0;
+    int32 m_queuedMouseClickY               = 0;
+    uint32 m_hoveredEntityID                = 0xFFFF'FFFF;
+    std::vector<uint32> m_selectedEntityIDs = {};
+    int m_guizmoOperation;
 };
 
 } // namespace R3

@@ -218,7 +218,7 @@ void main() {
     f_Color = vec4(color, 1.0);
 
     if (c_bSelected == 1) {
-        f_Color += vec4(0.3, 0.3, 0.0, 0.0);
+        f_Color += vec4(0.35, 0.25, 0.0, 0.0);
         f_Color.a = 1.0;
     }
 }

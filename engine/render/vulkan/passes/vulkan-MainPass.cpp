@@ -1,6 +1,8 @@
 #include "vulkan-MainPass.hpp"
 
+#include <algorithm>
 #include <cstdint>
+#include <ranges>
 #include "../vulkan-CommandBuffer.hpp"
 #include "../vulkan-GraphicsPipeline.hpp"
 #include "../vulkan-RenderPass.hpp"
@@ -71,6 +73,8 @@ void MainPass::renderScene(CommandBuffer& cmd) {
         .pDescriptorSets    = &m_descriptorSet,
     });
 
+    const std::span entityIDs = GEditor()->selectedEntityIDs();
+
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
             const PBRPushConstants pc = {
@@ -82,7 +86,7 @@ void MainPass::renderScene(CommandBuffer& cmd) {
                 .iNormal            = mat.iNormal,
                 .iAmbientOcclusion  = mat.iAmbientOcclusion,
                 .iEmissive          = mat.iEmissive,
-                .bSelected          = m_selectedEntityID == (uint32)entity ? 1U : 0U,
+                .bSelected          = std::ranges::find(entityIDs, (uint32)entity) != entityIDs.end() ? 1U : 0U,
             };
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,

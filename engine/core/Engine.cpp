@@ -46,7 +46,7 @@ void Engine::initialize() {
     m_renderer        = new vulkan::Renderer(*m_window, *static_cast<vulkan::RenderContext*>(m_ctx));
 
     /* Add callback to show window once the first frame is rendered, this prevents white screen */
-    m_eventHandler->bindEventListener("frame-done", [this]() noexcept {
+    m_eventHandler->bindEventListener("frame-done", [this] noexcept {
         m_window->show();
         return true; // remove after first call
     });

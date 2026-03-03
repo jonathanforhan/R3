@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include <span>
 #include "engine/api/Api.hpp"
 #include "engine/render/CommandBuffer.hpp"
 
@@ -22,8 +23,8 @@ public:
     /// @brief True if the UI is currently focused (e.g. mouse over an UI element)
     virtual bool uiFocused() const = 0;
 
-    /// @brief Get the currently selected entity ID in the editor, or 0xFFFF'FFFF if no entity is selected
-    virtual uint32 selectedEntityID() const = 0;
+    /// @brief Get the currently selected entity IDs in the editor
+    virtual std::span<const uint32> selectedEntityIDs() const = 0;
 };
 
 } // namespace R3

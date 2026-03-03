@@ -10,18 +10,18 @@ class Exception : public std::runtime_error {
 public:
     explicit Exception(auto&& msg, std::source_location source_location = std::source_location::current()) noexcept
         : std::runtime_error{msg},
-          _source_location(source_location) {}
+          m_source_location(source_location) {}
 
     virtual ~Exception() noexcept override {}
 
-    constexpr auto file() const noexcept { return _source_location.file_name(); }
+    constexpr auto file() const noexcept { return m_source_location.file_name(); }
 
-    constexpr auto function() const noexcept { return _source_location.function_name(); }
+    constexpr auto function() const noexcept { return m_source_location.function_name(); }
 
-    constexpr auto line() const noexcept { return _source_location.line(); }
+    constexpr auto line() const noexcept { return m_source_location.line(); }
 
 private:
-    const std::source_location _source_location;
+    const std::source_location m_source_location;
 };
 
 } // namespace R3

@@ -69,6 +69,7 @@
 #include "engine/api/Class.hpp"
 #include "engine/api/FunctionTraits.hpp"
 #include "engine/api/Hash.hpp"
+#include "engine/api/TypeTraits.hpp"
 #include "engine/api/Types.hpp"
 
 namespace R3 {
@@ -115,16 +116,36 @@ struct R3_API Event<void> : public EventBase {
 };
 
 template <typename F>
-concept VoidEventListener = std::invocable<F> && noexcept(std::declval<F>()());
-
-template <typename F>
-concept DataEventListener = !VoidEventListener<F> && requires {
-    { std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>()) };
+concept VoidEventListener = requires {
+    requires is_one_of_v<FunctionDeducedType<F>,
+                         bool() noexcept,
+                         bool() const noexcept,
+                         void() noexcept,
+                         void() const noexcept>;
 };
 
 template <typename F>
-concept DataIdEventListener = !VoidEventListener<F> && requires {
-    { std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>(), std::declval<hash::uuid>()) };
+concept DataEventListener = requires {
+    requires FunctionTraits<F>::Arity::value == 1;
+    requires is_one_of_v<FunctionDeducedType<F>,
+                         bool(FunctionDeducedParamType<F, 0>) noexcept,
+                         bool(FunctionDeducedParamType<F, 0>) const noexcept,
+                         void(FunctionDeducedParamType<F, 0>) noexcept,
+                         void(FunctionDeducedParamType<F, 0>) const noexcept>;
+};
+
+template <typename F>
+concept DataIdEventListener = requires {
+    requires FunctionTraits<F>::Arity::value == 2;
+    requires is_one_of_v<FunctionDeducedType<F>,
+                         bool(FunctionDeducedParamType<F, 0>, hash::uuid) noexcept,
+                         bool(FunctionDeducedParamType<F, 0>, hash::uuid) const noexcept,
+                         bool(FunctionDeducedParamType<F, 0>, uint64) noexcept,
+                         bool(FunctionDeducedParamType<F, 0>, uint64) const noexcept,
+                         void(FunctionDeducedParamType<F, 0>, hash::uuid) noexcept,
+                         void(FunctionDeducedParamType<F, 0>, hash::uuid) const noexcept,
+                         void(FunctionDeducedParamType<F, 0>, uint64) noexcept,
+                         void(FunctionDeducedParamType<F, 0>, uint64) const noexcept>;
 };
 
 template <typename F>
@@ -189,14 +210,10 @@ public:
         // swap queues and arenas to allow pushing events while dispatching
         std::swap(m_dispatchQueue, m_eventQueue);
         std::swap(m_dispatchArena, m_eventArena);
-        // merge any listeners bound since last dispatch into the permanent registry
-        for (auto& [k, v] : m_eventRegistry) {
-            m_dispatchRegistry.insert({k, std::move(v)});
-        }
-        // clear the main queue and arena for new events
         m_eventQueue.clear();
         m_eventArena.clear();
-        m_eventRegistry.clear();
+        // merge any listeners bound since last dispatch into the permanent registry
+        m_dispatchRegistry.merge(m_eventRegistry);
 
         // iterate queued event offsets
         for (auto&& [offset, deleter] : m_dispatchQueue) {
@@ -216,6 +233,26 @@ public:
         }
     }
 
+    /// @brief Bind a void event listener to listen for events that have the same id
+    /// @tparam F       Functor
+    /// @param id       event id to listen to
+    /// @param callback event callback triggered when id is emitted
+    template <typename F>
+    requires VoidEventListener<F>
+    void bindEventListener(hash::uuid id, F callback) {
+        using ResultType = FunctionDeducedResultType<F>;
+
+        EventCallback wrapper = [callback](const EventBase&) mutable noexcept -> bool {
+            if constexpr (std::is_same_v<ResultType, bool>) {
+                return callback();
+            } else if constexpr (std::is_same_v<ResultType, void>) {
+                callback();
+                return false;
+            }
+        };
+        m_eventRegistry.insert(std::make_pair(id, wrapper));
+    }
+
     /// @brief Bind a data event listener to listen for events that have the same id
     /// @tparam F       Functor
     /// @param id       event id to listen to
@@ -223,29 +260,20 @@ public:
     template <typename F>
     requires DataEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
-        using ResultType = typename FunctionTraits<F>::template ResultType;
-        using Arity      = typename FunctionTraits<F>::template Arity;
+        using ResultType = FunctionDeducedResultType<F>;
+        using ParamType0 = std::remove_reference_t<FunctionDeducedParamType<F, 0>>;
 
-        static_assert(noexcept(std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>())),
-                      __FUNCTION__ ": Event listener must be noexcept");
+        EventCallback wrapper = [callback](const EventBase& base) mutable noexcept -> bool {
+            const auto& event = static_cast<const Event<ParamType0>&>(base);
 
-        static_assert(std::is_same_v<Arity, std::integral_constant<size_t, 1>>,
-                      __FUNCTION__ ": Event listener must take either one argument (event)");
-
-        if constexpr (std::is_same_v<ResultType, bool>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+            if constexpr (std::is_same_v<ResultType, bool>) {
                 return callback(event.data);
-            };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        } else if constexpr (std::is_same_v<ResultType, void>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+            } else if constexpr (std::is_same_v<ResultType, void>) {
                 callback(event.data);
                 return false;
-            };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        }
+            }
+        };
+        m_eventRegistry.insert(std::make_pair(id, wrapper));
     }
 
     /// @brief Bind a data id event listener to listen for events that have the same id
@@ -255,53 +283,20 @@ public:
     template <typename F>
     requires DataIdEventListener<F>
     void bindEventListener(hash::uuid id, F callback) {
-        using ResultType = typename FunctionTraits<F>::template ResultType;
-        using Arity      = typename FunctionTraits<F>::template Arity;
+        using ResultType = FunctionDeducedResultType<F>;
+        using ParamType0 = std::remove_reference_t<FunctionDeducedParamType<F, 0>>;
 
-        static_assert(
-            noexcept(std::declval<F>()(std::declval<FunctionTypeDeduced<F, 0>>(), std::declval<hash::uuid>())),
-            __FUNCTION__ ": Event listener must be noexcept");
+        EventCallback wrapper = [callback](const EventBase& base) mutable noexcept -> bool {
+            const auto& event = static_cast<const Event<ParamType0>&>(base);
 
-        static_assert(std::is_same_v<Arity, std::integral_constant<size_t, 2>>,
-                      __FUNCTION__ ": Event listener must take two arguments (event and event id)");
-
-        if constexpr (std::is_same_v<ResultType, bool>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+            if constexpr (std::is_same_v<ResultType, bool>) {
                 return callback(event.data, event.id);
-            };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        } else if constexpr (std::is_same_v<ResultType, void>) {
-            EventCallback wrapper = [callback](const EventBase& base) -> bool {
-                const auto& event = static_cast<const Event<FunctionTypeDeduced<F, 0>>&>(base);
+            } else if constexpr (std::is_same_v<ResultType, void>) {
                 callback(event.data, event.id);
                 return false;
-            };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        }
-    }
-
-    /// @brief Bind a void event listener to listen for events that have the same id
-    /// @tparam F       Functor
-    /// @param id       event id to listen to
-    /// @param callback event callback triggered when id is emitted
-    template <typename F>
-    requires VoidEventListener<F>
-    void bindEventListener(hash::uuid id, F callback) {
-        using ResultType = typename FunctionTraits<F>::template ResultType;
-
-        static_assert(noexcept(std::declval<F>()()), __FUNCTION__ ": Event listener must be noexcept");
-
-        if constexpr (std::is_same_v<ResultType, bool>) {
-            EventCallback wrapper = [callback](const EventBase&) -> bool { return callback(); };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        } else if constexpr (std::is_same_v<ResultType, void>) {
-            EventCallback wrapper = [callback](const EventBase&) -> bool {
-                callback();
-                return false;
-            };
-            m_eventRegistry.insert(std::make_pair(id, wrapper));
-        }
+            }
+        };
+        m_eventRegistry.insert(std::make_pair(id, wrapper));
     }
 
     /// @brief Bind an event listener to listen for events that have the same id

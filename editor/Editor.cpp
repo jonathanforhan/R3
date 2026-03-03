@@ -7,9 +7,11 @@
 
 #include <ImGuizmo.h>
 
+#include <algorithm>
 #include <filesystem>
 #include <format>
 #include <iterator>
+#include <ranges>
 #include <string>
 #include <vulkan/vulkan.h>
 #include <engine/api/Types.hpp>
@@ -109,27 +111,7 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
     io.Fonts->AddFontFromFileTTF("assets/fonts/Roboto/Roboto-Medium.ttf", 16.5f * 1.5f);
     io.Fonts->Build();
 
-    GEventHandler()->bindEventListener(event::WindowContentScale, [this](const WindowResizeEvent& e) noexcept {
-        setContentScale((e.width + e.height) / 2.0f);
-    });
-
-    GEventHandler()->bindEventListener(event::MousePress, [this](const MouseButtonEvent& event) noexcept {
-        m_queuedMouseClickX = static_cast<int32>(event.xpos);
-        m_queuedMouseClickY = static_cast<int32>(event.ypos);
-    });
-
-    GEventHandler()->bindEventListener(event::MouseRelease, [this](const MouseButtonEvent& event) noexcept {
-        const int32 xpos = static_cast<int32>(event.xpos);
-        const int32 ypos = static_cast<int32>(event.ypos);
-
-        if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
-            m_selectedEntityID = m_hoveredEntityID;
-        }
-    });
-
-    GEventHandler()->bindEventListener(event::HoveredEntity, [this](HoveredEntityEvent hovered) noexcept {
-        m_hoveredEntityID = hovered.entityID; //
-    });
+    setupEventListeners();
 }
 
 Editor::~Editor() {
@@ -354,6 +336,87 @@ void Editor::displaySceneManager() {
     ImGui::End();
 }
 
+void Editor::setupEventListeners() {
+    // Listen for window content scale changes to adjust ImGui scaling
+    GEventHandler()->bindEventListener(event::WindowContentScale, [this](const WindowResizeEvent& e) noexcept {
+        setContentScale((e.width + e.height) / 2.0f);
+    });
+
+    // Queue mouse clicks to be processed on release, this allows for drag operations without affecting selection
+    GEventHandler()->bindEventListener(event::MousePress, [this](const MouseButtonEvent& event) noexcept {
+        m_queuedMouseClickX = static_cast<int32>(event.xpos);
+        m_queuedMouseClickY = static_cast<int32>(event.ypos);
+    });
+
+    // Process queued mouse click on release, if the mouse hasn't moved much since the press then we consider it a click
+    // and update selection
+    GEventHandler()->bindEventListener(event::MouseRelease, [this](const MouseButtonEvent& event) noexcept {
+        const int32 xpos = static_cast<int32>(event.xpos);
+        const int32 ypos = static_cast<int32>(event.ypos);
+
+        if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
+            if (m_hoveredEntityID == 0xFFFF'FFFF) {
+                m_selectedEntityIDs.clear();
+                m_guizmoOperation = -1;
+            } else if (event.modifiers & InputModifierFlags::Shift) {
+                auto it = std::ranges::find(m_selectedEntityIDs, m_hoveredEntityID);
+                if (it == m_selectedEntityIDs.end()) {
+                    m_selectedEntityIDs.emplace_back(m_hoveredEntityID);
+                }
+            } else if (event.modifiers & InputModifierFlags::Control) {
+                auto it = std::ranges::find(m_selectedEntityIDs, m_hoveredEntityID);
+                if (it == m_selectedEntityIDs.end()) {
+                    m_selectedEntityIDs.emplace_back(m_hoveredEntityID);
+                } else {
+                    m_selectedEntityIDs.erase(it);
+                }
+            } else {
+                m_selectedEntityIDs = std::vector<uint32>{m_hoveredEntityID};
+            }
+        }
+    });
+
+    // Listen for hovered entity changes to update internal hovered entity state for selection on click
+    GEventHandler()->bindEventListener(event::HoveredEntity, [this](HoveredEntityEvent hovered) noexcept {
+        m_hoveredEntityID = hovered.entityID; //
+    });
+
+    GEventHandler()->bindEventListener(event::KeyPress, [this](const KeyboardEvent& e) noexcept {
+        switch (e.key) {
+            case Key::A:
+                if (e.modifiers & InputModifierFlags::Control) {
+                    // Select all entities on Ctrl + A
+                    m_selectedEntityIDs.clear();
+                    GWorld()->registry().view<MetadataComponent>().each([this](const MetadataComponent& metadata) {
+                        m_selectedEntityIDs.emplace_back((uint32)metadata.entity);
+                    });
+                }
+                break;
+            case Key::R:
+                if (!m_selectedEntityIDs.empty()) {
+                    m_guizmoOperation = ImGuizmo::OPERATION::ROTATE;
+                }
+                break;
+            case Key::G:
+                if (!m_selectedEntityIDs.empty()) {
+                    m_guizmoOperation = ImGuizmo::OPERATION::TRANSLATE;
+                }
+                break;
+            case Key::S:
+                if (!m_selectedEntityIDs.empty()) {
+                    m_guizmoOperation = ImGuizmo::OPERATION::SCALE;
+                }
+                break;
+            case Key::Escape:
+                m_selectedEntityIDs.clear();
+                m_guizmoOperation = -1;
+                break;
+            default:
+                break;
+        }
+    });
+}
+
 void Editor::hierarchyHelper(Entity entity) {
     std::string name;
 
@@ -382,7 +445,7 @@ void Editor::hierarchyHelper(Entity entity) {
 }
 
 void Editor::testImGuizmo() {
-    if (m_selectedEntityID == 0xFFFF'FFFF) {
+    if (m_selectedEntityIDs.empty() || m_guizmoOperation < 0) {
         return;
     }
 
@@ -394,15 +457,21 @@ void Editor::testImGuizmo() {
     fmat4 view       = GWorld()->camera().view();
     fmat4 projection = GWorld()->camera().projection();
 
-    dmat4& dmodel = GWorld()->registry().get<TransformComponent>((entt::entity)m_selectedEntityID).transform();
-    fmat4 model   = static_cast<fmat4>(dmodel);
+    dmat4& model = GWorld()->registry().get<TransformComponent>((entt::entity)m_selectedEntityIDs.back()).transform();
+
+    fmat4 before = static_cast<fmat4>(model);
+    fmat4 after  = before;
 
     if (ImGuizmo::Manipulate(glm::value_ptr(view),
                              glm::value_ptr(projection),
-                             ImGuizmo::OPERATION::TRANSLATE,
+                             static_cast<ImGuizmo::OPERATION>(m_guizmoOperation),
                              ImGuizmo::MODE::WORLD,
-                             glm::value_ptr(model))) {
-        dmodel = static_cast<dmat4>(model);
+                             glm::value_ptr(after))) {
+        fmat4 delta = after * glm::inverse(before);
+        for (auto& entityID : m_selectedEntityIDs) {
+            TransformComponent& transform = GWorld()->registry().get<TransformComponent>((entt::entity)entityID);
+            transform.transform()         = delta * (fmat4)transform.transform();
+        }
     }
 }
 

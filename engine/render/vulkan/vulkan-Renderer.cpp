@@ -220,7 +220,6 @@ void Renderer::update() {
     // main pass
     m_mainPasses[m_imageIndex].setDescriptorSet(descriptorSet);
     m_mainPasses[m_imageIndex].setLightCount(numLights);
-    m_mainPasses[m_imageIndex].setSelectedEntityID(GEditor()->selectedEntityID());
 
     const ivec2 cursorPosition = static_cast<ivec2>(GWindow()->cursorPosition());
     handleMouseHover(cmd, m_imageIndex, cursorPosition.x, cursorPosition.y);

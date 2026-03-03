@@ -31,10 +31,17 @@ void Camera::update(double dt) {
     const bool mouseDown  = GWindow()->isMouseButtonPressed(MouseButton::Left);
     const dvec2 cursorPos = GWindow()->cursorPosition();
 
-    const double deltaX       = mouseDown ? (cursorPos.x - m_prevCursorPosition.x) : 0.0;
-    const double deltaY       = -(mouseDown ? (cursorPos.y - m_prevCursorPosition.y) : 0.0);
-    const dvec2 deltaPosition = dvec2(deltaX, deltaY);
-    m_prevCursorPosition      = cursorPos;
+    double deltaX, deltaY;
+    if (mouseDown) {
+        deltaX = +(cursorPos.x - m_prevCursorPosition.x);
+        deltaY = -(cursorPos.y - m_prevCursorPosition.y);
+    } else {
+        deltaX = 0.0;
+        deltaY = 0.0;
+    }
+
+    const dvec2 deltaPosition{deltaX, deltaY};
+    m_prevCursorPosition = cursorPos;
 
     const double deltaMovement = dt * movementSensitivity;
 
