@@ -1,13 +1,16 @@
 #pragma once
 
 #include <span>
+#include <vector>
 #include <vulkan/vulkan.h>
 #include <engine/api/Class.hpp>
+#include <engine/api/Types.hpp>
 #include <engine/core/Entity.hpp>
 #include <engine/editor/Editor.hpp>
 #include <engine/render/CommandBuffer.hpp>
 #include <engine/render/RenderContext.hpp>
 #include <engine/render/Window.hpp>
+#include <entt/entity/entity.hpp>
 
 namespace R3 {
 
@@ -24,9 +27,9 @@ public:
 
     virtual void draw(ICommandBuffer& cmd) override;
 
-    virtual bool uiFocused() const override;
+    virtual bool uiFocused() const override { return m_uiFocused; }
 
-    std::span<const uint32> selectedEntityIDs() const override { return m_selectedEntityIDs; }
+    std::span<const Entity> selectedEntityIDs() const override { return m_selectedEntityIDs; }
 
     void beginFrame();
 
@@ -58,8 +61,8 @@ private:
     bool m_isMouseClickedQueued             = false;
     int32 m_queuedMouseClickX               = 0;
     int32 m_queuedMouseClickY               = 0;
-    uint32 m_hoveredEntityID                = 0xFFFF'FFFF;
-    std::vector<uint32> m_selectedEntityIDs = {};
+    Entity m_hoveredEntityID                = entt::null;
+    std::vector<Entity> m_selectedEntityIDs = {};
     int m_guizmoOperation;
 };
 

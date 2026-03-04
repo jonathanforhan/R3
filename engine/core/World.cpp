@@ -13,4 +13,11 @@ void World::update(double dt) {
     m_camera.update(dt);
 }
 
+void World::clear() noexcept {
+    m_registry.clear();
+    m_systems.clear();
+    m_systemSet.clear();
+    m_componentFactoryMap.clear();
+}
+
 } // namespace R3

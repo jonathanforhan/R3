@@ -45,7 +45,7 @@ void ShadowPass::render(CommandBuffer& cmd) {
     GWorld()->registry().view<MeshComponent, TransformComponent>().each(
         [&](const MeshComponent& mesh, const TransformComponent& trans) {
             const ShadowPushConstants pc = {
-                .model         = trans.transform(),
+                .model         = trans.world(),
                 .lightViewProj = m_lightSpaceMatrix,
             };
             cmd.pushConstants({

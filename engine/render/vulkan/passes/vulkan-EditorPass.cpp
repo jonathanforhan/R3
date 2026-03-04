@@ -33,7 +33,7 @@ void EditorPass::render(CommandBuffer& cmd) {
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
             const EditorPushConstants pc = {
-                .model    = trans.transform(),
+                .model    = trans.world(),
                 .entityID = (uint32)entity,
             };
             cmd.pushConstants({

@@ -2,9 +2,11 @@
 
 #include <cstdint>
 #include <vector>
+#include <entt/entity/entity.hpp>
 #include "engine/api/Api.hpp"
 #include "engine/api/Class.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/core/Entity.hpp"
 #include "engine/render/Buffer.hpp"
 #include "engine/render/Image.hpp"
 #include "engine/render/RenderContext.hpp"
@@ -94,7 +96,7 @@ private:
     std::vector<EditorPass> m_editorPasses;
 
     std::vector<Buffer> m_idReadbackBuffers;
-    uint32 m_hoveredEntityID = 0xFFFF'FFFF;
+    Entity m_hoveredEntityID = entt::null;
 
     bool m_shouldReloadShaders = false;
     bool m_pendingReadback     = false;

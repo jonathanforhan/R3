@@ -15,24 +15,40 @@
 
 static R3::Entity light = entt::null;
 
-static void moduleMain() {
-    using namespace R3;
+using namespace R3;
 
-    GWorld()->addSystem<R3::TransformSystem>();
+struct Rotator {
+    Rotator(Entity entity)
+        : entity(entity) {}
+
+    void update(double dt) {
+        auto& t = GWorld()->registry().get<R3::TransformComponent>(entity).local();
+        t       = glm::rotate(t, dt, dvec3(0.0, 1.0, 0.0));
+    }
+
+    Entity entity;
+};
+
+static void moduleMain() {
+    GWorld()->registerComponentFactory<Rotator>("Rotator", [](Entity entity) {
+        GWorld()->registry().emplace<Rotator>(entity, entity); //
+    });
+
+    GWorld()->addSystem<TransformSystem>();
 
     ModelLoader loader;
 
 #if 1
-    // auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
-    auto futchess = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
+    auto futhelmet = loader.glTFLoadAsync("assets/glTF-samples/Models/DamagedHelmet/glTF-Binary/DamagedHelmet.glb");
+    auto futchess  = loader.glTFLoadAsync("assets/glTF-samples/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
     // auto futsponza = loader.glTFLoadAsync("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
 
-    // auto helmet = futhelmet.get();
-    auto chess = futchess.get();
+    auto helmet = futhelmet.get();
+    auto chess  = futchess.get();
     // auto sponza = futsponza.get();
 
     {
-        auto& t = GWorld()->registry().get<TransformComponent>(chess).transform();
+        auto& t = GWorld()->registry().get<TransformComponent>(chess).local();
         t       = glm::translate(t, dvec3(0.0, 1.0, 0.0));
         t       = glm::scale(t, dvec3(3.0));
     }
@@ -50,6 +66,8 @@ static void moduleMain() {
     // Entity city = loader.glTFLoad("assets/glTF-samples/Models/VirtualCity/glTF-Binary/VirtualCity.glb");
     // Entity sponza = loader.glTFLoad("assets/glTF-samples/Models/Sponza/glTF/Sponza.gltf");
     // Entity lamp = loader.glTFLoad("assets/glTF-samples/Models/StainedGlassLamp/glTF/StainedGlassLamp.gltf");
+
+    GWorld()->addRegisteredComponentByName("Rotator", helmet);
 
     light = GWorld()->registry().create();
 

@@ -4,6 +4,7 @@
 
 #include <span>
 #include "engine/api/Api.hpp"
+#include "engine/core/Entity.hpp"
 #include "engine/render/CommandBuffer.hpp"
 
 namespace R3 {
@@ -11,7 +12,7 @@ namespace R3 {
 /// @brief Interface for implemented editor
 class R3_API IEditor {
 public:
-    virtual ~IEditor() noexcept {};
+    virtual ~IEditor() noexcept = default;
 
     /// @brief Records the current editor UI frame
     /// @param dt The time elapsed since the last frame, in seconds.
@@ -24,7 +25,7 @@ public:
     virtual bool uiFocused() const = 0;
 
     /// @brief Get the currently selected entity IDs in the editor
-    virtual std::span<const uint32> selectedEntityIDs() const = 0;
+    virtual std::span<const Entity> selectedEntityIDs() const = 0;
 };
 
 } // namespace R3

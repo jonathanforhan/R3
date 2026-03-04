@@ -2,6 +2,7 @@
 
 #include "engine/api/Api.hpp"
 #include "engine/api/Types.hpp"
+#include "engine/core/Entity.hpp"
 #include "engine/input/InputCodes.hpp"
 
 namespace R3 {
@@ -47,7 +48,7 @@ namespace event {
 static constexpr hash::uuid HoveredEntity = "hovered-entity";
 } // namespace event
 struct R3_API HoveredEntityEvent {
-    uint32 entityID; /**< ID of the currently hovered entity, 0xFFFF'FFFF if no entity hovered */
+    Entity entityID; /**< ID of the currently hovered entity, 0xFFFF'FFFF if no entity hovered */
 };
 
 } // namespace R3

@@ -32,22 +32,24 @@ int Application::run() {
 
     try {
         GEngine()->initialize();
-        GEngine()->m_editor = new Editor(GEngine()->Window(), GEngine()->RenderContext());
+
+        // editor is created here due to no recursive linking between R3_ENGINE.dll and R3_EDITOR.dll
+        GEngine()->m_editor = new Editor(GWindow(), GRenderContext());
 
         dl.loadLib("./sponza.dll");
-        dlEntry = dl.loadEntry(ENTRY_TAG);
-        dlExit  = dl.loadExit(EXIT_TAG);
-        dlLoop  = dl.loadLoop(LOOP_TAG);
+        dlEntry = (DL_Entry)dl.loadFunc(ENTRY_TAG);
+        dlExit  = (DL_Exit)dl.loadFunc(EXIT_TAG);
+        dlLoop  = (DL_Loop)dl.loadFunc(LOOP_TAG);
         R3_ASSERT(dlEntry && dlExit && dlLoop);
 
-        dlEntry();
+        void* p = dlEntry();
 
         while (loop && !GWindow()->shouldClose()) {
             GEngine()->update();
             dlLoop();
         }
 
-        dlExit(nullptr);
+        dlExit(p);
 
     } catch (const Exception& ex) {
         LOG_ERROR("R3 Engine error: {}", ex.what());

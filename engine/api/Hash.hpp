@@ -57,7 +57,7 @@ public:
     /// @param str static cstring to hash
     template <usize N>
     requires(N > 1)
-    consteval uuid(const char (&str)[N]) noexcept
+    constexpr uuid(const char (&str)[N]) noexcept
         : m_id{fnv1a(std::string_view{str, N - 1})} {}
 
     /// @brief Implicit conversion to uint64

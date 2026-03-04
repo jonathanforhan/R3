@@ -15,7 +15,6 @@
 #include "engine/render/Flags.hpp"
 #include "engine/render/RenderFwd.hpp"
 #include "engine/render/ShaderObjects.hpp"
-#include "engine/render/vulkan/vulkan-CommandBuffer.hpp"
 #include "glTF/glTF-ModelImporter.hpp"
 #include "glTF/glTF.hpp"
 

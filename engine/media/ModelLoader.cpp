@@ -151,7 +151,7 @@ void ModelLoader::glTF_processNodeTransform(Entity entity, const glTF::Model& mo
     fmat4 S = glm::scale(fmat4(1.0f), scale);
     local *= T * R * S;
 
-    GWorld()->registry().emplace<TransformComponent>(entity).transform() = local;
+    GWorld()->registry().emplace<TransformComponent>(entity).local() = local;
 }
 
 void ModelLoader::glTF_processMesh(Entity entity, const glTF::Model& model, const glTF::Mesh& mesh) {

@@ -19,8 +19,8 @@
 /// Event listeners must be noexcept lambdas that take a const DataType& parameter:
 /// @code
 /// auto moveListener = [](const PlayerMoveData& e) noexcept {
-///     std::cout << "Player " << e.data.playerId
-///               << " moved to (" << e.data.x << ", " << e.data.y << ")\n";
+///     std::cout << "Player " << e.playerId
+///               << " moved to (" << e.x << ", " << e.y << ")\n";
 /// };
 /// @endcode
 ///
@@ -155,7 +155,7 @@ concept EventListener = VoidEventListener<F> || DataEventListener<F> || DataIdEv
 ///
 /// @code
 /// EventHandler().bindEventListener("key-press", [](const KeyboardEventData& e) noexcept {
-///     LOG_INFO("key pressed: {}", (int)e.data.key);
+///     LOG_INFO("key pressed: {}", (int)e.key);
 /// });
 /// @endcode
 class R3_API EventHandler {
@@ -200,6 +200,7 @@ public:
     /// @param args  Event data arguments to construct R3_API the event in place
     /// @note Must explicitly specify the Data type, this is useful for events that have no data
     template <typename Data = void, typename... Args>
+    requires std::constructible_from<Event<Data>, hash::uuid, Args...>
     void emplace(hash::uuid id, Args&&... args) {
         void* alignedPtr = allocateAligned<Event<Data>>();
         new (alignedPtr) Event<Data>{id, std::forward<Args>(args)...}; // construct R3_API event in place

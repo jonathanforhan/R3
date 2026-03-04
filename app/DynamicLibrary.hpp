@@ -12,9 +12,7 @@ struct DynamicLibrary {
     ~DynamicLibrary();
 
     DL_Module loadLib(const char* libpath) noexcept;
-    DL_Entry loadEntry(const char* funcname) const noexcept;
-    DL_Exit loadExit(const char* funcname) const noexcept;
-    DL_Loop loadLoop(const char* funcname) const noexcept;
+    void* loadFunc(const char* funcname) const noexcept;
 
     DL_Module mod = nullptr;
 };

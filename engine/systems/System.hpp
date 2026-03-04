@@ -28,4 +28,10 @@ public:
 template <typename T>
 concept ValidSystem = std::is_base_of_v<ISystem, T>;
 
+/// @brief Concept to check if a type has an update method with the correct signature
+template <typename T>
+concept Updatable = requires(T a, double dt) {
+    { a.update(dt) } -> std::same_as<void>;
+};
+
 } // namespace R3

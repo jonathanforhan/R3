@@ -2,12 +2,10 @@
 
 #include <chrono>
 #include <new>
-#include "EventHandler.hpp"
-#include "core/ResourceManager.hpp"
-#include "core/World.hpp"
+#include "engine/core/EventHandler.hpp"
+#include "engine/core/ResourceManager.hpp"
+#include "engine/core/World.hpp"
 #include "engine/editor/Editor.hpp"
-#include "input/InputCodes.hpp"
-#include "input/InputEvents.hpp"
 #include "render/Window.hpp"
 #include "render/vulkan/vulkan-RenderContext.hpp"
 #include "render/vulkan/vulkan-Renderer.hpp"
@@ -87,7 +85,7 @@ double Engine::deltaTime() {
 
 void Engine::resetState() {
     if (m_world) {
-        m_world->registry().clear();
+        m_world->clear();
     }
 
     if (m_resourceManager) {
@@ -95,7 +93,7 @@ void Engine::resetState() {
     }
 }
 
-Engine* GEngine::operator->() noexcept {
+Engine* GEngine::operator->() const noexcept {
     static Engine instance;
     return &instance;
 }

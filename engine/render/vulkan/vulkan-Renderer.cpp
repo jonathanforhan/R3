@@ -7,6 +7,7 @@
 #include <span>
 #include <vector>
 #include <vulkan/vulkan.h>
+#include <entt/entity/entity.hpp>
 #include <entt/entity/registry.hpp>
 #include <entt/entity/view.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -15,12 +16,12 @@
 #include "components/LightComponent.hpp"
 #include "core/Camera.hpp"
 #include "core/Engine.hpp"
+#include "core/Entity.hpp"
 #include "core/EventHandler.hpp"
 #include "core/ResourceManager.hpp"
 #include "core/World.hpp"
 #include "input/InputCodes.hpp"
 #include "input/InputEvents.hpp"
-#include "passes/vulkan-EditorPass.hpp"
 #include "passes/vulkan-MainPass.hpp"
 #include "passes/vulkan-ShadowPass.hpp"
 #include "render/Buffer.hpp"
@@ -198,7 +199,7 @@ void Renderer::update() {
 
     // readback selected entity ID if pending and the readback corresponds to the current image
     if (m_pendingReadback) {
-        uint32 hoveredEntityID = *((uint32*)m_idReadbackBuffers[m_imageIndex].data());
+        Entity hoveredEntityID = static_cast<Entity>(*((uint32*)m_idReadbackBuffers[m_imageIndex].data()));
         if (hoveredEntityID != m_hoveredEntityID) {
             m_hoveredEntityID = hoveredEntityID;
             GEventHandler()->emplace<HoveredEntityEvent>(event::HoveredEntity, m_hoveredEntityID);
@@ -686,7 +687,7 @@ void Renderer::handleMouseHover(CommandBuffer& cmd, uint32 imageIndex, int32 pos
 
         m_pendingReadback = true;
     } else {
-        m_hoveredEntityID = 0xFFFF'FFFF;
+        m_hoveredEntityID = entt::null;
     }
 }
 

@@ -29,22 +29,10 @@ DL_Module DynamicLibrary::loadLib(char const* libpath) noexcept {
     return mod;
 }
 
-DL_Entry DynamicLibrary::loadEntry(char const* funcname) const noexcept {
+void* DynamicLibrary::loadFunc(char const* funcname) const noexcept {
     R3_ASSERT(mod != nullptr);
-    DL_Entry entry = (DL_Entry)GetProcAddress((HMODULE)mod, funcname);
+    void* entry = GetProcAddress((HMODULE)mod, funcname);
     return entry;
-}
-
-DL_Exit DynamicLibrary::loadExit(const char* funcname) const noexcept {
-    R3_ASSERT(mod != nullptr);
-    DL_Exit entry = (DL_Exit)GetProcAddress((HMODULE)mod, funcname);
-    return entry;
-}
-
-DL_Loop DynamicLibrary::loadLoop(char const* funcname) const noexcept {
-    R3_ASSERT(mod != nullptr);
-    DL_Loop loop = (DL_Loop)GetProcAddress((HMODULE)mod, funcname);
-    return loop;
 }
 
 } // namespace R3

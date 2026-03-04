@@ -2,7 +2,7 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <ranges>
+#include <span>
 #include "../vulkan-CommandBuffer.hpp"
 #include "../vulkan-GraphicsPipeline.hpp"
 #include "../vulkan-RenderPass.hpp"
@@ -78,7 +78,7 @@ void MainPass::renderScene(CommandBuffer& cmd) {
     GWorld()->registry().view<MeshComponent, MaterialComponent, TransformComponent>().each(
         [&](Entity entity, const MeshComponent& mesh, const MaterialComponent& mat, const TransformComponent& trans) {
             const PBRPushConstants pc = {
-                .model              = trans.transform(),
+                .model              = trans.world(),
                 .viewPosition       = GWorld()->camera().position(),
                 .numLights          = m_lightCount,
                 .iAlbedo            = mat.iAlbedo,
@@ -86,7 +86,7 @@ void MainPass::renderScene(CommandBuffer& cmd) {
                 .iNormal            = mat.iNormal,
                 .iAmbientOcclusion  = mat.iAmbientOcclusion,
                 .iEmissive          = mat.iEmissive,
-                .bSelected          = std::ranges::find(entityIDs, (uint32)entity) != entityIDs.end() ? 1U : 0U,
+                .bSelected          = std::ranges::find(entityIDs, entity) != entityIDs.end() ? 1U : 0U,
             };
             cmd.pushConstants({
                 .sType      = VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO,

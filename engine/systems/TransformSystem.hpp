@@ -1,3 +1,5 @@
+/// @file TransformSystem.hpp
+
 #pragma once
 
 #include <entt/resource/resource.hpp>
@@ -18,7 +20,7 @@ class R3_API TransformSystem : public ISystem {
 public:
     virtual ~TransformSystem() noexcept override {}
 
-    virtual void update(double dt) {
+    virtual void update(double dt) override {
         (void)dt;
         // update all transforms in hierarchy if parent transform changed
         // this has the limitation that if you change a child node you must inform the root that it's m_dirty
@@ -27,7 +29,8 @@ public:
                 // if it's a root node (no parent) and has changed, update
                 if (hier.parent == entt::null && t.m_dirty) {
                     for (Entity child : hier.children) {
-                        updateTransformHierarchy(child, t.transform());
+                        // root node has no parent so local == world, we can just pass local transform to children
+                        updateTransformHierarchy(child, t.local());
                     }
                     t.m_dirty = false;
                 }
@@ -37,12 +40,12 @@ public:
 private:
     void updateTransformHierarchy(Entity ent, const dmat4& parentTransform) {
         TransformComponent& t = GWorld()->registry().get<TransformComponent>(ent);
-        t.transform()         = parentTransform * t.transform();
+        t.m_world             = parentTransform * t.local();
         t.m_dirty             = false;
 
         if (const HierarchyComponent* h = GWorld()->registry().try_get<HierarchyComponent>(ent)) {
             for (Entity child : h->children) {
-                updateTransformHierarchy(child, t.transform());
+                updateTransformHierarchy(child, t.world());
             }
         }
     }

@@ -8,11 +8,12 @@
 #include <ImGuizmo.h>
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <format>
 #include <iterator>
-#include <ranges>
 #include <string>
+#include <vector>
 #include <vulkan/vulkan.h>
 #include <engine/api/Types.hpp>
 #include <engine/components/HierarchyComponent.hpp>
@@ -22,6 +23,7 @@
 #include <engine/core/Entity.hpp>
 #include <engine/core/EventHandler.hpp>
 #include <engine/core/World.hpp>
+#include <engine/input/InputCodes.hpp>
 #include <engine/input/InputEvents.hpp>
 #include <engine/render/CommandBuffer.hpp>
 #include <engine/render/RenderContext.hpp>
@@ -29,6 +31,7 @@
 #include <engine/render/WindowEvents.hpp>
 #include <engine/render/vulkan/vulkan-CommandBuffer.hpp>
 #include <engine/render/vulkan/vulkan-RenderContext.hpp>
+#include <entt/entity/entity.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 namespace R3 {
@@ -55,7 +58,7 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
         {VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000},
     };
 
-    VkDescriptorPoolCreateInfo descriptorPoolInfo = {
+    const VkDescriptorPoolCreateInfo descriptorPoolInfo = {
         .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .pNext         = nullptr,
         .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
@@ -70,7 +73,7 @@ Editor::Editor(Window& window, IRenderContext& ctx_)
     ImGui::CreateContext();
     ImGui_ImplGlfw_InitForVulkan(window.glfw(), true);
 
-    VkFormat swapchainFormat = ctx.swapchainFormat();
+    const VkFormat swapchainFormat = ctx.swapchainFormat();
 
     ImGui_ImplVulkan_InitInfo initInfo = {
         .Instance            = ctx.instance(),
@@ -150,10 +153,6 @@ void Editor::recordFrame(double dt) {
 
 void Editor::draw(ICommandBuffer& cmd) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), ((vulkan::CommandBuffer&)cmd).commandBuffer());
-}
-
-bool Editor::uiFocused() const {
-    return m_uiFocused;
 }
 
 void Editor::beginFrame() {
@@ -355,7 +354,7 @@ void Editor::setupEventListeners() {
         const int32 ypos = static_cast<int32>(event.ypos);
 
         if (std::abs(m_queuedMouseClickX - xpos) < 4 && std::abs(m_queuedMouseClickY - ypos) < 4) {
-            if (m_hoveredEntityID == 0xFFFF'FFFF) {
+            if (m_hoveredEntityID == entt::null) {
                 m_selectedEntityIDs.clear();
                 m_guizmoOperation = -1;
             } else if (event.modifiers & InputModifierFlags::Shift) {
@@ -371,24 +370,24 @@ void Editor::setupEventListeners() {
                     m_selectedEntityIDs.erase(it);
                 }
             } else {
-                m_selectedEntityIDs = std::vector<uint32>{m_hoveredEntityID};
+                m_selectedEntityIDs = std::vector{m_hoveredEntityID};
             }
         }
     });
 
     // Listen for hovered entity changes to update internal hovered entity state for selection on click
-    GEventHandler()->bindEventListener(event::HoveredEntity, [this](HoveredEntityEvent hovered) noexcept {
-        m_hoveredEntityID = hovered.entityID; //
+    GEventHandler()->bindEventListener(event::HoveredEntity, [this](HoveredEntityEvent event) noexcept {
+        m_hoveredEntityID = event.entityID; //
     });
 
-    GEventHandler()->bindEventListener(event::KeyPress, [this](const KeyboardEvent& e) noexcept {
-        switch (e.key) {
+    GEventHandler()->bindEventListener(event::KeyPress, [this](const KeyboardEvent& event) noexcept {
+        switch (event.key) {
             case Key::A:
-                if (e.modifiers & InputModifierFlags::Control) {
+                if (event.modifiers & InputModifierFlags::Control) {
                     // Select all entities on Ctrl + A
                     m_selectedEntityIDs.clear();
                     GWorld()->registry().view<MetadataComponent>().each([this](const MetadataComponent& metadata) {
-                        m_selectedEntityIDs.emplace_back((uint32)metadata.entity);
+                        m_selectedEntityIDs.push_back(metadata.entity); //
                     });
                 }
                 break;
@@ -457,7 +456,7 @@ void Editor::testImGuizmo() {
     fmat4 view       = GWorld()->camera().view();
     fmat4 projection = GWorld()->camera().projection();
 
-    dmat4& model = GWorld()->registry().get<TransformComponent>((entt::entity)m_selectedEntityIDs.back()).transform();
+    dmat4& model = GWorld()->registry().get<TransformComponent>((entt::entity)m_selectedEntityIDs.back()).local();
 
     fmat4 before = static_cast<fmat4>(model);
     fmat4 after  = before;
@@ -470,7 +469,7 @@ void Editor::testImGuizmo() {
         fmat4 delta = after * glm::inverse(before);
         for (auto& entityID : m_selectedEntityIDs) {
             TransformComponent& transform = GWorld()->registry().get<TransformComponent>((entt::entity)entityID);
-            transform.transform()         = delta * (fmat4)transform.transform();
+            transform.local()             = delta * (fmat4)transform.local();
         }
     }
 }
